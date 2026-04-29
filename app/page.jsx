@@ -8,7 +8,7 @@ const Dark = "#1a1a2e";
 const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c" };
 
 const FR_T = {
-  appName:"CV Factory", appSub:"Editeur Premium IA",
+  appName:"CV Factory", appSub:"L'IA qui boost et adapte ton CV",
   tab_ai:"IA", tab_edit:"Editer", tab_design:"Design",
   tab_score:"Score", tab_tools:"Outils",
   tab_gen:"Generer", tab_adj:"Ajuster", tab_match:"Offre",
@@ -82,7 +82,7 @@ const FR_T = {
 };
 
 const EN_T = {
-  appName:"CV Factory", appSub:"Premium AI Editor",
+  appName:"CV Factory", appSub:"AI that boosts and tailors your CV",
   tab_ai:"AI", tab_edit:"Edit", tab_design:"Design",
   tab_score:"Score", tab_tools:"Tools",
   tab_gen:"Generate", tab_adj:"Adjust", tab_match:"Match",
@@ -1824,51 +1824,92 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         {T.appSub}
       </div>
       {!mode && (
-        <div style={{display:"flex", flexDirection:"column", gap:12, width:"100%", maxWidth:370}}>
-          <button onClick={()=>setMode("import")} style={{
-            ...B({
-              padding:"16px 22px", borderRadius:13,
-              background:"rgba(201,169,110,.15)",
-              border:"2px solid "+Gold, color:Gold,
-              fontWeight:700, fontSize:14,
-              display:"flex", alignItems:"center", gap:12, textAlign:"left",
-            })
+        <>
+          <div style={{
+            color:"rgba(255,255,255,.7)", fontSize:13,
+            marginBottom:24, textAlign:"center", maxWidth:520,
           }}>
-            <span style={{fontSize:26}}>{">"}</span>
-            <div>
-              <div style={{fontWeight:800, marginBottom:1}}>{T.ob_import}</div>
-              <div style={{fontSize:11, opacity:.7, fontWeight:400}}>
-                Texte brut - l'IA structure tout
-              </div>
-            </div>
-          </button>
-          <button onClick={()=>{setMode("done");setTab("ai");setAiMode("generate");}} style={{
-            ...B({
-              padding:"16px 22px", borderRadius:13,
-              background:"rgba(255,255,255,.07)",
-              border:"2px solid rgba(255,255,255,.2)",
-              color:"#fff", fontWeight:700, fontSize:14,
-              display:"flex", alignItems:"center", gap:12, textAlign:"left",
-            })
+            Choisis ce qui correspond a ta situation :
+          </div>
+          <div style={{
+            display:"flex", flexDirection:"row", gap:14,
+            flexWrap:"wrap", justifyContent:"center",
+            width:"100%", maxWidth:920,
           }}>
-            <span style={{fontSize:26}}>*</span>
-            <div>
-              <div style={{fontWeight:800, marginBottom:1}}>{T.ob_generate}</div>
-              <div style={{fontSize:11, opacity:.5, fontWeight:400}}>
-                A partir de quelques infos
+            {/* Carte 1 : J'ai deja un CV */}
+            <button onClick={()=>setMode("import")} style={{
+              ...B({
+                flex:"1 1 240px", maxWidth:280, minHeight:200,
+                padding:"22px 18px", borderRadius:15,
+                background:"rgba(201,169,110,.15)",
+                border:"2px solid "+Gold, color:"#fff",
+                display:"flex", flexDirection:"column",
+                alignItems:"center", justifyContent:"center", gap:10,
+                textAlign:"center",
+              })
+            }}>
+              <div style={{fontSize:36}}>+</div>
+              <div style={{fontWeight:800, fontSize:16, color:Gold}}>
+                J'ai deja un CV
               </div>
-            </div>
-          </button>
+              <div style={{fontSize:12, opacity:.75, lineHeight:1.5}}>
+                Importe ton CV (PDF, Word, texte) - l'IA le boost et l'optimise
+              </div>
+            </button>
+            
+            {/* Carte 2 : J'ai un CV ET une offre */}
+            <button onClick={()=>{setMode("import");}} style={{
+              ...B({
+                flex:"1 1 240px", maxWidth:280, minHeight:200,
+                padding:"22px 18px", borderRadius:15,
+                background:"rgba(233,69,96,.12)",
+                border:"2px solid #e94560", color:"#fff",
+                display:"flex", flexDirection:"column",
+                alignItems:"center", justifyContent:"center", gap:10,
+                textAlign:"center",
+              })
+            }}>
+              <div style={{fontSize:36}}>~</div>
+              <div style={{fontWeight:800, fontSize:16, color:"#e94560"}}>
+                J'adapte mon CV a une offre
+              </div>
+              <div style={{fontSize:12, opacity:.75, lineHeight:1.5}}>
+                Importe ton CV + l'offre - l'IA adapte ton CV au job vise
+              </div>
+            </button>
+            
+            {/* Carte 3 : Je cree mon CV */}
+            <button onClick={()=>{setMode("done");setTab("ai");setAiMode("generate");}} style={{
+              ...B({
+                flex:"1 1 240px", maxWidth:280, minHeight:200,
+                padding:"22px 18px", borderRadius:15,
+                background:"rgba(255,255,255,.07)",
+                border:"2px solid rgba(255,255,255,.25)",
+                color:"#fff",
+                display:"flex", flexDirection:"column",
+                alignItems:"center", justifyContent:"center", gap:10,
+                textAlign:"center",
+              })
+            }}>
+              <div style={{fontSize:36}}>*</div>
+              <div style={{fontWeight:800, fontSize:16}}>
+                Je cree un CV
+              </div>
+              <div style={{fontSize:12, opacity:.65, lineHeight:1.5}}>
+                Pas encore de CV ? L'IA en genere un a partir de tes infos
+              </div>
+            </button>
+          </div>
+          
           <button onClick={()=>setMode("done")} style={{
             ...B({
-              padding:"11px 22px", borderRadius:13,
+              marginTop:24, padding:"9px 22px", borderRadius:9,
               background:"transparent",
-              border:"1px solid rgba(255,255,255,.15)",
-              color:"rgba(255,255,255,.4)",
-              fontWeight:500, fontSize:12, textAlign:"center",
+              color:"rgba(255,255,255,.35)",
+              fontWeight:500, fontSize:11, textAlign:"center",
             })
-          }}>{T.ob_blank}</button>
-        </div>
+          }}>Ou commencer vierge</button>
+        </>
       )}
       {mode==="import" && (
         <div style={{
