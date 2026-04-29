@@ -1878,6 +1878,68 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           <button onClick={()=>setMode(null)} style={{
             ...B({background:"none", color:"rgba(255,255,255,.4)", fontSize:12, textAlign:"left"})
           }}>{T.ob_back}</button>
+          
+          {/* Bouton d'upload de fichier */}
+          <input
+            type="file"
+            id="cv-file-upload"
+            accept=".pdf,.docx,.txt"
+            style={{display:"none"}}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              try {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext === 'txt') {
+                  const text = await file.text();
+                  setRaw(text);
+                } else if (ext === 'pdf') {
+                  const pdfjsLib = await import('pdfjs-dist/build/pdf');
+                  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                  const arrayBuffer = await file.arrayBuffer();
+                  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                  let fullText = '';
+                  for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                  }
+                  setRaw(fullText.trim());
+                } else if (ext === 'docx') {
+                  const mammoth = await import('mammoth/mammoth.browser');
+                  const arrayBuffer = await file.arrayBuffer();
+                  const result = await mammoth.extractRawText({arrayBuffer});
+                  setRaw(result.value);
+                } else {
+                  alert('Format non supporte. Utilise PDF, DOCX ou TXT.');
+                }
+              } catch (err) {
+                alert('Erreur lors de la lecture du fichier: ' + err.message);
+              }
+              e.target.value = '';
+            }}
+          />
+          <button
+            onClick={() => document.getElementById('cv-file-upload').click()}
+            style={{
+              ...B({
+                padding:13, borderRadius:11,
+                background:"rgba(201,169,110,.15)",
+                border:"1px solid rgba(201,169,110,.4)",
+                color:Gold, fontWeight:700, fontSize:13,
+              })
+            }}
+          >
+            Importer un fichier (PDF, Word, TXT)
+          </button>
+          <div style={{
+            textAlign:"center",
+            color:"rgba(255,255,255,.3)",
+            fontSize:11,
+            margin:"4px 0",
+          }}>ou</div>
+          
           <label style={{...LBL, color:"rgba(255,255,255,.6)"}}>{T.ob_paste}</label>
           <textarea value={raw} onChange={e=>setRaw(e.target.value)}
             placeholder={"Nom, titre, email...\nExperiences, formation, competences..."}
