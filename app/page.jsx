@@ -710,12 +710,8 @@ function SheetId({ cv, set, onClose, T }) {
   );
 }
 
-function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
+function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
   const { ux, ub } = MK(set);
-  const [trf, setTrf] = useState(null); // {expId, bulletIdx, original, levels|null, loading}
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const ax = () => set(p=>({...p,
     experience:[...p.experience, {
@@ -734,54 +730,7 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       ?{...e,bullets:e.bullets.filter((_,j)=>j!==i)}:e)
   }));
 
-  const openTransformer = async (id, idx, text) => {
-    if (!apiKey) { notify(T.nk); return; }
-    if (!text || !text.trim()) {
-      notify(T.bt_empty || "Ecris d'abord un bullet a transformer");
-      return;
-    }
-    setTrf({ expId: id, bulletIdx: idx, original: text, levels: null, loading: true });
-    try {
-      const p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
-        + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
-        + "en gardant la langue d'origine.\n\n"
-        + "PHRASE ORIGINALE:\n" + text + "\n\n"
-        + "REGISTRES (5 niveaux):\n"
-        + "1. simple: clarifie sans embellir, langage neutre, plus court si possible.\n"
-        + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
-        + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
-        + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
-        + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
-        + "REGLES:\n"
-        + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
-        + "- Maximum 18 mots par version.\n"
-        + "- " + NO_DASH + "\n"
-        + "- JSON valide strict uniquement.\n\n"
-        + '{\n'
-        + '  "simple": "version simple",\n'
-        + '  "pro": "version pro",\n'
-        + '  "ats": "version ats",\n'
-        + '  "premium": "version premium",\n'
-        + '  "impact": "version chiffree"\n'
-        + '}';
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
-      setTrf(s => s ? { ...s, levels: r, loading: false } : null);
-    } catch (err) {
-      notify((T.bt_err || "Erreur transformation: ") + (err.message || ""));
-      setTrf(null);
-    }
-  };
-
-  const adoptVersion = (text) => {
-    if (!trf) return;
-    ub(trf.expId, trf.bulletIdx, text);
-    setTrf(null);
-    notify(T.bt_adopted || "Version adoptee");
-  };
-
   return (
-    <>
     <Sheet title={T.edit_ex} onClose={onClose}>
       {cv.experience.map((ex,i) => (
         <div key={ex.id} style={{
@@ -809,11 +758,10 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
               <input value={b} onChange={e=>ub(ex.id,j,e.target.value)}
                 style={{...IN({padding:"7px 9px", fontSize:12, flex:1})}}/>
               <button
-                onClick={()=>openTransformer(ex.id,j,b)}
-                disabled={trf && trf.loading}
+                onClick={()=>onTransformBullet(ex.id,j,b)}
                 style={{
                   ...B({
-                    background:(trf && trf.loading)?"#eee":"#fff9f0",
+                    background:"#fff9f0",
                     border:"1px solid "+Gold+"44",
                     borderRadius:5, padding:"4px 7px",
                     fontSize:11, color:Gold, flexShrink:0,
@@ -842,17 +790,6 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       }}>{T.sh_addex}</button>
       <SaveBtn onClose={onClose} T={T}/>
     </Sheet>
-    {mounted && trf && (
-      <BulletTransformer
-        original={trf.original}
-        levels={trf.levels}
-        loading={trf.loading}
-        onAdopt={adoptVersion}
-        onClose={()=>{ if (!trf.loading) setTrf(null); }}
-        T={T}
-      />
-    )}
-    </>
   );
 }
 
@@ -3614,6 +3551,7 @@ export default function App() {
   const [truthResult, setTruthResult] = useState(null);
   const [showVersions, setShowVersions] = useState(false);
   const [versions, setVersions]       = useState(() => lsG(SK.VS, []));
+  const [bt, setBt]                   = useState(null);
   const cRef = useRef();
 
   const setCVFn = useCallback(fn => setCV_(p => {
@@ -4087,6 +4025,61 @@ export default function App() {
     });
   }, [locale]);
 
+  const runBulletTransform = useCallback(async (expId, bulletIdx, text) => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (!text || !text.trim()) {
+      notify(T.bt_empty || "Ecris d'abord un bullet a transformer");
+      return;
+    }
+    setBt({ expId, bulletIdx, original: text, levels: null, loading: true });
+    try {
+      const p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
+        + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
+        + "en gardant la langue d'origine.\n\n"
+        + "PHRASE ORIGINALE:\n" + text + "\n\n"
+        + "REGISTRES (5 niveaux):\n"
+        + "1. simple: clarifie sans embellir, langage neutre, plus court si possible.\n"
+        + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
+        + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
+        + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
+        + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
+        + "REGLES:\n"
+        + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
+        + "- Maximum 18 mots par version.\n"
+        + "- " + NO_DASH + "\n"
+        + "- JSON valide strict uniquement.\n\n"
+        + '{\n'
+        + '  "simple": "version simple",\n'
+        + '  "pro": "version pro",\n'
+        + '  "ats": "version ats",\n'
+        + '  "premium": "version premium",\n'
+        + '  "impact": "version chiffree"\n'
+        + '}';
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setBt(s => s ? { ...s, levels: r, loading: false } : null);
+    } catch (err) {
+      notify((T.bt_err || "Erreur transformation: ") + (err.message || ""));
+      setBt(null);
+    }
+  }, [apiKey, notify, T]);
+
+  const adoptBulletVersion = useCallback((newText) => {
+    setBt(curr => {
+      if (!curr) return null;
+      setCVFn(p => ({
+        ...p,
+        experience: p.experience.map(e =>
+          e.id === curr.expId
+            ? { ...e, bullets: e.bullets.map((b, i) => i === curr.bulletIdx ? newText : b) }
+            : e
+        )
+      }));
+      notify(T.bt_adopted || "Version adoptee");
+      return null;
+    });
+  }, [notify, T]);
+
   const runTranslate = useCallback(async () => {
     if (!apiKey) { notify(T.tr_nk); return; }
     setTrLoading(true);
@@ -4487,7 +4480,7 @@ export default function App() {
     <>
       {modal==="id"  && <SheetId cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {modal==="exp" && <SheetEx cv={cv} set={setCVFn} onClose={()=>setModal(null)}
-        apiKey={apiKey} notify={notify} T={T}/>}
+        onTransformBullet={runBulletTransform} T={T}/>}
       {modal==="edu" && <SheetEd cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {modal==="sk"  && <SheetSk cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {showAudit && (
@@ -4572,6 +4565,16 @@ export default function App() {
           onLoad={loadVersion}
           onDelete={deleteVersion}
           onClose={()=>setShowVersions(false)}
+        />
+      )}
+      {bt && (
+        <BulletTransformer
+          original={bt.original}
+          levels={bt.levels}
+          loading={bt.loading}
+          onAdopt={adoptBulletVersion}
+          onClose={()=>{ if (!bt.loading) setBt(null); }}
+          T={T}
         />
       )}
     </>
