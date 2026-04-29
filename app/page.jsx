@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 const FONT = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&family=Montserrat:wght@700&family=Open+Sans:wght@600&display=swap";
 const Gold = "#c9a96e";
 const Dark = "#1a1a2e";
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk" };
 
 const FR_T = {
   appName:"CV Factory", appSub:"L'IA qui boost et adapte ton CV",
@@ -79,6 +79,32 @@ const FR_T = {
   ni:"Ecris une instruction", np2:"Colle ton CV d'abord",
   ep:"Erreur parsing - verifie la cle API",
   ea:"Erreur API", eb:"Erreur API", au:"Annule", nu:"Rien a annuler",
+  tr_btn:"Traduire le CV",
+  tr_title:"Traduction IA du CV",
+  tr_sub:"Traduit le contenu de ton CV en preservant la structure",
+  tr_dir:"Direction",
+  tr_fr_en:"Francais vers Anglais",
+  tr_en_fr:"Anglais vers Francais",
+  tr_warn:"Cette action remplacera le contenu actuel du CV. Une copie de la version originale sera sauvegardee et tu pourras la restaurer a tout moment.",
+  tr_run:"Lancer la traduction",
+  tr_loading:"Traduction en cours...",
+  tr_msgs:[
+    "Lecture du CV...",
+    "Identification des elements a preserver...",
+    "Traduction des realisations...",
+    "Adaptation des termes professionnels...",
+    "Verification de la coherence...",
+    "Finalisation...",
+  ],
+  tr_ok:"CV traduit avec succes",
+  tr_err:"Erreur traduction",
+  tr_nk:"Cle API requise pour traduire",
+  tr_restore:"Restaurer la version originale",
+  tr_restore_conf:"Restaurer la version sauvegardee? La traduction sera perdue.",
+  tr_restored:"Version originale restauree",
+  tr_section:"Traduction",
+  tr_hint_backup:"Une version sauvegardee existe deja. Tu pourras la restaurer apres traduction depuis l'onglet Outils.",
+  audit_btn:"Audit IA Recruteur",
 };
 
 const EN_T = {
@@ -155,6 +181,32 @@ const EN_T = {
   ep:"Parsing error - check API key",
   ea:"Error - check API key.", eb:"API error",
   au:"Undone", nu:"Nothing to undo",
+  tr_btn:"Translate CV",
+  tr_title:"AI CV Translation",
+  tr_sub:"Translates your CV content while preserving structure",
+  tr_dir:"Direction",
+  tr_fr_en:"French to English",
+  tr_en_fr:"English to French",
+  tr_warn:"This will replace the current CV content. A copy of the original will be saved and can be restored at any time.",
+  tr_run:"Run translation",
+  tr_loading:"Translating...",
+  tr_msgs:[
+    "Reading the CV...",
+    "Identifying elements to preserve...",
+    "Translating achievements...",
+    "Adapting professional terms...",
+    "Checking consistency...",
+    "Finalizing...",
+  ],
+  tr_ok:"CV translated successfully",
+  tr_err:"Translation error",
+  tr_nk:"API key required to translate",
+  tr_restore:"Restore original version",
+  tr_restore_conf:"Restore saved version? The translation will be lost.",
+  tr_restored:"Original version restored",
+  tr_section:"Translation",
+  tr_hint_backup:"A saved version already exists. You can restore it after translation from the Tools tab.",
+  audit_btn:"AI Recruiter Audit",
 };
 
 const THEMES = {
@@ -2365,6 +2417,136 @@ function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages
   );
 }
 
+function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBackup, onRun, onClose }) {
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:520, width:"100%",
+        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              {T.tr_title}
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              {T.tr_sub}
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18,
+              fontWeight:700, opacity:loading?.4:1,
+            })
+          }}>X</button>
+        </div>
+
+        <div style={{padding:"22px 26px"}}>
+          {loading ? (
+            <div style={{
+              padding:"40px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:13,
+            }}>
+              <div style={{
+                width:64, height:64, margin:"0 auto 18px",
+                border:"4px solid "+Gold+"33",
+                borderTopColor:Gold,
+                borderRadius:"50%",
+                animation:"spin 1s linear infinite",
+              }}/>
+              <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+                @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+              `}</style>
+              <div style={{
+                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
+                animation:"pulse 1.6s ease-in-out infinite",
+              }}>
+                {T.tr_msgs[msgIdx]}
+              </div>
+              <div style={{fontSize:11, color:"#888"}}>
+                {T.tr_loading}
+              </div>
+              <div style={{
+                marginTop:18, height:4, background:"#e5dfd0",
+                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
+                position:"relative",
+              }}>
+                <div style={{
+                  height:"100%", background:Gold,
+                  animation:"slide 2s ease-in-out infinite",
+                  width:"40%",
+                }}/>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{
+                fontSize:11, fontWeight:700, color:"#888",
+                textTransform:"uppercase", letterSpacing:1,
+                marginBottom:10,
+              }}>{T.tr_dir}</div>
+              <div style={{display:"flex", gap:8, marginBottom:18}}>
+                {[
+                  ["fr_en", T.tr_fr_en],
+                  ["en_fr", T.tr_en_fr],
+                ].map(([k,l]) => (
+                  <button key={k} onClick={()=>setDir(k)} style={{
+                    ...B({
+                      flex:1, padding:"12px 10px", borderRadius:10,
+                      border:"2px solid "+(dir===k?Gold:"#e5e0d6"),
+                      background:dir===k?"#fdfaf3":"#fff",
+                      color:dir===k?Dark:"#666",
+                      fontWeight:dir===k?700:500, fontSize:12,
+                    })
+                  }}>{l}</button>
+                ))}
+              </div>
+
+              <div style={{
+                padding:"12px 14px", background:"#fff8eb",
+                border:"1px solid #f0e0a8", borderRadius:9,
+                fontSize:12, color:"#664d00", lineHeight:1.6,
+                marginBottom:18,
+              }}>{T.tr_warn}</div>
+
+              <button onClick={onRun} style={{
+                ...B({
+                  width:"100%", padding:"14px", borderRadius:11,
+                  background:"linear-gradient(135deg,"+Dark+","+Gold+")",
+                  color:"#fff", fontWeight:800, fontSize:14,
+                })
+              }}>{T.tr_run}</button>
+
+              {hasBackup && (
+                <div style={{
+                  marginTop:12, fontSize:11, color:"#888",
+                  textAlign:"center", lineHeight:1.5,
+                }}>
+                  {T.tr_hint_backup}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function App() {
   const [cv, setCV_]       = useState(() => {
     const s = lsG(SK.CV, null);
@@ -2400,6 +2582,11 @@ export default function App() {
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditResult, setAuditResult]   = useState(null);
   const [auditMsgIdx, setAuditMsgIdx]   = useState(0);
+  const [showTranslate, setShowTranslate] = useState(false);
+  const [trDir, setTrDir] = useState("fr_en");
+  const [trLoading, setTrLoading] = useState(false);
+  const [trMsgIdx, setTrMsgIdx] = useState(0);
+  const [hasBackup, setHasBackup] = useState(false);
   const cRef = useRef();
 
   const setCVFn = useCallback(fn => setCV_(p => {
@@ -2512,6 +2699,18 @@ export default function App() {
     }, 2200);
     return () => clearInterval(interval);
   }, [auditLoading]);
+
+  useEffect(() => {
+    setHasBackup(!!lsG(SK.BK));
+  }, []);
+
+  useEffect(() => {
+    if (!trLoading) return;
+    const interval = setInterval(() => {
+      setTrMsgIdx(i => (i + 1) % T.tr_msgs.length);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [trLoading, T]);
   
   const runAudit = useCallback(async () => {
     setAuditLoading(true);
@@ -2565,6 +2764,52 @@ export default function App() {
     }
     setAuditLoading(false);
   }, [cv, auditCountry, notify]);
+
+  const runTranslate = useCallback(async () => {
+    if (!apiKey) { notify(T.tr_nk); return; }
+    setTrLoading(true);
+    setTrMsgIdx(0);
+
+    lsS(SK.BK, cv);
+    setHasBackup(true);
+
+    const target = trDir === "fr_en" ? "English" : "French";
+    const source = trDir === "fr_en" ? "French" : "English";
+
+    const p = "You are a professional CV translator. Translate the following CV from " + source + " to " + target + ".\n\n"
+      + "STRICT RULES:\n"
+      + "1. Translate ONLY the textual content (job titles, summaries, achievements/bullets, descriptions, skill names where applicable).\n"
+      + "2. PRESERVE EXACTLY (do not translate): person's name, company names, school names, dates and periods, cities/locations (translate only if there is a standard equivalent like Londres -> London), email, phone, LinkedIn URL, certification names if they are official titles, technology names, product names, acronyms.\n"
+      + "3. Adapt professional terminology naturally to the " + target + " job market. For example, in English use action verbs (Led, Drove, Delivered) at the start of bullets.\n"
+      + "4. Keep the same JSON structure and the same number of items in every array.\n"
+      + "5. Do not invent, add or remove content. Translate what is there.\n"
+      + "6. Never use em dashes or en dashes. Use commas, parentheses, or simple hyphens only.\n"
+      + "7. For language proficiency levels: keep CEFR codes (A1, A2, B1, B2, C1, C2) as-is. Translate descriptive levels (Native, Fluent, Intermediate / Maternelle, Courant, Intermediaire).\n\n"
+      + "CV to translate (JSON):\n"
+      + JSON.stringify(cv) + "\n\n"
+      + "Reply with the translated CV as VALID JSON only, no markdown, no commentary, same structure exactly.";
+
+    try {
+      const txt = await aiCall(p);
+      const json = parseJSON(txt);
+      pushH();
+      setCVFn(() => normCV(json, cv));
+      notify(T.tr_ok);
+      setShowTranslate(false);
+    } catch (err) {
+      notify(T.tr_err + ": " + (err.message || ""));
+    }
+    setTrLoading(false);
+  }, [cv, apiKey, trDir, T, pushH, setCVFn, notify]);
+
+  const restoreBackup = useCallback(() => {
+    const b = lsG(SK.BK);
+    if (!b) { notify(T.nu); return; }
+    if (!window.confirm(T.tr_restore_conf)) return;
+    pushH();
+    setCVFn(() => normCV(b, EMPTY));
+    notify(T.tr_restored);
+  }, [T, pushH, setCVFn, notify]);
   
   const onImport = useCallback(async () => {
     if (!obRaw.trim()) { notify(T.np2); return; }
@@ -2806,6 +3051,28 @@ export default function App() {
           color:"#dc2626", fontSize:13, marginBottom:14,
         })
       }}>{T.t_rst}</button>
+      <div style={SH()}>{T.tr_section}</div>
+      <button onClick={()=>setShowTranslate(true)} style={{
+        ...B({
+          width:"100%", padding:"11px", borderRadius:11,
+          background:"linear-gradient(135deg,"+Gold+",#a07840)",
+          color:"#fff", fontWeight:700, fontSize:13, marginBottom:8,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+        })
+      }}>
+        <span style={{fontSize:15}}>~</span>
+        <span>{T.tr_btn}</span>
+      </button>
+      {hasBackup && (
+        <button onClick={restoreBackup} style={{
+          ...B({
+            width:"100%", padding:"10px", borderRadius:9,
+            border:"1px solid #e0e0e0", background:"#fff9f0",
+            color:Dark, fontSize:12, fontWeight:600, marginBottom:14,
+          })
+        }}>{T.tr_restore}</button>
+      )}
+      {!hasBackup && <div style={{marginBottom:14}}/>}
       <div style={SH()}>{T.t_qck}</div>
       {quick.map(([l,fn,bg]) => (
         <button key={l} onClick={fn} style={{
@@ -2874,6 +3141,18 @@ export default function App() {
           onClose={()=>{setShowAudit(false);setAuditResult(null);}}
         />
       )}
+      {showTranslate && (
+        <TranslateModal
+          T={T}
+          dir={trDir}
+          setDir={setTrDir}
+          loading={trLoading}
+          msgIdx={trMsgIdx}
+          hasBackup={hasBackup}
+          onRun={runTranslate}
+          onClose={()=>{ if (!trLoading) setShowTranslate(false); }}
+        />
+      )}
     </>
   );
 
@@ -2899,7 +3178,7 @@ export default function App() {
         {notif && <Notif msg={notif}/>}
         {Modals}
         {Onboard}
-        {!cvIsEmpty && obMode==="done" && (
+        {!cvIsEmpty && (
           <button onClick={()=>setShowAudit(true)} style={{
             position:"fixed", bottom:24, right:24, zIndex:400,
             padding:"14px 22px", borderRadius:50,
@@ -2911,7 +3190,7 @@ export default function App() {
             fontFamily:"'Lato',sans-serif",
           }}>
             <span style={{fontSize:18}}>*</span>
-            <span>Audit IA Recruteur</span>
+            <span>{T.audit_btn}</span>
           </button>
         )}
         <div style={{
@@ -2977,7 +3256,7 @@ export default function App() {
       {notif && <Notif msg={notif}/>}
       {Modals}
       {Onboard}
-      {!cvIsEmpty && obMode==="done" && (
+      {!cvIsEmpty && (
         <button onClick={()=>setShowAudit(true)} style={{
           position:"fixed", bottom:78, right:14, zIndex:400,
           padding:"12px 18px", borderRadius:50,
@@ -2989,7 +3268,7 @@ export default function App() {
           fontFamily:"'Lato',sans-serif",
         }}>
           <span style={{fontSize:16}}>*</span>
-          <span>Audit IA</span>
+          <span>{T.audit_btn}</span>
         </button>
       )}
       {zoomed && (
