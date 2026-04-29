@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&display=swap";
@@ -863,9 +864,10 @@ function BulletTransformer({ original, levels, loading, onAdopt, onClose, T }) {
     { key:"premium", label:T.bt_premium, hint:T.bt_premium_hint, color:Gold },
     { key:"impact",  label:T.bt_impact,  hint:T.bt_impact_hint,  color:"#16a34a" },
   ];
-  return (
+  if (typeof document === "undefined") return null;
+  return createPortal((
     <div style={{
-      position:"fixed", inset:0, zIndex:1100,
+      position:"fixed", inset:0, zIndex:99999,
       background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
       display:"flex", alignItems:"center", justifyContent:"center",
       padding:20, fontFamily:"'Lato',sans-serif",
@@ -966,7 +968,7 @@ function BulletTransformer({ original, levels, loading, onAdopt, onClose, T }) {
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }
 
 function SheetEd({ cv, set, onClose, T }) {
