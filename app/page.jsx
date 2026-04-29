@@ -366,13 +366,38 @@ function san(t) {
 }
 
 async function aiCall(prompt) {
-  const r = await fetch("/api/claude", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
-  });
-  const d = await r.json();
-  if (d.error) throw new Error(d.error.message);
+  // Timeout cote client a 60s (legerement plus que le serveur a 55s)
+  // pour qu'on lise toujours la reponse du serveur plutot que de couper avant.
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 60000);
+  let r;
+  try {
+    r = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+      signal: ctrl.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if (err && err.name === "AbortError") {
+      throw new Error("Timeout cote client (60s). L'IA met trop longtemps a repondre.");
+    }
+    throw new Error("Erreur reseau: " + (err.message || String(err)));
+  }
+  clearTimeout(timer);
+
+  // Si le serveur renvoie une erreur HTTP (504, 500, 401, 429...) on le voit ici
+  let d;
+  try {
+    d = await r.json();
+  } catch {
+    throw new Error("Reponse serveur invalide (HTTP " + r.status + "). Probablement un timeout Vercel.");
+  }
+  if (!r.ok || (d && d.error)) {
+    const m = (d && d.error && d.error.message) || ("Erreur HTTP " + r.status);
+    throw new Error(m);
+  }
   return san((d.content||[]).map(b=>b.text||"").join(""));
 }
 
@@ -2760,9 +2785,10 @@ export default function App() {
       const r = parseJSON(txt);
       setAuditResult(r);
     } catch (err) {
-      notify("Erreur audit: " + err.message);
+      notify("Audit: " + (err && err.message ? err.message : "erreur inconnue"));
+    } finally {
+      setAuditLoading(false);
     }
-    setAuditLoading(false);
   }, [cv, auditCountry, notify]);
 
   const runTranslate = useCallback(async () => {
@@ -2798,8 +2824,9 @@ export default function App() {
       setShowTranslate(false);
     } catch (err) {
       notify(T.tr_err + ": " + (err.message || ""));
+    } finally {
+      setTrLoading(false);
     }
-    setTrLoading(false);
   }, [cv, apiKey, trDir, T, pushH, setCVFn, notify]);
 
   const restoreBackup = useCallback(() => {
