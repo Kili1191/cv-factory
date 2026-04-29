@@ -15,7 +15,7 @@ const FR_T = {
   ob_import:"Importer mon CV", ob_generate:"Generer avec l'IA",
   ob_blank:"Commencer vierge", ob_back:"Retour",
   ob_paste:"Colle ton CV ici (texte brut)",
-  ob_parse:"Parser et importer", ob_parsing:"Import...",
+  ob_parse:"Importer mon CV avec l'IA", ob_parsing:"L'IA analyse ton CV...",
   ob_continue:"Continuer sans cle API",
   ob_no_key:"Cle API requise - va dans Outils",
   sh_save:"Enregistrer",
@@ -89,7 +89,7 @@ const EN_T = {
   ob_import:"Import my CV", ob_generate:"Generate with AI",
   ob_blank:"Start blank", ob_back:"Back",
   ob_paste:"Paste your CV here (plain text)",
-  ob_parse:"Parse and import", ob_parsing:"Importing...",
+  ob_parse:"Import my CV with AI", ob_parsing:"AI is analyzing your CV...",
   ob_continue:"Continue without API key",
   ob_no_key:"API key required - go to Tools",
   sh_save:"Save",
@@ -1913,12 +1913,33 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
       )}
       {mode==="import" && (
         <div style={{
-          width:"100%", maxWidth:460,
-          display:"flex", flexDirection:"column", gap:9,
+          width:"100%", maxWidth:520,
+          display:"flex", flexDirection:"column", gap:11,
         }}>
           <button onClick={()=>setMode(null)} style={{
-            ...B({background:"none", color:"rgba(255,255,255,.4)", fontSize:12, textAlign:"left"})
-          }}>{T.ob_back}</button>
+            ...B({background:"none", color:"rgba(255,255,255,.4)", fontSize:12, textAlign:"left", marginBottom:6})
+          }}>← Retour</button>
+          
+          {/* Barre d'étapes */}
+          <div style={{
+            display:"flex", justifyContent:"center", gap:8,
+            marginBottom:14, fontSize:11,
+          }}>
+            <div style={{color:Gold, fontWeight:700}}>1. Importer</div>
+            <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
+            <div style={{color:"rgba(255,255,255,.4)"}}>2. Booster</div>
+            <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
+            <div style={{color:"rgba(255,255,255,.4)"}}>3. Telecharger</div>
+          </div>
+          
+          <div style={{
+            color:Gold, fontSize:18, fontWeight:800,
+            textAlign:"center", marginBottom:4,
+          }}>Importe ton CV</div>
+          <div style={{
+            color:"rgba(255,255,255,.55)", fontSize:12,
+            textAlign:"center", marginBottom:18, lineHeight:1.6,
+          }}>L'IA va lire ton CV et le restructurer automatiquement.<br/>Format accepte : PDF, Word, ou texte.</div>
           
           {/* Bouton d'upload de fichier */}
           <input
@@ -1965,23 +1986,26 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             onClick={() => document.getElementById('cv-file-upload').click()}
             style={{
               ...B({
-                padding:13, borderRadius:11,
-                background:"rgba(201,169,110,.15)",
-                border:"1px solid rgba(201,169,110,.4)",
-                color:Gold, fontWeight:700, fontSize:13,
+                padding:"22px 18px", borderRadius:13,
+                background:"rgba(201,169,110,.18)",
+                border:"2px dashed "+Gold,
+                color:Gold, fontWeight:800, fontSize:15,
+                display:"flex", flexDirection:"column", alignItems:"center", gap:6,
               })
             }}
           >
-            Importer un fichier (PDF, Word, TXT)
+            <div style={{fontSize:28, lineHeight:1}}>+</div>
+            <div>Cliquer pour selectionner mon CV</div>
+            <div style={{fontSize:11, opacity:.7, fontWeight:400}}>PDF, Word (.docx) ou texte (.txt)</div>
           </button>
           <div style={{
             textAlign:"center",
             color:"rgba(255,255,255,.3)",
             fontSize:11,
-            margin:"4px 0",
-          }}>ou</div>
+            margin:"6px 0",
+          }}>— ou copier-coller le contenu —</div>
           
-          <label style={{...LBL, color:"rgba(255,255,255,.6)"}}>{T.ob_paste}</label>
+          <label style={{...LBL, color:"rgba(255,255,255,.5)", fontSize:11}}>Colle ton CV en texte brut</label>
           <textarea value={raw} onChange={e=>setRaw(e.target.value)}
             placeholder={"Nom, titre, email...\nExperiences, formation, competences..."}
             rows={9} style={{
