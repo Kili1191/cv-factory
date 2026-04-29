@@ -1858,7 +1858,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             </button>
             
             {/* Carte 2 : J'ai un CV ET une offre */}
-            <button onClick={()=>{setMode("import");}} style={{
+            <button onClick={()=>{setMode("import-adapt");}} style={{
               ...B({
                 flex:"1 1 240px", maxWidth:280, minHeight:200,
                 padding:"22px 18px", borderRadius:15,
@@ -1911,7 +1911,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           }}>Ou commencer vierge</button>
         </>
       )}
-      {mode==="import" && (
+      {(mode==="import" || mode==="import-adapt") && (
         <div style={{
           width:"100%", maxWidth:520,
           display:"flex", flexDirection:"column", gap:11,
@@ -1925,21 +1925,24 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             display:"flex", justifyContent:"center", gap:8,
             marginBottom:14, fontSize:11,
           }}>
-            <div style={{color:Gold, fontWeight:700}}>1. Importer</div>
+            <div style={{color:mode==="import-adapt"?"#e94560":Gold, fontWeight:700}}>1. Importer</div>
             <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
-            <div style={{color:"rgba(255,255,255,.4)"}}>2. Booster</div>
+            <div style={{color:"rgba(255,255,255,.4)"}}>{mode==="import-adapt"?"2. Coller l'offre":"2. Booster"}</div>
             <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
-            <div style={{color:"rgba(255,255,255,.4)"}}>3. Telecharger</div>
+            <div style={{color:"rgba(255,255,255,.4)"}}>{mode==="import-adapt"?"3. Adapter":"3. Telecharger"}</div>
           </div>
           
           <div style={{
-            color:Gold, fontSize:18, fontWeight:800,
+            color:mode==="import-adapt"?"#e94560":Gold, fontSize:18, fontWeight:800,
             textAlign:"center", marginBottom:4,
-          }}>Importe ton CV</div>
+          }}>{mode==="import-adapt"?"Importe d'abord ton CV":"Importe ton CV"}</div>
           <div style={{
             color:"rgba(255,255,255,.55)", fontSize:12,
             textAlign:"center", marginBottom:18, lineHeight:1.6,
-          }}>L'IA va lire ton CV et le restructurer automatiquement.<br/>Format accepte : PDF, Word, ou texte.</div>
+          }}>{mode==="import-adapt"
+            ? <>L'IA va d'abord structurer ton CV, puis tu colleras l'offre.<br/>Format accepte : PDF, Word, ou texte.</>
+            : <>L'IA va lire ton CV et le restructurer automatiquement.<br/>Format accepte : PDF, Word, ou texte.</>
+          }</div>
           
           {/* Bouton d'upload de fichier */}
           <input
@@ -1987,9 +1990,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             style={{
               ...B({
                 padding:"22px 18px", borderRadius:13,
-                background:"rgba(201,169,110,.18)",
-                border:"2px dashed "+Gold,
-                color:Gold, fontWeight:800, fontSize:15,
+                background:mode==="import-adapt"?"rgba(233,69,96,.15)":"rgba(201,169,110,.18)",
+                border:"2px dashed "+(mode==="import-adapt"?"#e94560":Gold),
+                color:mode==="import-adapt"?"#e94560":Gold, fontWeight:800, fontSize:15,
                 display:"flex", flexDirection:"column", alignItems:"center", gap:6,
               })
             }}
@@ -2028,11 +2031,13 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
               padding:13, borderRadius:11,
               background:imping||!raw.trim()||!apiKey
                 ? "rgba(255,255,255,.15)"
-                : "linear-gradient(135deg,"+Gold+",#a07840)",
+                : (mode==="import-adapt"
+                    ? "linear-gradient(135deg,#e94560,#c73850)"
+                    : "linear-gradient(135deg,"+Gold+",#a07840)"),
               color:"#fff", fontWeight:800, fontSize:14,
             })
           }}>
-            {imping ? T.ob_parsing : T.ob_parse}
+            {imping ? T.ob_parsing : (mode==="import-adapt" ? "Continuer vers l'adaptation" : T.ob_parse)}
           </button>
           {!apiKey && (
             <button onClick={()=>setMode("done")} style={{
@@ -2193,11 +2198,17 @@ export default function App() {
       const parsed = parseJSON(txt);
       setCVFn(() => normCV(parsed));
       setObRaw("");
+      // Si on était en mode adapt, on va direct vers l'onglet Match (adaptation)
+      const wasAdaptMode = obMode === "import-adapt";
       setObMode(null);
+      if (wasAdaptMode) {
+        setTab("ai");
+        setAiMode("match");
+      }
       notify(T.okimp);
     } catch { notify(T.ep); }
     setObImp(false);
-  }, [obRaw, apiKey, T, setCVFn, notify]);
+  }, [obRaw, apiKey, T, setCVFn, notify, obMode, setTab, setAiMode]);
 
   const loadTpl = useCallback(tpl => {
     try {
