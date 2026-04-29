@@ -1320,7 +1320,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
   if (ph === "loading") {
     return (
       <div style={{textAlign:"center", padding:"36px 20px"}}>
-        <div style={{fontSize:28, marginBottom:10}}>{">"}></div>
+        <div style={{fontSize:28, marginBottom:10}}>{">"}</div>
         <div style={{fontSize:14, fontWeight:700, color:Dark, marginBottom:6}}>
           Analyse en cours...
         </div>
