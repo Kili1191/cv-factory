@@ -1315,12 +1315,12 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
     setOffer("");
   };
 
-  const sc = s => s>=80?"#16a34a":s>=65?"#ca8a04":s>=50?"#ea580c":"#dc2626";
+  const sc = function(s) { return s >= 80?"#16a34a":s >= 65?"#ca8a04":s >= 50?"#ea580c":"#dc2626"; };
 
   if (ph === "loading") {
     return (
       <div style={{textAlign:"center", padding:"36px 20px"}}>
-        <div style={{fontSize:28, marginBottom:10}}>>></div>
+        <div style={{fontSize:28, marginBottom:10}}>{">"}</div>
         <div style={{fontSize:14, fontWeight:700, color:Dark, marginBottom:6}}>
           Analyse en cours...
         </div>
@@ -1563,7 +1563,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T }) {
     setLoad(false);
   };
 
-  const sc = s => s>=80?"#16a34a":s>=65?"#ca8a04":s>=50?"#ea580c":"#dc2626";
+  const sc = function(s) { return s >= 80?"#16a34a":s >= 65?"#ca8a04":s >= 50?"#ea580c":"#dc2626"; };
 
   return (
     <div>
@@ -1834,7 +1834,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
               display:"flex", alignItems:"center", gap:12, textAlign:"left",
             })
           }}>
-            <span style={{fontSize:26}}>></span>
+            <span style={{fontSize:26}}>{">"}</span>
             <div>
               <div style={{fontWeight:800, marginBottom:1}}>{T.ob_import}</div>
               <div style={{fontSize:11, opacity:.7, fontWeight:400}}>
@@ -2309,7 +2309,7 @@ export default function App() {
           })
         }}>
           {label}
-          <span style={{color:Gold, fontSize:18, lineHeight:1}}>></span>
+          <span style={{color:Gold, fontSize:18, lineHeight:1}}>{">"}</span>
         </button>
       ))}
       <div style={{
