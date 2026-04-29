@@ -157,6 +157,21 @@ const FR_T = {
   tr_section:"Traduction",
   tr_hint_backup:"Une version sauvegardee existe deja. Tu pourras la restaurer apres traduction depuis l'onglet Outils.",
   audit_btn:"Audit IA Recruteur",
+  bt_btn_title:"Transformer ce bullet en 5 versions",
+  bt_empty:"Ecris d'abord un bullet a transformer",
+  bt_err:"Erreur transformation: ",
+  bt_adopted:"Version adoptee",
+  bt_modal_title:"Transformer ce bullet",
+  bt_modal_sub:"5 versions dans 5 registres differents",
+  bt_original:"Original",
+  bt_loading:"Generation des 5 versions...",
+  bt_loading_sub:"5 a 8 secondes",
+  bt_simple:"Simple", bt_simple_hint:"Clarifie sans embellir",
+  bt_pro:"Pro", bt_pro_hint:"Corporate sobre, verbe d'action",
+  bt_ats:"ATS", bt_ats_hint:"Mots-cles metier maximises",
+  bt_premium:"Premium", bt_premium_hint:"Registre executive elegant",
+  bt_impact:"Impact", bt_impact_hint:"Avec estimation chiffree",
+  bt_adopt:"Adopter",
 };
 
 const EN_T = {
@@ -259,6 +274,21 @@ const EN_T = {
   tr_section:"Translation",
   tr_hint_backup:"A saved version already exists. You can restore it after translation from the Tools tab.",
   audit_btn:"AI Recruiter Audit",
+  bt_btn_title:"Transform this bullet into 5 versions",
+  bt_empty:"Write a bullet first to transform",
+  bt_err:"Transform error: ",
+  bt_adopted:"Version adopted",
+  bt_modal_title:"Transform this bullet",
+  bt_modal_sub:"5 versions in 5 different registers",
+  bt_original:"Original",
+  bt_loading:"Generating 5 versions...",
+  bt_loading_sub:"5 to 8 seconds",
+  bt_simple:"Simple", bt_simple_hint:"Clarifies without dressing up",
+  bt_pro:"Pro", bt_pro_hint:"Corporate tone, action verb",
+  bt_ats:"ATS", bt_ats_hint:"Maximizes industry keywords",
+  bt_premium:"Premium", bt_premium_hint:"Executive elegant register",
+  bt_impact:"Impact", bt_impact_hint:"With quantified estimate",
+  bt_adopt:"Adopt",
 };
 
 const THEMES = {
@@ -681,7 +711,7 @@ function SheetId({ cv, set, onClose, T }) {
 
 function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
   const { ux, ub } = MK(set);
-  const [imp, setImp] = useState(null);
+  const [trf, setTrf] = useState(null); // {expId, bulletIdx, original, levels|null, loading}
 
   const ax = () => set(p=>({...p,
     experience:[...p.experience, {
@@ -700,24 +730,54 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       ?{...e,bullets:e.bullets.filter((_,j)=>j!==i)}:e)
   }));
 
-  const improve = async (id, idx, text) => {
+  const openTransformer = async (id, idx, text) => {
     if (!apiKey) { notify(T.nk); return; }
-    if (!text.trim()) return;
-    setImp(id+"-"+idx);
+    if (!text || !text.trim()) {
+      notify(T.bt_empty || "Ecris d'abord un bullet a transformer");
+      return;
+    }
+    setTrf({ expId: id, bulletIdx: idx, original: text, levels: null, loading: true });
     try {
-      const r = await aiCall(
-        "Reformule ce bullet CV plus percutant chiffre max 15 mots meme langue: \""
-        + text
-        + "\". UNIQUEMENT la reformulation sans guillemets. " + NO_DASH,
-        apiKey
-      );
-      ub(id, idx, r.trim());
-      notify(T.okb);
-    } catch { notify(T.eb); }
-    setImp(null);
+      const p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
+        + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
+        + "en gardant la langue d'origine.\n\n"
+        + "PHRASE ORIGINALE:\n" + text + "\n\n"
+        + "REGISTRES (5 niveaux):\n"
+        + "1. simple: clarifie sans embellir, langage neutre, plus court si possible.\n"
+        + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
+        + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
+        + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
+        + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
+        + "REGLES:\n"
+        + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
+        + "- Maximum 18 mots par version.\n"
+        + "- " + NO_DASH + "\n"
+        + "- JSON valide strict uniquement.\n\n"
+        + '{\n'
+        + '  "simple": "version simple",\n'
+        + '  "pro": "version pro",\n'
+        + '  "ats": "version ats",\n'
+        + '  "premium": "version premium",\n'
+        + '  "impact": "version chiffree"\n'
+        + '}';
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setTrf(s => s ? { ...s, levels: r, loading: false } : null);
+    } catch (err) {
+      notify((T.bt_err || "Erreur transformation: ") + (err.message || ""));
+      setTrf(null);
+    }
+  };
+
+  const adoptVersion = (text) => {
+    if (!trf) return;
+    ub(trf.expId, trf.bulletIdx, text);
+    setTrf(null);
+    notify(T.bt_adopted || "Version adoptee");
   };
 
   return (
+    <>
     <Sheet title={T.edit_ex} onClose={onClose}>
       {cv.experience.map((ex,i) => (
         <div key={ex.id} style={{
@@ -745,17 +805,18 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
               <input value={b} onChange={e=>ub(ex.id,j,e.target.value)}
                 style={{...IN({padding:"7px 9px", fontSize:12, flex:1})}}/>
               <button
-                onClick={()=>improve(ex.id,j,b)}
-                disabled={imp===ex.id+"-"+j}
+                onClick={()=>openTransformer(ex.id,j,b)}
+                disabled={trf && trf.loading}
                 style={{
                   ...B({
-                    background:imp===ex.id+"-"+j?"#eee":"#fff9f0",
+                    background:(trf && trf.loading)?"#eee":"#fff9f0",
                     border:"1px solid "+Gold+"44",
                     borderRadius:5, padding:"4px 7px",
                     fontSize:11, color:Gold, flexShrink:0,
                   })
-                }}>
-                {imp===ex.id+"-"+j?"...":"*"}
+                }}
+                title={T.bt_btn_title || "Transformer ce bullet"}>
+                *
               </button>
               <button onClick={()=>db(ex.id,j)} style={{
                 ...B({color:"#e74c3c", fontSize:20, lineHeight:1,
@@ -777,6 +838,131 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       }}>{T.sh_addex}</button>
       <SaveBtn onClose={onClose} T={T}/>
     </Sheet>
+    {trf && (
+      <BulletTransformer
+        original={trf.original}
+        levels={trf.levels}
+        loading={trf.loading}
+        onAdopt={adoptVersion}
+        onClose={()=>{ if (!trf.loading) setTrf(null); }}
+        T={T}
+      />
+    )}
+    </>
+  );
+}
+
+function BulletTransformer({ original, levels, loading, onAdopt, onClose, T }) {
+  const cards = [
+    { key:"simple",  label:T.bt_simple,  hint:T.bt_simple_hint,  color:"#666" },
+    { key:"pro",     label:T.bt_pro,     hint:T.bt_pro_hint,     color:Dark },
+    { key:"ats",     label:T.bt_ats,     hint:T.bt_ats_hint,     color:"#1d4ed8" },
+    { key:"premium", label:T.bt_premium, hint:T.bt_premium_hint, color:Gold },
+    { key:"impact",  label:T.bt_impact,  hint:T.bt_impact_hint,  color:"#16a34a" },
+  ];
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1100,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:620, width:"100%",
+        maxHeight:"92vh", overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"18px 22px 14px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12,
+          position:"sticky", top:0, background:"#fff", zIndex:2,
+        }}>
+          <div style={{flex:1}}>
+            <div style={{fontSize:16, fontWeight:800, color:Dark}}>
+              {T.bt_modal_title}
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              {T.bt_modal_sub}
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} style={{
+            ...B({
+              width:32, height:32, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:16, fontWeight:700,
+              opacity:loading?.4:1,
+            })
+          }}>x</button>
+        </div>
+        <div style={{padding:"18px 22px"}}>
+          <div style={{
+            background:"#fafafa", border:"1px solid #eee",
+            borderRadius:9, padding:"10px 13px", marginBottom:14,
+          }}>
+            <div style={{
+              fontSize:9, fontWeight:800, color:"#888",
+              letterSpacing:1, textTransform:"uppercase", marginBottom:5,
+            }}>{T.bt_original}</div>
+            <div style={{fontSize:12, color:"#555", lineHeight:1.5, fontStyle:"italic"}}>
+              "{original}"
+            </div>
+          </div>
+          {loading && (
+            <div style={{
+              padding:"36px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:12,
+            }}>
+              <div style={{
+                width:48, height:48, margin:"0 auto 12px",
+                border:"3px solid "+Gold+"33", borderTopColor:Gold,
+                borderRadius:"50%", animation:"spin 1s linear infinite",
+              }}/>
+              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+              <div style={{fontSize:13, fontWeight:700, color:Dark}}>
+                {T.bt_loading}
+              </div>
+              <div style={{fontSize:11, color:"#888", marginTop:5}}>
+                {T.bt_loading_sub}
+              </div>
+            </div>
+          )}
+          {!loading && levels && cards.map(c => levels[c.key] && (
+            <div key={c.key} style={{
+              border:"1px solid #e5e0d6", borderRadius:11,
+              padding:"13px 15px", marginBottom:9,
+              transition:"all 200ms",
+            }}>
+              <div style={{
+                display:"flex", justifyContent:"space-between",
+                alignItems:"center", marginBottom:7,
+              }}>
+                <div style={{display:"flex", alignItems:"center", gap:8}}>
+                  <span style={{
+                    fontSize:10, fontWeight:800, color:"#fff",
+                    background:c.color, padding:"3px 9px", borderRadius:11,
+                    textTransform:"uppercase", letterSpacing:1,
+                  }}>{c.label}</span>
+                  <span style={{fontSize:10, color:"#888"}}>{c.hint}</span>
+                </div>
+                <button onClick={()=>onAdopt(levels[c.key])} style={{
+                  ...B({
+                    padding:"5px 11px", borderRadius:7,
+                    background:Dark, color:"#fff",
+                    fontSize:10, fontWeight:700,
+                    textTransform:"uppercase", letterSpacing:1,
+                  })
+                }}>{T.bt_adopt}</button>
+              </div>
+              <div style={{
+                fontSize:13, color:Dark, lineHeight:1.55,
+              }}>
+                {levels[c.key]}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
 
