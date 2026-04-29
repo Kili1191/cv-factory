@@ -2053,6 +2053,318 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   );
 }
 
+
+function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages, onRun, onClose }) {
+  const countries = [
+    ["FR", "France"], ["UK", "Royaume-Uni"], ["US", "Etats-Unis"],
+    ["DE", "Allemagne"], ["CH", "Suisse"], ["BE", "Belgique"],
+    ["LU", "Luxembourg"], ["ES", "Espagne"], ["IT", "Italie"],
+    ["AE", "Emirats Arabes Unis"], ["CA", "Canada"], ["AUTO", "Auto-detection"],
+  ];
+  
+  const verdictColor = (v) => {
+    if (!v) return "#666";
+    const x = v.toLowerCase();
+    if (x.includes("rappelle")) return "#16a34a";
+    if (x.includes("hesite")) return "#ca8a04";
+    return "#dc2626";
+  };
+  
+  const scoreColor = (s) => {
+    if (s >= 80) return "#16a34a";
+    if (s >= 65) return "#ca8a04";
+    if (s >= 50) return "#ea580c";
+    return "#dc2626";
+  };
+  
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:680, width:"100%",
+        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        {/* Header */}
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          position:"sticky", top:0, background:"#fff", zIndex:2,
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              Audit IA Recruteur
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              Analyse de ton CV par un recruteur senior virtuel
+            </div>
+          </div>
+          <button onClick={onClose} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18,
+              fontWeight:700,
+            })
+          }}>X</button>
+        </div>
+        
+        {/* Body */}
+        <div style={{padding:"22px 26px"}}>
+          
+          {/* Loader stylé */}
+          {loading && (
+            <div style={{
+              padding:"40px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:13, marginBottom:10,
+            }}>
+              <div style={{
+                width:64, height:64, margin:"0 auto 18px",
+                border:"4px solid "+Gold+"33",
+                borderTopColor:Gold,
+                borderRadius:"50%",
+                animation:"spin 1s linear infinite",
+              }}/>
+              <style>{`
+                @keyframes spin {
+                  to { transform: rotate(360deg); }
+                }
+                @keyframes pulse {
+                  0%, 100% { opacity: 1; }
+                  50% { opacity: 0.5; }
+                }
+              `}</style>
+              <div style={{
+                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
+                animation:"pulse 1.6s ease-in-out infinite",
+              }}>
+                {messages[msgIdx]}
+              </div>
+              <div style={{fontSize:11, color:"#888"}}>
+                L'analyse prend 15-30 secondes
+              </div>
+              {/* Progress bar fake */}
+              <div style={{
+                marginTop:18, height:4, background:"#e5dfd0",
+                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
+              }}>
+                <div style={{
+                  height:"100%", background:Gold,
+                  animation:"slide 2s ease-in-out infinite",
+                  width:"40%",
+                }}/>
+                <style>{`
+                  @keyframes slide {
+                    0% { transform: translateX(-100%); }
+                    50% { transform: translateX(150%); }
+                    100% { transform: translateX(400%); }
+                  }
+                `}</style>
+              </div>
+            </div>
+          )}
+          
+          {/* Form de pays - avant l'audit */}
+          {!loading && !result && (
+            <>
+              <div style={{
+                background:"#f8f4ec", border:"1px solid "+Gold+"55",
+                borderRadius:11, padding:"14px 16px", marginBottom:18,
+              }}>
+                <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:4}}>
+                  L'audit recruteur va analyser ton CV en profondeur
+                </div>
+                <div style={{fontSize:12, color:"#666", lineHeight:1.6}}>
+                  Score global, longueur, forces et faiblesses, mots-cles manquants, et verdict honnete d'un recruteur.
+                </div>
+              </div>
+              
+              <label style={{
+                display:"block", fontSize:12, fontWeight:700,
+                color:Dark, marginBottom:8, textTransform:"uppercase",
+                letterSpacing:1,
+              }}>
+                Pays cible (marche du travail)
+              </label>
+              <select 
+                value={country} 
+                onChange={e=>setCountry(e.target.value)}
+                style={{
+                  width:"100%", padding:"12px 14px", borderRadius:10,
+                  border:"1.5px solid #ddd", fontSize:14, color:Dark,
+                  background:"#fff", marginBottom:10, fontFamily:"inherit",
+                }}>
+                {countries.map(([code, name]) => (
+                  <option key={code} value={code}>{name}</option>
+                ))}
+              </select>
+              <div style={{
+                fontSize:11, color:"#888", marginBottom:20, lineHeight:1.5,
+              }}>
+                Chaque pays a ses codes (longueur, format, mots-cles attendus). L'IA adapte l'audit en consequence.
+              </div>
+              
+              <button onClick={onRun} style={{
+                ...B({
+                  width:"100%", padding:"15px 20px", borderRadius:11,
+                  background:"linear-gradient(135deg,"+Gold+",#a07840)",
+                  color:"#fff", fontWeight:800, fontSize:14,
+                })
+              }}>
+                Lancer l'audit recruteur
+              </button>
+            </>
+          )}
+          
+          {/* Résultat de l'audit */}
+          {!loading && result && (
+            <>
+              {/* Score global + verdict */}
+              <div style={{
+                display:"flex", gap:12, marginBottom:18,
+              }}>
+                <div style={{
+                  flex:1, padding:"18px 16px", borderRadius:12,
+                  background:scoreColor(result.score_global)+"15",
+                  border:"2px solid "+scoreColor(result.score_global),
+                  textAlign:"center",
+                }}>
+                  <div style={{fontSize:11, color:"#666", fontWeight:600, marginBottom:4}}>SCORE GLOBAL</div>
+                  <div style={{fontSize:36, fontWeight:800, color:scoreColor(result.score_global), lineHeight:1}}>
+                    {result.score_global}
+                  </div>
+                  <div style={{fontSize:11, color:"#666", marginTop:4}}>/ 100</div>
+                </div>
+                <div style={{
+                  flex:1.5, padding:"14px 16px", borderRadius:12,
+                  background:verdictColor(result.verdict_recruteur)+"15",
+                  border:"2px solid "+verdictColor(result.verdict_recruteur),
+                }}>
+                  <div style={{fontSize:11, color:"#666", fontWeight:600, marginBottom:4}}>VERDICT RECRUTEUR</div>
+                  <div style={{fontSize:18, fontWeight:800, color:verdictColor(result.verdict_recruteur), lineHeight:1.2, marginBottom:6}}>
+                    {result.verdict_recruteur}
+                  </div>
+                  <div style={{fontSize:11, color:"#444", lineHeight:1.5}}>
+                    {result.raison_verdict}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Première impression */}
+              {result.premiere_impression && (
+                <div style={{
+                  background:"#f8f4ec", borderLeft:"3px solid "+Gold,
+                  padding:"12px 14px", borderRadius:6, marginBottom:18,
+                  fontSize:12, color:"#444", fontStyle:"italic", lineHeight:1.6,
+                }}>
+                  <div style={{fontSize:10, fontWeight:700, color:Gold, textTransform:"uppercase", letterSpacing:1, marginBottom:4, fontStyle:"normal"}}>
+                    Premiere impression (5 sec)
+                  </div>
+                  "{result.premiere_impression}"
+                </div>
+              )}
+              
+              {/* Verdict longueur */}
+              {result.verdict_longueur && (
+                <div style={{
+                  padding:"10px 14px", borderRadius:9,
+                  background:"#fff8e1", border:"1px solid #ffc107",
+                  marginBottom:14, fontSize:12, color:"#664d03", lineHeight:1.6,
+                }}>
+                  <strong>Longueur :</strong> {result.verdict_longueur}
+                  {result.longueur_recommandation && <><br/><span style={{fontSize:11}}>{result.longueur_recommandation}</span></>}
+                </div>
+              )}
+              
+              {/* Forces */}
+              {result.forces && result.forces.length > 0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:800, color:"#16a34a", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
+                    Forces
+                  </div>
+                  {result.forces.map((f, i) => (
+                    <div key={i} style={{
+                      padding:"8px 12px", marginBottom:6, borderRadius:7,
+                      background:"#dcfce7", color:"#15803d", fontSize:12, lineHeight:1.5,
+                    }}>+ {f}</div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Faiblesses */}
+              {result.faiblesses && result.faiblesses.length > 0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:800, color:"#dc2626", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
+                    Faiblesses
+                  </div>
+                  {result.faiblesses.map((f, i) => (
+                    <div key={i} style={{
+                      padding:"8px 12px", marginBottom:6, borderRadius:7,
+                      background:"#fee2e2", color:"#991b1b", fontSize:12, lineHeight:1.5,
+                    }}>- {f}</div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Suggestions */}
+              {result.suggestions && result.suggestions.length > 0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:800, color:Gold, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
+                    Suggestions actionnables
+                  </div>
+                  {result.suggestions.map((s, i) => (
+                    <div key={i} style={{
+                      padding:"10px 14px", marginBottom:6, borderRadius:8,
+                      background:"#f8f4ec", border:"1px solid "+Gold+"33",
+                      fontSize:12, lineHeight:1.6, color:Dark,
+                      display:"flex", gap:8,
+                    }}>
+                      <span style={{color:Gold, fontWeight:800}}>{i+1}.</span>
+                      <span>{s}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Mots-clés manquants */}
+              {result.mots_cles_manquants && result.mots_cles_manquants.length > 0 && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:13, fontWeight:800, color:Dark, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
+                    Mots-cles a ajouter (ATS)
+                  </div>
+                  <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
+                    {result.mots_cles_manquants.map((k, i) => (
+                      <span key={i} style={{
+                        padding:"5px 11px", borderRadius:14,
+                        background:Dark, color:Gold, fontSize:11, fontWeight:600,
+                      }}>{k}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              <button onClick={onRun} style={{
+                ...B({
+                  width:"100%", padding:12, borderRadius:10,
+                  background:"#f0f0f0", color:"#666", fontWeight:700, fontSize:13,
+                  marginTop:8,
+                })
+              }}>
+                Relancer l'audit
+              </button>
+            </>
+          )}
+          
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [cv, setCV_]       = useState(() => {
     const s = lsG(SK.CV, null);
@@ -2083,6 +2395,11 @@ export default function App() {
   const [obMode, setObMode] = useState(null);
   const [obRaw, setObRaw]   = useState("");
   const [obImp, setObImp]   = useState(false);
+  const [showAudit, setShowAudit] = useState(false);
+  const [auditCountry, setAuditCountry] = useState("FR");
+  const [auditLoading, setAuditLoading] = useState(false);
+  const [auditResult, setAuditResult]   = useState(null);
+  const [auditMsgIdx, setAuditMsgIdx]   = useState(0);
   const cRef = useRef();
 
   const setCVFn = useCallback(fn => setCV_(p => {
@@ -2179,6 +2496,76 @@ export default function App() {
     notify(T.okr);
   }, [T, pushH, setCVFn, notify]);
 
+  const auditMessages = [
+    "Analyse de ton parcours en cours...",
+    "Comparaison aux standards du marche local...",
+    "Identification des forces et faiblesses...",
+    "Verification des mots-cles ATS...",
+    "Evaluation de la longueur et structure...",
+    "Generation des recommandations...",
+  ];
+  
+  useEffect(() => {
+    if (!auditLoading) return;
+    const interval = setInterval(() => {
+      setAuditMsgIdx(i => (i + 1) % auditMessages.length);
+    }, 2200);
+    return () => clearInterval(interval);
+  }, [auditLoading]);
+  
+  const runAudit = useCallback(async () => {
+    setAuditLoading(true);
+    setAuditResult(null);
+    setAuditMsgIdx(0);
+    
+    const expT = cv.experience.map(e =>
+      e.title + " chez " + e.company + " (" + e.period + "): "
+      + e.bullets.filter(b=>b).join("; ")
+    ).join(" | ");
+    const cvT = "Nom: " + cv.name + "\nTitre: " + cv.title
+      + "\nLocalisation: " + cv.location
+      + "\nAccroche: " + cv.summary
+      + "\nExperiences: " + expT
+      + "\nFormations: " + cv.education.map(e=>e.degree+" - "+e.school+" ("+e.period+")").join(" | ")
+      + "\nCompetences: " + cv.skills.filter(s=>s).join(", ")
+      + "\nLangues: " + cv.languages.filter(l=>l.lang).map(l=>l.lang+" "+l.level).join(", ")
+      + "\nCertifications: " + cv.certifications.filter(c=>c).join(", ");
+    
+    const countryName = ({
+      FR: "France", UK: "Royaume-Uni", US: "Etats-Unis", DE: "Allemagne",
+      CH: "Suisse", BE: "Belgique", LU: "Luxembourg", ES: "Espagne",
+      IT: "Italie", AE: "Emirats Arabes Unis", CA: "Canada", AUTO: "auto-detecte"
+    })[auditCountry] || auditCountry;
+    
+    const p = "Tu es un recruteur senior expert du marche " + countryName + " avec 20 ans d'experience. "
+      + "Audite ce CV du point de vue d'un recruteur qui le recevrait pour un poste senior. "
+      + "Sois HONNETE, DIRECT, sans complaisance. Aucune diplomatie. "
+      + "Tiens compte des codes specifiques du marche " + countryName + " (longueur, format, mots-cles, soft skills attendus).\n\n"
+      + "CV:\n" + cvT + "\n\n"
+      + "Reponds UNIQUEMENT en JSON valide strict, sans markdown:\n"
+      + '{'
+      + '"score_global":75,'
+      + '"verdict_longueur":"trop long",'
+      + '"longueur_recommandation":"Reduire de 30% - vise 1 page max pour ce profil sur le marche FR",'
+      + '"forces":["force concrete 1","force 2","force 3"],'
+      + '"faiblesses":["faiblesse precise 1 avec exemple","faiblesse 2","faiblesse 3"],'
+      + '"suggestions":["suggestion actionnable 1","suggestion 2","suggestion 3","suggestion 4","suggestion 5"],'
+      + '"mots_cles_manquants":["mot1","mot2","mot3"],'
+      + '"premiere_impression":"Ce que je pense en 5 secondes en tant que recruteur sur ce marche",'
+      + '"verdict_recruteur":"Je rappelle / Je passe / J\'hesite",'
+      + '"raison_verdict":"Pourquoi ce verdict en 1-2 phrases"'
+      + '}';
+    
+    try {
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setAuditResult(r);
+    } catch (err) {
+      notify("Erreur audit: " + err.message);
+    }
+    setAuditLoading(false);
+  }, [cv, auditCountry, notify]);
+  
   const onImport = useCallback(async () => {
     if (!obRaw.trim()) { notify(T.np2); return; }
     if (!apiKey) { notify(T.nk); return; }
@@ -2474,6 +2861,19 @@ export default function App() {
         apiKey={apiKey} notify={notify} T={T}/>}
       {modal==="edu" && <SheetEd cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {modal==="sk"  && <SheetSk cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
+      {showAudit && (
+        <AuditModal 
+          cv={cv}
+          country={auditCountry}
+          setCountry={setAuditCountry}
+          loading={auditLoading}
+          result={auditResult}
+          msgIdx={auditMsgIdx}
+          messages={auditMessages}
+          onRun={runAudit}
+          onClose={()=>{setShowAudit(false);setAuditResult(null);}}
+        />
+      )}
     </>
   );
 
@@ -2499,6 +2899,21 @@ export default function App() {
         {notif && <Notif msg={notif}/>}
         {Modals}
         {Onboard}
+        {!cvIsEmpty && obMode==="done" && (
+          <button onClick={()=>setShowAudit(true)} style={{
+            position:"fixed", bottom:24, right:24, zIndex:400,
+            padding:"14px 22px", borderRadius:50,
+            background:"linear-gradient(135deg,"+Gold+",#a07840)",
+            color:"#fff", fontWeight:800, fontSize:13,
+            border:"none", cursor:"pointer",
+            boxShadow:"0 8px 24px rgba(201,169,110,.4)",
+            display:"flex", alignItems:"center", gap:8,
+            fontFamily:"'Lato',sans-serif",
+          }}>
+            <span style={{fontSize:18}}>*</span>
+            <span>Audit IA Recruteur</span>
+          </button>
+        )}
         <div style={{
           display:"flex", height:"100vh",
           fontFamily:"'Lato',sans-serif",
@@ -2562,6 +2977,21 @@ export default function App() {
       {notif && <Notif msg={notif}/>}
       {Modals}
       {Onboard}
+      {!cvIsEmpty && obMode==="done" && (
+        <button onClick={()=>setShowAudit(true)} style={{
+          position:"fixed", bottom:78, right:14, zIndex:400,
+          padding:"12px 18px", borderRadius:50,
+          background:"linear-gradient(135deg,"+Gold+",#a07840)",
+          color:"#fff", fontWeight:800, fontSize:12,
+          border:"none", cursor:"pointer",
+          boxShadow:"0 8px 24px rgba(201,169,110,.4)",
+          display:"flex", alignItems:"center", gap:6,
+          fontFamily:"'Lato',sans-serif",
+        }}>
+          <span style={{fontSize:16}}>*</span>
+          <span>Audit IA</span>
+        </button>
+      )}
       {zoomed && (
         <div style={{
           position:"fixed", inset:0, zIndex:1500,
