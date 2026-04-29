@@ -159,6 +159,10 @@ const FR_T = {
   tr_hint_backup:"Une version sauvegardee existe deja. Tu pourras la restaurer apres traduction depuis l'onglet Outils.",
   audit_btn:"Audit IA Recruteur",
   bt_btn_title:"Transformer ce bullet en 5 versions",
+  ai_overwrite_warn:"Tu as deja un CV. Generer va l'ecraser. Continuer ?",
+  ai_existing_title:"Tu as deja un CV",
+  ai_existing_msg:"Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster avec une instruction libre ?",
+  ai_existing_btn:"Aller a Ajuster",
   bt_empty:"Ecris d'abord un bullet a transformer",
   bt_err:"Erreur transformation: ",
   bt_adopted:"Version adoptee",
@@ -276,6 +280,10 @@ const EN_T = {
   tr_hint_backup:"A saved version already exists. You can restore it after translation from the Tools tab.",
   audit_btn:"AI Recruiter Audit",
   bt_btn_title:"Transform this bullet into 5 versions",
+  ai_overwrite_warn:"You already have a CV. Generating will overwrite it. Continue?",
+  ai_existing_title:"You already have a CV",
+  ai_existing_msg:"Generating will overwrite your current CV. Want to adjust it with a free instruction instead?",
+  ai_existing_btn:"Go to Adjust",
   bt_empty:"Write a bullet first to transform",
   bt_err:"Transform error: ",
   bt_adopted:"Version adopted",
@@ -1275,7 +1283,7 @@ function CVAts({ cv, set, T }) {
   );
 }
 
-function AIPanel({ onGen, loading, apiKey, T }) {
+function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [job, setJob]   = useState("");
   const [sec, setSec]   = useState(0);
   const [yrs, setYrs]   = useState("");
@@ -1296,6 +1304,12 @@ function AIPanel({ onGen, loading, apiKey, T }) {
   );
 
   const go = () => {
+    if (!cvIsEmpty) {
+      const ok = window.confirm(
+        T.ai_overwrite_warn || "Tu as deja un CV. Generer va l'ecraser. Continuer ?"
+      );
+      if (!ok) return;
+    }
     const s = T.ai_secs[sec];
     const tStr = tone==="p"
       ? "elegant percutant chiffre"
@@ -1324,6 +1338,30 @@ function AIPanel({ onGen, loading, apiKey, T }) {
           fontSize:12, color:"#664d03",
         }}>
           {T.ai_nk}
+        </div>
+      )}
+      {!cvIsEmpty && (
+        <div style={{
+          background:"#fef2f2", border:"1px solid #fecaca",
+          borderRadius:9, padding:"11px 14px", marginBottom:14,
+          fontSize:12, color:"#991b1b",
+        }}>
+          <div style={{fontWeight:700, marginBottom:6}}>
+            {T.ai_existing_title || "Tu as deja un CV"}
+          </div>
+          <div style={{lineHeight:1.5, marginBottom:9, color:"#7f1d1d"}}>
+            {T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}
+          </div>
+          <button onClick={onSwitchToAdjust} style={{
+            ...B({
+              padding:"6px 12px", borderRadius:7,
+              background:Dark, color:"#fff",
+              fontSize:11, fontWeight:700,
+              textTransform:"uppercase", letterSpacing:1,
+            })
+          }}>
+            {T.ai_existing_btn || "Aller a Ajuster"}
+          </button>
         </div>
       )}
       <label style={LBL}>{T.ai_job}</label>
@@ -4171,12 +4209,15 @@ export default function App() {
       const parsed = parseJSON(txt);
       setCVFn(() => normCV(parsed));
       setObRaw("");
-      // Si on était en mode adapt, on va direct vers l'onglet Match (adaptation)
       const wasAdaptMode = obMode === "import-adapt";
       setObMode(null);
       if (wasAdaptMode) {
         setTab("ai");
         setAiMode("match");
+      } else {
+        // Apres import simple : aller sur Ajuster (le CV existe deja)
+        setTab("ai");
+        setAiMode("adjust");
       }
       notify(T.okimp);
     } catch { notify(T.ep); }
@@ -4256,7 +4297,8 @@ export default function App() {
         )}
       </div>
       {aiMode==="generate" && (
-        <AIPanel onGen={handleGen} loading={load} apiKey={apiKey} T={T}/>
+        <AIPanel onGen={handleGen} loading={load} apiKey={apiKey} T={T}
+          cvIsEmpty={cvIsEmpty} onSwitchToAdjust={()=>setAiMode("adjust")}/>
       )}
       {aiMode==="adjust" && (
         <AdjustPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
@@ -4611,6 +4653,25 @@ export default function App() {
       raw={obRaw} setRaw={setObRaw} imping={obImp}
       onImport={onImport} setTab={setTab} setAiMode={setAiMode}/>
   );
+
+  if (!hydrated) {
+    return (
+      <div suppressHydrationWarning style={{
+        minHeight:"100vh",
+        background:"#f8f6f1",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:"'Lato',sans-serif",
+      }}>
+        <div style={{
+          width:48, height:48,
+          border:"3px solid "+Gold+"33", borderTopColor:Gold,
+          borderRadius:"50%",
+          animation:"cvfSpin 1s linear infinite",
+        }}/>
+        <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
 
     if (!mob) {
     const tS = a => ({
