@@ -1166,13 +1166,20 @@ function AIPanel({ onGen, loading, apiKey, T }) {
   );
 }
 
-function AdjustPanel({ cv, setCVFn, notify, apiKey, T }) {
+function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillConsumed }) {
   const [inst, setInst]     = useState("");
   const [load, setLoad]     = useState(false);
   const [hist, setHist]     = useState([]);
   const [raw, setRaw]       = useState("");
   const [impOpen, setImpOpen] = useState(false);
   const [imping, setImping] = useState(false);
+
+  useEffect(() => {
+    if (prefillInst && prefillInst.trim()) {
+      setInst(prefillInst);
+      if (onPrefillConsumed) onPrefillConsumed();
+    }
+  }, [prefillInst, onPrefillConsumed]);
 
   const adjust = async () => {
     if (!inst.trim()) { notify(T.ni); return; }
@@ -2131,7 +2138,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 }
 
 
-function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages, onRun, onClose }) {
+function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages, onRun, onClose, onApplySuggestion, onIntegrateKeywords, kwLoading }) {
   const countries = [
     ["FR", "France"], ["UK", "Royaume-Uni"], ["US", "Etats-Unis"],
     ["DE", "Allemagne"], ["CH", "Suisse"], ["BE", "Belgique"],
@@ -2393,16 +2400,35 @@ function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages
                   <div style={{fontSize:13, fontWeight:800, color:Gold, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
                     Suggestions actionnables
                   </div>
+                  <div style={{fontSize:11, color:"#888", marginBottom:8, fontStyle:"italic"}}>
+                    Clique sur une suggestion pour l'envoyer dans Ajuster
+                  </div>
                   {result.suggestions.map((s, i) => (
-                    <div key={i} style={{
-                      padding:"10px 14px", marginBottom:6, borderRadius:8,
-                      background:"#f8f4ec", border:"1px solid "+Gold+"33",
-                      fontSize:12, lineHeight:1.6, color:Dark,
-                      display:"flex", gap:8,
-                    }}>
-                      <span style={{color:Gold, fontWeight:800}}>{i+1}.</span>
-                      <span>{s}</span>
-                    </div>
+                    <button key={i}
+                      onClick={()=>onApplySuggestion && onApplySuggestion(s)}
+                      style={{
+                        ...B({
+                          width:"100%", textAlign:"left",
+                          padding:"10px 14px", marginBottom:6, borderRadius:8,
+                          background:"#f8f4ec", border:"1px solid "+Gold+"33",
+                          fontSize:12, lineHeight:1.6, color:Dark,
+                          display:"flex", gap:8, alignItems:"flex-start",
+                          fontFamily:"inherit",
+                          transition:"all .15s",
+                        })
+                      }}
+                      onMouseEnter={e=>{
+                        e.currentTarget.style.background="#fdfaf3";
+                        e.currentTarget.style.borderColor=Gold;
+                      }}
+                      onMouseLeave={e=>{
+                        e.currentTarget.style.background="#f8f4ec";
+                        e.currentTarget.style.borderColor=Gold+"33";
+                      }}>
+                      <span style={{color:Gold, fontWeight:800, flexShrink:0}}>{i+1}.</span>
+                      <span style={{flex:1}}>{s}</span>
+                      <span style={{color:Gold, fontSize:14, fontWeight:700, flexShrink:0}}>{">"}</span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -2413,13 +2439,29 @@ function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages
                   <div style={{fontSize:13, fontWeight:800, color:Dark, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
                     Mots-cles a ajouter (ATS)
                   </div>
-                  <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
+                  <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:10}}>
                     {result.mots_cles_manquants.map((k, i) => (
                       <span key={i} style={{
                         padding:"5px 11px", borderRadius:14,
                         background:Dark, color:Gold, fontSize:11, fontWeight:600,
                       }}>{k}</span>
                     ))}
+                  </div>
+                  <button
+                    onClick={()=>onIntegrateKeywords && onIntegrateKeywords(result.mots_cles_manquants)}
+                    disabled={kwLoading}
+                    style={{
+                      ...B({
+                        width:"100%", padding:"11px", borderRadius:10,
+                        background:kwLoading?"#ccc":"linear-gradient(135deg,"+Dark+","+Gold+")",
+                        color:"#fff", fontWeight:700, fontSize:13,
+                        cursor:kwLoading?"wait":"pointer",
+                      })
+                    }}>
+                    {kwLoading ? "Integration en cours..." : "Integrer ces mots-cles dans le CV"}
+                  </button>
+                  <div style={{fontSize:10, color:"#888", marginTop:6, textAlign:"center", lineHeight:1.5}}>
+                    L'IA placera intelligemment les mots-cles dans tes bullets et ton accroche, sans bourrage.
                   </div>
                 </div>
               )}
@@ -2612,6 +2654,8 @@ export default function App() {
   const [trLoading, setTrLoading] = useState(false);
   const [trMsgIdx, setTrMsgIdx] = useState(0);
   const [hasBackup, setHasBackup] = useState(false);
+  const [adjPrefill, setAdjPrefill] = useState("");
+  const [kwLoading, setKwLoading] = useState(false);
   const cRef = useRef();
 
   const setCVFn = useCallback(fn => setCV_(p => {
@@ -2791,6 +2835,47 @@ export default function App() {
     }
   }, [cv, auditCountry, notify]);
 
+  const applyAuditSuggestion = useCallback((suggestion) => {
+    setShowAudit(false);
+    setAuditResult(null);
+    setAdjPrefill(suggestion);
+    setTab("ai");
+    setAiMode("adjust");
+    notify(locale==="en" ? "Suggestion sent to Adjust" : "Suggestion envoyee dans Ajuster");
+  }, [notify, locale]);
+
+  const integrateKeywords = useCallback(async (keywords) => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (!keywords || !keywords.length) return;
+    setKwLoading(true);
+    const kwList = keywords.join(", ");
+    const p = "Tu es expert CV et ATS. Voici un CV au format JSON et une liste de mots-cles ATS a integrer naturellement.\n\n"
+      + "REGLES STRICTES:\n"
+      + "1. Integre les mots-cles dans les bullets de realisations et l'accroche, la ou c'est CONTEXTUELLEMENT pertinent.\n"
+      + "2. Si un mot-cle ne peut pas etre integre naturellement, l'ajouter dans la liste skills plutot que de forcer.\n"
+      + "3. INTERDIT: bourrage de mots-cles, repetition mecanique, phrases qui sonnent fake.\n"
+      + "4. Preserve la structure JSON exacte, les IDs, les dates, les noms d'entreprises.\n"
+      + "5. N'invente jamais de realisations ou competences. Reformule l'existant pour y placer les mots-cles.\n"
+      + "6. Garde la langue d'origine du CV.\n"
+      + "7. Jamais de tirets cadratins (em dash / en dash). Utilise des virgules ou tirets simples.\n\n"
+      + "MOTS-CLES A INTEGRER: " + kwList + "\n\n"
+      + "CV:\n" + JSON.stringify(cv) + "\n\n"
+      + "Reponds UNIQUEMENT avec le CV modifie en JSON valide strict, sans markdown.";
+    try {
+      const txt = await aiCall(p);
+      const json = parseJSON(txt);
+      pushH();
+      setCVFn(() => normCV(json, cv));
+      setShowAudit(false);
+      setAuditResult(null);
+      notify(locale==="en" ? "Keywords integrated" : "Mots-cles integres");
+    } catch (err) {
+      notify((locale==="en" ? "Integration error: " : "Erreur integration: ") + (err.message || ""));
+    } finally {
+      setKwLoading(false);
+    }
+  }, [cv, apiKey, T, pushH, setCVFn, notify, locale]);
+
   const runTranslate = useCallback(async () => {
     if (!apiKey) { notify(T.tr_nk); return; }
     setTrLoading(true);
@@ -2945,7 +3030,9 @@ export default function App() {
         <AIPanel onGen={handleGen} loading={load} apiKey={apiKey} T={T}/>
       )}
       {aiMode==="adjust" && (
-        <AdjustPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}/>
+        <AdjustPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
+          prefillInst={adjPrefill}
+          onPrefillConsumed={()=>setAdjPrefill("")}/>
       )}
       {aiMode==="match" && (
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}/>
@@ -3166,6 +3253,9 @@ export default function App() {
           messages={auditMessages}
           onRun={runAudit}
           onClose={()=>{setShowAudit(false);setAuditResult(null);}}
+          onApplySuggestion={applyAuditSuggestion}
+          onIntegrateKeywords={integrateKeywords}
+          kwLoading={kwLoading}
         />
       )}
       {showTranslate && (
