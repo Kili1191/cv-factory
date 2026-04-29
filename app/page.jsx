@@ -421,10 +421,12 @@ const TEMPLATES = [
 ];
 
 function lsG(k, fb=null) {
+  if (typeof window === "undefined") return fb;
   try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fb; }
   catch { return fb; }
 }
 function lsS(k, v) {
+  if (typeof window === "undefined") return;
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
 }
 
@@ -3497,22 +3499,18 @@ function VersionsModal({ versions, currentCv, onSave, onLoad, onDelete, onClose 
 
 
 export default function App() {
-  const [cv, setCV_]       = useState(() => {
-    const s = lsG(SK.CV, null);
-    if (!s) return EMPTY;
-    return {
-      ...EMPTY, ...s,
-      skills:       Array.isArray(s.skills)        ? s.skills        : EMPTY.skills,
-      languages:    Array.isArray(s.languages)     ? s.languages     : EMPTY.languages,
-      certifications: Array.isArray(s.certifications) ? s.certifications : EMPTY.certifications,
-      experience:   Array.isArray(s.experience)    ? s.experience    : EMPTY.experience,
-      education:    Array.isArray(s.education)     ? s.education     : EMPTY.education,
-    };
-  });
-  const [thN, setThN_]     = useState(() => lsG(SK.TH, "executive"));
-  const [layout, setLy_]   = useState(() => lsG(SK.LY, "sidebar"));
-  const [apiKey, setAK_]   = useState(() => lsG(SK.KY, "") || "server-managed");
-  const [locale, setLc_]   = useState(() => lsG(SK.LC, "fr"));
+  // === HYDRATION-SAFE STATE INITIALIZATION ===
+  // All states that depend on localStorage or window are initialized to
+  // deterministic defaults. They are hydrated from localStorage in a useEffect
+  // below, AFTER the first client render matches the server render.
+  // This eliminates React hydration errors #418 / #423.
+  const [hydrated, setHydrated] = useState(false);
+
+  const [cv, setCV_]       = useState(EMPTY);
+  const [thN, setThN_]     = useState("executive");
+  const [layout, setLy_]   = useState("sidebar");
+  const [apiKey, setAK_]   = useState("server-managed");
+  const [locale, setLc_]   = useState("fr");
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
   const [load, setLoad]     = useState(false);
@@ -3550,9 +3548,36 @@ export default function App() {
   const [truthLoading, setTruthLoading] = useState(false);
   const [truthResult, setTruthResult] = useState(null);
   const [showVersions, setShowVersions] = useState(false);
-  const [versions, setVersions]       = useState(() => lsG(SK.VS, []));
+  const [versions, setVersions]       = useState([]);
   const [bt, setBt]                   = useState(null);
   const cRef = useRef();
+
+  // Hydrate from localStorage AFTER first render. This is the only safe
+  // moment to read localStorage in a Next.js / SSR context.
+  useEffect(() => {
+    const savedCV = lsG(SK.CV, null);
+    if (savedCV) {
+      setCV_({
+        ...EMPTY, ...savedCV,
+        skills:         Array.isArray(savedCV.skills)         ? savedCV.skills         : EMPTY.skills,
+        languages:      Array.isArray(savedCV.languages)      ? savedCV.languages      : EMPTY.languages,
+        certifications: Array.isArray(savedCV.certifications) ? savedCV.certifications : EMPTY.certifications,
+        experience:     Array.isArray(savedCV.experience)     ? savedCV.experience     : EMPTY.experience,
+        education:      Array.isArray(savedCV.education)      ? savedCV.education      : EMPTY.education,
+      });
+    }
+    const savedTh = lsG(SK.TH, "executive");
+    if (savedTh !== "executive") setThN_(savedTh);
+    const savedLy = lsG(SK.LY, "sidebar");
+    if (savedLy !== "sidebar") setLy_(savedLy);
+    const savedKy = lsG(SK.KY, "");
+    if (savedKy) setAK_(savedKy);
+    const savedLc = lsG(SK.LC, "fr");
+    if (savedLc !== "fr") setLc_(savedLc);
+    const savedVs = lsG(SK.VS, []);
+    if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
+    setHydrated(true);
+  }, []);
 
   const setCVFn = useCallback(fn => setCV_(p => {
     const n = typeof fn==="function" ? fn(p) : fn;
