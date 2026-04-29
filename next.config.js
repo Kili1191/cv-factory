@@ -9,6 +9,8 @@ const nextConfig = {
         fs: false,
         path: false,
       };
+    } else {
+      config.externals = [...(config.externals || []), 'canvas', 'pdfjs-dist'];
     }
     return config;
   },
