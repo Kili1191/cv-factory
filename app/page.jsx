@@ -712,6 +712,9 @@ function SheetId({ cv, set, onClose, T }) {
 function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
   const { ux, ub } = MK(set);
   const [trf, setTrf] = useState(null); // {expId, bulletIdx, original, levels|null, loading}
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const ax = () => set(p=>({...p,
     experience:[...p.experience, {
@@ -838,7 +841,7 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       }}>{T.sh_addex}</button>
       <SaveBtn onClose={onClose} T={T}/>
     </Sheet>
-    {trf && (
+    {mounted && trf && (
       <BulletTransformer
         original={trf.original}
         levels={trf.levels}
@@ -915,9 +918,9 @@ function BulletTransformer({ original, levels, loading, onAdopt, onClose, T }) {
               <div style={{
                 width:48, height:48, margin:"0 auto 12px",
                 border:"3px solid "+Gold+"33", borderTopColor:Gold,
-                borderRadius:"50%", animation:"spin 1s linear infinite",
+                borderRadius:"50%",
+                animation:"cvfSpin 1s linear infinite",
               }}/>
-              <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
               <div style={{fontSize:13, fontWeight:700, color:Dark}}>
                 {T.bt_loading}
               </div>
@@ -4591,6 +4594,7 @@ export default function App() {
     return (
       <>
         <link href={FONT} rel="stylesheet"/>
+        <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
         {notif && <Notif msg={notif}/>}
         {Modals}
         {Onboard}
@@ -4669,6 +4673,7 @@ export default function App() {
     return (
     <>
       <link href={FONT} rel="stylesheet"/>
+      <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
       {notif && <Notif msg={notif}/>}
       {Modals}
       {Onboard}
