@@ -1315,12 +1315,12 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
     setOffer("");
   };
 
-  const sc = function(s) { return s >= 80?"#16a34a":s >= 65?"#ca8a04":s >= 50?"#ea580c":"#dc2626"; };
+  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
 
   if (ph === "loading") {
     return (
       <div style={{textAlign:"center", padding:"36px 20px"}}>
-        <div style={{fontSize:28, marginBottom:10}}>{">"}</div>
+        <div style={{fontSize:28, marginBottom:10}}>{">"}></div>
         <div style={{fontSize:14, fontWeight:700, color:Dark, marginBottom:6}}>
           Analyse en cours...
         </div>
@@ -1563,7 +1563,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T }) {
     setLoad(false);
   };
 
-  const sc = function(s) { return s >= 80?"#16a34a":s >= 65?"#ca8a04":s >= 50?"#ea580c":"#dc2626"; };
+  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
 
   return (
     <div>
@@ -1936,7 +1936,7 @@ export default function App() {
   });
   const [thN, setThN_]     = useState(() => lsG(SK.TH, "executive"));
   const [layout, setLy_]   = useState(() => lsG(SK.LY, "sidebar"));
-  const [apiKey, setAK_]   = useState(() => lsG(SK.KY, ""));
+  const [apiKey, setAK_]   = useState(() => lsG(SK.KY, "") || "server-managed");
   const [locale, setLc_]   = useState(() => lsG(SK.LC, "fr"));
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
