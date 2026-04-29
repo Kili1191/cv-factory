@@ -5,7 +5,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 const FONT = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&family=Montserrat:wght@700&family=Open+Sans:wght@600&display=swap";
 const Gold = "#c9a96e";
 const Dark = "#1a1a2e";
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs" };
 
 const FR_T = {
   appName:"CV Factory", appSub:"L'IA qui boost et adapte ton CV",
@@ -1338,7 +1338,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
   );
 }
 
-function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
+function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest }) {
   const [offer, setOffer] = useState("");
   const [load, setLoad]   = useState(false);
   const [res, setRes]     = useState(null);
@@ -1370,12 +1370,18 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
     const eduJ = cv.education.map((e,i) =>
       JSON.stringify({id:i+1, degree:e.degree, school:e.school, period:e.period})
     ).join(",");
-    const p = "Expert recrutement. Reecris ce CV pour l'offre fournie.\n"
+    const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
       +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
       +"REGLES: ne pas inventer, adapter mots-cles offre, pas de tirets cadratins.\n"
+      +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
       +'JSON uniquement: {"match_score":75,"job_title":"","company":"",'
       +'"key_requirements":["r1","r2","r3"],"keywords_matched":["k1","k2"],'
-      +'"keywords_to_add":["k1","k2"],"cover_letter_hook":"accroche",'
+      +'"keywords_to_add":["k1","k2"],'
+      +'"hidden_signals":["signal cache 1 que la plupart ne voient pas","signal 2"],'
+      +'"culture_decode":"Ce que dit l offre sur la culture reelle de l entreprise en 2 phrases",'
+      +'"seniority_decode":"Niveau reellement attendu vs ce qui est ecrit",'
+      +'"likely_interview_questions":["q1","q2","q3","q4","q5"],'
+      +'"cover_letter_hook":"accroche",'
       +'"cv_optimized":{"name":"'+cv.name+'","title":"","email":"'+cv.email+'",'
       +'"phone":"'+cv.phone+'","location":"'+cv.location+'","linkedin":"'+cv.linkedin+'",'
       +'"summary":"","experience":['+expJ+'],"education":['+eduJ+'],'
@@ -1507,6 +1513,62 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
             </div>
           </div>
         )}
+        {res.hidden_signals && res.hidden_signals.length > 0 && (
+          <div style={{
+            background:"#fef3c7", border:"1px solid #fbbf24",
+            borderRadius:9, padding:"10px 13px", marginBottom:10,
+          }}>
+            <div style={{fontSize:10, fontWeight:700, color:"#92400e", marginBottom:6}}>
+              Signaux caches dans l'offre
+            </div>
+            {res.hidden_signals.map((s,i) => (
+              <div key={i} style={{fontSize:12, color:"#78350f", marginBottom:4, lineHeight:1.5}}>
+                {"> "}{s}
+              </div>
+            ))}
+          </div>
+        )}
+        {res.culture_decode && (
+          <div style={{
+            background:"#ede9fe", border:"1px solid #c4b5fd",
+            borderRadius:9, padding:"10px 13px", marginBottom:10,
+          }}>
+            <div style={{fontSize:10, fontWeight:700, color:"#5b21b6", marginBottom:5}}>
+              Culture entreprise (decodee)
+            </div>
+            <div style={{fontSize:12, color:"#4c1d95", lineHeight:1.5}}>
+              {res.culture_decode}
+            </div>
+          </div>
+        )}
+        {res.seniority_decode && (
+          <div style={{
+            background:"#f0fdf4", border:"1px solid #86efac",
+            borderRadius:9, padding:"10px 13px", marginBottom:10,
+          }}>
+            <div style={{fontSize:10, fontWeight:700, color:"#166534", marginBottom:5}}>
+              Niveau attendu (decode)
+            </div>
+            <div style={{fontSize:12, color:"#14532d", lineHeight:1.5}}>
+              {res.seniority_decode}
+            </div>
+          </div>
+        )}
+        {res.likely_interview_questions && res.likely_interview_questions.length > 0 && (
+          <div style={{
+            background:"#fee2e2", border:"1px solid #fca5a5",
+            borderRadius:9, padding:"10px 13px", marginBottom:12,
+          }}>
+            <div style={{fontSize:10, fontWeight:700, color:"#991b1b", marginBottom:6}}>
+              Questions probables en entretien
+            </div>
+            {res.likely_interview_questions.map((q,i) => (
+              <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
+                {(i+1)+". "}{q}
+              </div>
+            ))}
+          </div>
+        )}
         <button onClick={apply} style={{
           ...B({
             width:"100%", padding:13, borderRadius:11,
@@ -1516,6 +1578,19 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T }) {
         }}>
           Appliquer ce CV adapte
         </button>
+        {onPackRequest && (
+          <button onClick={()=>onPackRequest(offer, res)} style={{
+            ...B({
+              width:"100%", padding:13, borderRadius:11,
+              background:"linear-gradient(135deg,"+Dark+","+Gold+")",
+              color:"#fff", fontWeight:800, fontSize:14, marginBottom:8,
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            })
+          }}>
+            <span style={{fontSize:16}}>{">"}</span>
+            <span>Generer la candidature complete</span>
+          </button>
+        )}
         <button onClick={()=>{setPh("input");setRes(null);}} style={{
           ...B({
             width:"100%", padding:10, borderRadius:9,
@@ -2614,6 +2689,612 @@ function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBackup, onRun, onC
 }
 
 
+function ApplicationPackModal({ pack, loading, msgIdx, onClose, onCopy }) {
+  const [activeTab, setActiveTab] = useState("cover");
+  const tabs = [
+    ["cover",   "Lettre"],
+    ["linkedin","LinkedIn"],
+    ["email",   "Email"],
+    ["pitch",   "Pitch"],
+    ["star",    "Reponses STAR"],
+  ];
+  const loadingMsgs = [
+    "Redaction de la lettre de motivation...",
+    "Composition du message LinkedIn...",
+    "Preparation de l'email de candidature...",
+    "Construction du pitch d'entretien...",
+    "Generation des reponses STAR...",
+    "Finalisation de la candidature...",
+  ];
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:780, width:"100%",
+        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          position:"sticky", top:0, background:"#fff", zIndex:2,
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              Candidature complete
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              CV + Lettre + LinkedIn + Email + Pitch + STAR
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
+              opacity:loading?.4:1,
+            })
+          }}>X</button>
+        </div>
+
+        <div style={{padding:"22px 26px"}}>
+          {loading ? (
+            <div style={{
+              padding:"40px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:13,
+            }}>
+              <div style={{
+                width:64, height:64, margin:"0 auto 18px",
+                border:"4px solid "+Gold+"33",
+                borderTopColor:Gold,
+                borderRadius:"50%",
+                animation:"spin 1s linear infinite",
+              }}/>
+              <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
+                @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+              `}</style>
+              <div style={{
+                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
+                animation:"pulse 1.6s ease-in-out infinite",
+              }}>
+                {loadingMsgs[msgIdx % loadingMsgs.length]}
+              </div>
+              <div style={{fontSize:11, color:"#888"}}>
+                La generation prend 25-40 secondes
+              </div>
+              <div style={{
+                marginTop:18, height:4, background:"#e5dfd0",
+                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
+              }}>
+                <div style={{
+                  height:"100%", background:Gold,
+                  animation:"slide 2s ease-in-out infinite",
+                  width:"40%",
+                }}/>
+              </div>
+            </div>
+          ) : pack ? (
+            <>
+              <div style={{
+                display:"flex", gap:4, marginBottom:18,
+                borderBottom:"1px solid #eee", overflowX:"auto",
+              }}>
+                {tabs.map(([k,l]) => (
+                  <button key={k} onClick={()=>setActiveTab(k)} style={{
+                    ...B({
+                      padding:"9px 14px", borderRadius:0,
+                      background:"transparent",
+                      color:activeTab===k?Dark:"#888",
+                      fontWeight:activeTab===k?700:500, fontSize:12,
+                      borderBottom:activeTab===k?"2.5px solid "+Gold:"2.5px solid transparent",
+                      whiteSpace:"nowrap", flexShrink:0,
+                    })
+                  }}>{l}</button>
+                ))}
+              </div>
+
+              {activeTab==="cover" && pack.cover_letter && (
+                <div>
+                  <Section title="Lettre de motivation" content={pack.cover_letter} onCopy={onCopy}/>
+                </div>
+              )}
+              {activeTab==="linkedin" && pack.linkedin_message && (
+                <div>
+                  <Section title="Message LinkedIn au recruteur" content={pack.linkedin_message} onCopy={onCopy}/>
+                </div>
+              )}
+              {activeTab==="email" && pack.application_email && (
+                <div>
+                  {pack.application_email.subject && (
+                    <Section title="Objet de l'email" content={pack.application_email.subject} onCopy={onCopy} small/>
+                  )}
+                  {pack.application_email.body && (
+                    <Section title="Corps de l'email" content={pack.application_email.body} onCopy={onCopy}/>
+                  )}
+                </div>
+              )}
+              {activeTab==="pitch" && pack.interview_pitch && (
+                <div>
+                  <div style={{
+                    fontSize:11, color:"#888", marginBottom:8, fontStyle:"italic",
+                  }}>
+                    Reponse a "Tell me about yourself" - 60 secondes max
+                  </div>
+                  <Section title="Pitch d'introduction" content={pack.interview_pitch} onCopy={onCopy}/>
+                </div>
+              )}
+              {activeTab==="star" && pack.star_answers && pack.star_answers.length > 0 && (
+                <div>
+                  <div style={{
+                    fontSize:11, color:"#888", marginBottom:14, fontStyle:"italic",
+                  }}>
+                    Reponses preparees aux questions probables (methode STAR)
+                  </div>
+                  {pack.star_answers.map((qa, i) => (
+                    <div key={i} style={{
+                      marginBottom:18, paddingBottom:14,
+                      borderBottom:i < pack.star_answers.length-1 ? "1px solid #eee" : "none",
+                    }}>
+                      <div style={{
+                        fontSize:12, fontWeight:700, color:Dark, marginBottom:8,
+                        background:"#fef3c7", padding:"8px 11px", borderRadius:7,
+                      }}>
+                        Q{i+1}: {qa.question}
+                      </div>
+                      {["situation","task","action","result"].map(k => qa[k] && (
+                        <div key={k} style={{marginBottom:7}}>
+                          <div style={{
+                            fontSize:9, fontWeight:800, color:Gold,
+                            textTransform:"uppercase", letterSpacing:1, marginBottom:3,
+                          }}>{k}</div>
+                          <div style={{
+                            fontSize:12, color:"#444", lineHeight:1.6,
+                            paddingLeft:10, borderLeft:"2px solid "+Gold+"55",
+                          }}>{qa[k]}</div>
+                        </div>
+                      ))}
+                      <button onClick={()=>onCopy && onCopy(
+                        "Q: "+qa.question+"\n\n"
+                        +"S: "+(qa.situation||"")+"\n"
+                        +"T: "+(qa.task||"")+"\n"
+                        +"A: "+(qa.action||"")+"\n"
+                        +"R: "+(qa.result||"")
+                      )} style={{
+                        ...B({
+                          marginTop:6, padding:"6px 11px", borderRadius:6,
+                          background:"#f5f5f5", color:"#666", fontSize:11, fontWeight:600,
+                        })
+                      }}>Copier cette reponse</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Section({ title, content, onCopy, small }) {
+  return (
+    <div style={{marginBottom:14}}>
+      <div style={{
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        marginBottom:6,
+      }}>
+        <div style={{fontSize:11, fontWeight:700, color:Gold, textTransform:"uppercase", letterSpacing:1}}>
+          {title}
+        </div>
+        <button onClick={()=>onCopy && onCopy(content)} style={{
+          ...B({
+            padding:"5px 11px", borderRadius:6,
+            background:"#f5f5f5", color:"#666", fontSize:11, fontWeight:600,
+          })
+        }}>Copier</button>
+      </div>
+      <div style={{
+        background:"#fdfaf3", border:"1px solid "+Gold+"33",
+        borderRadius:9, padding:"12px 14px",
+        fontSize:small?12:13, color:"#333", lineHeight:1.7,
+        whiteSpace:"pre-wrap", fontFamily:"'Lato',sans-serif",
+      }}>
+        {content}
+      </div>
+    </div>
+  );
+}
+
+
+function PositioningModal({ result, loading, onAdopt, onClose }) {
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:780, width:"100%",
+        maxHeight:"92vh", overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          position:"sticky", top:0, background:"#fff", zIndex:2,
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              Positionnement de carriere
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              3 angles strategiques pour ton parcours
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
+              opacity:loading?.4:1,
+            })
+          }}>X</button>
+        </div>
+        <div style={{padding:"22px 26px"}}>
+          {loading && (
+            <div style={{
+              padding:"40px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:13,
+            }}>
+              <div style={{
+                width:64, height:64, margin:"0 auto 18px",
+                border:"4px solid "+Gold+"33", borderTopColor:Gold,
+                borderRadius:"50%", animation:"spin 1s linear infinite",
+              }}/>
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              <div style={{fontSize:14, fontWeight:700, color:Dark}}>
+                Analyse strategique de ton parcours...
+              </div>
+              <div style={{fontSize:11, color:"#888", marginTop:6}}>
+                15-25 secondes
+              </div>
+            </div>
+          )}
+          {!loading && result && result.angles && result.angles.map((a, i) => (
+            <div key={i} style={{
+              border:"1px solid #e5e0d6", borderRadius:11,
+              padding:"16px 18px", marginBottom:12,
+              background:i===0?"#fdfaf3":"#fff",
+            }}>
+              <div style={{
+                display:"flex", alignItems:"center", gap:8, marginBottom:8,
+              }}>
+                <span style={{
+                  fontSize:11, fontWeight:800, color:"#fff",
+                  background:Gold, padding:"3px 9px", borderRadius:11,
+                  letterSpacing:1, textTransform:"uppercase",
+                }}>Angle {i+1}</span>
+                {a.salary_range && (
+                  <span style={{
+                    fontSize:11, color:"#16a34a", fontWeight:700,
+                    background:"#dcfce7", padding:"3px 9px", borderRadius:11,
+                  }}>{a.salary_range}</span>
+                )}
+              </div>
+              <div style={{fontSize:17, fontWeight:800, color:Dark, marginBottom:6}}>
+                {a.title}
+              </div>
+              {a.credibility && (
+                <div style={{fontSize:12, color:"#555", lineHeight:1.6, marginBottom:10}}>
+                  {a.credibility}
+                </div>
+              )}
+              {a.key_points && a.key_points.length > 0 && (
+                <div style={{marginBottom:10}}>
+                  <div style={{fontSize:10, fontWeight:700, color:Gold, marginBottom:5, textTransform:"uppercase", letterSpacing:1}}>
+                    A mettre en avant
+                  </div>
+                  {a.key_points.map((p,j) => (
+                    <div key={j} style={{fontSize:12, color:"#333", marginBottom:3, paddingLeft:8}}>
+                      {"+ "}{p}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {a.target_employers && (
+                <div style={{
+                  fontSize:11, color:"#666",
+                  background:"#f5f5f5", padding:"7px 10px", borderRadius:7,
+                  marginBottom:10,
+                }}>
+                  <strong>Cible:</strong> {a.target_employers}
+                </div>
+              )}
+              {a.new_summary && (
+                <div style={{
+                  background:"#fff8eb", border:"1px solid #f0e0a8",
+                  borderRadius:7, padding:"9px 11px", marginBottom:10,
+                  fontSize:11, color:"#664d00", fontStyle:"italic", lineHeight:1.6,
+                }}>
+                  "{a.new_summary}"
+                </div>
+              )}
+              <button onClick={()=>onAdopt(a)} style={{
+                ...B({
+                  width:"100%", padding:"10px", borderRadius:9,
+                  background:"linear-gradient(135deg,"+Dark+","+Gold+")",
+                  color:"#fff", fontWeight:700, fontSize:12,
+                })
+              }}>
+                Adopter cet angle (titre + accroche)
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function TruthModal({ result, loading, onClose, onApplyFix }) {
+  const typeColor = (t) => {
+    const c = (t||"").toLowerCase();
+    if (c.includes("bullshit") || c.includes("pretentieux")) return "#dc2626";
+    if (c.includes("incoherent") || c.includes("risque")) return "#dc2626";
+    if (c.includes("vague") || c.includes("generique")) return "#ea580c";
+    if (c.includes("faible")) return "#ca8a04";
+    return "#666";
+  };
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:760, width:"100%",
+        maxHeight:"92vh", overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+          position:"sticky", top:0, background:"#fff", zIndex:2,
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              Truth Check
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              Phrases faibles, vagues ou risquees detectees
+            </div>
+          </div>
+          <button onClick={onClose} disabled={loading} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
+              opacity:loading?.4:1,
+            })
+          }}>X</button>
+        </div>
+        <div style={{padding:"22px 26px"}}>
+          {loading && (
+            <div style={{
+              padding:"40px 20px", textAlign:"center",
+              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
+              borderRadius:13,
+            }}>
+              <div style={{
+                width:64, height:64, margin:"0 auto 18px",
+                border:"4px solid "+Gold+"33", borderTopColor:Gold,
+                borderRadius:"50%", animation:"spin 1s linear infinite",
+              }}/>
+              <div style={{fontSize:14, fontWeight:700, color:Dark}}>
+                Analyse honnete de ton CV...
+              </div>
+              <div style={{fontSize:11, color:"#888", marginTop:6}}>
+                15-25 secondes
+              </div>
+            </div>
+          )}
+          {!loading && result && (
+            <>
+              {result.overall_verdict && (
+                <div style={{
+                  background:"#fef3c7", border:"1px solid #fbbf24",
+                  borderRadius:9, padding:"12px 14px", marginBottom:14,
+                  fontSize:13, color:"#78350f", lineHeight:1.6,
+                }}>
+                  <strong>Verdict global: </strong>{result.overall_verdict}
+                </div>
+              )}
+              {result.issues && result.issues.length > 0 ? result.issues.map((iss, i) => (
+                <div key={i} style={{
+                  border:"1px solid #e5e0d6", borderRadius:10,
+                  padding:"13px 15px", marginBottom:10,
+                }}>
+                  <div style={{display:"flex", gap:8, alignItems:"center", marginBottom:7, flexWrap:"wrap"}}>
+                    <span style={{
+                      fontSize:10, fontWeight:800, color:"#fff",
+                      background:typeColor(iss.type),
+                      padding:"3px 9px", borderRadius:10,
+                      textTransform:"uppercase", letterSpacing:1,
+                    }}>{iss.type || "issue"}</span>
+                    {iss.location && (
+                      <span style={{
+                        fontSize:10, color:"#666",
+                        background:"#f5f5f5", padding:"3px 8px", borderRadius:8,
+                        fontFamily:"monospace",
+                      }}>{iss.location}</span>
+                    )}
+                  </div>
+                  <div style={{
+                    fontSize:12, color:"#666", fontStyle:"italic",
+                    background:"#fee2e2", padding:"7px 10px", borderRadius:6,
+                    marginBottom:7, lineHeight:1.5,
+                  }}>
+                    "{iss.quote}"
+                  </div>
+                  {iss.why && (
+                    <div style={{fontSize:11, color:"#7f1d1d", marginBottom:8, lineHeight:1.5}}>
+                      <strong>Pourquoi: </strong>{iss.why}
+                    </div>
+                  )}
+                  {iss.fix && (
+                    <div style={{
+                      background:"#dcfce7", border:"1px solid #86efac",
+                      borderRadius:7, padding:"8px 11px",
+                      fontSize:12, color:"#14532d", lineHeight:1.6,
+                    }}>
+                      <div style={{fontSize:9, fontWeight:800, color:"#16a34a", marginBottom:3, textTransform:"uppercase", letterSpacing:1}}>
+                        Reformulation proposee
+                      </div>
+                      {iss.fix}
+                    </div>
+                  )}
+                  {iss.fix && onApplyFix && (
+                    <button onClick={()=>onApplyFix(iss)} style={{
+                      ...B({
+                        marginTop:8, width:"100%", padding:"8px", borderRadius:7,
+                        background:"#fdfaf3", border:"1px solid "+Gold+"55",
+                        color:Dark, fontWeight:600, fontSize:11,
+                      })
+                    }}>
+                      Envoyer cette correction dans Ajuster
+                    </button>
+                  )}
+                </div>
+              )) : (
+                <div style={{
+                  textAlign:"center", padding:"30px 20px",
+                  fontSize:14, color:"#16a34a", fontWeight:700,
+                }}>
+                  Aucun probleme majeur detecte
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function VersionsModal({ versions, currentCv, onSave, onLoad, onDelete, onClose }) {
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:1000,
+      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      padding:20, fontFamily:"'Lato',sans-serif",
+    }}>
+      <div style={{
+        background:"#fff", borderRadius:16, maxWidth:560, width:"100%",
+        maxHeight:"92vh", overflowY:"auto",
+        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
+      }}>
+        <div style={{
+          padding:"20px 26px", borderBottom:"1px solid #eee",
+          display:"flex", justifyContent:"space-between", alignItems:"center",
+        }}>
+          <div>
+            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
+              Versions de CV
+            </div>
+            <div style={{fontSize:11, color:"#888", marginTop:2}}>
+              Sauvegarde plusieurs versions selon les cibles
+            </div>
+          </div>
+          <button onClick={onClose} style={{
+            ...B({
+              width:34, height:34, borderRadius:8,
+              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
+            })
+          }}>X</button>
+        </div>
+        <div style={{padding:"22px 26px"}}>
+          <button onClick={onSave} style={{
+            ...B({
+              width:"100%", padding:13, borderRadius:11,
+              background:"linear-gradient(135deg,"+Dark+","+Gold+")",
+              color:"#fff", fontWeight:700, fontSize:13, marginBottom:18,
+            })
+          }}>
+            + Sauvegarder la version actuelle
+          </button>
+          {versions.length === 0 ? (
+            <div style={{
+              textAlign:"center", padding:"30px 20px",
+              fontSize:13, color:"#888",
+              background:"#fafafa", borderRadius:10,
+            }}>
+              Aucune version sauvegardee.
+              <br/>
+              <span style={{fontSize:11}}>
+                Sauvegarde le CV actuel pour pouvoir le restaurer plus tard.
+              </span>
+            </div>
+          ) : (
+            <div>
+              <div style={{fontSize:11, fontWeight:700, color:"#888", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
+                Versions sauvegardees ({versions.length})
+              </div>
+              {versions.map(v => (
+                <div key={v.id} style={{
+                  border:"1px solid #e5e0d6", borderRadius:10,
+                  padding:"12px 14px", marginBottom:8,
+                }}>
+                  <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6}}>
+                    <div>
+                      <div style={{fontSize:14, fontWeight:700, color:Dark}}>
+                        {v.name}
+                      </div>
+                      <div style={{fontSize:10, color:"#888", marginTop:2}}>
+                        {v.cv && v.cv.title ? v.cv.title : ""} {v.cv && v.cv.name ? "- "+v.cv.name : ""}
+                      </div>
+                      <div style={{fontSize:10, color:"#aaa", marginTop:2}}>
+                        {new Date(v.created).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:"flex", gap:6}}>
+                    <button onClick={()=>onLoad(v.id)} style={{
+                      ...B({
+                        flex:1, padding:"7px 11px", borderRadius:7,
+                        background:"#fdfaf3", border:"1px solid "+Gold+"55",
+                        color:Dark, fontWeight:600, fontSize:11,
+                      })
+                    }}>Charger</button>
+                    <button onClick={()=>onDelete(v.id)} style={{
+                      ...B({
+                        padding:"7px 11px", borderRadius:7,
+                        background:"#fee2e2", border:"1px solid #fca5a5",
+                        color:"#dc2626", fontWeight:600, fontSize:11,
+                      })
+                    }}>Supprimer</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function App() {
   const [cv, setCV_]       = useState(() => {
     const s = lsG(SK.CV, null);
@@ -2656,6 +3337,19 @@ export default function App() {
   const [hasBackup, setHasBackup] = useState(false);
   const [adjPrefill, setAdjPrefill] = useState("");
   const [kwLoading, setKwLoading] = useState(false);
+  const [showPack, setShowPack]   = useState(false);
+  const [packLoading, setPackLoading] = useState(false);
+  const [packResult, setPackResult]   = useState(null);
+  const [packMsgIdx, setPackMsgIdx]   = useState(0);
+  const [packCtx, setPackCtx]         = useState(null);
+  const [showPos, setShowPos]         = useState(false);
+  const [posLoading, setPosLoading]   = useState(false);
+  const [posResult, setPosResult]     = useState(null);
+  const [showTruth, setShowTruth]     = useState(false);
+  const [truthLoading, setTruthLoading] = useState(false);
+  const [truthResult, setTruthResult] = useState(null);
+  const [showVersions, setShowVersions] = useState(false);
+  const [versions, setVersions]       = useState(() => lsG(SK.VS, []));
   const cRef = useRef();
 
   const setCVFn = useCallback(fn => setCV_(p => {
@@ -2876,6 +3570,259 @@ export default function App() {
     }
   }, [cv, apiKey, T, pushH, setCVFn, notify, locale]);
 
+  const requestPack = useCallback((offer, matchRes) => {
+    setPackCtx({ offer, matchRes });
+    setShowPack(true);
+    setPackResult(null);
+  }, []);
+
+  const runPack = useCallback(async () => {
+    if (!packCtx) return;
+    if (!apiKey) { notify(T.nk); return; }
+    setPackLoading(true);
+    setPackMsgIdx(0);
+
+    const { offer, matchRes } = packCtx;
+    const cvSummary = "Nom: "+cv.name+" - "+cv.title
+      +"\nAccroche: "+(cv.summary||"")
+      +"\nExperiences: "+cv.experience.map(e =>
+          e.title+" chez "+e.company+" ("+e.period+"): "
+          +e.bullets.filter(b=>b).join("; ")
+        ).join(" | ")
+      +"\nSkills: "+cv.skills.filter(s=>s).join(", ")
+      +"\nLangues: "+cv.languages.filter(l=>l.lang).map(l=>l.lang+" "+l.level).join(", ");
+
+    const company = (matchRes && matchRes.company) || "l'entreprise";
+    const role = (matchRes && matchRes.job_title) || "le poste";
+    const interviewQs = (matchRes && matchRes.likely_interview_questions) || [];
+
+    const p = "Tu es expert en candidature. Genere une candidature complete pour ce poste.\n\n"
+      +"OFFRE:\n"+offer+"\n\n"
+      +"CV CANDIDAT:\n"+cvSummary+"\n\n"
+      +"REGLES:\n"
+      +"- Reste authentique au parcours du candidat. Ne pas inventer.\n"
+      +"- Adapter le ton a la culture detectee de l'entreprise.\n"
+      +"- Lettre: 250-300 mots, 4 paragraphes (accroche, valeur, motivation, call-to-action).\n"
+      +"- Message LinkedIn: max 90 mots, professionnel mais humain, pas de phrase bateau.\n"
+      +"- Email: objet specifique (pas 'Candidature au poste de X'), corps court 150 mots max.\n"
+      +"- Pitch entretien: 60 secondes a l'oral (~150 mots), structure: qui je suis, ce que j'apporte, pourquoi ce poste.\n"
+      +"- 5 reponses STAR aux questions probables, chacune avec Situation/Task/Action/Result concrets bases sur le CV.\n"
+      +"- JAMAIS de tirets cadratins (em dash, en dash). Virgules, parentheses, ou tirets simples uniquement.\n"
+      +"- Reponds UNIQUEMENT en JSON valide strict, sans markdown.\n\n"
+      +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "")
+      +'JSON STRUCTURE:\n'
+      +'{\n'
+      +'  "cover_letter": "lettre complete avec sauts de ligne",\n'
+      +'  "linkedin_message": "message direct au recruteur",\n'
+      +'  "application_email": {\n'
+      +'    "subject": "objet specifique",\n'
+      +'    "body": "corps de l email"\n'
+      +'  },\n'
+      +'  "interview_pitch": "pitch 60 secondes",\n'
+      +'  "star_answers": [\n'
+      +'    {\n'
+      +'      "question": "question probable",\n'
+      +'      "situation": "contexte concret tire du CV",\n'
+      +'      "task": "ce qu il fallait accomplir",\n'
+      +'      "action": "action prise par le candidat",\n'
+      +'      "result": "resultat chiffre si possible"\n'
+      +'    }\n'
+      +'  ]\n'
+      +'}';
+    try {
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setPackResult(r);
+    } catch (err) {
+      notify("Erreur candidature: " + (err.message || "inconnue"));
+      setShowPack(false);
+    } finally {
+      setPackLoading(false);
+    }
+  }, [packCtx, cv, apiKey, T, notify]);
+
+  useEffect(() => {
+    if (showPack && packCtx && !packResult && !packLoading) {
+      runPack();
+    }
+  }, [showPack, packCtx, packResult, packLoading, runPack]);
+
+  useEffect(() => {
+    if (!packLoading) return;
+    const interval = setInterval(() => {
+      setPackMsgIdx(i => i + 1);
+    }, 2500);
+    return () => clearInterval(interval);
+  }, [packLoading]);
+
+  const copyToClipboard = useCallback((text) => {
+    if (!text) return;
+    try {
+      navigator.clipboard.writeText(text);
+      notify(locale==="en" ? "Copied" : "Copie");
+    } catch {
+      notify(locale==="en" ? "Copy failed" : "Echec copie");
+    }
+  }, [notify, locale]);
+
+  const runPositioning = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(locale==="en" ? "Empty CV" : "CV vide"); return; }
+    setShowPos(true);
+    setPosLoading(true);
+    setPosResult(null);
+    const cvSummary = "Titre actuel: "+cv.title
+      +"\nAccroche: "+(cv.summary||"")
+      +"\nExperiences: "+cv.experience.map(e =>
+          e.title+" chez "+e.company+" ("+e.period+"): "
+          +e.bullets.filter(b=>b).join("; ")
+        ).join(" | ")
+      +"\nFormation: "+cv.education.map(e=>e.degree+" "+e.school).join(" | ")
+      +"\nSkills: "+cv.skills.filter(s=>s).join(", ")
+      +"\nLangues: "+cv.languages.filter(l=>l.lang).map(l=>l.lang+" "+l.level).join(", ");
+    const p = "Tu es expert en strategie de carriere. Analyse ce parcours et propose 3 angles de positionnement differents.\n\n"
+      +"PARCOURS:\n"+cvSummary+"\n\n"
+      +"Pour chaque angle, tu dois:\n"
+      +"1. Donner un titre professionnel precis (le job qu'on vise)\n"
+      +"2. Expliquer pourquoi ce profil est credible pour cet angle\n"
+      +"3. Donner une fourchette de salaire realiste pour ce positionnement\n"
+      +"4. Lister les 3 points cles a mettre en avant\n"
+      +"5. Identifier la cible employeur ideale\n"
+      +"6. Reecrire l'accroche du CV pour matcher cet angle\n\n"
+      +"REGLES:\n"
+      +"- Les 3 angles doivent etre VRAIMENT differents (pas 3 variantes du meme job)\n"
+      +"- Chaque angle doit etre credible avec ce parcours, pas une projection irrealiste\n"
+      +"- Pas de tirets cadratins (em dash, en dash). Utilise virgules ou tirets simples.\n"
+      +"- Reponds UNIQUEMENT en JSON valide strict.\n\n"
+      +'{\n'
+      +'  "angles": [\n'
+      +'    {\n'
+      +'      "title": "Titre professionnel precis",\n'
+      +'      "credibility": "Pourquoi ce profil est credible pour cet angle",\n'
+      +'      "salary_range": "Fourchette realiste",\n'
+      +'      "key_points": ["point 1", "point 2", "point 3"],\n'
+      +'      "target_employers": "Type d entreprises a cibler",\n'
+      +'      "new_summary": "Accroche reecrite pour ce positionnement"\n'
+      +'    }\n'
+      +'  ]\n'
+      +'}';
+    try {
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setPosResult(r);
+    } catch (err) {
+      notify("Erreur positionnement: " + (err.message || ""));
+      setShowPos(false);
+    } finally {
+      setPosLoading(false);
+    }
+  }, [cv, cvIsEmpty, apiKey, T, notify, locale]);
+
+  const adoptAngle = useCallback((angle) => {
+    if (!angle) return;
+    pushH();
+    setCVFn(c => ({
+      ...c,
+      title: angle.title || c.title,
+      summary: angle.new_summary || c.summary,
+    }));
+    setShowPos(false);
+    setPosResult(null);
+    notify(locale==="en" ? "Angle applied" : "Angle adopte");
+  }, [pushH, setCVFn, notify, locale]);
+
+  const runTruthCheck = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(locale==="en" ? "Empty CV" : "CV vide"); return; }
+    setShowTruth(true);
+    setTruthLoading(true);
+    setTruthResult(null);
+    const cvSummary = "Titre: "+cv.title
+      +"\nAccroche: "+(cv.summary||"")
+      +"\nExperiences:\n"+cv.experience.map((e,i) =>
+          "[EXP-"+(i+1)+"] "+e.title+" chez "+e.company+" ("+e.period+"):\n"
+          +e.bullets.filter(b=>b).map((b,j)=>"  - [BUL-"+(i+1)+"."+(j+1)+"] "+b).join("\n")
+        ).join("\n");
+    const p = "Tu es recruteur senior expert. Identifie les phrases faibles, vagues, ou risquees dans ce CV.\n\n"
+      +"CV:\n"+cvSummary+"\n\n"
+      +"Pour chaque probleme detecte, indique:\n"
+      +"- type (vague, generique, bullshit, incoherent, faible, pretentieux, risque entretien)\n"
+      +"- phrase concernee (citation exacte)\n"
+      +"- localisation (titre, accroche, ou ID de l experience/bullet ex: EXP-2 ou BUL-2.3)\n"
+      +"- pourquoi c'est un probleme\n"
+      +"- proposition de reformulation forte\n\n"
+      +"REGLES:\n"
+      +"- Sois honnete et direct, sans complaisance.\n"
+      +"- Concentre-toi sur les vrais problemes, pas du nitpicking.\n"
+      +"- Maximum 8 issues, prends les plus importants.\n"
+      +"- Pas de tirets cadratins.\n"
+      +"- JSON valide strict uniquement.\n\n"
+      +'{\n'
+      +'  "issues": [\n'
+      +'    {\n'
+      +'      "type": "vague",\n'
+      +'      "quote": "phrase exacte du CV",\n'
+      +'      "location": "EXP-2 ou Accroche etc",\n'
+      +'      "why": "raison concrete du probleme",\n'
+      +'      "fix": "reformulation proposee"\n'
+      +'    }\n'
+      +'  ],\n'
+      +'  "overall_verdict": "Verdict global en 1-2 phrases"\n'
+      +'}';
+    try {
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setTruthResult(r);
+    } catch (err) {
+      notify("Erreur truth check: " + (err.message || ""));
+      setShowTruth(false);
+    } finally {
+      setTruthLoading(false);
+    }
+  }, [cv, cvIsEmpty, apiKey, T, notify, locale]);
+
+  const saveVersion = useCallback(() => {
+    const name = window.prompt(
+      locale==="en" ? "Name for this version (e.g. 'Banking', 'Sales EN', 'Senior'):" 
+                    : "Nom de cette version (ex: 'Banque', 'Sales EN', 'Senior'):"
+    );
+    if (!name || !name.trim()) return;
+    const v = {
+      id: Date.now(),
+      name: name.trim().slice(0, 40),
+      cv: cv,
+      created: new Date().toISOString(),
+    };
+    setVersions(vs => {
+      const next = [...vs, v];
+      lsS(SK.VS, next);
+      return next;
+    });
+    notify(locale==="en" ? "Version saved" : "Version sauvegardee");
+  }, [cv, notify, locale]);
+
+  const loadVersion = useCallback((id) => {
+    const v = versions.find(x => x.id === id);
+    if (!v) return;
+    if (!window.confirm(
+      locale==="en" ? "Load this version? Current CV will be replaced (history will allow undo)." 
+                    : "Charger cette version? Le CV actuel sera remplace (annulable via Historique)."
+    )) return;
+    pushH();
+    setCVFn(() => normCV(v.cv, EMPTY));
+    setShowVersions(false);
+    notify(locale==="en" ? "Version loaded" : "Version chargee");
+  }, [versions, pushH, setCVFn, notify, locale]);
+
+  const deleteVersion = useCallback((id) => {
+    if (!window.confirm(locale==="en" ? "Delete this version?" : "Supprimer cette version?")) return;
+    setVersions(vs => {
+      const next = vs.filter(x => x.id !== id);
+      lsS(SK.VS, next);
+      return next;
+    });
+  }, [locale]);
+
   const runTranslate = useCallback(async () => {
     if (!apiKey) { notify(T.tr_nk); return; }
     setTrLoading(true);
@@ -3035,7 +3982,8 @@ export default function App() {
           onPrefillConsumed={()=>setAdjPrefill("")}/>
       )}
       {aiMode==="match" && (
-        <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}/>
+        <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
+          onPackRequest={requestPack}/>
       )}
     </div>
   );
@@ -3187,6 +4135,42 @@ export default function App() {
         }}>{T.tr_restore}</button>
       )}
       {!hasBackup && <div style={{marginBottom:14}}/>}
+      <div style={SH()}>{locale==="en" ? "Strategy" : "Strategie"}</div>
+      <button onClick={runPositioning} style={{
+        ...B({
+          width:"100%", padding:"11px", borderRadius:11,
+          background:"linear-gradient(135deg,#7c3aed,"+Gold+")",
+          color:"#fff", fontWeight:700, fontSize:13, marginBottom:7,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+        })
+      }}>
+        <span style={{fontSize:15}}>*</span>
+        <span>{locale==="en" ? "Career positioning" : "Positionnement carriere"}</span>
+      </button>
+      <button onClick={runTruthCheck} style={{
+        ...B({
+          width:"100%", padding:"11px", borderRadius:11,
+          background:"#1a1a2e", color:"#fff",
+          fontWeight:700, fontSize:13, marginBottom:7,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+        })
+      }}>
+        <span style={{fontSize:15}}>!</span>
+        <span>{locale==="en" ? "Truth check" : "Truth check"}</span>
+      </button>
+      <button onClick={()=>setShowVersions(true)} style={{
+        ...B({
+          width:"100%", padding:"11px", borderRadius:11,
+          border:"1px solid "+Gold+"55", background:"#fdfaf3",
+          color:Dark, fontWeight:700, fontSize:13, marginBottom:14,
+          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+        })
+      }}>
+        <span style={{fontSize:15}}>=</span>
+        <span>
+          {locale==="en" ? "Versions" : "Versions"} ({versions.length})
+        </span>
+      </button>
       <div style={SH()}>{T.t_qck}</div>
       {quick.map(([l,fn,bg]) => (
         <button key={l} onClick={fn} style={{
@@ -3268,6 +4252,62 @@ export default function App() {
           hasBackup={hasBackup}
           onRun={runTranslate}
           onClose={()=>{ if (!trLoading) setShowTranslate(false); }}
+        />
+      )}
+      {showPack && (
+        <ApplicationPackModal
+          pack={packResult}
+          loading={packLoading}
+          msgIdx={packMsgIdx}
+          onCopy={copyToClipboard}
+          onClose={()=>{
+            if (packLoading) return;
+            setShowPack(false);
+            setPackResult(null);
+            setPackCtx(null);
+          }}
+        />
+      )}
+      {showPos && (
+        <PositioningModal
+          result={posResult}
+          loading={posLoading}
+          onAdopt={adoptAngle}
+          onClose={()=>{
+            if (posLoading) return;
+            setShowPos(false);
+            setPosResult(null);
+          }}
+        />
+      )}
+      {showTruth && (
+        <TruthModal
+          result={truthResult}
+          loading={truthLoading}
+          onApplyFix={(iss)=>{
+            const inst = "Remplace dans mon CV la phrase: \""+iss.quote+"\" par: \""+iss.fix+"\". Garde tout le reste identique.";
+            setShowTruth(false);
+            setTruthResult(null);
+            setAdjPrefill(inst);
+            setTab("ai");
+            setAiMode("adjust");
+            notify(locale==="en" ? "Fix sent to Adjust" : "Correction envoyee dans Ajuster");
+          }}
+          onClose={()=>{
+            if (truthLoading) return;
+            setShowTruth(false);
+            setTruthResult(null);
+          }}
+        />
+      )}
+      {showVersions && (
+        <VersionsModal
+          versions={versions}
+          currentCv={cv}
+          onSave={saveVersion}
+          onLoad={loadVersion}
+          onDelete={deleteVersion}
+          onClose={()=>setShowVersions(false)}
         />
       )}
     </>
