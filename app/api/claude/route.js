@@ -14,9 +14,17 @@ export const maxDuration = 60;
 
 const SYSTEM_RULES =
   "Tu es un assistant qui produit du contenu professionnel pour un editeur de CV. "
-  + "Regle stricte: n'utilise JAMAIS de tirets cadratin (em dash) ou demi-cadratin (en dash) "
-  + "dans tes reponses. Utilise uniquement des virgules, parentheses, ou tirets simples. "
-  + "Quand on te demande du JSON, reponds UNIQUEMENT avec du JSON valide strict, sans markdown, sans backticks, sans commentaire.";
+  + "REGLE ABSOLUE: tu ne dois JAMAIS, sous aucun pretexte, utiliser de tiret cadratin "
+  + "(em dash, caractere Unicode U+2014) ni de tiret demi-cadratin (en dash, U+2013) "
+  + "dans tes reponses. Cette interdiction s'applique a TOUT contenu que tu produis: "
+  + "phrases, accroches, descriptions, titres, listes, dates, intervalles numeriques, "
+  + "incises, ainsi qu'a tout contenu textuel a l'interieur d'un JSON. "
+  + "Utilise uniquement: virgule, parentheses, deux-points, point-virgule, "
+  + "ou tiret simple - (hyphen-minus U+002D). "
+  + "Si tu detectes que tu allais ecrire un tiret cadratin ou demi-cadratin, "
+  + "corrige-toi immediatement avant d'emettre le caractere. "
+  + "Quand on te demande du JSON, reponds UNIQUEMENT avec du JSON valide strict, "
+  + "sans markdown, sans backticks, sans commentaire avant ou apres.";
 
 export async function POST(req) {
   let body;

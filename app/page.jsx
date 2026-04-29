@@ -2,9 +2,61 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
-const FONT = "https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Lato:wght@400;700&family=Montserrat:wght@700&family=Open+Sans:wght@600&display=swap";
-const Gold = "#c9a96e";
-const Dark = "#1a1a2e";
+// === V10 REBRAND : Editorial luxury, mobile-first ===
+const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&display=swap";
+
+// Palette
+const Ink       = "#0a0a0a";   // noir profond, surface principale
+const InkSoft   = "#1a1a1f";   // noir bleute pour gradient
+const Cream     = "#f5f1e8";   // creme chaude, fond editorial
+const CreamSoft = "#faf7ef";   // creme clair, fond app
+const Paper     = "#ffffff";   // cards
+const Gold      = "#c9a96e";   // gold luxe
+const GoldDeep  = "#a07840";   // gold profond pour text-on-cream
+const Purple    = "#5b3df5";   // violet electrique pour accents
+const PurpleSoft= "#ede9fe";
+const Coral     = "#ff5a36";   // corail vif
+const CoralSoft = "#ffe8e1";
+const Green     = "#16a34a";
+const GreenSoft = "#dcfce7";
+const Gray50    = "#fafaf9";
+const Gray100   = "#f5f4f0";
+const Gray200   = "#e7e5dc";
+const Gray400   = "#a8a59a";
+const Gray600   = "#57534e";
+const Gray900   = "#292524";
+
+// Fonts
+const Serif = "'Fraunces', 'Playfair Display', Georgia, serif";
+const Sans  = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+
+// Backwards compat (existing code uses these names)
+const Dark = Ink;
+
+// Radius / shadow tokens
+const RadiusSm   = 10;
+const RadiusMd   = 16;
+const RadiusLg   = 22;
+const RadiusPill = 999;
+const ShadowSm   = "0 1px 2px rgba(10,10,10,.04), 0 0 0 0.5px rgba(10,10,10,.06)";
+const ShadowMd   = "0 4px 14px rgba(10,10,10,.06), 0 0 0 0.5px rgba(10,10,10,.06)";
+const ShadowLg   = "0 14px 40px rgba(10,10,10,.10), 0 0 0 0.5px rgba(10,10,10,.06)";
+
+// Gradients réservés aux moments forts
+const GradDark   = "linear-gradient(135deg, #0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)";
+const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";
+const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";
+const GradCoral  = "linear-gradient(135deg, #ff5a36 0%, #ffa800 100%)";
+
+// REGLE TIRETS - duplicated in every AI prompt for maximum compliance
+const NO_DASH =
+  "INTERDICTION ABSOLUE des tirets cadratin (em dash, caractere Unicode U+2014) "
+  + "et demi-cadratin (en dash, caractere Unicode U+2013). N'utilise JAMAIS ces caracteres, "
+  + "meme entre des mots, des dates, ou pour des incises. "
+  + "Utilise uniquement: virgule, parentheses, deux-points, point-virgule, "
+  + "ou tiret simple - (hyphen-minus U+002D). "
+  + "Toute occurrence d'un tiret cadratin ou demi-cadratin sera consideree comme une faute majeure.";
+
 const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs" };
 
 const FR_T = {
@@ -362,7 +414,27 @@ const SH = (x={}) => ({
 });
 
 function san(t) {
-  return (t||"").split("\u2014").join("-").split("\u2013").join("-");
+  if (typeof t !== "string") return t;
+  return t
+    .split("\u2014").join("-")  // em dash
+    .split("\u2013").join("-")  // en dash
+    .split("\u2015").join("-")  // horizontal bar
+    .split("\u2012").join("-")  // figure dash
+    .split("\u2010").join("-")  // hyphen
+    .split("\u2011").join("-"); // non-breaking hyphen
+}
+
+// Recursively sanitize all string values in an object / array tree.
+// Used to clean CV / Pack / Audit results returned from the AI.
+function sanDeep(v) {
+  if (typeof v === "string") return san(v);
+  if (Array.isArray(v)) return v.map(sanDeep);
+  if (v && typeof v === "object") {
+    const out = {};
+    for (const k of Object.keys(v)) out[k] = sanDeep(v[k]);
+    return out;
+  }
+  return v;
 }
 
 async function aiCall(prompt) {
@@ -403,7 +475,8 @@ async function aiCall(prompt) {
 
 function parseJSON(txt) {
   const clean = txt.split("```json").join("").split("```").join("").trim();
-  return JSON.parse(clean);
+  const parsed = JSON.parse(clean);
+  return sanDeep(parsed);
 }
 
 function normCV(raw, base=EMPTY) {
@@ -635,7 +708,7 @@ function SheetEx({ cv, set, onClose, apiKey, notify, T }) {
       const r = await aiCall(
         "Reformule ce bullet CV plus percutant chiffre max 15 mots meme langue: \""
         + text
-        + "\". UNIQUEMENT la reformulation sans guillemets. Jamais de tirets cadratins.",
+        + "\". UNIQUEMENT la reformulation sans guillemets. " + NO_DASH,
         apiKey
       );
       ub(id, idx, r.trim());
@@ -1108,7 +1181,7 @@ function AIPanel({ onGen, loading, apiKey, T }) {
       +'"education":[{"id":1,"degree":"","school":"","period":""}],'
       +'"skills":["","","","","","","",""],'
       +'"languages":[{"lang":"","level":""}],"certifications":[""]}'
-      +" 3 exps chiffrees 2 formations 8 competences. Pas de tirets cadratins.";
+      +" 3 exps chiffrees 2 formations 8 competences. " + NO_DASH;
     onGen(p);
   };
 
@@ -1191,7 +1264,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       + "REGLES: preserve structure JSON exacte, IDs,"
       + " jamais inventer experiences/diplomes,"
       + " garde langue origine sauf traduction demandee."
-      + " Jamais tirets cadratins, utilise uniquement -.\n\n"
+      + " " + NO_DASH + "\n\n"
       + "CV:\n" + JSON.stringify(cv, null, 2)
       + "\n\nINSTRUCTION: \"" + inst + "\""
       + "\n\nRetourne UNIQUEMENT le JSON modifie.";
@@ -1225,7 +1298,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       + '"skills":[""],"languages":[{"lang":"","level":""}],'
       + '"certifications":[""]}\n'
       + "REGLES:toutes experiences, IDs depuis 1, vide si absent."
-      + " Jamais tirets cadratins. UNIQUEMENT JSON.\nCV:\n" + raw;
+      + " " + NO_DASH + " UNIQUEMENT JSON.\nCV:\n" + raw;
     try {
       const txt = await aiCall(p);
       const parsed = parseJSON(txt);
@@ -1372,7 +1445,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest }) {
     ).join(",");
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
       +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
-      +"REGLES: ne pas inventer, adapter mots-cles offre, pas de tirets cadratins.\n"
+      +"REGLES: ne pas inventer, adapter mots-cles offre. " + NO_DASH + "\n"
       +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
       +'JSON uniquement: {"match_score":75,"job_title":"","company":"",'
       +'"key_requirements":["r1","r2","r3"],"keywords_matched":["k1","k2"],'
@@ -2165,7 +2238,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             color:"rgba(255,255,255,.3)",
             fontSize:11,
             margin:"6px 0",
-          }}>— ou copier-coller le contenu —</div>
+          }}>- ou copier-coller le contenu -</div>
           
           <label style={{...LBL, color:"rgba(255,255,255,.5)", fontSize:11}}>Colle ton CV en texte brut</label>
           <textarea value={raw} onChange={e=>setRaw(e.target.value)}
@@ -3551,7 +3624,7 @@ export default function App() {
       + "4. Preserve la structure JSON exacte, les IDs, les dates, les noms d'entreprises.\n"
       + "5. N'invente jamais de realisations ou competences. Reformule l'existant pour y placer les mots-cles.\n"
       + "6. Garde la langue d'origine du CV.\n"
-      + "7. Jamais de tirets cadratins (em dash / en dash). Utilise des virgules ou tirets simples.\n\n"
+      + "7. " + NO_DASH + "\n\n"
       + "MOTS-CLES A INTEGRER: " + kwList + "\n\n"
       + "CV:\n" + JSON.stringify(cv) + "\n\n"
       + "Reponds UNIQUEMENT avec le CV modifie en JSON valide strict, sans markdown.";
@@ -3607,7 +3680,7 @@ export default function App() {
       +"- Email: objet specifique (pas 'Candidature au poste de X'), corps court 150 mots max.\n"
       +"- Pitch entretien: 60 secondes a l'oral (~150 mots), structure: qui je suis, ce que j'apporte, pourquoi ce poste.\n"
       +"- 5 reponses STAR aux questions probables, chacune avec Situation/Task/Action/Result concrets bases sur le CV.\n"
-      +"- JAMAIS de tirets cadratins (em dash, en dash). Virgules, parentheses, ou tirets simples uniquement.\n"
+      +"- " + NO_DASH + "\n"
       +"- Reponds UNIQUEMENT en JSON valide strict, sans markdown.\n\n"
       +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "")
       +'JSON STRUCTURE:\n'
@@ -3692,7 +3765,7 @@ export default function App() {
       +"REGLES:\n"
       +"- Les 3 angles doivent etre VRAIMENT differents (pas 3 variantes du meme job)\n"
       +"- Chaque angle doit etre credible avec ce parcours, pas une projection irrealiste\n"
-      +"- Pas de tirets cadratins (em dash, en dash). Utilise virgules ou tirets simples.\n"
+      +"- " + NO_DASH + "\n"
       +"- Reponds UNIQUEMENT en JSON valide strict.\n\n"
       +'{\n'
       +'  "angles": [\n'
@@ -3755,7 +3828,7 @@ export default function App() {
       +"- Sois honnete et direct, sans complaisance.\n"
       +"- Concentre-toi sur les vrais problemes, pas du nitpicking.\n"
       +"- Maximum 8 issues, prends les plus importants.\n"
-      +"- Pas de tirets cadratins.\n"
+      +"- " + NO_DASH + "\n"
       +"- JSON valide strict uniquement.\n\n"
       +'{\n'
       +'  "issues": [\n'
@@ -3841,7 +3914,7 @@ export default function App() {
       + "3. Adapt professional terminology naturally to the " + target + " job market. For example, in English use action verbs (Led, Drove, Delivered) at the start of bullets.\n"
       + "4. Keep the same JSON structure and the same number of items in every array.\n"
       + "5. Do not invent, add or remove content. Translate what is there.\n"
-      + "6. Never use em dashes or en dashes. Use commas, parentheses, or simple hyphens only.\n"
+      + "6. " + NO_DASH + "\n"
       + "7. For language proficiency levels: keep CEFR codes (A1, A2, B1, B2, C1, C2) as-is. Translate descriptive levels (Native, Fluent, Intermediate / Maternelle, Courant, Intermediaire).\n\n"
       + "CV to translate (JSON):\n"
       + JSON.stringify(cv) + "\n\n"
@@ -3883,7 +3956,7 @@ export default function App() {
       + '"skills":[""],"languages":[{"lang":"","level":""}],'
       + '"certifications":[""]}\n'
       + "REGLES:toutes experiences, IDs depuis 1, vide si absent."
-      + " Jamais tirets cadratins. UNIQUEMENT JSON.\nCV:\n" + obRaw;
+      + " " + NO_DASH + " UNIQUEMENT JSON.\nCV:\n" + obRaw;
     try {
       const txt = await aiCall(p);
       const parsed = parseJSON(txt);
