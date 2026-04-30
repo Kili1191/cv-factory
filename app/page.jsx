@@ -5047,6 +5047,11 @@ export default function App() {
     return () => clearTimeout(t);
   }, [autoSaved]);
 
+  // v17 fix TDZ : cvIsEmpty doit etre declare AVANT le useEffect du Cmd+K
+  // qui le reference dans son deps array. Sinon ReferenceError au mount.
+  const cvIsEmpty = !cv.name && !cv.title && !cv.summary
+    && cv.experience.every(e => !e.title && !e.company);
+
   // v17 chantier 16 : Raccourcis clavier globaux.
   useEffect(() => {
     if (!hydrated) return;
@@ -5121,9 +5126,6 @@ export default function App() {
     const unparsableCount = countUnparsable(exps);
     return { gaps, yearStrategy, groupOps, unparsableCount };
   }, [cv]);
-
-  const cvIsEmpty = !cv.name && !cv.title && !cv.summary
-    && cv.experience.every(e => !e.title && !e.company);
 
   const notify = useCallback(msg => {
     setNotif(msg);
