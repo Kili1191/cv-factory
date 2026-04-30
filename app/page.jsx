@@ -469,6 +469,40 @@ const FR_T = {
   iv_overview_title:"Vue d'ensemble",
   iv_done:"Tu es pret.",
   iv_done_sub:"Bonne chance pour ton entretien.",
+  // v2 Interview Continuity : tabs, round, questions a poser
+  iv_tab_before:"Avant",
+  iv_tab_during:"Pendant",
+  iv_tab_after:"Apres",
+  iv_round_label:"Tour d'entretien",
+  iv_round_all:"Tous tours",
+  iv_round_hr:"1er entretien (RH / talent)",
+  iv_round_manager:"2eme entretien (manager / equipe)",
+  iv_round_board:"3eme entretien (board / direction)",
+  iv_round_hint_all:"Questions generiques pour un entretien standard.",
+  iv_round_hint_hr:"L'IA priorise motivation, culture, fit, parcours global.",
+  iv_round_hint_manager:"L'IA priorise expertise technique, livraison, exemples concrets, methode.",
+  iv_round_hint_board:"L'IA priorise vision strategique, leadership, decisions difficiles, executive presence.",
+  // Section "Questions a poser au recruteur"
+  iv_qta_eyebrow:"Tes questions a poser",
+  iv_qta_title:"Ce que tu vas demander",
+  iv_qta_sub:"L'IA prepare 8 a 12 questions strategiques classees par theme. Choisis celles qui collent au tour.",
+  iv_qta_run:"Generer mes questions a poser",
+  iv_qta_loading:"L'IA prepare tes questions...",
+  iv_qta_empty:"Genere d'abord les questions principales, on enchaine.",
+  iv_qta_copy_all:"Copier toutes",
+  iv_qta_copy_one:"Copier",
+  iv_qta_copied:"Copie dans le presse-papier",
+  iv_qta_why:"Pourquoi cette question",
+  iv_qta_for:"Adapte pour",
+  // Categories de questions a poser
+  iv_qta_cat_role:"Le role",
+  iv_qta_cat_team:"L'equipe",
+  iv_qta_cat_strategy:"La strategie",
+  iv_qta_cat_culture:"La culture",
+  iv_qta_cat_next:"Les prochaines etapes",
+  // Tabs Pendant et Apres : placeholders en attendant 6.3 et 6.4
+  iv_during_placeholder:"Pense-bete imprimable et mode flashcard plein-ecran arrivent bientot.",
+  iv_after_placeholder:"Email de remerciement et auto-debrief apres l'entretien arrivent bientot.",
   // === Versions multi-CV ===
   vs_eyebrow:"Multi-CV",
   vs_title_a:"Plusieurs", vs_title_em:"versions", vs_title_b:", un seul outil.",
@@ -1130,6 +1164,40 @@ const EN_T = {
   iv_overview_title:"Overview",
   iv_done:"You are ready.",
   iv_done_sub:"Good luck with your interview.",
+  // v2 Interview Continuity : tabs, round, questions to ask
+  iv_tab_before:"Before",
+  iv_tab_during:"During",
+  iv_tab_after:"After",
+  iv_round_label:"Interview round",
+  iv_round_all:"All rounds",
+  iv_round_hr:"1st interview (HR / talent)",
+  iv_round_manager:"2nd interview (manager / team)",
+  iv_round_board:"3rd interview (board / executive)",
+  iv_round_hint_all:"Generic questions for a standard interview.",
+  iv_round_hint_hr:"The AI prioritizes motivation, culture, fit, overall path.",
+  iv_round_hint_manager:"The AI prioritizes technical expertise, delivery, concrete examples, method.",
+  iv_round_hint_board:"The AI prioritizes strategic vision, leadership, hard decisions, executive presence.",
+  // Section "Questions to ask the recruiter"
+  iv_qta_eyebrow:"Your questions to ask",
+  iv_qta_title:"What you will ask",
+  iv_qta_sub:"The AI prepares 8 to 12 strategic questions sorted by theme. Pick those that fit the round.",
+  iv_qta_run:"Generate my questions to ask",
+  iv_qta_loading:"The AI is preparing your questions...",
+  iv_qta_empty:"Generate the main questions first, then we continue.",
+  iv_qta_copy_all:"Copy all",
+  iv_qta_copy_one:"Copy",
+  iv_qta_copied:"Copied to clipboard",
+  iv_qta_why:"Why this question",
+  iv_qta_for:"Best for",
+  // Categories of questions to ask
+  iv_qta_cat_role:"The role",
+  iv_qta_cat_team:"The team",
+  iv_qta_cat_strategy:"The strategy",
+  iv_qta_cat_culture:"The culture",
+  iv_qta_cat_next:"Next steps",
+  // Tabs During and After : placeholders pending 6.3 and 6.4
+  iv_during_placeholder:"Printable cheat sheet and full-screen flashcard mode coming soon.",
+  iv_after_placeholder:"Thank-you email and post-interview self-debrief coming soon.",
   // === Multi-CV versions ===
   vs_eyebrow:"Multi-CV",
   vs_title_a:"Several", vs_title_em:"versions", vs_title_b:", one tool.",
@@ -5003,6 +5071,10 @@ export default function App() {
   const [interviewLoading, setInterviewLoading] = useState(false);
   const [interviewResult, setInterviewResult] = useState(null);
   const [interviewOffer, setInterviewOffer] = useState("");
+  // v2 Interview Continuity : round + questions to ask
+  const [interviewRound, setInterviewRound] = useState("all"); // "all"|"hr"|"manager"|"board"
+  const [askRecruiterLoading, setAskRecruiterLoading] = useState(false);
+  const [askRecruiterResult, setAskRecruiterResult] = useState(null);
   // v17 chantier 7 : Coach IA conversationnel
   const [showCoach, setShowCoach] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
@@ -5857,24 +5929,54 @@ export default function App() {
   // Pas de quota fixe : c'est l'IA qui decide combien de questions et quel mix
   // selon le contexte (ex au Japon plus de questions sur la fidelite, en France
   // plus de cas pratiques, aux US plus de "tell me about a time when").
+  // v2 Interview Continuity : prend aussi le round (RH/manager/board/all) en compte.
+
+  // Helpers factorises : on les utilise dans runInterviewPrep ET runAskRecruiter.
+  const buildInterviewCvText = useCallback(() => {
+    const expT = (cv.experience || []).map(e =>
+      (e.title||"") + " chez " + (e.company||"")
+      + " (" + (e.period||"") + "): "
+      + (e.bullets||[]).filter(b=>b).join("; ")
+    ).join(" | ");
+    return "Nom: " + (cv.name||"")
+      + "\nTitre: " + (cv.title||"")
+      + "\nLocalisation: " + (cv.location||"")
+      + "\nAccroche: " + (cv.summary||"")
+      + "\nExperiences: " + expT
+      + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
+      + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ");
+  }, [cv]);
+
+  // Directive selon le round choisi. "all" = pas de directive specifique.
+  // Ces directives sont injectees dans le prompt principal et dans le prompt
+  // "questions a poser" pour adapter les sorties au stade de l'entretien.
+  const roundDirective = useCallback((forAsk) => {
+    if (interviewRound === "hr") {
+      return forAsk
+        ? "\n- Round actuel : 1er entretien RH/talent. Privilegie les questions sur la culture, les valeurs, le process de recrutement, l'organisation generale, l'onboarding."
+        : "\n- Round actuel : 1er entretien RH/talent. Privilegie les questions de fit, motivation, parcours global, soft skills, comprehension du role.";
+    }
+    if (interviewRound === "manager") {
+      return forAsk
+        ? "\n- Round actuel : 2eme entretien avec le manager. Privilegie les questions sur les objectifs concrets du poste, l'equipe, les outils, les attentes a 30/60/90 jours, les blocages techniques actuels."
+        : "\n- Round actuel : 2eme entretien avec le manager. Privilegie les questions techniques operationnelles, exemples de livraison, methodes, exemples concrets STAR du parcours.";
+    }
+    if (interviewRound === "board") {
+      return forAsk
+        ? "\n- Round actuel : 3eme entretien executive/board. Privilegie les questions sur la vision strategique, les enjeux a 1-3 ans, les decisions difficiles passees, les KPI executifs, le mandat."
+        : "\n- Round actuel : 3eme entretien executive/board. Privilegie les questions de vision, leadership, decisions difficiles, gestion de crise, executive presence, contributions strategiques.";
+    }
+    return ""; // "all" : aucune directive specifique
+  }, [interviewRound]);
+
   const runInterviewPrep = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
     if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
     setInterviewLoading(true);
     setInterviewResult(null);
+    setAskRecruiterResult(null); // reset ask-recruiter quand on regenere le main
     try {
-      const expT = (cv.experience || []).map(e =>
-        (e.title||"") + " chez " + (e.company||"")
-        + " (" + (e.period||"") + "): "
-        + (e.bullets||[]).filter(b=>b).join("; ")
-      ).join(" | ");
-      const cvT = "Nom: " + (cv.name||"")
-        + "\nTitre: " + (cv.title||"")
-        + "\nLocalisation: " + (cv.location||"")
-        + "\nAccroche: " + (cv.summary||"")
-        + "\nExperiences: " + expT
-        + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
-        + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ");
+      const cvT = buildInterviewCvText();
 
       // Si l'utilisateur a saisi une offre, on l'utilise pour cibler les questions.
       const offerLine = interviewOffer && interviewOffer.trim()
@@ -5906,6 +6008,7 @@ export default function App() {
         + "\n- Pour CHAQUE question, fournis une reponse modele en methode STAR (Situation, Tache, Action, Resultat)."
         + "\n- La reponse STAR doit s'inspirer du parcours reel du candidat (pas inventer)."
         + "\n- Categories possibles : Technique, Comportementale, Cas pratique, Culture, Motivation."
+        + roundDirective(false)
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
         + "\n\nFORMAT JSON STRICT:"
         + '\n{"country":"France","sector":"Banque","level":"Senior",'
@@ -5923,7 +6026,70 @@ export default function App() {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
     }
     setInterviewLoading(false);
-  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T]);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
+      buildInterviewCvText, roundDirective]);
+
+  // v2 Interview Continuity : runAskRecruiter
+  // Genere 8-12 questions strategiques que LE CANDIDAT va poser AU recruteur,
+  // organisees par theme (role, equipe, strategie, culture, next steps).
+  // Adaptees au round courant (RH = culture/process, Manager = operationnel,
+  // Board = vision/leadership).
+  const runAskRecruiter = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    setAskRecruiterLoading(true);
+    setAskRecruiterResult(null);
+    try {
+      const cvT = buildInterviewCvText();
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE D'EMPLOI VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+
+      const p = "Tu es coach carriere senior, ancien recruteur executive search."
+        + " Tu prepares un candidat a poser DES QUESTIONS DE QUALITE au recruteur."
+        + " Les bonnes questions transforment l'entretien : elles montrent la maturite,"
+        + " la curiosite strategique, et permettent au candidat d'evaluer SI il veut le poste."
+        + "\n\nCANDIDAT:\n" + cvT
+        + offerLine
+        + "\n\nMISSION:"
+        + "\nGenere 8 a 12 questions strategiques que LE CANDIDAT va POSER au recruteur."
+        + " Organise-les par theme :"
+        + "\n- 'role' : le poste lui-meme, scope, perimetre, autonomie, livrables, mesure du succes a 6/12 mois"
+        + "\n- 'team' : l'equipe, sa composition, le manager, les peers, dynamique, conflits"
+        + "\n- 'strategy' : strategie entreprise, priorites, contraintes business, marche, concurrence"
+        + "\n- 'culture' : valeurs reelles vs affichees, prises de decision, droit a l'erreur, work-life"
+        + "\n- 'next' : prochaines etapes, calendrier, autres candidats, references, criteres de decision"
+        + "\n\nREGLES STRICTES:"
+        + "\n- Chaque question doit etre PRECISE, pas generique. 'Comment se passe l'onboarding ?' est generique. 'Pouvez-vous me decrire concretement les 30 premiers jours d'un nouvel arrivant a ce poste ?' est precis."
+        + "\n- Pour CHAQUE question, fournis :"
+        + "\n  * 'category' : un des 5 themes ci-dessus (role|team|strategy|culture|next)"
+        + "\n  * 'question' : la question telle qu'on la pose"
+        + "\n  * 'why' : 1 phrase (max 20 mots) qui explique l'angle strategique de la question"
+        + "\n  * 'best_for' : 1-3 mots qui indiquent quel round/contexte (ex 'manager', 'RH+manager', 'board')"
+        + "\n- Mix equilibre : viser 2-3 questions par theme."
+        + "\n- Eviter les questions auxquelles l'offre repond deja."
+        + "\n- Eviter les questions qui peuvent gener (salaire au 1er entretien, conges des le 1er rdv)."
+        + roundDirective(true)
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"questions":['
+        + '{"category":"role","question":"...","why":"...","best_for":"manager"},'
+        + '{"category":"team","question":"...","why":"...","best_for":"RH+manager"}'
+        + ']}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setAskRecruiterResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setAskRecruiterLoading(false);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
+      buildInterviewCvText, roundDirective]);
 
   // Pre-rempli le champ offre depuis offerResult de Cibler si dispo.
   // S'execute a chaque ouverture du modal interview.
@@ -7226,6 +7392,11 @@ export default function App() {
           prefilledOffer={!!(offerResult && offerResult.offer_text && interviewOffer === offerResult.offer_text)}
           onRun={runInterviewPrep}
           onClose={()=>setShowInterview(false)}
+          round={interviewRound}
+          setRound={setInterviewRound}
+          askRecruiterLoading={askRecruiterLoading}
+          askRecruiterResult={askRecruiterResult}
+          onRunAskRecruiter={runAskRecruiter}
         />
       )}
       {showCoach && (
