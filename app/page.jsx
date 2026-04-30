@@ -4872,37 +4872,6 @@ export default function App() {
     return () => clearTimeout(t);
   }, [autoSaved]);
 
-  // v17 chantier 16 : Raccourcis clavier globaux.
-  useEffect(() => {
-    if (!hydrated) return;
-    const onKey = (e) => {
-      // Ne pas intercepter si l'user est en train de taper dans un input/textarea
-      const tag = (e.target && e.target.tagName) || "";
-      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
-      const cmdOrCtrl = e.metaKey || e.ctrlKey;
-      // Esc : ferme le modal actif (chaque modal a deja son propre handler Esc, donc rien a faire ici)
-      // Cmd+S : export PDF (uniquement si pas de modal ouvert et pas en train de taper)
-      if (cmdOrCtrl && e.key === "s" && !isTyping) {
-        e.preventDefault();
-        if (typeof exportPDF === "function") exportPDF();
-      }
-      // Cmd+K : ouvre coach
-      if (cmdOrCtrl && e.key === "k") {
-        e.preventDefault();
-        if (!cvIsEmpty) setShowCoach(true);
-      }
-      // Cmd+, : ouvre reglages (la virgule est le standard mac pour preferences)
-      if (cmdOrCtrl && e.key === ",") {
-        e.preventDefault();
-        setShowSettings(true);
-      }
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("keydown", onKey);
-      return () => window.removeEventListener("keydown", onKey);
-    }
-  }, [hydrated, cvIsEmpty]);  // exportPDF defined after, mais useCallback re-created => on l'evite ici (hoisting)
-
   const setTh = useCallback(v => { setThN_(v); lsS(SK.TH, v); }, []);
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
@@ -5034,6 +5003,34 @@ export default function App() {
     setCVFn(() => EMPTY);
     notify(T.okr);
   }, [T, pushH, setCVFn, notify]);
+
+  // v17 chantier 16 : Raccourcis clavier globaux.
+  // IMPORTANT: doit etre declare APRES exportPDF, cvIsEmpty et tous les setters
+  // qu'il utilise, sinon TDZ ReferenceError au premier render (Vercel minification).
+  useEffect(() => {
+    if (!hydrated) return;
+    const onKey = (e) => {
+      const tag = (e.target && e.target.tagName) || "";
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+      const cmdOrCtrl = e.metaKey || e.ctrlKey;
+      if (cmdOrCtrl && e.key === "s" && !isTyping) {
+        e.preventDefault();
+        exportPDF();
+      }
+      if (cmdOrCtrl && e.key === "k") {
+        e.preventDefault();
+        if (!cvIsEmpty) setShowCoach(true);
+      }
+      if (cmdOrCtrl && e.key === ",") {
+        e.preventDefault();
+        setShowSettings(true);
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
+  }, [hydrated, cvIsEmpty, exportPDF]);
 
   const auditMessages = [
     "Analyse de ton parcours en cours...",
