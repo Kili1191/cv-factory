@@ -20,6 +20,8 @@ import LinkedInExportModal from "./components/LinkedInExportModal";
 import CVCompareModal from "./components/CVCompareModal";
 import ApplicationsTrackerModal from "./components/ApplicationsTrackerModal";
 import MultiCVStrategyModal from "./components/MultiCVStrategyModal";
+import TutorialOverlay from "./components/TutorialOverlay";
+import SettingsPanel from "./components/SettingsPanel";
 import {
   detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
@@ -73,10 +75,42 @@ const GradCoral  = "linear-gradient(135deg, #ff5a36 0%, #ffa800 100%)";
 
 // Keyframes globales injectees une fois par branche (mobile/desktop/spinner).
 // cvfSpin existe deja en v16. cvfFadeIn et cvfSlideUp servent l'IOSSheet v17.
+// Dark mode v17 : on cible UNIQUEMENT le panneau gauche (data-cvf="app"),
+// le CV a droite (data-cvf="cv") reste TOUJOURS clair pour l'export PDF.
 const KEYFRAMES_V17 = `
 @keyframes cvfSpin{to{transform:rotate(360deg)}}
 @keyframes cvfFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes cvfSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+
+/* Dark mode : surface app */
+body.cvf-dark [data-cvf="app"]{background:#0f0f12 !important;color:#f5f1e8 !important;}
+/* Cards et boutons dans l'app passent en sombre */
+body.cvf-dark [data-cvf="app"] [data-cvf-card]{background:#1a1a1f !important;border-color:rgba(245,241,232,.08) !important;}
+/* Inputs et textareas dans l'app passent en sombre */
+body.cvf-dark [data-cvf="app"] input,
+body.cvf-dark [data-cvf="app"] textarea,
+body.cvf-dark [data-cvf="app"] select{background:#1a1a1f !important;color:#f5f1e8 !important;border-color:rgba(245,241,232,.15) !important;}
+body.cvf-dark [data-cvf="app"] input::placeholder,
+body.cvf-dark [data-cvf="app"] textarea::placeholder{color:rgba(245,241,232,.35) !important;}
+/* Body lui-meme */
+body.cvf-dark{background:#0a0a0a;}
+/* Le CV (data-cvf="cv") reste explicitement clair, override toute heritage */
+body.cvf-dark [data-cvf="cv"]{color-scheme:light;}
+
+/* Auto-save indicator pill */
+.cvf-saved-pill{
+  position:fixed;top:14px;right:14px;
+  padding:6px 12px;border-radius:20px;
+  background:#16a34a;color:#fff;
+  font-family:Inter,system-ui,sans-serif;
+  font-size:11px;font-weight:600;
+  letter-spacing:.04em;
+  display:flex;align-items:center;gap:5px;
+  z-index:9000;
+  animation:cvfFadeIn 220ms ease-out;
+  box-shadow:0 4px 14px rgba(22,163,74,.3);
+  pointer-events:none;
+}
 `;
 
 // REGLE TIRETS - duplicated in every AI prompt for maximum compliance
@@ -88,7 +122,7 @@ const NO_DASH =
   + "ou tiret simple - (hyphen-minus U+002D). "
   + "Toute occurrence d'un tiret cadratin ou demi-cadratin sera consideree comme une faute majeure.";
 
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk" };
 
 const FR_T = {
   appName:"CV Factory", appSub:"L'IA qui boost et adapte ton CV",
@@ -666,6 +700,47 @@ const FR_T = {
   mc_why:"Pourquoi cette version",
   mc_alternatives:"Autres versions evaluees",
   mc_load_recommended:"Charger cette version",
+  // === Tutorial ===
+  tu_btn:"Voir le tutoriel",
+  tu_btn_desc:"Decouvre les 8 etapes pour bien demarrer",
+  tu_skip:"Passer",
+  tu_quit:"Quitter",
+  tu_next:"Suivant",
+  tu_prev:"Precedent",
+  tu_done:"Termine",
+  tu_step:"Etape",
+  tu_of:"sur",
+  tu_welcome_t:"Bienvenue sur CV Factory",
+  tu_welcome_d:"En 8 etapes, decouvre comment construire un CV qui ouvre des portes. Tu peux passer le tutoriel et le relancer plus tard depuis Finaliser.",
+  tu_phases_t:"Trois phases",
+  tu_phases_d:"Demarrer pour saisir ton CV. Cibler pour l'adapter a une offre. Finaliser pour exporter et suivre.",
+  tu_demarrer_t:"Demarrer",
+  tu_demarrer_d:"Saisis ton CV ou laisse l'IA le generer a partir de tes infos. Tu peux aussi importer un CV existant.",
+  tu_cibler_t:"Cibler une offre",
+  tu_cibler_d:"Colle une offre, l'IA detecte les mots-cles et adapte ton CV. 6 super-pouvoirs pour booster ta candidature.",
+  tu_coach_t:"Coach IA",
+  tu_coach_d:"Le bouton violet flottant ouvre le coach. 5 parcours guides ou question libre, le coach analyse ton CV.",
+  tu_finaliser_t:"Finaliser",
+  tu_finaliser_d:"Score, transformation accroche, versions, export PDF, export LinkedIn et suivi candidatures.",
+  tu_score_t:"Score CV 8 axes",
+  tu_score_d:"Diagnostic complet de ton CV : impact, clarte, ATS, mesurabilite, coherence, et plus.",
+  tu_export_t:"Export et suivi",
+  tu_export_d:"Exporte en PDF ou LinkedIn. Trace tes candidatures et compare tes versions de CV.",
+  // === Settings (panel) ===
+  set_btn:"Reglages",
+  set_eyebrow:"Reglages",
+  set_title:"Reglages",
+  set_lang:"Langue de l'interface",
+  set_dark:"Mode sombre",
+  set_dark_desc:"L'interface en sombre. Le CV reste clair pour l'export.",
+  set_kbd:"Raccourcis clavier",
+  set_tutorial:"Relancer le tutoriel",
+  set_kbd_save:"Exporter PDF",
+  set_kbd_coach:"Ouvrir le coach",
+  set_kbd_settings:"Ouvrir reglages",
+  set_kbd_esc:"Fermer la fenetre active",
+  // === Auto-save indicator ===
+  as_saved:"Enregistre",
   // === Customize CV (couleurs + polices + suggestions) ===
   cust_btn:"Personnaliser le CV",
   cust_eyebrow:"Apparence",
@@ -1286,6 +1361,47 @@ const EN_T = {
   mc_why:"Why this version",
   mc_alternatives:"Other versions evaluated",
   mc_load_recommended:"Load this version",
+  // === Tutorial ===
+  tu_btn:"View the tutorial",
+  tu_btn_desc:"Discover the 8 steps to get started",
+  tu_skip:"Skip",
+  tu_quit:"Quit",
+  tu_next:"Next",
+  tu_prev:"Previous",
+  tu_done:"Done",
+  tu_step:"Step",
+  tu_of:"of",
+  tu_welcome_t:"Welcome to CV Factory",
+  tu_welcome_d:"In 8 steps, discover how to build a CV that opens doors. You can skip and re-launch later from Finalize.",
+  tu_phases_t:"Three phases",
+  tu_phases_d:"Start to enter your CV. Target to adapt to an offer. Finalize to export and track.",
+  tu_demarrer_t:"Start",
+  tu_demarrer_d:"Enter your CV or let AI generate from your info. You can also import an existing CV.",
+  tu_cibler_t:"Target an offer",
+  tu_cibler_d:"Paste an offer, AI detects keywords and adapts your CV. 6 super powers to boost your application.",
+  tu_coach_t:"AI Coach",
+  tu_coach_d:"The floating purple button opens the coach. 5 guided paths or free question, the coach analyzes your CV.",
+  tu_finaliser_t:"Finalize",
+  tu_finaliser_d:"Score, summary transformation, versions, PDF export, LinkedIn export, and applications tracking.",
+  tu_score_t:"CV Score 8 axes",
+  tu_score_d:"Full diagnosis of your CV: impact, clarity, ATS, measurability, coherence, and more.",
+  tu_export_t:"Export and track",
+  tu_export_d:"Export to PDF or LinkedIn. Track your applications and compare your CV versions.",
+  // === Settings (panel) ===
+  set_btn:"Settings",
+  set_eyebrow:"Settings",
+  set_title:"Settings",
+  set_lang:"Interface language",
+  set_dark:"Dark mode",
+  set_dark_desc:"Interface in dark. The CV stays light for export.",
+  set_kbd:"Keyboard shortcuts",
+  set_tutorial:"Re-launch tutorial",
+  set_kbd_save:"Export PDF",
+  set_kbd_coach:"Open coach",
+  set_kbd_settings:"Open settings",
+  set_kbd_esc:"Close active window",
+  // === Auto-save indicator ===
+  as_saved:"Saved",
   // === Customize CV (colors + fonts + suggestions) ===
   cust_btn:"Customize CV",
   cust_eyebrow:"Appearance",
@@ -4671,6 +4787,14 @@ export default function App() {
   const [multiCVLoading, setMultiCVLoading] = useState(false);
   const [multiCVResult, setMultiCVResult] = useState(null);
   const [multiCVOffer, setMultiCVOffer] = useState("");
+  // v17 chantier 12 : Tutorial
+  const [showTutorial, setShowTutorial] = useState(false);
+  // v17 chantier 13 : Dark mode (interface uniquement, le CV reste clair)
+  const [darkMode, setDarkMode] = useState(false);
+  // v17 chantier 14 : Settings panel
+  const [showSettings, setShowSettings] = useState(false);
+  // v17 chantier 15 : Auto-save indicator
+  const [autoSaved, setAutoSaved] = useState(false);
   // v17 : Customize CV (couleurs + polices)
   // cvCustom = custom global (applique partout par defaut).
   // versionCustom est lu depuis cv.custom (par-version) si present.
@@ -4714,6 +4838,15 @@ export default function App() {
     if (Array.isArray(savedAp) && savedAp.length) {
       setApplications(savedAp);
     }
+    // Load dark mode preference
+    const savedDk = lsG(SK.DK, false);
+    if (savedDk === true) setDarkMode(true);
+    // Load tutorial seen flag : si jamais vu, on le declenche au premier render
+    const savedTu = lsG(SK.TU, false);
+    if (!savedTu) {
+      // Delai pour laisser le premier render se faire (evite flash)
+      setTimeout(() => setShowTutorial(true), 600);
+    }
     setHydrated(true);
   }, []);
 
@@ -4727,8 +4860,49 @@ export default function App() {
   const setCVFn = useCallback(fn => setCV_(p => {
     const n = typeof fn==="function" ? fn(p) : fn;
     lsS(SK.CV, n);
+    // v17 : auto-save indicator
+    setAutoSaved(true);
     return n;
   }), []);
+
+  // Auto-reset l'indicator apres 1.5s.
+  useEffect(() => {
+    if (!autoSaved) return;
+    const t = setTimeout(() => setAutoSaved(false), 1500);
+    return () => clearTimeout(t);
+  }, [autoSaved]);
+
+  // v17 chantier 16 : Raccourcis clavier globaux.
+  useEffect(() => {
+    if (!hydrated) return;
+    const onKey = (e) => {
+      // Ne pas intercepter si l'user est en train de taper dans un input/textarea
+      const tag = (e.target && e.target.tagName) || "";
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+      const cmdOrCtrl = e.metaKey || e.ctrlKey;
+      // Esc : ferme le modal actif (chaque modal a deja son propre handler Esc, donc rien a faire ici)
+      // Cmd+S : export PDF (uniquement si pas de modal ouvert et pas en train de taper)
+      if (cmdOrCtrl && e.key === "s" && !isTyping) {
+        e.preventDefault();
+        if (typeof exportPDF === "function") exportPDF();
+      }
+      // Cmd+K : ouvre coach
+      if (cmdOrCtrl && e.key === "k") {
+        e.preventDefault();
+        if (!cvIsEmpty) setShowCoach(true);
+      }
+      // Cmd+, : ouvre reglages (la virgule est le standard mac pour preferences)
+      if (cmdOrCtrl && e.key === ",") {
+        e.preventDefault();
+        setShowSettings(true);
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
+  }, [hydrated, cvIsEmpty]);  // exportPDF defined after, mais useCallback re-created => on l'evite ici (hoisting)
+
   const setTh = useCallback(v => { setThN_(v); lsS(SK.TH, v); }, []);
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
@@ -5779,6 +5953,40 @@ export default function App() {
     });
   }, []);
 
+  // v17 chantier 12 : Tutorial close/skip handlers.
+  const closeTutorial = useCallback(() => {
+    setShowTutorial(false);
+    lsS(SK.TU, true);
+  }, []);
+  // Bouton dans Reglages : relance le tuto sans toucher au flag.
+  const relaunchTutorial = useCallback(() => {
+    setShowSettings(false);
+    setShowTutorial(true);
+  }, []);
+
+  // v17 chantier 13 : Dark mode toggle.
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prev => {
+      const next = !prev;
+      lsS(SK.DK, next);
+      return next;
+    });
+  }, []);
+
+  // Sync class on body for dark mode CSS.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (darkMode) {
+      document.body.classList.add("cvf-dark");
+    } else {
+      document.body.classList.remove("cvf-dark");
+    }
+    return () => {
+      // Cleanup au unmount
+      document.body.classList.remove("cvf-dark");
+    };
+  }, [darkMode]);
+
   // v17 chantier 11 : Multi-CV strategie.
   // Compare l'offre a TOUTES les versions sauvegardees et recommande la meilleure.
   const runMultiCV = useCallback(async () => {
@@ -6533,6 +6741,37 @@ export default function App() {
 
       {/* === Export & historique === */}
       <div style={finEyebrow}>{T.fin_section_export}</div>
+      <button onClick={()=>setShowSettings(true)} style={{
+        ...B({
+          width:"100%", padding:"13px 18px", borderRadius:RadiusMd,
+          background:Paper, color:Ink,
+          border:"0.5px solid "+Gray200,
+          boxShadow:ShadowSm,
+          fontSize:13, fontWeight:600, fontFamily:Sans,
+          display:"flex", alignItems:"center", gap:12,
+          marginBottom:10, textAlign:"left",
+          transition:"all 200ms ease-out",
+        })
+      }}>
+        <div style={{
+          width:32, height:32, borderRadius:9,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          background:CreamSoft, color:GoldDeep, flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </div>
+        <span style={{flex:1}}>{T.set_btn}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke={Gray400} strokeWidth="2.5"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
       <button onClick={exportPDF} style={{
         ...B({
           width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
@@ -6807,6 +7046,22 @@ export default function App() {
           onClose={()=>{ if (!multiCVLoading) { setShowMultiCV(false); setMultiCVResult(null); }}}
         />
       )}
+      {showTutorial && (
+        <TutorialOverlay
+          T={T}
+          onClose={closeTutorial}
+          onSkip={closeTutorial}
+        />
+      )}
+      {showSettings && (
+        <SettingsPanel
+          T={T} locale={locale} setLocale={setLocale}
+          darkMode={darkMode}
+          onToggleDark={toggleDarkMode}
+          onRelaunchTutorial={relaunchTutorial}
+          onClose={()=>setShowSettings(false)}
+        />
+      )}
       {showAudit && (
         <AuditModal 
           T={T}
@@ -6951,6 +7206,16 @@ export default function App() {
         <link href={FONT} rel="stylesheet"/>
         <style>{KEYFRAMES_V17}</style>
         {notif && <Notif msg={notif}/>}
+        {autoSaved && (
+          <div className="cvf-saved-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="3.2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 6L9 17l-5-5"/>
+            </svg>
+            {T.as_saved || "Saved"}
+          </div>
+        )}
         {Modals}
         {Onboard}
         <div style={{
@@ -6958,7 +7223,7 @@ export default function App() {
           fontFamily:Sans,
           background:CreamSoft, overflow:"hidden",
         }}>
-          <div style={{
+          <div data-cvf="app" style={{
             width:300, background:Paper,
             borderRight:"0.5px solid "+Gray200,
             display:"flex", flexDirection:"column",
@@ -7011,7 +7276,7 @@ export default function App() {
             flex:1, overflow:"auto", padding:22,
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
-            <div style={{
+            <div data-cvf="cv" style={{
               width:794, minHeight:1123, background:"#fff",
               boxShadow:"0 8px 48px rgba(0,0,0,.14)",
               borderRadius:4, overflow:"hidden",
@@ -7029,6 +7294,16 @@ export default function App() {
       <link href={FONT} rel="stylesheet"/>
       <style>{KEYFRAMES_V17}</style>
       {notif && <Notif msg={notif}/>}
+      {autoSaved && (
+        <div className="cvf-saved-pill">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="3.2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M20 6L9 17l-5-5"/>
+          </svg>
+          {T.as_saved || "Saved"}
+        </div>
+      )}
       {Modals}
       {Onboard}
       {zoomed && (
@@ -7039,7 +7314,7 @@ export default function App() {
           <div style={{minWidth:794, padding:14}}>{CVEl}</div>
         </div>
       )}
-      <div style={{
+      <div data-cvf="app" style={{
         display:"flex", flexDirection:"column", height:"100vh",
         overflow:"hidden", background:CreamSoft,
         fontFamily:Sans,
@@ -7088,7 +7363,7 @@ export default function App() {
           <div ref={cRef} style={{
             background:Gray100, padding:"7px", flexShrink:0,
           }}>
-            <div style={{
+            <div data-cvf="cv" style={{
               height:cvH, overflow:"hidden",
               background:"#fff", borderRadius:5,
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
@@ -7119,6 +7394,7 @@ export default function App() {
             || showCustomize || !!modal
             || showLinkedIn || showCompare || showApplications
             || showMultiCV
+            || showTutorial || showSettings
           }/>
       </div>
     </>
