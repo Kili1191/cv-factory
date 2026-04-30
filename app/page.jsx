@@ -1,7 +1,29 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
+import BulletTransformer from "./components/BulletTransformer";
+import ScoreDashboard from "./components/ScoreDashboard";
+import GapRepairModal from "./components/GapRepairModal";
+import InterviewModal from "./components/InterviewModal";
+import VersionsModal from "./components/VersionsModal";
+import TruthModal from "./components/TruthModal";
+import PositioningModal from "./components/PositioningModal";
+import TranslateModal from "./components/TranslateModal";
+import AuditModal from "./components/AuditModal";
+import ApplicationPackModal from "./components/ApplicationPackModal";
+import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
+import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
+import { CVSidebar, CVAts } from "./components/CVLayouts";
+import CoachModal, { CoachFAB } from "./components/CoachModal";
+import LinkedInExportModal from "./components/LinkedInExportModal";
+import CVCompareModal from "./components/CVCompareModal";
+import ApplicationsTrackerModal from "./components/ApplicationsTrackerModal";
+import MultiCVStrategyModal from "./components/MultiCVStrategyModal";
+import {
+  detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
+  countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
+} from "./components/dateUtils";
 
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&display=swap";
@@ -66,7 +88,7 @@ const NO_DASH =
   + "ou tiret simple - (hyphen-minus U+002D). "
   + "Toute occurrence d'un tiret cadratin ou demi-cadratin sera consideree comme une faute majeure.";
 
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap" };
 
 const FR_T = {
   appName:"CV Factory", appSub:"L'IA qui boost et adapte ton CV",
@@ -185,6 +207,16 @@ const FR_T = {
   bt_premium:"Premium", bt_premium_hint:"Registre executive elegant",
   bt_impact:"Impact", bt_impact_hint:"Avec estimation chiffree",
   bt_adopt:"Adopter",
+  bt_eyebrow:"Bullet",
+  // Bullet Transformer pour le summary (accroche) : 3 registres communs + 2 adaptes.
+  bts_eyebrow:"Accroche",
+  bts_title:"5 angles, ton choix.",
+  bts_sub:"5 reformulations de ton accroche, registres differents.",
+  bts_btn:"Transformer l'accroche",
+  bts_empty:"Ecris d'abord une accroche a transformer",
+  bts_sobre:"Sobre", bts_sobre_hint:"Factuel, sans superlatifs",
+  bts_story:"Storytelling", bts_story_hint:"Narration fil rouge",
+  bts_adopted:"Accroche adoptee",
   // === v17 : 3 phases narratives ===
   ph_start:"Demarrer", ph_target:"Cibler", ph_finalize:"Finaliser",
   // Hero onboarding (style editorial Fraunces)
@@ -276,6 +308,404 @@ const FR_T = {
   fin_template_load:"Charger ce CV",
   fin_template_loaded:"Template charge",
   fin_iface_lang:"Langue de l'interface",
+  // === CV Score Dashboard 8 axes ===
+  sd_tab_dashboard:"Diagnostic 8",
+  sd_tab_quick:"Score rapide",
+  sd_eyebrow:"Diagnostic IA",
+  sd_title_a:"8 axes,", sd_title_em:"un verdict.", sd_title_b:"",
+  sd_sub:"L'IA analyse 8 dimensions de ton CV et te dit ou agir en priorite.",
+  sd_run:"Analyser mon CV",
+  sd_running:"L'IA decortique ton CV...",
+  sd_running_sub:"8 axes a evaluer, 30 secondes.",
+  sd_global:"Score global",
+  sd_priority:"Priorite numero 1",
+  sd_no_cv:"Charge d'abord un CV",
+  sd_reco:"Recommandation",
+  sd_cta_fix:"Aller a l'outil",
+  sd_back_top:"Retour en haut",
+  // 8 axes (nom + sub-titre court)
+  sd_ax_title:"Clarte du titre",
+  sd_ax_title_sub:"Le metier visible en 1 seconde",
+  sd_ax_bullets:"Impact des bullets",
+  sd_ax_bullets_sub:"Chiffres et resultats concrets",
+  sd_ax_ats:"ATS-friendly",
+  sd_ax_ats_sub:"Mots-cles et format pro",
+  sd_ax_relevance:"Pertinence du parcours",
+  sd_ax_relevance_sub:"Coherence avec le metier vise",
+  sd_ax_credibility:"Credibilite",
+  sd_ax_credibility_sub:"Phrases solides, sans bullshit",
+  sd_ax_design:"Style et design",
+  sd_ax_design_sub:"Lisibilite visuelle, hierarchie",
+  sd_ax_readability:"Lisibilite",
+  sd_ax_readability_sub:"Longueur, densite, equilibre",
+  sd_ax_differentiation:"Differenciation",
+  sd_ax_differentiation_sub:"Ce qui te rend unique",
+  // CTA labels par axe (ce qu'on va faire)
+  sd_cta_title:"Editer le titre",
+  sd_cta_bullets:"Transformer les bullets",
+  sd_cta_ats:"Activer ATS-Safe",
+  sd_cta_relevance:"Voir le positionnement",
+  sd_cta_credibility:"Lancer Truth Check",
+  sd_cta_design:"Personnaliser",
+  sd_cta_readability:"Editer les experiences",
+  sd_cta_differentiation:"Voir le positionnement",
+  // === Gap Repair (Lisser le parcours) ===
+  gr_btn:"Lisser le parcours",
+  gr_eyebrow:"Chronologie",
+  gr_title_a:"Faire", gr_title_em:"disparaitre", gr_title_b:"les trous.",
+  gr_sub:"L'IA detecte les trous et propose comment les masquer sans mentir.",
+  gr_run:"Analyser ma chronologie",
+  gr_running:"Analyse de la chronologie...",
+  gr_running_sub:"On detecte les trous et on cherche les meilleures strategies.",
+  gr_no_cv:"Charge d'abord un CV",
+  gr_no_gaps_title:"Aucun trou detecte.",
+  gr_no_gaps_sub:"Ta chronologie est lisse.",
+  gr_unparsable:"Standardise d'abord les dates de tes experiences.",
+  gr_unparsable_sub:"Format attendu : MM/YYYY ou YYYY. L'IA ne peut analyser que des dates structurees.",
+  gr_gap_title:"Trou de",
+  gr_gap_months:"mois",
+  gr_gap_year:"an",
+  gr_gap_years:"ans",
+  gr_gap_between:"entre",
+  gr_gap_and:"et",
+  gr_gap_present:"aujourd'hui",
+  // 4 strategies
+  gr_strat_year:"Format annees seulement",
+  gr_strat_year_sub:"Reformatter toutes tes dates en YYYY au lieu de MM/YYYY. Un trou de quelques mois disparait.",
+  gr_strat_year_btn:"Appliquer le format annees",
+  gr_strat_year_warn:"Cela va modifier toutes les dates de toutes tes experiences.",
+  gr_strat_year_done:"Dates reformatees en annees",
+  gr_strat_year_partial:"Format annees seulement reduit certains trous mais pas tous.",
+  gr_strat_year_full:"Le format annees seulement fait disparaitre tous tes trous.",
+  gr_strat_year_useless:"Le format annees seulement ne change rien : tes trous sont trop longs.",
+  gr_strat_extend:"Etirement legitime",
+  gr_strat_extend_sub:"Etendre la fin de l'experience precedente pour inclure la transition (negociation, onboarding).",
+  gr_strat_extend_btn:"Etendre cette experience",
+  gr_strat_extend_warn:"Uniquement si tu peux defendre cette periode (preavis, transition, onboarding).",
+  gr_strat_extend_done:"Date etendue",
+  gr_strat_group:"Regroupement",
+  gr_strat_group_sub:"Fusionner plusieurs missions courtes en une seule ligne continue.",
+  gr_strat_group_btn:"Fusionner ces experiences",
+  gr_strat_group_warn:"Les bullets seront combines, les dates passent en couverture continue.",
+  gr_strat_group_done:"Experiences fusionnees",
+  gr_strat_functional:"Format fonctionnel",
+  gr_strat_functional_sub:"CV par competences plutot que chronologique. Les dates passent au second plan.",
+  gr_strat_functional_btn:"Voir comment faire",
+  gr_strat_functional_help:"Reorganise ton CV par theme (Expertise, Realisations, Formation) plutot que par dates. Active le layout adapte dans Apparence.",
+  gr_no_strategies:"Pas de strategie automatique pour ce trou.",
+  gr_no_strategies_sub:"Tu peux le combler manuellement en ajoutant une experience (formation, projets, conseil).",
+  gr_section_strategies:"Strategies disponibles",
+  gr_section_results:"Trous detectes",
+  // === Interview Continuity (Preparer l'entretien) ===
+  iv_btn:"Preparer l'entretien",
+  iv_btn_desc:"L'IA simule le recruteur typique de ton marche",
+  iv_eyebrow:"Apres le CV",
+  iv_title_a:"L'entretien", iv_title_em:"se prepare", iv_title_b:".",
+  iv_sub:"L'IA joue le recruteur de ton marche et te liste les questions probables, avec des reponses STAR pretes.",
+  iv_run:"Generer mes questions",
+  iv_run_again:"Regenerer d'autres questions",
+  iv_running:"L'IA simule un recruteur senior...",
+  iv_running_sub:"Pays, secteur, niveau : analyse complete.",
+  iv_no_cv:"Charge d'abord un CV",
+  iv_offer_label:"Offre d'emploi (optionnel)",
+  iv_offer_ph:"Colle l'offre pour des questions ultra-ciblees, ou laisse vide pour un mode generique.",
+  iv_offer_already:"Offre detectee depuis Cibler. On l'utilise.",
+  iv_meta_country:"Pays",
+  iv_meta_role:"Niveau",
+  iv_meta_count:"questions",
+  iv_progress:"Question",
+  iv_of:"sur",
+  iv_prev:"Precedente",
+  iv_next:"Suivante",
+  // 3 categories de questions
+  iv_cat_tech:"Technique",
+  iv_cat_behav:"Comportementale",
+  iv_cat_case:"Cas pratique",
+  iv_cat_culture:"Culture",
+  iv_cat_motiv:"Motivation",
+  iv_cat_other:"Autre",
+  // Reponse STAR (4 sections)
+  iv_star_title:"Reponse modele",
+  iv_star_situation:"Situation",
+  iv_star_task:"Tache",
+  iv_star_action:"Action",
+  iv_star_result:"Resultat",
+  iv_star_tip:"Conseil",
+  iv_back_overview:"Voir toutes les questions",
+  iv_overview_title:"Vue d'ensemble",
+  iv_done:"Tu es pret.",
+  iv_done_sub:"Bonne chance pour ton entretien.",
+  // === Versions multi-CV ===
+  vs_eyebrow:"Multi-CV",
+  vs_title_a:"Plusieurs", vs_title_em:"versions", vs_title_b:", un seul outil.",
+  vs_sub:"Sauvegarde des versions selon les marches, secteurs ou postes vises.",
+  vs_save:"Sauvegarder cette version",
+  vs_empty_title:"Aucune version sauvegardee.",
+  vs_empty_sub:"Sauvegarde le CV actuel pour pouvoir le restaurer plus tard.",
+  vs_count:"versions",
+  vs_load:"Charger",
+  vs_delete:"Supprimer",
+  vs_load_confirm:"Charger cette version va remplacer le CV actuel. Continuer ?",
+  vs_delete_confirm:"Supprimer cette version ? Action irreversible.",
+  // === Truth Check (modal) ===
+  tc_eyebrow:"Audit",
+  tc_title:"Truth Check",
+  tc_sub:"Phrases faibles, vagues ou risquees detectees",
+  tc_loading:"Analyse honnete de ton CV...",
+  tc_loading_sub:"15 a 25 secondes",
+  tc_verdict:"Verdict global",
+  tc_no_issues:"Aucun probleme majeur detecte",
+  tc_why:"Pourquoi",
+  tc_fix:"Reformulation proposee",
+  tc_send:"Envoyer cette correction dans Ajuster",
+  tc_type_bullshit:"Bullshit",
+  tc_type_vague:"Vague",
+  tc_type_weak:"Faible",
+  tc_type_risky:"Risque",
+  tc_type_incoherent:"Incoherent",
+  // === Positioning Modal ===
+  pm_eyebrow:"Strategie",
+  pm_title:"Positionnement de carriere",
+  pm_sub:"3 angles strategiques pour ton parcours",
+  pm_loading:"Analyse strategique de ton parcours...",
+  pm_loading_sub:"15 a 25 secondes",
+  pm_angle:"Angle",
+  pm_highlight:"A mettre en avant",
+  pm_target:"Cible",
+  pm_adopt:"Adopter cet angle (titre + accroche)",
+  // === Audit Modal ===
+  am_eyebrow:"Audit IA",
+  am_title:"Audit IA Recruteur",
+  am_sub:"Analyse de ton CV par un recruteur senior virtuel",
+  am_intro_title:"L'audit recruteur va analyser ton CV en profondeur",
+  am_intro_sub:"Score global, longueur, forces et faiblesses, mots-cles manquants, et verdict honnete d'un recruteur.",
+  am_country_label:"Pays cible (marche du travail)",
+  am_country_help:"Chaque pays a ses codes (longueur, format, mots-cles attendus). L'IA adapte l'audit en consequence.",
+  am_run:"Lancer l'audit recruteur",
+  am_loading_sub:"L'analyse prend 15 a 30 secondes",
+  am_score_global:"Score global",
+  am_score_unit:"sur 100",
+  am_verdict:"Verdict recruteur",
+  am_first_impression:"Premiere impression (5 secondes)",
+  am_length:"Longueur",
+  am_strengths:"Forces",
+  am_weaknesses:"Faiblesses",
+  am_suggestions:"Suggestions actionnables",
+  am_suggestions_hint:"Clique sur une suggestion pour l'envoyer dans Ajuster",
+  am_kw_missing:"Mots-cles a ajouter (ATS)",
+  am_kw_integrate:"Integrer ces mots-cles dans le CV",
+  am_kw_integrating:"Integration en cours...",
+  am_kw_hint:"L'IA placera intelligemment les mots-cles dans tes bullets et ton accroche, sans bourrage.",
+  am_relaunch:"Relancer l'audit",
+  // Pays
+  am_country_fr:"France",
+  am_country_uk:"Royaume-Uni",
+  am_country_us:"Etats-Unis",
+  am_country_de:"Allemagne",
+  am_country_ch:"Suisse",
+  am_country_be:"Belgique",
+  am_country_lu:"Luxembourg",
+  am_country_es:"Espagne",
+  am_country_it:"Italie",
+  am_country_ae:"Emirats Arabes Unis",
+  am_country_ca:"Canada",
+  am_country_auto:"Auto-detection",
+  // === Application Pack Modal ===
+  pk_eyebrow:"Candidature",
+  pk_title:"Candidature complete",
+  pk_sub:"CV + Lettre + LinkedIn + Email + Pitch + STAR",
+  pk_loading_sub:"La generation prend 25 a 40 secondes",
+  pk_loading_msgs:[
+    "Redaction de la lettre de motivation...",
+    "Composition du message LinkedIn...",
+    "Preparation de l'email de candidature...",
+    "Construction du pitch d'entretien...",
+    "Generation des reponses STAR...",
+    "Finalisation de la candidature...",
+  ],
+  pk_tab_cover:"Lettre",
+  pk_tab_linkedin:"LinkedIn",
+  pk_tab_email:"Email",
+  pk_tab_pitch:"Pitch",
+  pk_tab_star:"Reponses STAR",
+  pk_section_cover:"Lettre de motivation",
+  pk_section_linkedin:"Message LinkedIn au recruteur",
+  pk_section_email_subject:"Objet de l'email",
+  pk_section_email_body:"Corps de l'email",
+  pk_section_pitch:"Pitch d'introduction",
+  pk_pitch_hint:"Reponse a 'Tell me about yourself' - 60 secondes max",
+  pk_star_hint:"Reponses preparees aux questions probables (methode STAR)",
+  pk_star_situation:"Situation",
+  pk_star_task:"Tache",
+  pk_star_action:"Action",
+  pk_star_result:"Resultat",
+  pk_copy:"Copier",
+  pk_copy_answer:"Copier cette reponse",
+  // === Coach IA conversationnel ===
+  co_fab_aria:"Ouvrir le coach IA",
+  co_eyebrow:"Coach IA",
+  co_title_a:"Ton", co_title_em:"coach", co_title_b:"carriere.",
+  co_sub:"Discute avec l'IA pour faire briller ton CV.",
+  co_no_cv:"Charge d'abord un CV pour discuter avec ton coach.",
+  co_welcome_title:"Par quoi on commence ?",
+  co_welcome_sub:"Choisis un parcours guide ou pose une question libre.",
+  co_path_describe:"Decrire une experience",
+  co_path_describe_desc:"Mettre en valeur une experience qui manque de relief",
+  co_path_shine:"Faire briller mon CV",
+  co_path_shine_desc:"Identifier les zones plates et les transformer",
+  co_path_gap:"Gerer un trou de carriere",
+  co_path_gap_desc:"Transformer une periode floue en force",
+  co_path_transition:"Presenter une transition",
+  co_path_transition_desc:"Justifier un changement de secteur ou de role",
+  co_path_pitch:"Construire mon pitch personnel",
+  co_path_pitch_desc:"Definir comment me presenter en 60 secondes",
+  co_path_free:"Question libre",
+  co_path_free_desc:"Pose ta propre question au coach",
+  co_input_ph:"Tape ta reponse...",
+  co_send:"Envoyer",
+  co_thinking:"Le coach reflechit...",
+  co_clear:"Effacer la conversation",
+  co_clear_confirm:"Effacer toute la conversation ? Action irreversible.",
+  co_adopt_summary:"Adopter comme accroche",
+  co_adopt_title:"Adopter comme titre",
+  co_adopt_bullet:"Ajouter ce bullet",
+  co_adopted:"Adopte dans le CV",
+  co_back_paths:"Choisir un autre parcours",
+  // === Export LinkedIn ===
+  li_btn:"Exporter pour LinkedIn",
+  li_btn_desc:"Headline + About + experiences au format LinkedIn",
+  li_eyebrow:"LinkedIn",
+  li_title_a:"Optimise ton", li_title_em:"profil", li_title_b:"LinkedIn.",
+  li_sub:"L'IA reformate ton CV pour le format LinkedIn (informel, premiere personne, mots-cles ATS).",
+  li_no_cv:"Charge d'abord un CV",
+  li_run:"Generer mon profil LinkedIn",
+  li_loading:"Reformatage pour LinkedIn...",
+  li_loading_sub:"15 a 25 secondes",
+  li_section_headline:"Headline (titre du profil)",
+  li_section_about:"A propos (About)",
+  li_section_experiences:"Experiences",
+  li_headline_hint:"Maximum 220 caracteres. Apparait sous ton nom.",
+  li_about_hint:"Format informel premiere personne. Premiere phrase = hook.",
+  li_exp_role:"Intitule",
+  li_exp_company:"Entreprise",
+  li_exp_desc:"Description",
+  li_copy_all:"Tout copier",
+  li_copy_section:"Copier",
+  li_copied:"Copie dans le presse-papiers",
+  // === CV Compare ===
+  cmp_btn:"Comparer 2 versions",
+  cmp_btn_desc:"Vois l'evolution entre 2 versions de ton CV",
+  cmp_eyebrow:"Comparaison",
+  cmp_title_a:"Compare", cmp_title_em:"deux", cmp_title_b:"versions.",
+  cmp_sub:"Selectionne 2 versions sauvegardees pour voir l'evolution et le verdict de l'IA.",
+  cmp_no_versions:"Tu as besoin d'au moins 2 versions sauvegardees pour comparer.",
+  cmp_pick_a:"Version A",
+  cmp_pick_b:"Version B",
+  cmp_pick_ph:"Selectionne une version",
+  cmp_run:"Comparer",
+  cmp_loading:"Analyse comparative...",
+  cmp_loading_sub:"15 a 25 secondes",
+  cmp_section_summary:"Resume des differences",
+  cmp_section_diffs:"Changements detectes",
+  cmp_section_verdict:"Verdict IA",
+  cmp_section_better:"Quelle version est meilleure ?",
+  cmp_field_changed:"Modifie",
+  cmp_field_added:"Ajoute",
+  cmp_field_removed:"Supprime",
+  cmp_winner_a:"Version A est meilleure",
+  cmp_winner_b:"Version B est meilleure",
+  cmp_winner_tie:"Equivalentes",
+  // === Applications Tracker (suivi candidatures) ===
+  ap_btn:"Suivi candidatures",
+  ap_btn_desc:"Trace tes candidatures, statuts et relances",
+  ap_eyebrow:"Suivi",
+  ap_title_a:"Tes", ap_title_em:"candidatures", ap_title_b:".",
+  ap_sub:"Garde une trace de toutes les candidatures, statuts et relances. Stocke localement.",
+  ap_add:"Ajouter une candidature",
+  ap_edit:"Modifier",
+  ap_delete:"Supprimer",
+  ap_delete_confirm:"Supprimer cette candidature ?",
+  ap_save:"Enregistrer",
+  ap_cancel:"Annuler",
+  ap_field_company:"Entreprise",
+  ap_field_role:"Poste",
+  ap_field_date:"Date de candidature",
+  ap_field_status:"Statut",
+  ap_field_notes:"Notes",
+  ap_field_link:"Lien (offre, profil)",
+  ap_status_applied:"Envoyee",
+  ap_status_phone:"Entretien tel",
+  ap_status_interview:"Entretien",
+  ap_status_offer:"Offre recue",
+  ap_status_rejected:"Refusee",
+  ap_status_ghosted:"Ghosted",
+  ap_status_accepted:"Acceptee",
+  ap_filter_all:"Toutes",
+  ap_empty_title:"Aucune candidature pour l'instant.",
+  ap_empty_sub:"Ajoute ta premiere candidature pour commencer le suivi.",
+  ap_stats_total:"Total",
+  ap_stats_active:"En cours",
+  ap_stats_offers:"Offres",
+  ap_stats_rejected:"Refus",
+  // === Multi-CV strategie (recommandation IA) ===
+  mc_btn:"Quel CV envoyer ?",
+  mc_btn_desc:"L'IA recommande la meilleure version pour cette offre",
+  mc_eyebrow:"Strategie multi-CV",
+  mc_title_a:"Quel", mc_title_em:"CV", mc_title_b:"pour cette offre ?",
+  mc_sub:"L'IA analyse l'offre et compare toutes tes versions sauvegardees pour recommander la plus pertinente.",
+  mc_no_versions:"Tu n'as pas encore de versions sauvegardees. Sauvegarde au moins 2 versions pour utiliser cet outil.",
+  mc_offer_label:"Offre d'emploi",
+  mc_offer_ph:"Colle ici l'offre que tu veux cibler...",
+  mc_offer_already:"Offre detectee depuis Cibler. On l'utilise.",
+  mc_run:"Recommander la meilleure version",
+  mc_loading:"Analyse comparative en cours...",
+  mc_loading_sub:"15 a 25 secondes",
+  mc_recommendation:"Recommandation",
+  mc_recommended:"Version recommandee",
+  mc_match:"Score de match",
+  mc_why:"Pourquoi cette version",
+  mc_alternatives:"Autres versions evaluees",
+  mc_load_recommended:"Charger cette version",
+  // === Customize CV (couleurs + polices + suggestions) ===
+  cust_btn:"Personnaliser le CV",
+  cust_eyebrow:"Apparence",
+  cust_title_a:"Ton CV,", cust_title_em:"signature.", cust_title_b:"",
+  cust_sub:"Couleurs, polices, ou laisse l'IA decider.",
+  cust_scope_global:"Style par defaut",
+  cust_scope_version:"Cette version uniquement",
+  cust_scope_global_hint:"Applique a tous tes CV.",
+  cust_scope_version_hint:"Override pour la version active. Le defaut reste intact.",
+  cust_tab_colors:"Couleurs",
+  cust_tab_fonts:"Polices",
+  cust_tab_suggest:"Suggestions IA",
+  cust_color_accent:"Couleur d'accent",
+  cust_color_sidebar:"Couleur du bandeau lateral",
+  cust_color_paper:"Couleur du fond du CV",
+  cust_color_picker:"Choisir une autre couleur",
+  cust_font_header:"Police des titres",
+  cust_font_body:"Police du corps",
+  cust_font_sample_header:"Aa",
+  cust_font_sample_body:"Profil et experience",
+  cust_font_url_label:"Ou colle une URL Google Fonts",
+  cust_font_url_ph:"https://fonts.googleapis.com/css2?family=...",
+  cust_font_url_apply:"Charger cette police",
+  cust_font_url_apply_target:"Appliquer aux titres ou au corps ?",
+  cust_font_url_to_header:"Aux titres",
+  cust_font_url_to_body:"Au corps",
+  cust_font_url_invalid:"URL Google Fonts invalide",
+  cust_font_url_loading:"Chargement de la police...",
+  cust_font_url_failed:"Echec du chargement de la police",
+  cust_reset:"Reinitialiser au theme",
+  cust_resetted:"Personnalisation reinitialisee",
+  cust_wcag_aa:"AA",
+  cust_wcag_aaa:"AAA",
+  cust_wcag_fail:"Contraste insuffisant",
+  cust_suggest_btn:"Suggerer pour mon profil",
+  cust_suggest_loading:"L'IA analyse ton profil...",
+  cust_suggest_no_cv:"Charge d'abord un CV",
+  cust_suggest_why:"Pourquoi cette combinaison",
+  cust_suggest_adopt:"Adopter ce style",
+  cust_adopted:"Style applique",
 };
 
 const EN_T = {
@@ -397,6 +827,16 @@ const EN_T = {
   bt_premium:"Premium", bt_premium_hint:"Executive elegant register",
   bt_impact:"Impact", bt_impact_hint:"With quantified estimate",
   bt_adopt:"Adopt",
+  bt_eyebrow:"Bullet",
+  // Bullet Transformer for the summary: 3 shared + 2 adapted registers.
+  bts_eyebrow:"Summary",
+  bts_title:"5 angles, your pick.",
+  bts_sub:"5 rewrites of your summary, different registers.",
+  bts_btn:"Transform summary",
+  bts_empty:"Write a summary first to transform it",
+  bts_sobre:"Plain", bts_sobre_hint:"Factual, no superlatives",
+  bts_story:"Storytelling", bts_story_hint:"Narrative through-line",
+  bts_adopted:"Summary adopted",
   // === v17 : 3 narrative phases ===
   ph_start:"Start", ph_target:"Target", ph_finalize:"Finalize",
   // Hero onboarding (editorial Fraunces)
@@ -488,6 +928,404 @@ const EN_T = {
   fin_template_load:"Load this CV",
   fin_template_loaded:"Template loaded",
   fin_iface_lang:"Interface language",
+  // === CV Score Dashboard 8 axes ===
+  sd_tab_dashboard:"Diagnostic 8",
+  sd_tab_quick:"Quick score",
+  sd_eyebrow:"AI diagnostic",
+  sd_title_a:"8 axes,", sd_title_em:"one verdict.", sd_title_b:"",
+  sd_sub:"AI analyzes 8 dimensions of your CV and tells you where to focus.",
+  sd_run:"Analyze my CV",
+  sd_running:"AI is dissecting your CV...",
+  sd_running_sub:"8 axes to evaluate, 30 seconds.",
+  sd_global:"Global score",
+  sd_priority:"Top priority",
+  sd_no_cv:"Load a CV first",
+  sd_reco:"Recommendation",
+  sd_cta_fix:"Open tool",
+  sd_back_top:"Back to top",
+  // 8 axes (name + short sub)
+  sd_ax_title:"Title clarity",
+  sd_ax_title_sub:"The role visible in 1 second",
+  sd_ax_bullets:"Bullet impact",
+  sd_ax_bullets_sub:"Numbers and concrete results",
+  sd_ax_ats:"ATS-friendly",
+  sd_ax_ats_sub:"Keywords and clean format",
+  sd_ax_relevance:"Career relevance",
+  sd_ax_relevance_sub:"Coherence with target role",
+  sd_ax_credibility:"Credibility",
+  sd_ax_credibility_sub:"Solid sentences, no fluff",
+  sd_ax_design:"Style and design",
+  sd_ax_design_sub:"Visual readability, hierarchy",
+  sd_ax_readability:"Readability",
+  sd_ax_readability_sub:"Length, density, balance",
+  sd_ax_differentiation:"Differentiation",
+  sd_ax_differentiation_sub:"What makes you unique",
+  // CTA labels per axis
+  sd_cta_title:"Edit title",
+  sd_cta_bullets:"Transform bullets",
+  sd_cta_ats:"Enable ATS-Safe",
+  sd_cta_relevance:"View positioning",
+  sd_cta_credibility:"Run Truth Check",
+  sd_cta_design:"Customize",
+  sd_cta_readability:"Edit experiences",
+  sd_cta_differentiation:"View positioning",
+  // === Gap Repair (Polish timeline) ===
+  gr_btn:"Polish timeline",
+  gr_eyebrow:"Chronology",
+  gr_title_a:"Make", gr_title_em:"gaps", gr_title_b:"disappear.",
+  gr_sub:"AI detects gaps and suggests how to mask them without lying.",
+  gr_run:"Analyze my timeline",
+  gr_running:"Analyzing chronology...",
+  gr_running_sub:"Detecting gaps and finding the best strategies.",
+  gr_no_cv:"Load a CV first",
+  gr_no_gaps_title:"No gap detected.",
+  gr_no_gaps_sub:"Your timeline is smooth.",
+  gr_unparsable:"Standardize your experience dates first.",
+  gr_unparsable_sub:"Expected format: MM/YYYY or YYYY. AI can only analyze structured dates.",
+  gr_gap_title:"Gap of",
+  gr_gap_months:"months",
+  gr_gap_year:"year",
+  gr_gap_years:"years",
+  gr_gap_between:"between",
+  gr_gap_and:"and",
+  gr_gap_present:"today",
+  // 4 strategies
+  gr_strat_year:"Years only format",
+  gr_strat_year_sub:"Reformat all dates as YYYY instead of MM/YYYY. A gap of a few months vanishes.",
+  gr_strat_year_btn:"Apply years format",
+  gr_strat_year_warn:"This will change all dates across all your experiences.",
+  gr_strat_year_done:"Dates reformatted to years",
+  gr_strat_year_partial:"Years only format shrinks some gaps but not all.",
+  gr_strat_year_full:"Years only format makes all your gaps vanish.",
+  gr_strat_year_useless:"Years only format does not help: your gaps are too long.",
+  gr_strat_extend:"Legitimate stretch",
+  gr_strat_extend_sub:"Extend the end of the previous experience to include the transition (notice, onboarding).",
+  gr_strat_extend_btn:"Extend this experience",
+  gr_strat_extend_warn:"Only if you can defend this period (notice period, transition, onboarding).",
+  gr_strat_extend_done:"Date extended",
+  gr_strat_group:"Group experiences",
+  gr_strat_group_sub:"Merge several short missions into a single continuous line.",
+  gr_strat_group_btn:"Merge these experiences",
+  gr_strat_group_warn:"Bullets will be combined, dates become continuous coverage.",
+  gr_strat_group_done:"Experiences merged",
+  gr_strat_functional:"Functional format",
+  gr_strat_functional_sub:"CV by skills rather than chronological. Dates become secondary.",
+  gr_strat_functional_btn:"See how",
+  gr_strat_functional_help:"Reorganize your CV by theme (Expertise, Achievements, Education) rather than by dates. Switch to the matching layout in Appearance.",
+  gr_no_strategies:"No automatic strategy for this gap.",
+  gr_no_strategies_sub:"You can fill it manually by adding an experience (training, projects, consulting).",
+  gr_section_strategies:"Available strategies",
+  gr_section_results:"Detected gaps",
+  // === Interview Continuity (Prepare for interview) ===
+  iv_btn:"Prepare for interview",
+  iv_btn_desc:"AI simulates the typical recruiter for your market",
+  iv_eyebrow:"After the CV",
+  iv_title_a:"The interview", iv_title_em:"is prepared", iv_title_b:".",
+  iv_sub:"AI plays the recruiter from your market and lists likely questions, with STAR answers ready.",
+  iv_run:"Generate my questions",
+  iv_run_again:"Regenerate other questions",
+  iv_running:"AI is simulating a senior recruiter...",
+  iv_running_sub:"Country, sector, level: full analysis.",
+  iv_no_cv:"Load a CV first",
+  iv_offer_label:"Job offer (optional)",
+  iv_offer_ph:"Paste the job for ultra-targeted questions, or leave empty for generic mode.",
+  iv_offer_already:"Job detected from Target. We use it.",
+  iv_meta_country:"Country",
+  iv_meta_role:"Level",
+  iv_meta_count:"questions",
+  iv_progress:"Question",
+  iv_of:"of",
+  iv_prev:"Previous",
+  iv_next:"Next",
+  // 3 categories of questions
+  iv_cat_tech:"Technical",
+  iv_cat_behav:"Behavioral",
+  iv_cat_case:"Case study",
+  iv_cat_culture:"Culture",
+  iv_cat_motiv:"Motivation",
+  iv_cat_other:"Other",
+  // STAR answer
+  iv_star_title:"Model answer",
+  iv_star_situation:"Situation",
+  iv_star_task:"Task",
+  iv_star_action:"Action",
+  iv_star_result:"Result",
+  iv_star_tip:"Tip",
+  iv_back_overview:"See all questions",
+  iv_overview_title:"Overview",
+  iv_done:"You are ready.",
+  iv_done_sub:"Good luck with your interview.",
+  // === Multi-CV versions ===
+  vs_eyebrow:"Multi-CV",
+  vs_title_a:"Several", vs_title_em:"versions", vs_title_b:", one tool.",
+  vs_sub:"Save versions for different markets, sectors or target roles.",
+  vs_save:"Save this version",
+  vs_empty_title:"No saved version.",
+  vs_empty_sub:"Save the current CV to restore it later.",
+  vs_count:"versions",
+  vs_load:"Load",
+  vs_delete:"Delete",
+  vs_load_confirm:"Loading this version will replace the current CV. Continue?",
+  vs_delete_confirm:"Delete this version? This is irreversible.",
+  // === Truth Check (modal) ===
+  tc_eyebrow:"Audit",
+  tc_title:"Truth Check",
+  tc_sub:"Weak, vague or risky sentences detected",
+  tc_loading:"Honest analysis of your CV...",
+  tc_loading_sub:"15 to 25 seconds",
+  tc_verdict:"Overall verdict",
+  tc_no_issues:"No major issues detected",
+  tc_why:"Why",
+  tc_fix:"Proposed rewrite",
+  tc_send:"Send this fix to Adjust",
+  tc_type_bullshit:"Bullshit",
+  tc_type_vague:"Vague",
+  tc_type_weak:"Weak",
+  tc_type_risky:"Risky",
+  tc_type_incoherent:"Incoherent",
+  // === Positioning Modal ===
+  pm_eyebrow:"Strategy",
+  pm_title:"Career positioning",
+  pm_sub:"3 strategic angles for your background",
+  pm_loading:"Strategic analysis of your background...",
+  pm_loading_sub:"15 to 25 seconds",
+  pm_angle:"Angle",
+  pm_highlight:"To highlight",
+  pm_target:"Target",
+  pm_adopt:"Adopt this angle (title + summary)",
+  // === Audit Modal ===
+  am_eyebrow:"AI Audit",
+  am_title:"AI Recruiter Audit",
+  am_sub:"Your CV analyzed by a virtual senior recruiter",
+  am_intro_title:"The recruiter audit will analyze your CV in depth",
+  am_intro_sub:"Global score, length, strengths and weaknesses, missing keywords, and an honest recruiter verdict.",
+  am_country_label:"Target country (job market)",
+  am_country_help:"Each country has its codes (length, format, expected keywords). The AI adapts the audit accordingly.",
+  am_run:"Run recruiter audit",
+  am_loading_sub:"Analysis takes 15 to 30 seconds",
+  am_score_global:"Global score",
+  am_score_unit:"out of 100",
+  am_verdict:"Recruiter verdict",
+  am_first_impression:"First impression (5 seconds)",
+  am_length:"Length",
+  am_strengths:"Strengths",
+  am_weaknesses:"Weaknesses",
+  am_suggestions:"Actionable suggestions",
+  am_suggestions_hint:"Click on a suggestion to send it to Adjust",
+  am_kw_missing:"Keywords to add (ATS)",
+  am_kw_integrate:"Integrate these keywords into the CV",
+  am_kw_integrating:"Integrating...",
+  am_kw_hint:"The AI will smartly place keywords in your bullets and summary without stuffing.",
+  am_relaunch:"Re-run the audit",
+  // Countries
+  am_country_fr:"France",
+  am_country_uk:"United Kingdom",
+  am_country_us:"United States",
+  am_country_de:"Germany",
+  am_country_ch:"Switzerland",
+  am_country_be:"Belgium",
+  am_country_lu:"Luxembourg",
+  am_country_es:"Spain",
+  am_country_it:"Italy",
+  am_country_ae:"United Arab Emirates",
+  am_country_ca:"Canada",
+  am_country_auto:"Auto-detection",
+  // === Application Pack Modal ===
+  pk_eyebrow:"Application",
+  pk_title:"Complete application",
+  pk_sub:"CV + Cover letter + LinkedIn + Email + Pitch + STAR",
+  pk_loading_sub:"Generation takes 25 to 40 seconds",
+  pk_loading_msgs:[
+    "Drafting cover letter...",
+    "Composing LinkedIn message...",
+    "Preparing application email...",
+    "Building interview pitch...",
+    "Generating STAR answers...",
+    "Finalizing application...",
+  ],
+  pk_tab_cover:"Cover letter",
+  pk_tab_linkedin:"LinkedIn",
+  pk_tab_email:"Email",
+  pk_tab_pitch:"Pitch",
+  pk_tab_star:"STAR answers",
+  pk_section_cover:"Cover letter",
+  pk_section_linkedin:"LinkedIn message to recruiter",
+  pk_section_email_subject:"Email subject",
+  pk_section_email_body:"Email body",
+  pk_section_pitch:"Introduction pitch",
+  pk_pitch_hint:"Answer to 'Tell me about yourself' - 60 seconds max",
+  pk_star_hint:"Prepared answers to likely questions (STAR method)",
+  pk_star_situation:"Situation",
+  pk_star_task:"Task",
+  pk_star_action:"Action",
+  pk_star_result:"Result",
+  pk_copy:"Copy",
+  pk_copy_answer:"Copy this answer",
+  // === AI Coach conversational ===
+  co_fab_aria:"Open AI coach",
+  co_eyebrow:"AI Coach",
+  co_title_a:"Your", co_title_em:"career", co_title_b:"coach.",
+  co_sub:"Chat with the AI to make your CV shine.",
+  co_no_cv:"Load a CV first to chat with your coach.",
+  co_welcome_title:"Where shall we start?",
+  co_welcome_sub:"Pick a guided path or ask a free question.",
+  co_path_describe:"Describe an experience",
+  co_path_describe_desc:"Make a flat experience stand out",
+  co_path_shine:"Make my CV shine",
+  co_path_shine_desc:"Identify weak areas and transform them",
+  co_path_gap:"Handle a career gap",
+  co_path_gap_desc:"Turn a fuzzy period into a strength",
+  co_path_transition:"Frame a career transition",
+  co_path_transition_desc:"Justify a sector or role switch",
+  co_path_pitch:"Build my personal pitch",
+  co_path_pitch_desc:"Define how to present myself in 60 seconds",
+  co_path_free:"Free question",
+  co_path_free_desc:"Ask your own question to the coach",
+  co_input_ph:"Type your answer...",
+  co_send:"Send",
+  co_thinking:"The coach is thinking...",
+  co_clear:"Clear conversation",
+  co_clear_confirm:"Clear the entire conversation? This is irreversible.",
+  co_adopt_summary:"Adopt as summary",
+  co_adopt_title:"Adopt as title",
+  co_adopt_bullet:"Add this bullet",
+  co_adopted:"Adopted in CV",
+  co_back_paths:"Pick another path",
+  // === LinkedIn Export ===
+  li_btn:"Export for LinkedIn",
+  li_btn_desc:"Headline + About + experiences in LinkedIn format",
+  li_eyebrow:"LinkedIn",
+  li_title_a:"Optimize your", li_title_em:"LinkedIn", li_title_b:"profile.",
+  li_sub:"The AI reformats your CV for LinkedIn (informal, first person, ATS keywords).",
+  li_no_cv:"Load a CV first",
+  li_run:"Generate my LinkedIn profile",
+  li_loading:"Reformatting for LinkedIn...",
+  li_loading_sub:"15 to 25 seconds",
+  li_section_headline:"Headline (profile title)",
+  li_section_about:"About",
+  li_section_experiences:"Experiences",
+  li_headline_hint:"Maximum 220 characters. Appears under your name.",
+  li_about_hint:"Informal first person. First sentence = hook.",
+  li_exp_role:"Role",
+  li_exp_company:"Company",
+  li_exp_desc:"Description",
+  li_copy_all:"Copy all",
+  li_copy_section:"Copy",
+  li_copied:"Copied to clipboard",
+  // === CV Compare ===
+  cmp_btn:"Compare 2 versions",
+  cmp_btn_desc:"See evolution between 2 versions of your CV",
+  cmp_eyebrow:"Compare",
+  cmp_title_a:"Compare", cmp_title_em:"two", cmp_title_b:"versions.",
+  cmp_sub:"Pick 2 saved versions to see the evolution and AI verdict.",
+  cmp_no_versions:"You need at least 2 saved versions to compare.",
+  cmp_pick_a:"Version A",
+  cmp_pick_b:"Version B",
+  cmp_pick_ph:"Pick a version",
+  cmp_run:"Compare",
+  cmp_loading:"Comparing...",
+  cmp_loading_sub:"15 to 25 seconds",
+  cmp_section_summary:"Summary of differences",
+  cmp_section_diffs:"Detected changes",
+  cmp_section_verdict:"AI verdict",
+  cmp_section_better:"Which version is better?",
+  cmp_field_changed:"Changed",
+  cmp_field_added:"Added",
+  cmp_field_removed:"Removed",
+  cmp_winner_a:"Version A is better",
+  cmp_winner_b:"Version B is better",
+  cmp_winner_tie:"Equivalent",
+  // === Applications Tracker ===
+  ap_btn:"Applications tracker",
+  ap_btn_desc:"Track your applications, statuses, and follow-ups",
+  ap_eyebrow:"Tracker",
+  ap_title_a:"Your", ap_title_em:"applications", ap_title_b:".",
+  ap_sub:"Keep track of all your applications, statuses, and follow-ups. Stored locally.",
+  ap_add:"Add an application",
+  ap_edit:"Edit",
+  ap_delete:"Delete",
+  ap_delete_confirm:"Delete this application?",
+  ap_save:"Save",
+  ap_cancel:"Cancel",
+  ap_field_company:"Company",
+  ap_field_role:"Role",
+  ap_field_date:"Application date",
+  ap_field_status:"Status",
+  ap_field_notes:"Notes",
+  ap_field_link:"Link (offer, profile)",
+  ap_status_applied:"Applied",
+  ap_status_phone:"Phone screen",
+  ap_status_interview:"Interview",
+  ap_status_offer:"Offer received",
+  ap_status_rejected:"Rejected",
+  ap_status_ghosted:"Ghosted",
+  ap_status_accepted:"Accepted",
+  ap_filter_all:"All",
+  ap_empty_title:"No applications yet.",
+  ap_empty_sub:"Add your first application to start tracking.",
+  ap_stats_total:"Total",
+  ap_stats_active:"Active",
+  ap_stats_offers:"Offers",
+  ap_stats_rejected:"Rejected",
+  // === Multi-CV strategy (AI recommendation) ===
+  mc_btn:"Which CV to send?",
+  mc_btn_desc:"AI recommends the best version for this offer",
+  mc_eyebrow:"Multi-CV strategy",
+  mc_title_a:"Which", mc_title_em:"CV", mc_title_b:"for this offer?",
+  mc_sub:"AI analyzes the offer and compares all your saved versions to recommend the best one.",
+  mc_no_versions:"You don't have saved versions yet. Save at least 2 versions to use this tool.",
+  mc_offer_label:"Job offer",
+  mc_offer_ph:"Paste the offer you want to target here...",
+  mc_offer_already:"Offer detected from Target. We use it.",
+  mc_run:"Recommend the best version",
+  mc_loading:"Comparing versions...",
+  mc_loading_sub:"15 to 25 seconds",
+  mc_recommendation:"Recommendation",
+  mc_recommended:"Recommended version",
+  mc_match:"Match score",
+  mc_why:"Why this version",
+  mc_alternatives:"Other versions evaluated",
+  mc_load_recommended:"Load this version",
+  // === Customize CV (colors + fonts + suggestions) ===
+  cust_btn:"Customize CV",
+  cust_eyebrow:"Appearance",
+  cust_title_a:"Your CV,", cust_title_em:"signature.", cust_title_b:"",
+  cust_sub:"Colors, fonts, or let AI decide.",
+  cust_scope_global:"Default style",
+  cust_scope_version:"This version only",
+  cust_scope_global_hint:"Applies to every CV.",
+  cust_scope_version_hint:"Override for the active version. Default stays untouched.",
+  cust_tab_colors:"Colors",
+  cust_tab_fonts:"Fonts",
+  cust_tab_suggest:"AI suggestions",
+  cust_color_accent:"Accent color",
+  cust_color_sidebar:"Sidebar color",
+  cust_color_paper:"CV background color",
+  cust_color_picker:"Pick another color",
+  cust_font_header:"Heading font",
+  cust_font_body:"Body font",
+  cust_font_sample_header:"Aa",
+  cust_font_sample_body:"Profile and experience",
+  cust_font_url_label:"Or paste a Google Fonts URL",
+  cust_font_url_ph:"https://fonts.googleapis.com/css2?family=...",
+  cust_font_url_apply:"Load this font",
+  cust_font_url_apply_target:"Apply to headings or body?",
+  cust_font_url_to_header:"Headings",
+  cust_font_url_to_body:"Body",
+  cust_font_url_invalid:"Invalid Google Fonts URL",
+  cust_font_url_loading:"Loading font...",
+  cust_font_url_failed:"Font loading failed",
+  cust_reset:"Reset to theme",
+  cust_resetted:"Customization reset",
+  cust_wcag_aa:"AA",
+  cust_wcag_aaa:"AAA",
+  cust_wcag_fail:"Contrast too low",
+  cust_suggest_btn:"Suggest for my profile",
+  cust_suggest_loading:"AI is analyzing your profile...",
+  cust_suggest_no_cv:"Load a CV first",
+  cust_suggest_why:"Why this combination",
+  cust_suggest_adopt:"Adopt this style",
+  cust_adopted:"Style applied",
 };
 
 const THEMES = {
@@ -524,6 +1362,164 @@ const THEMES = {
 };
 
 const LAYOUTS = ["sidebar","classic","ats"];
+
+// ============================================================
+// v17 Custom : librairies cur\u00e9es (couleurs + polices) + merge theme
+// ============================================================
+
+// Presets curees pour la couleur d'accent (le dore par defaut).
+const ACCENT_PRESETS = [
+  { id:"gold",     name:"Or classique",   color:"#c9a96e" },
+  { id:"bordeaux", name:"Bordeaux",       color:"#7a1f2b" },
+  { id:"forest",   name:"Vert foret",     color:"#2d5a3d" },
+  { id:"navy",     name:"Bleu marine",    color:"#1e3a5f" },
+  { id:"plum",     name:"Aubergine",      color:"#4a1d3f" },
+  { id:"charcoal", name:"Charbon",        color:"#3a3a3a" },
+  { id:"rust",     name:"Rouille",        color:"#a64b2a" },
+  { id:"teal",     name:"Bleu petrole",   color:"#1f4d4a" },
+];
+
+// Presets pour le bandeau lateral (sidebar du CV, fond noir par defaut).
+const SIDEBAR_PRESETS = [
+  { id:"ink",      name:"Noir profond",   color:"#0a0a0a" },
+  { id:"midnight", name:"Bleu nuit",      color:"#0f1d3a" },
+  { id:"charcoal", name:"Charbon",        color:"#26262b" },
+  { id:"forest",   name:"Vert sapin",     color:"#1a3329" },
+  { id:"darkwine", name:"Bordeaux fonce", color:"#3a0e15" },
+  { id:"cream",    name:"Creme inverse",  color:"#f5f1e8" },
+];
+
+// Presets pour le fond du CV (paper).
+const PAPER_PRESETS = [
+  { id:"cream",    name:"Creme classique", color:"#f8f6f1" },
+  { id:"white",    name:"Blanc pur",       color:"#ffffff" },
+  { id:"cream2",   name:"Creme chaud",     color:"#faf3e7" },
+  { id:"pearl",    name:"Gris perle",      color:"#f0eee9" },
+  { id:"ivory",    name:"Ivoire",          color:"#fdfbf3" },
+];
+
+// Bibliotheque cur\u00e9e de polices titres (display / heading).
+// Chaque entree : { name, family (CSS), googleHref (sans https:), vibe, target }
+const HEADER_FONTS = [
+  { id:"playfair",  name:"Playfair Display",  family:"'Playfair Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap", vibe:"Premium classique", target:"Banque, conseil, juridique" },
+  { id:"fraunces",  name:"Fraunces",          family:"'Fraunces', serif",          googleHref:"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&display=swap", vibe:"Editorial moderne", target:"Strategie, branding" },
+  { id:"cormorant", name:"Cormorant Garamond",family:"'Cormorant Garamond', serif",googleHref:"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap", vibe:"Sobre intemporel", target:"Academique, art, recherche" },
+  { id:"dmserif",   name:"DM Serif Display",  family:"'DM Serif Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap", vibe:"Premium contemporain", target:"Marketing premium, luxe" },
+  { id:"space",     name:"Space Grotesk",     family:"'Space Grotesk', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap", vibe:"Tech minimal", target:"Tech, produit, design" },
+  { id:"montserrat",name:"Montserrat",        family:"'Montserrat', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap", vibe:"Geometrique", target:"Marketing, communication" },
+  { id:"inter",     name:"Inter",             family:"'Inter', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Sans-serif fort", target:"Corporate moderne, ATS" },
+  { id:"lora",      name:"Lora",              family:"'Lora', serif",              googleHref:"https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap", vibe:"Humain serif", target:"RH, coaching, social" },
+];
+
+// Bibliotheque curee de polices corps (body) - toutes ATS-friendly.
+const BODY_FONTS = [
+  { id:"inter",     name:"Inter",          family:"'Inter', sans-serif",       googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Tech moderne",       ats:"Excellent" },
+  { id:"lato",      name:"Lato",           family:"'Lato', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap", vibe:"Pro chaleureux",      ats:"Excellent" },
+  { id:"sourcesans",name:"Source Sans 3",  family:"'Source Sans 3', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap", vibe:"Corporate sobre",     ats:"Excellent" },
+  { id:"dmsans",    name:"DM Sans",        family:"'DM Sans', sans-serif",     googleHref:"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap", vibe:"Minimaliste",         ats:"Excellent" },
+  { id:"plex",      name:"IBM Plex Sans",  family:"'IBM Plex Sans', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap", vibe:"Tech premium",        ats:"Excellent" },
+  { id:"opensans",  name:"Open Sans",      family:"'Open Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap", vibe:"Universel",           ats:"Excellent" },
+  { id:"nunito",    name:"Nunito Sans",    family:"'Nunito Sans', sans-serif", googleHref:"https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap", vibe:"Doux moderne",        ats:"Excellent" },
+  { id:"work",      name:"Work Sans",      family:"'Work Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap", vibe:"Geometrique leger",   ats:"Excellent" },
+];
+
+// Empile theme + custom global + custom version. Chaque palier override le precedent.
+// Forme du custom : { ac, sb, bg, hf, bf, hfHref, bfHref } - tous optionnels.
+function mergeTheme(theme, globalCustom, versionCustom) {
+  const eff = { ...theme };
+  const apply = (cu) => {
+    if (!cu) return;
+    if (cu.ac) eff.ac = cu.ac;
+    if (cu.sb) eff.sb = cu.sb;
+    if (cu.bg) eff.bg = cu.bg;
+    if (cu.hf) eff.hf = cu.hf;
+    if (cu.bf) eff.bf = cu.bf;
+    // hfHref / bfHref ne sont pas appliques dans le theme effectif, ils servent
+    // juste a savoir quoi charger via ensureFontLoaded.
+  };
+  apply(globalCustom);
+  apply(versionCustom);
+  return eff;
+}
+
+// Charge dynamiquement une Google Font en injectant un <link> dans <head>.
+// Idempotent : ne re-injecte pas si l'URL est deja presente.
+// `href` doit etre une URL fonts.googleapis.com complete.
+function ensureFontLoaded(href) {
+  if (typeof document === "undefined") return;
+  if (!href || typeof href !== "string") return;
+  if (!/^https:\/\/fonts\.googleapis\.com\//.test(href)) return;
+  // Cherche un link existant pointant la meme href.
+  const existing = document.querySelector('link[href="' + href + '"]');
+  if (existing) return;
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = href;
+  link.crossOrigin = "anonymous";
+  document.head.appendChild(link);
+}
+
+// Charge toutes les fonts referencees par un custom global + version.
+// Appele dans un useEffect sur changement du custom.
+function ensureCustomFontsLoaded(globalCustom, versionCustom) {
+  [globalCustom, versionCustom].forEach(cu => {
+    if (!cu) return;
+    if (cu.hfHref) ensureFontLoaded(cu.hfHref);
+    if (cu.bfHref) ensureFontLoaded(cu.bfHref);
+  });
+}
+
+// Retourne family si trouvee dans la lib, sinon { family, googleHref } extrait
+// d'une URL Google Fonts brute. Utilise pour le champ libre.
+// Exemple : "https://fonts.googleapis.com/css2?family=Cormorant+Infant:wght@400;700&display=swap"
+//   -> { family: "'Cormorant Infant', serif", googleHref: same URL }
+function parseGoogleFontUrl(url) {
+  if (!url || typeof url !== "string") return null;
+  const m = url.match(/family=([^:&]+)/);
+  if (!m) return null;
+  const familyRaw = decodeURIComponent(m[1]).replace(/\+/g, " ");
+  if (!familyRaw) return null;
+  // On ajoute serif fallback ; le genre exact (serif/sans) n'est pas garanti.
+  return {
+    family: "'" + familyRaw + "', serif",
+    name: familyRaw,
+    googleHref: url,
+  };
+}
+
+// === Helpers WCAG (luminance + ratio de contraste) ===
+function _hexToRgb(hex) {
+  if (!hex || typeof hex !== "string") return null;
+  let h = hex.replace("#","").trim();
+  if (h.length === 3) h = h.split("").map(c => c+c).join("");
+  if (h.length !== 6) return null;
+  const r = parseInt(h.slice(0,2), 16);
+  const g = parseInt(h.slice(2,4), 16);
+  const b = parseInt(h.slice(4,6), 16);
+  if ([r,g,b].some(v => Number.isNaN(v))) return null;
+  return [r,g,b];
+}
+function _relLum(rgb) {
+  const [r,g,b] = rgb.map(v => {
+    const s = v/255;
+    return s <= 0.03928 ? s/12.92 : Math.pow((s+0.055)/1.055, 2.4);
+  });
+  return 0.2126*r + 0.7152*g + 0.0722*b;
+}
+function contrastRatio(hex1, hex2) {
+  const a = _hexToRgb(hex1), b = _hexToRgb(hex2);
+  if (!a || !b) return 0;
+  const la = _relLum(a), lb = _relLum(b);
+  const hi = Math.max(la, lb), lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+// Retourne "AAA", "AA", ou "FAIL" pour du texte normal (>=18pt = large, sinon).
+function wcagLevel(hex1, hex2) {
+  const r = contrastRatio(hex1, hex2);
+  if (r >= 7) return "AAA";
+  if (r >= 4.5) return "AA";
+  return "FAIL";
+}
 
 const EMPTY = {
   name:"", title:"", email:"", phone:"",
@@ -728,63 +1724,6 @@ function normCV(raw, base=EMPTY) {
   };
 }
 
-function E({ value, onChange, multi=false, style={} }) {
-  const [ed, setEd] = useState(false);
-  const [loc, setLoc] = useState("");
-
-  const open = useCallback(() => {
-    setLoc(value||"");
-    setEd(true);
-  }, [value]);
-
-  const commit = useCallback(() => {
-    onChange(loc);
-    setEd(false);
-  }, [loc, onChange]);
-
-  if (ed) {
-    const s = {
-      width:"100%", background:"rgba(255,255,200,.95)",
-      border:"2px solid "+Gold, borderRadius:3,
-      padding:"2px 6px", font:"inherit", fontSize:"inherit",
-      color:"inherit", resize:multi?"vertical":"none",
-      minHeight:multi?52:undefined,
-      boxSizing:"border-box", outline:"none", ...style
-    };
-    if (multi) {
-      return (
-        <textarea autoFocus value={loc}
-          onChange={e=>setLoc(e.target.value)}
-          onBlur={commit} style={s}/>
-      );
-    }
-    return (
-      <input autoFocus value={loc}
-        onChange={e=>setLoc(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e=>{
-          if(e.key==="Enter") commit();
-          if(e.key==="Escape") setEd(false);
-        }}
-        style={s}/>
-    );
-  }
-
-  return (
-    <span onClick={open}
-      style={{
-        cursor:"text",
-        display:multi?"block":"inline",
-        borderBottom:"1.5px dashed transparent",
-        transition:"border-color .15s",
-        ...style,
-      }}
-      onMouseEnter={e=>e.currentTarget.style.borderBottomColor=Gold+"aa"}
-      onMouseLeave={e=>e.currentTarget.style.borderBottomColor="transparent"}>
-      {value||<span style={{opacity:.3, fontStyle:"italic"}}>...</span>}
-    </span>
-  );
-}
 
 function Notif({ msg }) {
   return (
@@ -893,629 +1832,8 @@ function Sheet({ title, eyebrow, onClose, children }) {
   );
 }
 
-function FR({ label, value, onChange, multi=false }) {
-  return (
-    <div style={{marginBottom:12}}>
-      <label style={LBL}>{label}</label>
-      {multi
-        ? <textarea value={value} onChange={e=>onChange(e.target.value)}
-            rows={3} style={{...IN(), resize:"vertical"}}/>
-        : <input value={value} onChange={e=>onChange(e.target.value)}
-            style={IN()}/>
-      }
-    </div>
-  );
-}
-
-function SaveBtn({ onClose, T }) {
-  return (
-    <button onClick={onClose} style={{
-      ...B({
-        width:"100%", padding:13, borderRadius:12,
-        background:Dark, color:Gold, fontWeight:700, fontSize:14, marginTop:6,
-      })
-    }}>
-      {T.sh_save}
-    </button>
-  );
-}
-
-function MK(set) {
-  return {
-    u:  f=>v=>set(p=>({...p,[f]:v})),
-    ux: (id,k,v)=>set(p=>({...p,
-      experience:p.experience.map(e=>e.id===id?{...e,[k]:v}:e)})),
-    ub: (id,i,v)=>set(p=>({...p,
-      experience:p.experience.map(e=>e.id===id
-        ?{...e,bullets:e.bullets.map((b,j)=>j===i?v:b)}:e)})),
-    ue: (id,k,v)=>set(p=>({...p,
-      education:p.education.map(e=>e.id===id?{...e,[k]:v}:e)})),
-    us: (i,v)=>set(p=>({...p,skills:p.skills.map((s,j)=>j===i?v:s)})),
-    ul: (i,k,v)=>set(p=>({...p,
-      languages:p.languages.map((l,j)=>j===i?{...l,[k]:v}:l)})),
-    uc: (i,v)=>set(p=>({...p,
-      certifications:p.certifications.map((c,j)=>j===i?v:c)})),
-  };
-}
-
-function SheetId({ cv, set, onClose, T }) {
-  const { u } = MK(set);
-  return (
-    <Sheet title={T.edit_id} onClose={onClose}>
-      <FR label={T.sh_name}  value={cv.name}     onChange={u("name")}/>
-      <FR label={T.sh_title} value={cv.title}    onChange={u("title")}/>
-      <FR label={T.sh_email} value={cv.email}    onChange={u("email")}/>
-      <FR label={T.sh_phone} value={cv.phone}    onChange={u("phone")}/>
-      <FR label={T.sh_loc}   value={cv.location} onChange={u("location")}/>
-      <FR label={T.sh_li}    value={cv.linkedin} onChange={u("linkedin")}/>
-      <FR label={T.sh_sum}   value={cv.summary}  onChange={u("summary")} multi/>
-      <SaveBtn onClose={onClose} T={T}/>
-    </Sheet>
-  );
-}
-
-function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
-  const { ux, ub } = MK(set);
-
-  const ax = () => set(p=>({...p,
-    experience:[...p.experience, {
-      id:Date.now(), title:"", company:"", period:"", location:"", bullets:[""]
-    }]
-  }));
-  const dx = id => set(p=>({...p,
-    experience:p.experience.filter(e=>e.id!==id)
-  }));
-  const ab = id => set(p=>({...p,
-    experience:p.experience.map(e=>e.id===id
-      ?{...e,bullets:[...e.bullets,""]}:e)
-  }));
-  const db = (id,i) => set(p=>({...p,
-    experience:p.experience.map(e=>e.id===id
-      ?{...e,bullets:e.bullets.filter((_,j)=>j!==i)}:e)
-  }));
-
-  return (
-    <Sheet title={T.edit_ex} onClose={onClose}>
-      {cv.experience.map((ex,i) => (
-        <div key={ex.id} style={{
-          background:"#f8f6f1", borderRadius:10, padding:14, marginBottom:14
-        }}>
-          <div style={{
-            display:"flex", justifyContent:"space-between", marginBottom:10
-          }}>
-            <b style={{fontSize:13}}>{T.sh_et} {i+1}</b>
-            <button onClick={()=>dx(ex.id)} style={{
-              ...B({background:"#fee2e2", borderRadius:7,
-                padding:"4px 10px", fontSize:12, color:"#dc2626", fontWeight:600})
-            }}>{T.sh_del}</button>
-          </div>
-          <FR label={T.sh_et}   value={ex.title}    onChange={v=>ux(ex.id,"title",v)}/>
-          <FR label={T.sh_ec}   value={ex.company}  onChange={v=>ux(ex.id,"company",v)}/>
-          <FR label={T.sh_ep}   value={ex.period}   onChange={v=>ux(ex.id,"period",v)}/>
-          <FR label={T.sh_ey}   value={ex.location} onChange={v=>ux(ex.id,"location",v)}/>
-          <label style={LBL}>{T.sh_eb}</label>
-          {ex.bullets.map((b,j) => (
-            <div key={j} style={{
-              display:"flex", gap:6, marginBottom:6, alignItems:"center"
-            }}>
-              <span style={{color:Gold}}>|</span>
-              <input value={b} onChange={e=>ub(ex.id,j,e.target.value)}
-                style={{...IN({padding:"7px 9px", fontSize:12, flex:1})}}/>
-              <button
-                onClick={()=>onTransformBullet(ex.id,j,b)}
-                style={{
-                  ...B({
-                    background:"#fff9f0",
-                    border:"1px solid "+Gold+"44",
-                    borderRadius:5, padding:"4px 7px",
-                    fontSize:11, color:Gold, flexShrink:0,
-                  })
-                }}
-                title={T.bt_btn_title || "Transformer ce bullet"}>
-                *
-              </button>
-              <button onClick={()=>db(ex.id,j)} style={{
-                ...B({color:"#e74c3c", fontSize:20, lineHeight:1,
-                  padding:0, background:"none", flexShrink:0})
-              }}>x</button>
-            </div>
-          ))}
-          <button onClick={()=>ab(ex.id)} style={{
-            ...B({fontSize:12, color:Gold, background:"none",
-              border:"1px dashed "+Gold, borderRadius:5,
-              padding:"4px 10px", marginTop:3})
-          }}>{T.sh_addl}</button>
-        </div>
-      ))}
-      <button onClick={ax} style={{
-        ...B({width:"100%", padding:12, borderRadius:10,
-          border:"2px dashed "+Gold, background:"#fff9f0",
-          color:Gold, fontWeight:700, fontSize:13, marginBottom:10})
-      }}>{T.sh_addex}</button>
-      <SaveBtn onClose={onClose} T={T}/>
-    </Sheet>
-  );
-}
-
-function BulletTransformer({ original, levels, loading, onAdopt, onClose, T }) {
-  const cards = [
-    { key:"simple",  label:T.bt_simple,  hint:T.bt_simple_hint,  color:"#666" },
-    { key:"pro",     label:T.bt_pro,     hint:T.bt_pro_hint,     color:Dark },
-    { key:"ats",     label:T.bt_ats,     hint:T.bt_ats_hint,     color:"#1d4ed8" },
-    { key:"premium", label:T.bt_premium, hint:T.bt_premium_hint, color:Gold },
-    { key:"impact",  label:T.bt_impact,  hint:T.bt_impact_hint,  color:"#16a34a" },
-  ];
-  if (typeof document === "undefined") return null;
-  return createPortal((
-    <div style={{
-      position:"fixed", inset:0, zIndex:99999,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:620, width:"100%",
-        maxHeight:"92vh", overflowY:"auto",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"18px 22px 14px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12,
-          position:"sticky", top:0, background:"#fff", zIndex:2,
-        }}>
-          <div style={{flex:1}}>
-            <div style={{fontSize:16, fontWeight:800, color:Dark}}>
-              {T.bt_modal_title}
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              {T.bt_modal_sub}
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} style={{
-            ...B({
-              width:32, height:32, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:16, fontWeight:700,
-              opacity:loading?.4:1,
-            })
-          }}>x</button>
-        </div>
-        <div style={{padding:"18px 22px"}}>
-          <div style={{
-            background:"#fafafa", border:"1px solid #eee",
-            borderRadius:9, padding:"10px 13px", marginBottom:14,
-          }}>
-            <div style={{
-              fontSize:9, fontWeight:800, color:"#888",
-              letterSpacing:1, textTransform:"uppercase", marginBottom:5,
-            }}>{T.bt_original}</div>
-            <div style={{fontSize:12, color:"#555", lineHeight:1.5, fontStyle:"italic"}}>
-              "{original}"
-            </div>
-          </div>
-          {loading && (
-            <div style={{
-              padding:"36px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:12,
-            }}>
-              <div style={{
-                width:48, height:48, margin:"0 auto 12px",
-                border:"3px solid "+Gold+"33", borderTopColor:Gold,
-                borderRadius:"50%",
-                animation:"cvfSpin 1s linear infinite",
-              }}/>
-              <div style={{fontSize:13, fontWeight:700, color:Dark}}>
-                {T.bt_loading}
-              </div>
-              <div style={{fontSize:11, color:"#888", marginTop:5}}>
-                {T.bt_loading_sub}
-              </div>
-            </div>
-          )}
-          {!loading && levels && cards.map(c => levels[c.key] && (
-            <div key={c.key} style={{
-              border:"1px solid #e5e0d6", borderRadius:11,
-              padding:"13px 15px", marginBottom:9,
-              transition:"all 200ms",
-            }}>
-              <div style={{
-                display:"flex", justifyContent:"space-between",
-                alignItems:"center", marginBottom:7,
-              }}>
-                <div style={{display:"flex", alignItems:"center", gap:8}}>
-                  <span style={{
-                    fontSize:10, fontWeight:800, color:"#fff",
-                    background:c.color, padding:"3px 9px", borderRadius:11,
-                    textTransform:"uppercase", letterSpacing:1,
-                  }}>{c.label}</span>
-                  <span style={{fontSize:10, color:"#888"}}>{c.hint}</span>
-                </div>
-                <button onClick={()=>onAdopt(levels[c.key])} style={{
-                  ...B({
-                    padding:"5px 11px", borderRadius:7,
-                    background:Dark, color:"#fff",
-                    fontSize:10, fontWeight:700,
-                    textTransform:"uppercase", letterSpacing:1,
-                  })
-                }}>{T.bt_adopt}</button>
-              </div>
-              <div style={{
-                fontSize:13, color:Dark, lineHeight:1.55,
-              }}>
-                {levels[c.key]}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  ), document.body);
-}
-
-function SheetEd({ cv, set, onClose, T }) {
-  const { ue } = MK(set);
-  const ae = () => set(p=>({...p,
-    education:[...p.education, {id:Date.now(), degree:"", school:"", period:""}]
-  }));
-  const de = id => set(p=>({...p,
-    education:p.education.filter(e=>e.id!==id)
-  }));
-  return (
-    <Sheet title={T.edit_ed} onClose={onClose}>
-      {cv.education.map((ed,i) => (
-        <div key={ed.id} style={{
-          background:"#f8f6f1", borderRadius:10, padding:14, marginBottom:14
-        }}>
-          <div style={{
-            display:"flex", justifyContent:"space-between", marginBottom:10
-          }}>
-            <b style={{fontSize:13}}>{T.sh_edd} {i+1}</b>
-            <button onClick={()=>de(ed.id)} style={{
-              ...B({background:"#fee2e2", borderRadius:7,
-                padding:"4px 10px", fontSize:12, color:"#dc2626", fontWeight:600})
-            }}>{T.sh_del}</button>
-          </div>
-          <FR label={T.sh_edd} value={ed.degree} onChange={v=>ue(ed.id,"degree",v)}/>
-          <FR label={T.sh_eds} value={ed.school} onChange={v=>ue(ed.id,"school",v)}/>
-          <FR label={T.sh_ep}  value={ed.period} onChange={v=>ue(ed.id,"period",v)}/>
-        </div>
-      ))}
-      <button onClick={ae} style={{
-        ...B({width:"100%", padding:12, borderRadius:10,
-          border:"2px dashed "+Gold, background:"#fff9f0",
-          color:Gold, fontWeight:700, fontSize:13, marginBottom:10})
-      }}>{T.sh_added}</button>
-      <SaveBtn onClose={onClose} T={T}/>
-    </Sheet>
-  );
-}
-
-function SheetSk({ cv, set, onClose, T }) {
-  const { us, ul, uc } = MK(set);
-  const as = () => set(p=>({...p, skills:[...p.skills,""]}));
-  const ds = i => set(p=>({...p, skills:p.skills.filter((_,j)=>j!==i)}));
-  const al = () => set(p=>({...p,
-    languages:[...p.languages, {lang:"", level:""}]
-  }));
-  const dl = i => set(p=>({...p,
-    languages:p.languages.filter((_,j)=>j!==i)
-  }));
-  const ac = () => set(p=>({...p, certifications:[...p.certifications,""]}));
-  const dc = i => set(p=>({...p,
-    certifications:p.certifications.filter((_,j)=>j!==i)
-  }));
-  const X = ({fn}) => (
-    <button onClick={fn} style={{
-      ...B({color:"#e74c3c", fontSize:20, lineHeight:1,
-        padding:0, background:"none", flexShrink:0})
-    }}>x</button>
-  );
-  const Plus = ({fn, label}) => (
-    <button onClick={fn} style={{
-      ...B({fontSize:12, color:Gold, background:"none",
-        border:"1px dashed "+Gold, borderRadius:5,
-        padding:"4px 10px", marginBottom:4})
-    }}>{label}</button>
-  );
-  return (
-    <Sheet title={T.edit_sk} onClose={onClose}>
-      <div style={SH()}>{T.sh_sk}</div>
-      {cv.skills.map((s,i) => (
-        <div key={i} style={{display:"flex", gap:7, marginBottom:7, alignItems:"center"}}>
-          <input value={s} onChange={e=>us(i,e.target.value)} style={IN()}/>
-          <X fn={()=>ds(i)}/>
-        </div>
-      ))}
-      <Plus fn={as} label={T.sh_addsk}/>
-      <div style={SH()}>{T.sh_lg}</div>
-      {cv.languages.map((l,i) => (
-        <div key={i} style={{display:"flex", gap:7, marginBottom:7, alignItems:"center"}}>
-          <input value={l.lang} placeholder={T.sh_lph1}
-            onChange={e=>ul(i,"lang",e.target.value)}
-            style={{...IN({flex:1})}}/>
-          <input value={l.level} placeholder={T.sh_lph2}
-            onChange={e=>ul(i,"level",e.target.value)}
-            style={{...IN({flex:1})}}/>
-          <X fn={()=>dl(i)}/>
-        </div>
-      ))}
-      <Plus fn={al} label={T.sh_addlg}/>
-      <div style={SH()}>{T.sh_ct}</div>
-      {cv.certifications.map((c,i) => (
-        <div key={i} style={{display:"flex", gap:7, marginBottom:7, alignItems:"center"}}>
-          <input value={c} onChange={e=>uc(i,e.target.value)} style={IN()}/>
-          <X fn={()=>dc(i)}/>
-        </div>
-      ))}
-      <Plus fn={ac} label={T.sh_addct}/>
-      <div style={{marginTop:10}}>
-        <SaveBtn onClose={onClose} T={T}/>
-      </div>
-    </Sheet>
-  );
-}
-
-function CVSidebar({ cv, set, t, T }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
-  const SS = l => (
-    <div style={{
-      fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
-      color:t.ac, margin:"14px 0 7px",
-      borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
-    }}>{l}</div>
-  );
-  const MS = l => (
-    <div style={{
-      fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
-      color:t.ac, margin:"16px 0 9px",
-      borderBottom:"2px solid "+t.ac, paddingBottom:3,
-    }}>{l}</div>
-  );
-  return (
-    <div style={{display:"flex", minHeight:"100%", fontFamily:t.bf, background:t.bg}}>
-      <div style={{
-        width:185, background:t.sb, color:t.st,
-        padding:"22px 15px", flexShrink:0, minHeight:"100%",
-      }}>
-        <div style={{
-          width:52, height:52, borderRadius:"50%",
-          background:t.ac+"33", border:"2px solid "+t.ac,
-          margin:"0 auto 12px",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:19, fontFamily:t.hf, fontWeight:700, color:t.ac,
-        }}>
-          {cv.name ? cv.name.charAt(0) : "?"}
-        </div>
-        {SS(T.cv_ct)}
-        {["email","phone","location","linkedin"].map(f => (
-          <div key={f} style={{marginBottom:4}}>
-            <E value={cv[f]} onChange={u(f)}
-              style={{color:t.st, fontSize:9, lineHeight:1.5}}/>
-          </div>
-        ))}
-        {SS(T.cv_s)}
-        {cv.skills.map((s,i) => (
-          <div key={i} style={{
-            display:"flex", gap:4, marginBottom:3, alignItems:"flex-start"
-          }}>
-            <span style={{color:t.ac, fontSize:8, flexShrink:0, marginTop:2}}>|</span>
-            <E value={s} onChange={v=>us(i,v)}
-              style={{color:t.st, fontSize:9}}/>
-          </div>
-        ))}
-        {SS(T.cv_l)}
-        {cv.languages.map((l,i) => (
-          <div key={i} style={{marginBottom:4}}>
-            <E value={l.lang} onChange={v=>ul(i,"lang",v)}
-              style={{color:t.st, fontWeight:600, fontSize:9, display:"block"}}/>
-            <E value={l.level} onChange={v=>ul(i,"level",v)}
-              style={{color:t.st+"88", fontSize:8, display:"block"}}/>
-          </div>
-        ))}
-        {SS(T.cv_c)}
-        {cv.certifications.map((c,i) => (
-          <div key={i} style={{fontSize:8, marginBottom:3, lineHeight:1.4}}>
-            <span style={{color:t.ac}}>v </span>
-            <E value={c} onChange={v=>uc(i,v)}
-              style={{color:t.st, fontSize:8}}/>
-          </div>
-        ))}
-      </div>
-      <div style={{flex:1, padding:"22px 24px"}}>
-        <div style={{
-          fontFamily:t.hf, fontSize:21, fontWeight:700,
-          color:t.pr, lineHeight:1.1, marginBottom:2,
-        }}>
-          <E value={cv.name} onChange={u("name")}
-            style={{fontFamily:t.hf, fontSize:21, fontWeight:700, color:t.pr}}/>
-        </div>
-        <div style={{
-          fontSize:10, color:t.ac, fontWeight:600,
-          letterSpacing:1.5, textTransform:"uppercase",
-        }}>
-          <E value={cv.title} onChange={u("title")}
-            style={{color:t.ac, fontSize:10}}/>
-        </div>
-        {MS(T.cv_p)}
-        <E value={cv.summary} onChange={u("summary")} multi
-          style={{fontSize:10, color:"#555", lineHeight:1.7}}/>
-        {MS(T.cv_e)}
-        {cv.experience.map(ex => (
-          <div key={ex.id} style={{marginBottom:12}}>
-            <div style={{display:"flex", justifyContent:"space-between", gap:8}}>
-              <div>
-                <div style={{fontWeight:700, fontSize:11, color:t.pr}}>
-                  <E value={ex.title} onChange={v=>ux(ex.id,"title",v)}
-                    style={{fontWeight:700, fontSize:11, color:t.pr}}/>
-                </div>
-                <div style={{fontSize:9.5, color:t.ac, fontWeight:600}}>
-                  <E value={ex.company} onChange={v=>ux(ex.id,"company",v)}
-                    style={{fontSize:9.5, color:t.ac}}/>
-                  {" - "}
-                  <E value={ex.location} onChange={v=>ux(ex.id,"location",v)}
-                    style={{fontSize:9.5, color:"#888"}}/>
-                </div>
-              </div>
-              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
-                <E value={ex.period} onChange={v=>ux(ex.id,"period",v)}
-                  style={{fontSize:8.5, color:"#aaa"}}/>
-              </div>
-            </div>
-            <ul style={{margin:"3px 0 0 12px", padding:0}}>
-              {ex.bullets.map((b,i) => (
-                <li key={i} style={{fontSize:9.5, color:"#444", marginBottom:2, lineHeight:1.5}}>
-                  <E value={b} onChange={v=>ub(ex.id,i,v)} style={{fontSize:9.5}}/>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-        {MS(T.cv_ed)}
-        {cv.education.map(ed => (
-          <div key={ed.id} style={{
-            marginBottom:7, display:"flex",
-            justifyContent:"space-between", gap:8,
-          }}>
-            <div>
-              <div style={{fontWeight:700, fontSize:10, color:t.pr}}>
-                <E value={ed.degree} onChange={v=>ue(ed.id,"degree",v)}
-                  style={{fontWeight:700, fontSize:10}}/>
-              </div>
-              <div style={{fontSize:9, color:"#777"}}>
-                <E value={ed.school} onChange={v=>ue(ed.id,"school",v)}
-                  style={{fontSize:9}}/>
-              </div>
-            </div>
-            <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
-              <E value={ed.period} onChange={v=>ue(ed.id,"period",v)}
-                style={{fontSize:8.5}}/>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 
-function CVAts({ cv, set, T }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
-  const S = l => (
-    <div style={{
-      fontWeight:700, fontSize:11, color:"#000",
-      borderBottom:"1.5px solid #000",
-      paddingBottom:3, marginBottom:8, marginTop:16,
-      letterSpacing:.5, textTransform:"uppercase",
-    }}>{l}</div>
-  );
-  return (
-    <div style={{
-      fontFamily:"Arial,sans-serif", background:"#fff",
-      padding:"28px 36px", color:"#111",
-    }}>
-      <div style={{marginBottom:12, paddingBottom:10, borderBottom:"2px solid #000"}}>
-        <div style={{fontSize:20, fontWeight:700}}>
-          <E value={cv.name} onChange={u("name")} style={{fontSize:20, fontWeight:700}}/>
-        </div>
-        <div style={{fontSize:11, fontWeight:600, color:"#333", marginTop:2}}>
-          <E value={cv.title} onChange={u("title")}/>
-        </div>
-        <div style={{
-          fontSize:9.5, color:"#444", marginTop:5,
-          display:"flex", gap:12, flexWrap:"wrap",
-        }}>
-          {["email","phone","location","linkedin"].map(f => (
-            <span key={f}>
-              <E value={cv[f]} onChange={u(f)} style={{fontSize:9.5}}/>
-            </span>
-          ))}
-        </div>
-      </div>
-      {S(T.cv_p)}
-      <p style={{fontSize:10, color:"#222", lineHeight:1.7, margin:"0 0 3px"}}>
-        <E value={cv.summary} onChange={u("summary")} multi style={{fontSize:10}}/>
-      </p>
-      {S(T.cv_el)}
-      {cv.experience.map(ex => (
-        <div key={ex.id} style={{marginBottom:12}}>
-          <div style={{display:"flex", justifyContent:"space-between"}}>
-            <div style={{fontWeight:700, fontSize:11}}>
-              <E value={ex.title} onChange={v=>ux(ex.id,"title",v)}
-                style={{fontWeight:700, fontSize:11}}/>
-            </div>
-            <div style={{fontSize:9.5, color:"#555"}}>
-              <E value={ex.period} onChange={v=>ux(ex.id,"period",v)}
-                style={{fontSize:9.5}}/>
-            </div>
-          </div>
-          <div style={{fontSize:10, fontStyle:"italic", color:"#444", marginBottom:2}}>
-            <E value={ex.company} onChange={v=>ux(ex.id,"company",v)}/>
-            {" - "}
-            <E value={ex.location} onChange={v=>ux(ex.id,"location",v)}/>
-          </div>
-          <ul style={{margin:"0 0 0 14px", padding:0}}>
-            {ex.bullets.map((b,i) => (
-              <li key={i} style={{fontSize:10, color:"#222", marginBottom:2, lineHeight:1.5}}>
-                <E value={b} onChange={v=>ub(ex.id,i,v)} style={{fontSize:10}}/>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-      {S(T.cv_ed)}
-      {cv.education.map(ed => (
-        <div key={ed.id} style={{
-          marginBottom:7, display:"flex", justifyContent:"space-between",
-        }}>
-          <div>
-            <div style={{fontWeight:700, fontSize:10.5}}>
-              <E value={ed.degree} onChange={v=>ue(ed.id,"degree",v)}
-                style={{fontWeight:700, fontSize:10.5}}/>
-            </div>
-            <div style={{fontSize:9.5, color:"#555"}}>
-              <E value={ed.school} onChange={v=>ue(ed.id,"school",v)}/>
-            </div>
-          </div>
-          <div style={{fontSize:9.5, color:"#555"}}>
-            <E value={ed.period} onChange={v=>ue(ed.id,"period",v)}
-              style={{fontSize:9.5}}/>
-          </div>
-        </div>
-      ))}
-      {S(T.cv_s)}
-      <p style={{fontSize:10, margin:0, lineHeight:1.7, color:"#222"}}>
-        {cv.skills.map((s,i) => (
-          <span key={i}>
-            <E value={s} onChange={v=>us(i,v)} style={{fontSize:10}}/>
-            {i < cv.skills.length-1
-              ? <span style={{color:"#888"}}> | </span>
-              : null}
-          </span>
-        ))}
-      </p>
-      {S(T.cv_l)}
-      {cv.languages.map((l,i) => (
-        <div key={i} style={{fontSize:10, marginBottom:2}}>
-          <E value={l.lang} onChange={v=>ul(i,"lang",v)}
-            style={{fontWeight:600, fontSize:10}}/>
-          {" : "}
-          <E value={l.level} onChange={v=>ul(i,"level",v)} style={{fontSize:10}}/>
-        </div>
-      ))}
-      {cv.certifications.filter(c=>c).length > 0 && (
-        <>
-          {S(T.cv_c)}
-          {cv.certifications.map((c,i) => (
-            <div key={i} style={{fontSize:10, marginBottom:2}}>
-              {"- "}
-              <E value={c} onChange={v=>uc(i,v)} style={{fontSize:10}}/>
-            </div>
-          ))}
-        </>
-      )}
-    </div>
-  );
-}
 
 function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [job, setJob]   = useState("");
@@ -2182,34 +2500,37 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
   );
 }
 
-function ScorePanel({ cv, apiKey, notify, layout, T }) {
-  const [res, setRes]   = useState(null);
-  const [load, setLoad] = useState(false);
-  const [offer, setOffer] = useState("");
-  const [mode, setMode] = useState("local");
+// ScorePanel v17 : 2 onglets.
+//   - dashboard : Score Dashboard 8 axes (delegue a <ScoreDashboard>)
+//   - quick     : Score rapide local (calcul client instantane sur la structure)
+// Default = dashboard (la valeur premium).
+function ScorePanel({ cv, apiKey, notify, layout, T,
+  dashLoading, dashResult, onRunDashboard, onCtaAxis }) {
+  const [mode, setMode] = useState("dashboard");
+  const [quickRes, setQuickRes] = useState(null);
 
-  const scoreLocal = () => {
-    const C=[], add=(cat,label,ok,tip,w=1)=>{C.push({cat,label,ok,tip,w});};
-    const sl=cv.summary.trim().length;
-    add("Contact","Nom",!!cv.name.trim(),"Nom requis");
-    add("Contact","Titre",!!cv.title.trim(),"Titre requis");
-    add("Contact","Email",!!cv.email.trim(),"Email requis");
-    add("Contact","Tel",!!cv.phone.trim(),"Tel requis");
-    add("Contact","Location",!!cv.location.trim(),"Ville requise");
-    add("Contact","LinkedIn",!!cv.linkedin.trim(),"LinkedIn recommande");
+  const computeQuick = () => {
+    const C=[]; const add=(cat,label,ok,tip,w=1)=>{C.push({cat,label,ok,tip,w});};
+    const sl=(cv.summary||"").trim().length;
+    add("Contact","Nom",!!(cv.name||"").trim(),"Nom requis");
+    add("Contact","Titre",!!(cv.title||"").trim(),"Titre requis");
+    add("Contact","Email",!!(cv.email||"").trim(),"Email requis");
+    add("Contact","Tel",!!(cv.phone||"").trim(),"Tel requis");
+    add("Contact","Location",!!(cv.location||"").trim(),"Ville requise");
+    add("Contact","LinkedIn",!!(cv.linkedin||"").trim(),"LinkedIn recommande");
     add("Accroche","Presente",sl>0,"Accroche indispensable");
-    add("Accroche","Longueur ok",sl>100&&sl<600,"Vise 3-4 phrases");
-    add("Accroche","Chiffres",cv.summary.split("").some(c=>c>="0"&&c<="9"),"Ajoute des chiffres");
-    const exps=cv.experience.filter(e=>e.title||e.company);
+    add("Accroche","Longueur ok",sl>100&&sl<600,"Vise 3 a 4 phrases");
+    add("Accroche","Chiffres",(cv.summary||"").split("").some(c=>c>="0"&&c<="9"),"Ajoute des chiffres");
+    const exps=(cv.experience||[]).filter(e=>e.title||e.company);
     add("Experience","Presente",exps.length>=1,"Aucune experience");
-    add("Experience","Periodes",exps.length>0&&exps.every(e=>e.period.trim()),"Periodes requises");
-    add("Experience","Bullets chiffres",exps.some(e=>e.bullets.some(b=>b.split("").some(c=>c>="0"&&c<="9"))),"Ajoute des chiffres");
-    add("Experience","Volume",exps.reduce((s,e)=>s+e.bullets.filter(b=>b.trim()).length,0)>=6,"Min 6 bullets");
-    const sk=cv.skills.filter(s=>s.trim());
-    add("Competences","Min 5",sk.length>=5,"Vise 6-10");
+    add("Experience","Periodes",exps.length>0&&exps.every(e=>(e.period||"").trim()),"Periodes requises");
+    add("Experience","Bullets chiffres",exps.some(e=>(e.bullets||[]).some(b=>(b||"").split("").some(c=>c>="0"&&c<="9"))),"Ajoute des chiffres");
+    add("Experience","Volume",exps.reduce((s,e)=>s+(e.bullets||[]).filter(b=>(b||"").trim()).length,0)>=6,"Min 6 bullets");
+    const sk=(cv.skills||[]).filter(s=>(s||"").trim());
+    add("Competences","Min 5",sk.length>=5,"Vise 6 a 10");
     add("Competences","Min 8",sk.length>=8,"ATS filtrent sur mots-cles");
-    add("Langues","Presente",cv.languages.filter(l=>l.lang.trim()).length>=1,"Section vide");
-    add("Certifications","Presente",cv.certifications.filter(c=>c.trim()).length>=1,"Valorise le profil");
+    add("Langues","Presente",(cv.languages||[]).filter(l=>(l.lang||"").trim()).length>=1,"Section vide");
+    add("Certifications","Presente",(cv.certifications||[]).filter(c=>(c||"").trim()).length>=1,"Valorise le profil");
     add("Format ATS","ATS-Safe",layout==="ats","Passe en ATS-Safe",2);
     const tot=C.filter(c=>c.ok).reduce((s,c)=>s+c.w,0);
     const maxPts=C.reduce((s,c)=>s+c.w,0);
@@ -2219,223 +2540,163 @@ function ScorePanel({ cv, apiKey, notify, layout, T }) {
       if(!bycat[c.cat])bycat[c.cat]={ok:0,tot:0,checks:[]};
       bycat[c.cat].ok+=c.ok?c.w:0;bycat[c.cat].tot+=c.w;bycat[c.cat].checks.push(c);
     });
-    return {score,checks:C,bycat,mode:"local"};
+    setQuickRes({score,checks:C,bycat});
   };
 
-  const scoreAI = async () => {
-    if (!apiKey) { notify(T.nk); return; }
-    setLoad(true);
-    const expT = cv.experience.map(e=>
-      e.title+" chez "+e.company+": "+e.bullets.filter(b=>b).join("; ")
-    ).join(" | ");
-    const cvT = "Nom: "+cv.name+"\nTitre: "+cv.title
-      +"\nAccroche: "+cv.summary
-      +"\nExps: "+expT
-      +"\nSkills: "+cv.skills.filter(s=>s).join(", ");
-    const offerPart = offer ? "OFFRE:\n"+offer+"\n\n" : "";
-    const p = "Expert recruteur ATS. Analyse ce CV"+(offer?" vs offre fournie":"")+"."
-      +"\nCV: "+cvT
-      +(offer?"\nOFFRE:\n"+offer:"")
-      +"\nJSON uniquement: "
-      +'{"recruiter_score":75,"ats_score":70,'
-      +'"recruiter_grade":"B+","ats_grade":"B",'
-      +'"strengths":["f1","f2","f3"],'
-      +'"critical_fixes":["c1","c2","c3"],'
-      +'"ats_keywords_missing":["k1","k2"],'
-      +'"ats_keywords_present":["k1","k2"]}';
-    try {
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
-      const local = scoreLocal();
-      setRes({...local, ai:r, mode:"ai"});
-    } catch { notify(T.ea); }
-    setLoad(false);
-  };
-
-  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
+  const sc = (s) => { if (s >= 80) return Green; if (s >= 65) return GoldDeep; if (s >= 50) return Coral; return "#dc2626"; };
 
   return (
-    <div>
-      <div style={{
-        display:"flex", gap:5, marginBottom:14,
-        background:"#f0ede5", padding:4, borderRadius:9,
-      }}>
-        <button onClick={()=>setMode("local")} style={{
+    <div style={{fontFamily:Sans}}>
+      {/* Tabs pills */}
+      <div style={{display:"flex", gap:6, marginBottom:18}}>
+        <button onClick={()=>setMode("dashboard")} style={{
           ...B({
-            flex:1, padding:"7px 8px", borderRadius:7,
-            background:mode==="local"?"#fff":"transparent",
-            color:mode==="local"?Dark:"#888",
-            fontWeight:mode==="local"?700:500, fontSize:12, textAlign:"center",
+            flex:1, padding:"10px 14px", borderRadius:RadiusPill,
+            background: mode==="dashboard" ? Ink : Paper,
+            color: mode==="dashboard" ? Cream : Ink,
+            border:"0.5px solid "+(mode==="dashboard" ? Ink : Gray200),
+            fontFamily:Sans, fontWeight:mode==="dashboard"?600:500, fontSize:12,
+            transition:"all 180ms ease-out",
           })
-        }}>Score rapide</button>
-        <button onClick={()=>setMode("ai")} style={{
+        }}>{T.sd_tab_dashboard}</button>
+        <button onClick={()=>setMode("quick")} style={{
           ...B({
-            flex:1, padding:"7px 8px", borderRadius:7,
-            background:mode==="ai"?"#fff":"transparent",
-            color:mode==="ai"?Dark:"#888",
-            fontWeight:mode==="ai"?700:500, fontSize:12, textAlign:"center",
+            flex:1, padding:"10px 14px", borderRadius:RadiusPill,
+            background: mode==="quick" ? Ink : Paper,
+            color: mode==="quick" ? Cream : Ink,
+            border:"0.5px solid "+(mode==="quick" ? Ink : Gray200),
+            fontFamily:Sans, fontWeight:mode==="quick"?600:500, fontSize:12,
+            transition:"all 180ms ease-out",
           })
-        }}>Score IA</button>
+        }}>{T.sd_tab_quick}</button>
       </div>
 
-      {mode==="ai" && (
-        <>
-          <label style={LBL}>Offre d'emploi (optionnel)</label>
-          <textarea value={offer} onChange={e=>setOffer(e.target.value)}
-            placeholder="Colle l'offre pour score ATS precis..." rows={4}
-            style={{...IN({resize:"vertical", marginBottom:10})}}/>
-          <button onClick={scoreAI} disabled={load||!apiKey} style={{
-            ...B({
-              width:"100%", padding:12, borderRadius:11,
-              background:load||!apiKey?"#ccc":"linear-gradient(135deg,#0f3460,#e94560)",
-              color:"#fff", fontWeight:700, fontSize:14, marginBottom:6,
-            })
-          }}>
-            {load ? "Analyse..." : "Analyser avec l'IA"}
-          </button>
-          {!apiKey && (
-            <div style={{fontSize:11,color:"#888",textAlign:"center",marginBottom:10}}>
-              Cle API requise
-            </div>
-          )}
-          <button onClick={()=>setRes(scoreLocal())} style={{
-            ...B({
-              width:"100%", padding:10, borderRadius:9,
-              background:"#f0f0f0", color:"#666",
-              fontWeight:600, fontSize:13, marginBottom:14,
-            })
-          }}>Analyse rapide sans IA</button>
-        </>
+      {mode === "dashboard" && (
+        <ScoreDashboard
+          T={T}
+          cv={cv}
+          apiKey={apiKey}
+          loading={dashLoading}
+          result={dashResult}
+          onRun={onRunDashboard}
+          onCta={onCtaAxis}
+        />
       )}
 
-      {mode==="local" && (
-        <button onClick={()=>setRes(scoreLocal())} style={{
-          ...B({
-            width:"100%", padding:12, borderRadius:11,
-            background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-            color:"#fff", fontWeight:700, fontSize:14, marginBottom:14,
-          })
-        }}>Analyser mon CV maintenant</button>
-      )}
-
-      {res && (
+      {mode === "quick" && (
         <div>
-          <div style={{
-            background:"#f8f6f1", borderRadius:11,
-            padding:"14px 16px", marginBottom:12,
+          <button onClick={computeQuick} style={{
+            ...B({
+              width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+              background: "linear-gradient(135deg,#0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)",
+              color:Cream,
+              fontFamily:Sans, fontWeight:600, fontSize:14,
+              marginBottom: 18,
+              transition:"all 200ms ease-out",
+              display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+            })
           }}>
-            <div style={{display:"flex", alignItems:"center", gap:14}}>
-              <div style={{textAlign:"center"}}>
-                <div style={{
-                  fontSize:36, fontWeight:900,
-                  color:sc(res.score), lineHeight:1,
-                }}>
-                  {res.score}
-                </div>
-                <div style={{
-                  fontSize:9, color:"#888", fontWeight:600,
-                  letterSpacing:1, textTransform:"uppercase",
-                }}>Score</div>
-              </div>
-              {res.ai && (
-                <>
-                  <div style={{textAlign:"center"}}>
-                    <div style={{
-                      fontSize:28, fontWeight:900,
-                      color:sc(res.ai.recruiter_score), lineHeight:1,
-                    }}>
-                      {res.ai.recruiter_score}
-                    </div>
-                    <div style={{fontSize:9,color:"#888"}}>Recruteur</div>
-                  </div>
-                  <div style={{textAlign:"center"}}>
-                    <div style={{
-                      fontSize:28, fontWeight:900,
-                      color:sc(res.ai.ats_score), lineHeight:1,
-                    }}>
-                      {res.ai.ats_score}
-                    </div>
-                    <div style={{fontSize:9,color:"#888"}}>ATS</div>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+            {quickRes ? "Recalculer" : "Analyser mon CV maintenant"}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </button>
 
-          {res.ai && (
+          {quickRes && (
             <>
+              {/* Score global rapide */}
               <div style={{
-                background:"#f0fff4", borderRadius:9,
-                padding:"10px 13px", marginBottom:8,
+                padding: "20px 22px",
+                background: scoreBg(quickRes.score),
+                borderRadius: RadiusMd, marginBottom: 18,
+                border:"0.5px solid "+Gray200,
+                boxShadow: ShadowSm,
+                display:"flex", alignItems:"center", gap:18,
               }}>
                 <div style={{
-                  fontSize:10, fontWeight:700, color:"#16a34a", marginBottom:5,
-                }}>Points forts</div>
-                {(res.ai.strengths||[]).map((s,i) => (
-                  <div key={i} style={{fontSize:12,color:"#333",marginBottom:2}}>
-                    {"* "}{s}
-                  </div>
-                ))}
-              </div>
-              <div style={{
-                background:"#fff3f0", borderRadius:9,
-                padding:"10px 13px", marginBottom:8,
-              }}>
-                <div style={{
-                  fontSize:10, fontWeight:700, color:"#dc2626", marginBottom:5,
-                }}>Corrections prioritaires</div>
-                {(res.ai.critical_fixes||[]).map((f,i) => (
-                  <div key={i} style={{fontSize:12,color:"#333",marginBottom:2}}>
-                    {"* "}{f}
-                  </div>
-                ))}
-              </div>
-              {(res.ai.ats_keywords_missing||[]).length > 0 && (
-                <div style={{
-                  background:"#fff9f0", borderRadius:9,
-                  padding:"10px 13px", marginBottom:10,
-                }}>
+                  fontFamily: Serif, fontWeight: 300,
+                  fontSize: 56, lineHeight: 1,
+                  letterSpacing: "-0.04em",
+                  color: sc(quickRes.score), flexShrink:0,
+                }}>{quickRes.score}</div>
+                <div>
                   <div style={{
-                    fontSize:10, fontWeight:700, color:Gold, marginBottom:5,
-                  }}>Mots-cles ATS manquants</div>
-                  <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
-                    {(res.ai.ats_keywords_missing||[]).map((k,i) => (
-                      <span key={i} style={{
-                        background:"#fee2e2", color:"#dc2626",
-                        borderRadius:3, padding:"2px 6px", fontSize:10,
-                      }}>{k}</span>
-                    ))}
-                  </div>
+                    fontSize: 11, fontWeight: 600,
+                    letterSpacing: "0.1em", textTransform: "uppercase",
+                    color: Gray600, fontFamily: Sans, marginBottom: 4,
+                  }}>SCORE</div>
+                  <div style={{
+                    fontFamily: Serif, fontSize: 14, fontWeight: 400,
+                    color: Ink, letterSpacing: "-0.01em",
+                  }}>{
+                    quickRes.score >= 80 ? "Excellent CV"
+                    : quickRes.score >= 65 ? "Bon CV, ameliorations possibles"
+                    : quickRes.score >= 50 ? "CV correct, plusieurs faiblesses"
+                    : "Plusieurs manques structurels"
+                  }</div>
                 </div>
-              )}
+              </div>
+
+              {/* Detail par categorie */}
+              <div style={{
+                fontSize: 11, fontWeight: 600,
+                letterSpacing: "0.1em", textTransform: "uppercase",
+                color: GoldDeep, marginBottom: 10,
+                fontFamily: Sans,
+              }}>Detail</div>
+              <div style={{
+                background: Paper,
+                borderRadius: RadiusMd,
+                border: "0.5px solid "+Gray200,
+                boxShadow: ShadowSm,
+                padding: "8px 0",
+              }}>
+                {quickRes.checks.map((c, i) => (
+                  <div key={i} style={{
+                    padding: "6px 16px",
+                    display: "flex", alignItems: "flex-start", gap: 10,
+                    borderBottom: i < quickRes.checks.length - 1 ? "0.5px solid "+Gray100 : "none",
+                  }}>
+                    <span style={{
+                      fontSize: 13, fontWeight: 700,
+                      color: c.ok ? Green : Coral,
+                      lineHeight: 1.45,
+                      width: 14, flexShrink: 0,
+                    }}>{c.ok ? "v" : "x"}</span>
+                    <div style={{flex:1, minWidth:0}}>
+                      <span style={{
+                        fontSize: 12, color: Ink,
+                        fontWeight: c.ok ? 400 : 600,
+                        fontFamily: Sans,
+                        lineHeight: 1.45,
+                      }}>{c.cat}: {c.label}</span>
+                      {!c.ok && (
+                        <div style={{
+                          fontSize: 11, color: Gray600,
+                          marginTop: 2, fontFamily: Sans,
+                          lineHeight: 1.4,
+                        }}>{c.tip}</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
-
-          <div style={SH()}>Detail</div>
-          {res.checks.map((ch,i)=>(
-            <div key={i} style={{display:"flex",gap:7,marginBottom:5,alignItems:"flex-start"}}>
-              <span style={{fontSize:12,flexShrink:0,color:ch.ok?"#16a34a":"#dc2626"}}>
-                {ch.ok?"v":"x"}
-              </span>
-              <div>
-                <div style={{fontSize:12,fontWeight:ch.ok?400:600,color:ch.ok?"#555":Dark}}>
-                  {ch.cat}: {ch.label}
-                </div>
-                {!ch.ok&&<div style={{fontSize:11,color:"#888"}}>{ch.tip}</div>}
-              </div>
-            </div>
-          ))}
-
-          <button onClick={()=>setRes(null)} style={{
-            ...B({
-              width:"100%", padding:10, borderRadius:9,
-              background:"#f0f0f0", color:"#666", fontSize:12, marginTop:6,
-            })
-          }}>Nouvelle analyse</button>
         </div>
       )}
     </div>
   );
+}
+
+// scoreBg pour le quick (helpers locaux)
+function scoreBg(s) {
+  if (s >= 80) return "#dcfce7";
+  if (s >= 65) return "rgba(201,169,110,.15)";
+  if (s >= 50) return "#fff1ed";
+  return "#fff1ed";
 }
 
 // === v17 helpers : 3 phases narratives ===
@@ -2987,1086 +3248,15 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 }
 
 
-function AuditModal({ cv, country, setCountry, loading, result, msgIdx, messages, onRun, onClose, onApplySuggestion, onIntegrateKeywords, kwLoading }) {
-  const countries = [
-    ["FR", "France"], ["UK", "Royaume-Uni"], ["US", "Etats-Unis"],
-    ["DE", "Allemagne"], ["CH", "Suisse"], ["BE", "Belgique"],
-    ["LU", "Luxembourg"], ["ES", "Espagne"], ["IT", "Italie"],
-    ["AE", "Emirats Arabes Unis"], ["CA", "Canada"], ["AUTO", "Auto-detection"],
-  ];
-  
-  const verdictColor = (v) => {
-    if (!v) return "#666";
-    const x = v.toLowerCase();
-    if (x.includes("rappelle")) return "#16a34a";
-    if (x.includes("hesite")) return "#ca8a04";
-    return "#dc2626";
-  };
-  
-  const scoreColor = (s) => {
-    if (s >= 80) return "#16a34a";
-    if (s >= 65) return "#ca8a04";
-    if (s >= 50) return "#ea580c";
-    return "#dc2626";
-  };
-  
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:680, width:"100%",
-        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        {/* Header */}
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          position:"sticky", top:0, background:"#fff", zIndex:2,
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              Audit IA Recruteur
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              Analyse de ton CV par un recruteur senior virtuel
-            </div>
-          </div>
-          <button onClick={onClose} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18,
-              fontWeight:700,
-            })
-          }}>X</button>
-        </div>
-        
-        {/* Body */}
-        <div style={{padding:"22px 26px"}}>
-          
-          {/* Loader stylé */}
-          {loading && (
-            <div style={{
-              padding:"40px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:13, marginBottom:10,
-            }}>
-              <div style={{
-                width:64, height:64, margin:"0 auto 18px",
-                border:"4px solid "+Gold+"33",
-                borderTopColor:Gold,
-                borderRadius:"50%",
-                animation:"spin 1s linear infinite",
-              }}/>
-              <style>{`
-                @keyframes spin {
-                  to { transform: rotate(360deg); }
-                }
-                @keyframes pulse {
-                  0%, 100% { opacity: 1; }
-                  50% { opacity: 0.5; }
-                }
-              `}</style>
-              <div style={{
-                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
-                animation:"pulse 1.6s ease-in-out infinite",
-              }}>
-                {messages[msgIdx]}
-              </div>
-              <div style={{fontSize:11, color:"#888"}}>
-                L'analyse prend 15-30 secondes
-              </div>
-              {/* Progress bar fake */}
-              <div style={{
-                marginTop:18, height:4, background:"#e5dfd0",
-                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
-              }}>
-                <div style={{
-                  height:"100%", background:Gold,
-                  animation:"slide 2s ease-in-out infinite",
-                  width:"40%",
-                }}/>
-                <style>{`
-                  @keyframes slide {
-                    0% { transform: translateX(-100%); }
-                    50% { transform: translateX(150%); }
-                    100% { transform: translateX(400%); }
-                  }
-                `}</style>
-              </div>
-            </div>
-          )}
-          
-          {/* Form de pays - avant l'audit */}
-          {!loading && !result && (
-            <>
-              <div style={{
-                background:"#f8f4ec", border:"1px solid "+Gold+"55",
-                borderRadius:11, padding:"14px 16px", marginBottom:18,
-              }}>
-                <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:4}}>
-                  L'audit recruteur va analyser ton CV en profondeur
-                </div>
-                <div style={{fontSize:12, color:"#666", lineHeight:1.6}}>
-                  Score global, longueur, forces et faiblesses, mots-cles manquants, et verdict honnete d'un recruteur.
-                </div>
-              </div>
-              
-              <label style={{
-                display:"block", fontSize:12, fontWeight:700,
-                color:Dark, marginBottom:8, textTransform:"uppercase",
-                letterSpacing:1,
-              }}>
-                Pays cible (marche du travail)
-              </label>
-              <select 
-                value={country} 
-                onChange={e=>setCountry(e.target.value)}
-                style={{
-                  width:"100%", padding:"12px 14px", borderRadius:10,
-                  border:"1.5px solid #ddd", fontSize:14, color:Dark,
-                  background:"#fff", marginBottom:10, fontFamily:"inherit",
-                }}>
-                {countries.map(([code, name]) => (
-                  <option key={code} value={code}>{name}</option>
-                ))}
-              </select>
-              <div style={{
-                fontSize:11, color:"#888", marginBottom:20, lineHeight:1.5,
-              }}>
-                Chaque pays a ses codes (longueur, format, mots-cles attendus). L'IA adapte l'audit en consequence.
-              </div>
-              
-              <button onClick={onRun} style={{
-                ...B({
-                  width:"100%", padding:"15px 20px", borderRadius:11,
-                  background:"linear-gradient(135deg,"+Gold+",#a07840)",
-                  color:"#fff", fontWeight:800, fontSize:14,
-                })
-              }}>
-                Lancer l'audit recruteur
-              </button>
-            </>
-          )}
-          
-          {/* Résultat de l'audit */}
-          {!loading && result && (
-            <>
-              {/* Score global + verdict */}
-              <div style={{
-                display:"flex", gap:12, marginBottom:18,
-              }}>
-                <div style={{
-                  flex:1, padding:"18px 16px", borderRadius:12,
-                  background:scoreColor(result.score_global)+"15",
-                  border:"2px solid "+scoreColor(result.score_global),
-                  textAlign:"center",
-                }}>
-                  <div style={{fontSize:11, color:"#666", fontWeight:600, marginBottom:4}}>SCORE GLOBAL</div>
-                  <div style={{fontSize:36, fontWeight:800, color:scoreColor(result.score_global), lineHeight:1}}>
-                    {result.score_global}
-                  </div>
-                  <div style={{fontSize:11, color:"#666", marginTop:4}}>/ 100</div>
-                </div>
-                <div style={{
-                  flex:1.5, padding:"14px 16px", borderRadius:12,
-                  background:verdictColor(result.verdict_recruteur)+"15",
-                  border:"2px solid "+verdictColor(result.verdict_recruteur),
-                }}>
-                  <div style={{fontSize:11, color:"#666", fontWeight:600, marginBottom:4}}>VERDICT RECRUTEUR</div>
-                  <div style={{fontSize:18, fontWeight:800, color:verdictColor(result.verdict_recruteur), lineHeight:1.2, marginBottom:6}}>
-                    {result.verdict_recruteur}
-                  </div>
-                  <div style={{fontSize:11, color:"#444", lineHeight:1.5}}>
-                    {result.raison_verdict}
-                  </div>
-                </div>
-              </div>
-              
-              {/* Première impression */}
-              {result.premiere_impression && (
-                <div style={{
-                  background:"#f8f4ec", borderLeft:"3px solid "+Gold,
-                  padding:"12px 14px", borderRadius:6, marginBottom:18,
-                  fontSize:12, color:"#444", fontStyle:"italic", lineHeight:1.6,
-                }}>
-                  <div style={{fontSize:10, fontWeight:700, color:Gold, textTransform:"uppercase", letterSpacing:1, marginBottom:4, fontStyle:"normal"}}>
-                    Premiere impression (5 sec)
-                  </div>
-                  "{result.premiere_impression}"
-                </div>
-              )}
-              
-              {/* Verdict longueur */}
-              {result.verdict_longueur && (
-                <div style={{
-                  padding:"10px 14px", borderRadius:9,
-                  background:"#fff8e1", border:"1px solid #ffc107",
-                  marginBottom:14, fontSize:12, color:"#664d03", lineHeight:1.6,
-                }}>
-                  <strong>Longueur :</strong> {result.verdict_longueur}
-                  {result.longueur_recommandation && <><br/><span style={{fontSize:11}}>{result.longueur_recommandation}</span></>}
-                </div>
-              )}
-              
-              {/* Forces */}
-              {result.forces && result.forces.length > 0 && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:13, fontWeight:800, color:"#16a34a", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
-                    Forces
-                  </div>
-                  {result.forces.map((f, i) => (
-                    <div key={i} style={{
-                      padding:"8px 12px", marginBottom:6, borderRadius:7,
-                      background:"#dcfce7", color:"#15803d", fontSize:12, lineHeight:1.5,
-                    }}>+ {f}</div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Faiblesses */}
-              {result.faiblesses && result.faiblesses.length > 0 && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:13, fontWeight:800, color:"#dc2626", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
-                    Faiblesses
-                  </div>
-                  {result.faiblesses.map((f, i) => (
-                    <div key={i} style={{
-                      padding:"8px 12px", marginBottom:6, borderRadius:7,
-                      background:"#fee2e2", color:"#991b1b", fontSize:12, lineHeight:1.5,
-                    }}>- {f}</div>
-                  ))}
-                </div>
-              )}
-              
-              {/* Suggestions */}
-              {result.suggestions && result.suggestions.length > 0 && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:13, fontWeight:800, color:Gold, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
-                    Suggestions actionnables
-                  </div>
-                  <div style={{fontSize:11, color:"#888", marginBottom:8, fontStyle:"italic"}}>
-                    Clique sur une suggestion pour l'envoyer dans Ajuster
-                  </div>
-                  {result.suggestions.map((s, i) => (
-                    <button key={i}
-                      onClick={()=>onApplySuggestion && onApplySuggestion(s)}
-                      style={{
-                        ...B({
-                          width:"100%", textAlign:"left",
-                          padding:"10px 14px", marginBottom:6, borderRadius:8,
-                          background:"#f8f4ec", border:"1px solid "+Gold+"33",
-                          fontSize:12, lineHeight:1.6, color:Dark,
-                          display:"flex", gap:8, alignItems:"flex-start",
-                          fontFamily:"inherit",
-                          transition:"all .15s",
-                        })
-                      }}
-                      onMouseEnter={e=>{
-                        e.currentTarget.style.background="#fdfaf3";
-                        e.currentTarget.style.borderColor=Gold;
-                      }}
-                      onMouseLeave={e=>{
-                        e.currentTarget.style.background="#f8f4ec";
-                        e.currentTarget.style.borderColor=Gold+"33";
-                      }}>
-                      <span style={{color:Gold, fontWeight:800, flexShrink:0}}>{i+1}.</span>
-                      <span style={{flex:1}}>{s}</span>
-                      <span style={{color:Gold, fontSize:14, fontWeight:700, flexShrink:0}}>{">"}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Mots-clés manquants */}
-              {result.mots_cles_manquants && result.mots_cles_manquants.length > 0 && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:13, fontWeight:800, color:Dark, marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
-                    Mots-cles a ajouter (ATS)
-                  </div>
-                  <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:10}}>
-                    {result.mots_cles_manquants.map((k, i) => (
-                      <span key={i} style={{
-                        padding:"5px 11px", borderRadius:14,
-                        background:Dark, color:Gold, fontSize:11, fontWeight:600,
-                      }}>{k}</span>
-                    ))}
-                  </div>
-                  <button
-                    onClick={()=>onIntegrateKeywords && onIntegrateKeywords(result.mots_cles_manquants)}
-                    disabled={kwLoading}
-                    style={{
-                      ...B({
-                        width:"100%", padding:"11px", borderRadius:10,
-                        background:kwLoading?"#ccc":"linear-gradient(135deg,"+Dark+","+Gold+")",
-                        color:"#fff", fontWeight:700, fontSize:13,
-                        cursor:kwLoading?"wait":"pointer",
-                      })
-                    }}>
-                    {kwLoading ? "Integration en cours..." : "Integrer ces mots-cles dans le CV"}
-                  </button>
-                  <div style={{fontSize:10, color:"#888", marginTop:6, textAlign:"center", lineHeight:1.5}}>
-                    L'IA placera intelligemment les mots-cles dans tes bullets et ton accroche, sans bourrage.
-                  </div>
-                </div>
-              )}
-              
-              <button onClick={onRun} style={{
-                ...B({
-                  width:"100%", padding:12, borderRadius:10,
-                  background:"#f0f0f0", color:"#666", fontWeight:700, fontSize:13,
-                  marginTop:8,
-                })
-              }}>
-                Relancer l'audit
-              </button>
-            </>
-          )}
-          
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBackup, onRun, onClose }) {
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:520, width:"100%",
-        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              {T.tr_title}
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              {T.tr_sub}
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18,
-              fontWeight:700, opacity:loading?.4:1,
-            })
-          }}>X</button>
-        </div>
-
-        <div style={{padding:"22px 26px"}}>
-          {loading ? (
-            <div style={{
-              padding:"40px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:13,
-            }}>
-              <div style={{
-                width:64, height:64, margin:"0 auto 18px",
-                border:"4px solid "+Gold+"33",
-                borderTopColor:Gold,
-                borderRadius:"50%",
-                animation:"spin 1s linear infinite",
-              }}/>
-              <style>{`
-                @keyframes spin { to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
-                @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
-              `}</style>
-              <div style={{
-                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
-                animation:"pulse 1.6s ease-in-out infinite",
-              }}>
-                {T.tr_msgs[msgIdx]}
-              </div>
-              <div style={{fontSize:11, color:"#888"}}>
-                {T.tr_loading}
-              </div>
-              <div style={{
-                marginTop:18, height:4, background:"#e5dfd0",
-                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
-                position:"relative",
-              }}>
-                <div style={{
-                  height:"100%", background:Gold,
-                  animation:"slide 2s ease-in-out infinite",
-                  width:"40%",
-                }}/>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div style={{
-                fontSize:11, fontWeight:700, color:"#888",
-                textTransform:"uppercase", letterSpacing:1,
-                marginBottom:10,
-              }}>{T.tr_dir}</div>
-              <div style={{display:"flex", gap:8, marginBottom:18}}>
-                {[
-                  ["fr_en", T.tr_fr_en],
-                  ["en_fr", T.tr_en_fr],
-                ].map(([k,l]) => (
-                  <button key={k} onClick={()=>setDir(k)} style={{
-                    ...B({
-                      flex:1, padding:"12px 10px", borderRadius:10,
-                      border:"2px solid "+(dir===k?Gold:"#e5e0d6"),
-                      background:dir===k?"#fdfaf3":"#fff",
-                      color:dir===k?Dark:"#666",
-                      fontWeight:dir===k?700:500, fontSize:12,
-                    })
-                  }}>{l}</button>
-                ))}
-              </div>
-
-              <div style={{
-                padding:"12px 14px", background:"#fff8eb",
-                border:"1px solid #f0e0a8", borderRadius:9,
-                fontSize:12, color:"#664d00", lineHeight:1.6,
-                marginBottom:18,
-              }}>{T.tr_warn}</div>
-
-              <button onClick={onRun} style={{
-                ...B({
-                  width:"100%", padding:"14px", borderRadius:11,
-                  background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-                  color:"#fff", fontWeight:800, fontSize:14,
-                })
-              }}>{T.tr_run}</button>
-
-              {hasBackup && (
-                <div style={{
-                  marginTop:12, fontSize:11, color:"#888",
-                  textAlign:"center", lineHeight:1.5,
-                }}>
-                  {T.tr_hint_backup}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
-function ApplicationPackModal({ pack, loading, msgIdx, onClose, onCopy }) {
-  const [activeTab, setActiveTab] = useState("cover");
-  const tabs = [
-    ["cover",   "Lettre"],
-    ["linkedin","LinkedIn"],
-    ["email",   "Email"],
-    ["pitch",   "Pitch"],
-    ["star",    "Reponses STAR"],
-  ];
-  const loadingMsgs = [
-    "Redaction de la lettre de motivation...",
-    "Composition du message LinkedIn...",
-    "Preparation de l'email de candidature...",
-    "Construction du pitch d'entretien...",
-    "Generation des reponses STAR...",
-    "Finalisation de la candidature...",
-  ];
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:780, width:"100%",
-        maxHeight:"92vh", overflowY:"auto", overflowX:"hidden",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          position:"sticky", top:0, background:"#fff", zIndex:2,
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              Candidature complete
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              CV + Lettre + LinkedIn + Email + Pitch + STAR
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
-              opacity:loading?.4:1,
-            })
-          }}>X</button>
-        </div>
-
-        <div style={{padding:"22px 26px"}}>
-          {loading ? (
-            <div style={{
-              padding:"40px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:13,
-            }}>
-              <div style={{
-                width:64, height:64, margin:"0 auto 18px",
-                border:"4px solid "+Gold+"33",
-                borderTopColor:Gold,
-                borderRadius:"50%",
-                animation:"spin 1s linear infinite",
-              }}/>
-              <style>{`
-                @keyframes spin { to { transform: rotate(360deg); } }
-                @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:.5; } }
-                @keyframes slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
-              `}</style>
-              <div style={{
-                fontSize:14, fontWeight:700, color:Dark, marginBottom:6,
-                animation:"pulse 1.6s ease-in-out infinite",
-              }}>
-                {loadingMsgs[msgIdx % loadingMsgs.length]}
-              </div>
-              <div style={{fontSize:11, color:"#888"}}>
-                La generation prend 25-40 secondes
-              </div>
-              <div style={{
-                marginTop:18, height:4, background:"#e5dfd0",
-                borderRadius:2, overflow:"hidden", width:200, margin:"18px auto 0",
-              }}>
-                <div style={{
-                  height:"100%", background:Gold,
-                  animation:"slide 2s ease-in-out infinite",
-                  width:"40%",
-                }}/>
-              </div>
-            </div>
-          ) : pack ? (
-            <>
-              <div style={{
-                display:"flex", gap:4, marginBottom:18,
-                borderBottom:"1px solid #eee", overflowX:"auto",
-              }}>
-                {tabs.map(([k,l]) => (
-                  <button key={k} onClick={()=>setActiveTab(k)} style={{
-                    ...B({
-                      padding:"9px 14px", borderRadius:0,
-                      background:"transparent",
-                      color:activeTab===k?Dark:"#888",
-                      fontWeight:activeTab===k?700:500, fontSize:12,
-                      borderBottom:activeTab===k?"2.5px solid "+Gold:"2.5px solid transparent",
-                      whiteSpace:"nowrap", flexShrink:0,
-                    })
-                  }}>{l}</button>
-                ))}
-              </div>
-
-              {activeTab==="cover" && pack.cover_letter && (
-                <div>
-                  <Section title="Lettre de motivation" content={pack.cover_letter} onCopy={onCopy}/>
-                </div>
-              )}
-              {activeTab==="linkedin" && pack.linkedin_message && (
-                <div>
-                  <Section title="Message LinkedIn au recruteur" content={pack.linkedin_message} onCopy={onCopy}/>
-                </div>
-              )}
-              {activeTab==="email" && pack.application_email && (
-                <div>
-                  {pack.application_email.subject && (
-                    <Section title="Objet de l'email" content={pack.application_email.subject} onCopy={onCopy} small/>
-                  )}
-                  {pack.application_email.body && (
-                    <Section title="Corps de l'email" content={pack.application_email.body} onCopy={onCopy}/>
-                  )}
-                </div>
-              )}
-              {activeTab==="pitch" && pack.interview_pitch && (
-                <div>
-                  <div style={{
-                    fontSize:11, color:"#888", marginBottom:8, fontStyle:"italic",
-                  }}>
-                    Reponse a "Tell me about yourself" - 60 secondes max
-                  </div>
-                  <Section title="Pitch d'introduction" content={pack.interview_pitch} onCopy={onCopy}/>
-                </div>
-              )}
-              {activeTab==="star" && pack.star_answers && pack.star_answers.length > 0 && (
-                <div>
-                  <div style={{
-                    fontSize:11, color:"#888", marginBottom:14, fontStyle:"italic",
-                  }}>
-                    Reponses preparees aux questions probables (methode STAR)
-                  </div>
-                  {pack.star_answers.map((qa, i) => (
-                    <div key={i} style={{
-                      marginBottom:18, paddingBottom:14,
-                      borderBottom:i < pack.star_answers.length-1 ? "1px solid #eee" : "none",
-                    }}>
-                      <div style={{
-                        fontSize:12, fontWeight:700, color:Dark, marginBottom:8,
-                        background:"#fef3c7", padding:"8px 11px", borderRadius:7,
-                      }}>
-                        Q{i+1}: {qa.question}
-                      </div>
-                      {["situation","task","action","result"].map(k => qa[k] && (
-                        <div key={k} style={{marginBottom:7}}>
-                          <div style={{
-                            fontSize:9, fontWeight:800, color:Gold,
-                            textTransform:"uppercase", letterSpacing:1, marginBottom:3,
-                          }}>{k}</div>
-                          <div style={{
-                            fontSize:12, color:"#444", lineHeight:1.6,
-                            paddingLeft:10, borderLeft:"2px solid "+Gold+"55",
-                          }}>{qa[k]}</div>
-                        </div>
-                      ))}
-                      <button onClick={()=>onCopy && onCopy(
-                        "Q: "+qa.question+"\n\n"
-                        +"S: "+(qa.situation||"")+"\n"
-                        +"T: "+(qa.task||"")+"\n"
-                        +"A: "+(qa.action||"")+"\n"
-                        +"R: "+(qa.result||"")
-                      )} style={{
-                        ...B({
-                          marginTop:6, padding:"6px 11px", borderRadius:6,
-                          background:"#f5f5f5", color:"#666", fontSize:11, fontWeight:600,
-                        })
-                      }}>Copier cette reponse</button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
-          ) : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, content, onCopy, small }) {
-  return (
-    <div style={{marginBottom:14}}>
-      <div style={{
-        display:"flex", justifyContent:"space-between", alignItems:"center",
-        marginBottom:6,
-      }}>
-        <div style={{fontSize:11, fontWeight:700, color:Gold, textTransform:"uppercase", letterSpacing:1}}>
-          {title}
-        </div>
-        <button onClick={()=>onCopy && onCopy(content)} style={{
-          ...B({
-            padding:"5px 11px", borderRadius:6,
-            background:"#f5f5f5", color:"#666", fontSize:11, fontWeight:600,
-          })
-        }}>Copier</button>
-      </div>
-      <div style={{
-        background:"#fdfaf3", border:"1px solid "+Gold+"33",
-        borderRadius:9, padding:"12px 14px",
-        fontSize:small?12:13, color:"#333", lineHeight:1.7,
-        whiteSpace:"pre-wrap", fontFamily:"'Lato',sans-serif",
-      }}>
-        {content}
-      </div>
-    </div>
-  );
-}
 
 
-function PositioningModal({ result, loading, onAdopt, onClose }) {
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:780, width:"100%",
-        maxHeight:"92vh", overflowY:"auto",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          position:"sticky", top:0, background:"#fff", zIndex:2,
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              Positionnement de carriere
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              3 angles strategiques pour ton parcours
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
-              opacity:loading?.4:1,
-            })
-          }}>X</button>
-        </div>
-        <div style={{padding:"22px 26px"}}>
-          {loading && (
-            <div style={{
-              padding:"40px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:13,
-            }}>
-              <div style={{
-                width:64, height:64, margin:"0 auto 18px",
-                border:"4px solid "+Gold+"33", borderTopColor:Gold,
-                borderRadius:"50%", animation:"spin 1s linear infinite",
-              }}/>
-              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-              <div style={{fontSize:14, fontWeight:700, color:Dark}}>
-                Analyse strategique de ton parcours...
-              </div>
-              <div style={{fontSize:11, color:"#888", marginTop:6}}>
-                15-25 secondes
-              </div>
-            </div>
-          )}
-          {!loading && result && result.angles && result.angles.map((a, i) => (
-            <div key={i} style={{
-              border:"1px solid #e5e0d6", borderRadius:11,
-              padding:"16px 18px", marginBottom:12,
-              background:i===0?"#fdfaf3":"#fff",
-            }}>
-              <div style={{
-                display:"flex", alignItems:"center", gap:8, marginBottom:8,
-              }}>
-                <span style={{
-                  fontSize:11, fontWeight:800, color:"#fff",
-                  background:Gold, padding:"3px 9px", borderRadius:11,
-                  letterSpacing:1, textTransform:"uppercase",
-                }}>Angle {i+1}</span>
-                {a.salary_range && (
-                  <span style={{
-                    fontSize:11, color:"#16a34a", fontWeight:700,
-                    background:"#dcfce7", padding:"3px 9px", borderRadius:11,
-                  }}>{a.salary_range}</span>
-                )}
-              </div>
-              <div style={{fontSize:17, fontWeight:800, color:Dark, marginBottom:6}}>
-                {a.title}
-              </div>
-              {a.credibility && (
-                <div style={{fontSize:12, color:"#555", lineHeight:1.6, marginBottom:10}}>
-                  {a.credibility}
-                </div>
-              )}
-              {a.key_points && a.key_points.length > 0 && (
-                <div style={{marginBottom:10}}>
-                  <div style={{fontSize:10, fontWeight:700, color:Gold, marginBottom:5, textTransform:"uppercase", letterSpacing:1}}>
-                    A mettre en avant
-                  </div>
-                  {a.key_points.map((p,j) => (
-                    <div key={j} style={{fontSize:12, color:"#333", marginBottom:3, paddingLeft:8}}>
-                      {"+ "}{p}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {a.target_employers && (
-                <div style={{
-                  fontSize:11, color:"#666",
-                  background:"#f5f5f5", padding:"7px 10px", borderRadius:7,
-                  marginBottom:10,
-                }}>
-                  <strong>Cible:</strong> {a.target_employers}
-                </div>
-              )}
-              {a.new_summary && (
-                <div style={{
-                  background:"#fff8eb", border:"1px solid #f0e0a8",
-                  borderRadius:7, padding:"9px 11px", marginBottom:10,
-                  fontSize:11, color:"#664d00", fontStyle:"italic", lineHeight:1.6,
-                }}>
-                  "{a.new_summary}"
-                </div>
-              )}
-              <button onClick={()=>onAdopt(a)} style={{
-                ...B({
-                  width:"100%", padding:"10px", borderRadius:9,
-                  background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-                  color:"#fff", fontWeight:700, fontSize:12,
-                })
-              }}>
-                Adopter cet angle (titre + accroche)
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
-function TruthModal({ result, loading, onClose, onApplyFix }) {
-  const typeColor = (t) => {
-    const c = (t||"").toLowerCase();
-    if (c.includes("bullshit") || c.includes("pretentieux")) return "#dc2626";
-    if (c.includes("incoherent") || c.includes("risque")) return "#dc2626";
-    if (c.includes("vague") || c.includes("generique")) return "#ea580c";
-    if (c.includes("faible")) return "#ca8a04";
-    return "#666";
-  };
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:760, width:"100%",
-        maxHeight:"92vh", overflowY:"auto",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          position:"sticky", top:0, background:"#fff", zIndex:2,
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              Truth Check
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              Phrases faibles, vagues ou risquees detectees
-            </div>
-          </div>
-          <button onClick={onClose} disabled={loading} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
-              opacity:loading?.4:1,
-            })
-          }}>X</button>
-        </div>
-        <div style={{padding:"22px 26px"}}>
-          {loading && (
-            <div style={{
-              padding:"40px 20px", textAlign:"center",
-              background:"linear-gradient(135deg,#fdfaf3,#f8f4ec)",
-              borderRadius:13,
-            }}>
-              <div style={{
-                width:64, height:64, margin:"0 auto 18px",
-                border:"4px solid "+Gold+"33", borderTopColor:Gold,
-                borderRadius:"50%", animation:"spin 1s linear infinite",
-              }}/>
-              <div style={{fontSize:14, fontWeight:700, color:Dark}}>
-                Analyse honnete de ton CV...
-              </div>
-              <div style={{fontSize:11, color:"#888", marginTop:6}}>
-                15-25 secondes
-              </div>
-            </div>
-          )}
-          {!loading && result && (
-            <>
-              {result.overall_verdict && (
-                <div style={{
-                  background:"#fef3c7", border:"1px solid #fbbf24",
-                  borderRadius:9, padding:"12px 14px", marginBottom:14,
-                  fontSize:13, color:"#78350f", lineHeight:1.6,
-                }}>
-                  <strong>Verdict global: </strong>{result.overall_verdict}
-                </div>
-              )}
-              {result.issues && result.issues.length > 0 ? result.issues.map((iss, i) => (
-                <div key={i} style={{
-                  border:"1px solid #e5e0d6", borderRadius:10,
-                  padding:"13px 15px", marginBottom:10,
-                }}>
-                  <div style={{display:"flex", gap:8, alignItems:"center", marginBottom:7, flexWrap:"wrap"}}>
-                    <span style={{
-                      fontSize:10, fontWeight:800, color:"#fff",
-                      background:typeColor(iss.type),
-                      padding:"3px 9px", borderRadius:10,
-                      textTransform:"uppercase", letterSpacing:1,
-                    }}>{iss.type || "issue"}</span>
-                    {iss.location && (
-                      <span style={{
-                        fontSize:10, color:"#666",
-                        background:"#f5f5f5", padding:"3px 8px", borderRadius:8,
-                        fontFamily:"monospace",
-                      }}>{iss.location}</span>
-                    )}
-                  </div>
-                  <div style={{
-                    fontSize:12, color:"#666", fontStyle:"italic",
-                    background:"#fee2e2", padding:"7px 10px", borderRadius:6,
-                    marginBottom:7, lineHeight:1.5,
-                  }}>
-                    "{iss.quote}"
-                  </div>
-                  {iss.why && (
-                    <div style={{fontSize:11, color:"#7f1d1d", marginBottom:8, lineHeight:1.5}}>
-                      <strong>Pourquoi: </strong>{iss.why}
-                    </div>
-                  )}
-                  {iss.fix && (
-                    <div style={{
-                      background:"#dcfce7", border:"1px solid #86efac",
-                      borderRadius:7, padding:"8px 11px",
-                      fontSize:12, color:"#14532d", lineHeight:1.6,
-                    }}>
-                      <div style={{fontSize:9, fontWeight:800, color:"#16a34a", marginBottom:3, textTransform:"uppercase", letterSpacing:1}}>
-                        Reformulation proposee
-                      </div>
-                      {iss.fix}
-                    </div>
-                  )}
-                  {iss.fix && onApplyFix && (
-                    <button onClick={()=>onApplyFix(iss)} style={{
-                      ...B({
-                        marginTop:8, width:"100%", padding:"8px", borderRadius:7,
-                        background:"#fdfaf3", border:"1px solid "+Gold+"55",
-                        color:Dark, fontWeight:600, fontSize:11,
-                      })
-                    }}>
-                      Envoyer cette correction dans Ajuster
-                    </button>
-                  )}
-                </div>
-              )) : (
-                <div style={{
-                  textAlign:"center", padding:"30px 20px",
-                  fontSize:14, color:"#16a34a", fontWeight:700,
-                }}>
-                  Aucun probleme majeur detecte
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
-function VersionsModal({ versions, currentCv, onSave, onLoad, onDelete, onClose }) {
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:1000,
-      background:"rgba(0,0,0,.75)", backdropFilter:"blur(4px)",
-      display:"flex", alignItems:"center", justifyContent:"center",
-      padding:20, fontFamily:"'Lato',sans-serif",
-    }}>
-      <div style={{
-        background:"#fff", borderRadius:16, maxWidth:560, width:"100%",
-        maxHeight:"92vh", overflowY:"auto",
-        boxShadow:"0 20px 60px rgba(0,0,0,.4)",
-      }}>
-        <div style={{
-          padding:"20px 26px", borderBottom:"1px solid #eee",
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-        }}>
-          <div>
-            <div style={{fontSize:18, fontWeight:800, color:Dark}}>
-              Versions de CV
-            </div>
-            <div style={{fontSize:11, color:"#888", marginTop:2}}>
-              Sauvegarde plusieurs versions selon les cibles
-            </div>
-          </div>
-          <button onClick={onClose} style={{
-            ...B({
-              width:34, height:34, borderRadius:8,
-              background:"#f5f5f5", color:"#666", fontSize:18, fontWeight:700,
-            })
-          }}>X</button>
-        </div>
-        <div style={{padding:"22px 26px"}}>
-          <button onClick={onSave} style={{
-            ...B({
-              width:"100%", padding:13, borderRadius:11,
-              background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-              color:"#fff", fontWeight:700, fontSize:13, marginBottom:18,
-            })
-          }}>
-            + Sauvegarder la version actuelle
-          </button>
-          {versions.length === 0 ? (
-            <div style={{
-              textAlign:"center", padding:"30px 20px",
-              fontSize:13, color:"#888",
-              background:"#fafafa", borderRadius:10,
-            }}>
-              Aucune version sauvegardee.
-              <br/>
-              <span style={{fontSize:11}}>
-                Sauvegarde le CV actuel pour pouvoir le restaurer plus tard.
-              </span>
-            </div>
-          ) : (
-            <div>
-              <div style={{fontSize:11, fontWeight:700, color:"#888", marginBottom:8, textTransform:"uppercase", letterSpacing:1}}>
-                Versions sauvegardees ({versions.length})
-              </div>
-              {versions.map(v => (
-                <div key={v.id} style={{
-                  border:"1px solid #e5e0d6", borderRadius:10,
-                  padding:"12px 14px", marginBottom:8,
-                }}>
-                  <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6}}>
-                    <div>
-                      <div style={{fontSize:14, fontWeight:700, color:Dark}}>
-                        {v.name}
-                      </div>
-                      <div style={{fontSize:10, color:"#888", marginTop:2}}>
-                        {v.cv && v.cv.title ? v.cv.title : ""} {v.cv && v.cv.name ? "- "+v.cv.name : ""}
-                      </div>
-                      <div style={{fontSize:10, color:"#aaa", marginTop:2}}>
-                        {new Date(v.created).toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{display:"flex", gap:6}}>
-                    <button onClick={()=>onLoad(v.id)} style={{
-                      ...B({
-                        flex:1, padding:"7px 11px", borderRadius:7,
-                        background:"#fdfaf3", border:"1px solid "+Gold+"55",
-                        color:Dark, fontWeight:600, fontSize:11,
-                      })
-                    }}>Charger</button>
-                    <button onClick={()=>onDelete(v.id)} style={{
-                      ...B({
-                        padding:"7px 11px", borderRadius:7,
-                        background:"#fee2e2", border:"1px solid #fca5a5",
-                        color:"#dc2626", fontWeight:600, fontSize:11,
-                      })
-                    }}>Supprimer</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
+
 
 
 // ============================================================
@@ -4076,7 +3266,7 @@ function VersionsModal({ versions, currentCv, onSave, onLoad, onDelete, onClose 
 // - Grille 2x2 des 4 super-pouvoirs : Audit / Positioning / Truth / Pack
 // ============================================================
 function TargetHub({ T, cvIsEmpty, offerResult, locale,
-  onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack }) {
+  onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack, onOpenInterview, onOpenMultiCV }) {
 
   // Couleur du score (vert/jaune/orange/rouge)
   const scoreColor = (s) => {
@@ -4353,6 +3543,114 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           </button>
         ))}
       </div>
+
+      {/* 5e super-pouvoir : Preparer l'entretien (pleine largeur, accent fort) */}
+      {onOpenInterview && (
+        <button onClick={onOpenInterview} style={{
+          ...B({
+            display:"flex", alignItems:"center", gap:14,
+            width:"100%",
+            background:Ink, color:Cream,
+            borderRadius:RadiusMd,
+            padding:"16px 18px",
+            marginTop:12,
+            border:"0.5px solid "+Ink,
+            textAlign:"left", fontFamily:Sans,
+            position:"relative", overflow:"hidden",
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          <div style={{
+            position:"absolute", inset:0,
+            background:"radial-gradient(ellipse 80% 100% at 0% 100%, rgba(91,61,245,.35) 0%, transparent 60%)",
+            pointerEvents:"none",
+          }}/>
+          <div style={{
+            width:40, height:40, borderRadius:11,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            background:"rgba(245,241,232,.15)", color:Cream,
+            flexShrink:0, position:"relative",
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <div style={{flex:1, minWidth:0, position:"relative"}}>
+            <div style={{
+              fontFamily:Serif, fontWeight:500,
+              fontSize:16, letterSpacing:"-0.01em",
+              color:Cream, marginBottom:3,
+            }}>{T.iv_btn || "Preparer l'entretien"}</div>
+            <div style={{
+              fontSize:11, color:Gold, lineHeight:1.4,
+            }}>{T.iv_btn_desc || "L'IA simule le recruteur typique de ton marche"}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke={Gold} strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{flexShrink:0, position:"relative"}}>
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      )}
+
+      {/* 6e super-pouvoir : Multi-CV strategie (pleine largeur, accent Gold) */}
+      {onOpenMultiCV && (
+        <button onClick={onOpenMultiCV} style={{
+          ...B({
+            display:"flex", alignItems:"center", gap:14,
+            width:"100%",
+            background:Paper, color:Ink,
+            borderRadius:RadiusMd,
+            padding:"16px 18px",
+            marginTop:10,
+            border:"0.5px solid "+Gold,
+            textAlign:"left", fontFamily:Sans,
+            position:"relative", overflow:"hidden",
+            boxShadow:ShadowSm,
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          <div style={{
+            position:"absolute", inset:0,
+            background:"radial-gradient(ellipse 80% 100% at 100% 100%, rgba(201,169,110,.18) 0%, transparent 60%)",
+            pointerEvents:"none",
+          }}/>
+          <div style={{
+            width:40, height:40, borderRadius:11,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            background:CreamSoft, color:GoldDeep,
+            flexShrink:0, position:"relative",
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <rect width="14" height="18" x="5" y="3" rx="2"/>
+              <line x1="9" y1="9" x2="15" y2="9"/>
+              <line x1="9" y1="13" x2="15" y2="13"/>
+              <line x1="9" y1="17" x2="13" y2="17"/>
+            </svg>
+          </div>
+          <div style={{flex:1, minWidth:0, position:"relative"}}>
+            <div style={{
+              fontFamily:Serif, fontWeight:500,
+              fontSize:16, letterSpacing:"-0.01em",
+              color:Ink, marginBottom:3,
+            }}>{T.mc_btn || "Quel CV envoyer ?"}</div>
+            <div style={{
+              fontSize:11, color:Gray600, lineHeight:1.4,
+            }}>{T.mc_btn_desc || "L'IA recommande la meilleure version"}</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke={GoldDeep} strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round"
+            style={{flexShrink:0, position:"relative"}}>
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      )}
     </div>
   );
 }
@@ -4392,6 +3690,893 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         onResult={onResult}
         onApplied={onApplied}
       />
+    </Sheet>
+  );
+}
+
+
+// ============================================================
+// Composants atomiques pour la personnalisation (etape 2)
+// ============================================================
+
+// Petit swatch carre cliquable - presets de couleurs.
+function ColorSwatch({ color, name, active, onClick, size=44 }) {
+  return (
+    <button onClick={onClick} title={name} aria-label={name} style={{
+      ...B({
+        width:size, height:size, borderRadius:12,
+        background:color,
+        border:active ? "2px solid "+Ink : "0.5px solid "+Gray200,
+        boxShadow:active ? "0 0 0 2px "+Cream+", 0 0 0 3px "+Ink : ShadowSm,
+        cursor:"pointer", padding:0, flexShrink:0,
+        transition:"all 180ms ease-out",
+      })
+    }}/>
+  );
+}
+
+// Badge WCAG : "AAA" (vert), "AA" (gold-deep), ou warning si "FAIL".
+function WCAGBadge({ ratio, level, T }) {
+  if (!ratio || ratio === 0) return null;
+  const isFail = level === "FAIL";
+  const color = isFail ? Coral : (level === "AAA" ? Green : GoldDeep);
+  const bg    = isFail ? CoralSoft : (level === "AAA" ? GreenSoft : "rgba(201,169,110,.15)");
+  return (
+    <span style={{
+      display:"inline-flex", alignItems:"center", gap:6,
+      padding:"3px 9px", borderRadius:RadiusPill,
+      background:bg, color:color,
+      fontSize:11, fontWeight:600, fontFamily:Sans,
+      letterSpacing:"0.04em",
+    }}>
+      <span>{isFail ? T.cust_wcag_fail : level}</span>
+      <span style={{opacity:.65, fontWeight:500}}>
+        {ratio.toFixed(1)}:1
+      </span>
+    </span>
+  );
+}
+
+// Bloc reutilisable : eyebrow + grille de presets + color picker libre.
+// onChange recoit la couleur hex finale.
+// `contrastWith` (optionnel) permet d'afficher un badge WCAG par rapport
+// a une couleur de reference (typiquement la couleur de texte qui sera dessus).
+function ColorPickerBlock({
+  T, label, value, onChange, presets,
+  contrastWith, contrastLabel, columns=4,
+}) {
+  const ratio = contrastWith && value ? contrastRatio(value, contrastWith) : 0;
+  const level = ratio ? wcagLevel(value, contrastWith) : null;
+  return (
+    <div style={{marginBottom:22}}>
+      <div style={{
+        display:"flex", justifyContent:"space-between", alignItems:"center",
+        marginBottom:10,
+      }}>
+        <span style={{
+          fontSize:11, fontWeight:600,
+          letterSpacing:"0.1em", textTransform:"uppercase",
+          color:GoldDeep, fontFamily:Sans,
+        }}>{label}</span>
+        {contrastWith && level && (
+          <WCAGBadge ratio={ratio} level={level} T={T}/>
+        )}
+      </div>
+
+      {/* Presets en grille */}
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"repeat("+columns+", 1fr)",
+        gap:10,
+        marginBottom:12,
+      }}>
+        {presets.map(p => (
+          <div key={p.id} style={{
+            display:"flex", flexDirection:"column",
+            alignItems:"center", gap:6,
+          }}>
+            <ColorSwatch
+              color={p.color}
+              name={p.name}
+              active={value && value.toLowerCase() === p.color.toLowerCase()}
+              onClick={()=>onChange(p.color)}
+            />
+            <span style={{
+              fontSize:10, color:Gray600,
+              textAlign:"center", lineHeight:1.3,
+              fontFamily:Sans, fontWeight:500,
+            }}>{p.name}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Color picker libre HTML5 */}
+      <label style={{
+        display:"flex", alignItems:"center", gap:10,
+        padding:"10px 14px", borderRadius:RadiusMd,
+        background:Paper, border:"0.5px solid "+Gray200,
+        cursor:"pointer", boxShadow:ShadowSm,
+        fontFamily:Sans,
+      }}>
+        <input
+          type="color"
+          value={value || "#c9a96e"}
+          onChange={e => onChange(e.target.value)}
+          style={{
+            width:30, height:30, border:"none",
+            background:"none", cursor:"pointer",
+            padding:0,
+          }}
+        />
+        <span style={{
+          flex:1, fontSize:12, color:Gray600,
+          fontWeight:500,
+        }}>{T.cust_color_picker}</span>
+        <span style={{
+          fontSize:11, color:Gray400,
+          fontFamily:"ui-monospace, monospace",
+        }}>{value || ""}</span>
+      </label>
+    </div>
+  );
+}
+
+// Tab Couleurs complet : 3 ColorPickerBlock (accent, sidebar, paper).
+function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
+
+  // La valeur effective courante (apres merge) pour pre-selectionner
+  // le bon swatch / pre-remplir le picker.
+  // Selon le scope on edite le custom global ou le custom version.
+  const editing = scope === "global" ? cvCustom : versionCustom;
+  const eff = mergeTheme(theme, cvCustom, versionCustom);
+
+  const setAccent = (color) => writeCustom(c => ({ ...c, ac: color }));
+  const setSidebar = (color) => writeCustom(c => ({ ...c, sb: color }));
+  const setPaper = (color) => writeCustom(c => ({ ...c, bg: color }));
+
+  return (
+    <div>
+      {/* Couleur d'accent : doit contraster avec sidebar (pour le titre / accent visible dessus) */}
+      <ColorPickerBlock
+        T={T}
+        label={T.cust_color_accent}
+        value={(editing && editing.ac) || eff.ac}
+        onChange={setAccent}
+        presets={ACCENT_PRESETS}
+        contrastWith={eff.sb}
+        columns={4}
+      />
+      {/* Bandeau lateral : doit contraster avec la couleur de texte sur sidebar (st) */}
+      <ColorPickerBlock
+        T={T}
+        label={T.cust_color_sidebar}
+        value={(editing && editing.sb) || eff.sb}
+        onChange={setSidebar}
+        presets={SIDEBAR_PRESETS}
+        contrastWith={eff.st}
+        columns={3}
+      />
+      {/* Fond du CV : doit contraster avec le texte principal (Ink en general) */}
+      <ColorPickerBlock
+        T={T}
+        label={T.cust_color_paper}
+        value={(editing && editing.bg) || eff.bg}
+        onChange={setPaper}
+        presets={PAPER_PRESETS}
+        contrastWith={Ink}
+        columns={5}
+      />
+    </div>
+  );
+}
+
+// FontCard : aperçu d'une font (Aa + nom + vibe + ATS badge optionnel).
+// Charge la font des le mount via ensureFontLoaded pour rendre l'apercu fidele.
+function FontCard({ font, active, onClick, sample, isBody }) {
+  useEffect(() => {
+    ensureFontLoaded(font.googleHref);
+  }, [font.googleHref]);
+  return (
+    <button onClick={onClick} style={{
+      ...B({
+        background:active ? CreamSoft : Paper,
+        border:active ? "1.5px solid "+Ink : "0.5px solid "+Gray200,
+        borderRadius:RadiusMd,
+        padding:"14px 16px",
+        textAlign:"left",
+        boxShadow:active ? "none" : ShadowSm,
+        transition:"all 180ms ease-out",
+        width:"100%",
+        cursor:"pointer",
+        display:"flex", alignItems:"center", gap:14,
+      })
+    }}>
+      {/* Apercu rendu dans la font cible */}
+      <div style={{
+        width:48, height:48, flexShrink:0,
+        borderRadius:10,
+        background:Cream,
+        display:"flex", alignItems:"center", justifyContent:"center",
+        fontFamily:font.family,
+        fontSize:isBody ? 22 : 26,
+        fontWeight:isBody ? 500 : 600,
+        color:Ink,
+        letterSpacing:isBody ? "0" : "-0.02em",
+        border:"0.5px solid "+Gray200,
+      }}>{sample}</div>
+      <div style={{flex:1, minWidth:0}}>
+        <div style={{
+          fontFamily:Sans, fontSize:13, fontWeight:600,
+          color:Ink, marginBottom:2,
+        }}>{font.name}</div>
+        <div style={{
+          fontFamily:Sans, fontSize:11, color:Gray600,
+          lineHeight:1.4,
+        }}>
+          {font.vibe}
+          {font.target ? " - " + font.target : ""}
+        </div>
+      </div>
+      {isBody && font.ats && (
+        <span style={{
+          padding:"3px 9px", borderRadius:RadiusPill,
+          background:GreenSoft, color:Green,
+          fontSize:10, fontWeight:600, fontFamily:Sans,
+          letterSpacing:"0.04em",
+          flexShrink:0,
+        }}>{font.ats}</span>
+      )}
+    </button>
+  );
+}
+
+// FontSection : eyebrow + grille de FontCard (1 colonne sur mobile).
+function FontSection({ T, label, fonts, value, onPick, sample, isBody }) {
+  // Match strict : on cherche "'Nom Exact'" entoure de quotes simples
+  // pour eviter les faux positifs (ex "Inter Tight" qui matcherait "Inter").
+  const isActive = (f) => {
+    if (!value) return false;
+    const v = value.toLowerCase();
+    const target = "'" + f.name.toLowerCase() + "'";
+    return v.indexOf(target) !== -1;
+  };
+  return (
+    <div style={{marginBottom:22}}>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.1em", textTransform:"uppercase",
+        color:GoldDeep, marginBottom:10,
+        fontFamily:Sans,
+      }}>{label}</div>
+      <div style={{
+        display:"flex", flexDirection:"column", gap:8,
+      }}>
+        {fonts.map(f => (
+          <FontCard
+            key={f.id}
+            font={f}
+            sample={sample}
+            isBody={isBody}
+            active={isActive(f)}
+            onClick={()=>onPick(f)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// FontUrlInput : champ libre Google Fonts URL.
+// Apres saisie d'une URL valide, demande "aux titres ou au corps ?"
+// puis applique. Gere les erreurs de validation et de chargement.
+function FontUrlInput({ T, onApply }) {
+  const [url, setUrl]       = useState("");
+  const [pending, setPending] = useState(null); // { name, family, googleHref }
+  const [err, setErr]       = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    setErr("");
+    const parsed = parseGoogleFontUrl(url.trim());
+    if (!parsed) {
+      setErr(T.cust_font_url_invalid);
+      return;
+    }
+    setLoading(true);
+    ensureFontLoaded(parsed.googleHref);
+    // Petite latence pour laisser la font se charger avant d'afficher
+    // le choix headings/body.
+    setTimeout(() => {
+      setPending(parsed);
+      setLoading(false);
+    }, 600);
+  };
+
+  const apply = (target) => {
+    if (!pending) return;
+    onApply(target, pending);
+    setUrl("");
+    setPending(null);
+    setErr("");
+  };
+
+  return (
+    <div style={{
+      padding:"16px 16px 18px",
+      borderRadius:RadiusMd,
+      background:Paper,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      marginTop:8,
+    }}>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.1em", textTransform:"uppercase",
+        color:GoldDeep, marginBottom:10,
+        fontFamily:Sans,
+      }}>{T.cust_font_url_label}</div>
+      <input
+        type="url"
+        value={url}
+        onChange={e => { setUrl(e.target.value); setErr(""); }}
+        placeholder={T.cust_font_url_ph}
+        style={{
+          width:"100%",
+          padding:"11px 14px",
+          borderRadius:RadiusSm,
+          border:"0.5px solid "+(err ? Coral : Gray200),
+          background:Cream,
+          color:Ink, fontSize:12,
+          fontFamily:"ui-monospace, monospace",
+          outline:"none",
+          marginBottom:err ? 6 : 10,
+          boxSizing:"border-box",
+        }}
+      />
+      {err && (
+        <div style={{
+          fontSize:11, color:Coral,
+          marginBottom:10, fontFamily:Sans,
+        }}>{err}</div>
+      )}
+      {!pending && (
+        <button onClick={validate} disabled={loading || !url.trim()} style={{
+          ...B({
+            width:"100%", padding:"11px 18px", borderRadius:RadiusPill,
+            background:loading || !url.trim() ? Gray200 : Ink,
+            color:loading || !url.trim() ? Gray600 : Cream,
+            fontSize:13, fontWeight:600, fontFamily:Sans,
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          {loading ? T.cust_font_url_loading : T.cust_font_url_apply}
+        </button>
+      )}
+      {pending && (
+        <div>
+          {/* Apercu rapide */}
+          <div style={{
+            padding:"12px 14px", borderRadius:RadiusSm,
+            background:CreamSoft,
+            border:"0.5px solid "+Gray200,
+            marginBottom:12,
+          }}>
+            <div style={{
+              fontFamily:pending.family,
+              fontSize:24, fontWeight:600,
+              color:Ink, marginBottom:2,
+              letterSpacing:"-0.01em",
+            }}>{pending.name}</div>
+            <div style={{
+              fontFamily:pending.family,
+              fontSize:13, color:Gray600,
+            }}>The quick brown fox jumps over the lazy dog</div>
+          </div>
+          <div style={{
+            fontSize:12, color:Gray600,
+            marginBottom:8, fontFamily:Sans,
+          }}>{T.cust_font_url_apply_target}</div>
+          <div style={{display:"flex", gap:8}}>
+            <button onClick={()=>apply("header")} style={{
+              ...B({
+                flex:1, padding:"11px 14px", borderRadius:RadiusPill,
+                background:Ink, color:Cream,
+                fontSize:12, fontWeight:600, fontFamily:Sans,
+                transition:"all 200ms ease-out",
+              })
+            }}>{T.cust_font_url_to_header}</button>
+            <button onClick={()=>apply("body")} style={{
+              ...B({
+                flex:1, padding:"11px 14px", borderRadius:RadiusPill,
+                background:Ink, color:Cream,
+                fontSize:12, fontWeight:600, fontFamily:Sans,
+                transition:"all 200ms ease-out",
+              })
+            }}>{T.cust_font_url_to_body}</button>
+          </div>
+          <button onClick={()=>{ setPending(null); setUrl(""); }} style={{
+            ...B({
+              width:"100%", marginTop:8, padding:"8px 14px",
+              background:"transparent", color:Gray600,
+              fontSize:11, fontFamily:Sans,
+            })
+          }}>{T.back}</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// FontsTab : section titres + section corps + champ libre URL.
+function FontsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
+  const editing = scope === "global" ? cvCustom : versionCustom;
+  const eff     = mergeTheme(theme, cvCustom, versionCustom);
+
+  const pickHeader = (font) => writeCustom(c => ({
+    ...c, hf: font.family, hfHref: font.googleHref,
+  }));
+  const pickBody = (font) => writeCustom(c => ({
+    ...c, bf: font.family, bfHref: font.googleHref,
+  }));
+  const applyUrl = (target, parsed) => {
+    if (target === "header") {
+      writeCustom(c => ({ ...c, hf: parsed.family, hfHref: parsed.googleHref }));
+    } else {
+      writeCustom(c => ({ ...c, bf: parsed.family, bfHref: parsed.googleHref }));
+    }
+  };
+
+  return (
+    <div>
+      <FontSection
+        T={T}
+        label={T.cust_font_header}
+        fonts={HEADER_FONTS}
+        value={(editing && editing.hf) || eff.hf || ""}
+        onPick={pickHeader}
+        sample={T.cust_font_sample_header}
+        isBody={false}
+      />
+      <FontSection
+        T={T}
+        label={T.cust_font_body}
+        fonts={BODY_FONTS}
+        value={(editing && editing.bf) || eff.bf || ""}
+        onPick={pickBody}
+        sample={T.cust_font_sample_body}
+        isBody={true}
+      />
+      <FontUrlInput T={T} onApply={applyUrl}/>
+    </div>
+  );
+}
+
+// ============================================================
+// Suggestions IA (etape 4) : analyse deep du profil + 4 combos curees
+// ============================================================
+
+// Construit le prompt deep pour les suggestions de style.
+// Analyse en profondeur : secteur, seniorite (deduite des dates), pays,
+// niveau (executive / mid / junior), culture cible.
+function buildStylePrompt(cv, locale) {
+  const yrs = (cv.experience || []).reduce((acc, e) => {
+    const m = (e.period || "").match(/(\d{4})\s*[-]\s*(\d{4}|present|now|en cours|aujourd|actuel)/i);
+    if (m) {
+      const start = parseInt(m[1], 10);
+      const endRaw = m[2];
+      const end = /\d{4}/.test(endRaw) ? parseInt(endRaw, 10) : new Date().getFullYear();
+      return acc + Math.max(0, end - start);
+    }
+    return acc;
+  }, 0);
+  const expSummary = (cv.experience || []).slice(0, 4).map(e =>
+    (e.title || "") + " chez " + (e.company || "") + " (" + (e.period || "") + ")"
+  ).join(" | ");
+  const skillsSummary = (cv.skills || []).filter(Boolean).slice(0, 8).join(", ");
+  const profileLine =
+      "Titre actuel: " + (cv.title || "(non renseigne)")
+    + "\nNom: " + (cv.name || "(non renseigne)")
+    + "\nLocalisation: " + (cv.location || "(non renseignee)")
+    + "\nAccroche: " + ((cv.summary || "").slice(0, 280) || "(non renseignee)")
+    + "\nExperiences (4 plus recentes): " + (expSummary || "(aucune)")
+    + "\nCompetences cles: " + (skillsSummary || "(aucune)")
+    + "\nAnnees d'experience cumulees (estimation): " + yrs;
+
+  const langLine = locale === "en"
+    ? "Reponds STRICTEMENT en anglais. "
+    : "Reponds STRICTEMENT en francais. ";
+
+  return (
+    "Tu es directeur artistique senior pour CV executifs."
+    + " Analyse le profil ci-dessous et propose EXACTEMENT 4 combinaisons style"
+    + " (couleurs + polices) qui maximisent l'impact recruteur."
+    + "\n\nPROFIL:\n" + profileLine
+    + "\n\nREGLES STRICTES:"
+    + "\n- Chaque combinaison doit etre COHERENTE avec le secteur et le niveau."
+    + "\n- 4 combinaisons distinctes ciblant des CULTURES DIFFERENTES (ex: banque classique, fintech, conseil premium, tech moderne)."
+    + "\n- Couleurs en hex valides (#RRGGBB)."
+    + "\n- Polices choisies parmi: Playfair Display, Fraunces, Cormorant Garamond, DM Serif Display, Space Grotesk, Montserrat, Inter, Lora, Lato, Source Sans 3, DM Sans, IBM Plex Sans, Open Sans, Nunito Sans, Work Sans."
+    + "\n- Le 'why' doit expliquer en 1 phrase precise pourquoi ce combo colle au profil."
+    + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
+    + '\n\n{"combos":[{"name":"Banque classique","accent":"#7a1f2b","sidebar":"#0a0a0a","paper":"#f8f6f1","header_font":"Playfair Display","body_font":"Lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
+  );
+}
+
+// Resout un nom de font (ex "Playfair Display") en entree de la lib curee.
+// Retourne null si pas trouve.
+function resolveFontByName(name) {
+  if (!name) return null;
+  const lower = name.toLowerCase().trim();
+  return HEADER_FONTS.find(f => f.name.toLowerCase() === lower)
+      || BODY_FONTS.find(f => f.name.toLowerCase() === lower)
+      || null;
+}
+
+// Carte d'un combo IA : bandeau de couleurs + apercu fonts + why + adopter.
+function SuggestionCombo({ T, combo, onAdopt }) {
+  const headerFont = resolveFontByName(combo.header_font);
+  const bodyFont   = resolveFontByName(combo.body_font);
+
+  // Charge les fonts du combo des le mount (pour l'apercu).
+  useEffect(() => {
+    if (headerFont) ensureFontLoaded(headerFont.googleHref);
+    if (bodyFont)   ensureFontLoaded(bodyFont.googleHref);
+  }, [headerFont, bodyFont]);
+
+  // Validation minimale des couleurs hex
+  const validHex = (s) => typeof s === "string" && /^#[0-9a-fA-F]{6}$/.test(s);
+  const accent  = validHex(combo.accent)  ? combo.accent  : "#c9a96e";
+  const sidebar = validHex(combo.sidebar) ? combo.sidebar : "#0a0a0a";
+  const paper   = validHex(combo.paper)   ? combo.paper   : "#f8f6f1";
+
+  return (
+    <div style={{
+      background:Paper, borderRadius:RadiusMd,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      padding:0, marginBottom:14, overflow:"hidden",
+      fontFamily:Sans,
+    }}>
+      {/* Apercu visuel : bandeau sidebar + zone paper avec accent */}
+      <div style={{
+        display:"flex", height:96,
+        borderBottom:"0.5px solid "+Gray200,
+      }}>
+        <div style={{
+          width:"30%", background:sidebar,
+          display:"flex", flexDirection:"column",
+          justifyContent:"center", alignItems:"center",
+          padding:8,
+        }}>
+          <div style={{
+            fontFamily:headerFont ? headerFont.family : Serif,
+            fontSize:22, fontWeight:600,
+            color:accent, letterSpacing:"-0.02em",
+            lineHeight:1,
+          }}>Aa</div>
+          <div style={{
+            width:18, height:2, background:accent,
+            marginTop:6, borderRadius:1,
+          }}/>
+        </div>
+        <div style={{
+          flex:1, background:paper,
+          padding:"14px 16px",
+          display:"flex", flexDirection:"column", justifyContent:"center",
+        }}>
+          <div style={{
+            fontFamily:headerFont ? headerFont.family : Serif,
+            fontSize:14, fontWeight:600,
+            color:Ink, marginBottom:4,
+            letterSpacing:"-0.01em",
+          }}>{combo.name || "Combo"}</div>
+          <div style={{
+            fontFamily:bodyFont ? bodyFont.family : Sans,
+            fontSize:11, color:"#444",
+            lineHeight:1.4,
+          }}>The quick brown fox jumps</div>
+          <div style={{
+            display:"flex", gap:5, marginTop:6,
+          }}>
+            <span style={{width:10, height:10, borderRadius:"50%", background:accent, border:"0.5px solid "+Gray200}}/>
+            <span style={{width:10, height:10, borderRadius:"50%", background:sidebar, border:"0.5px solid "+Gray200}}/>
+            <span style={{width:10, height:10, borderRadius:"50%", background:paper, border:"0.5px solid "+Gray200}}/>
+          </div>
+        </div>
+      </div>
+
+      {/* Body de la card : nom du combo + why + adopter */}
+      <div style={{padding:"14px 16px 16px"}}>
+        <div style={{
+          fontSize:11, fontWeight:600,
+          letterSpacing:"0.1em", textTransform:"uppercase",
+          color:GoldDeep, marginBottom:6,
+        }}>{combo.target || ""}</div>
+        <div style={{
+          fontFamily:Serif, fontWeight:400, fontStyle:"italic",
+          fontSize:14, lineHeight:1.5,
+          color:Ink, marginBottom:4,
+          letterSpacing:"-0.005em",
+        }}>"{combo.why || ""}"</div>
+        <div style={{
+          fontSize:11, color:Gray600, marginTop:8,
+          marginBottom:12, fontFamily:Sans,
+        }}>
+          {combo.header_font || "?"}
+          {" + "}
+          {combo.body_font || "?"}
+        </div>
+        <button onClick={()=>onAdopt({
+          ac: accent, sb: sidebar, bg: paper,
+          hf: headerFont ? headerFont.family : null,
+          hfHref: headerFont ? headerFont.googleHref : null,
+          bf: bodyFont ? bodyFont.family : null,
+          bfHref: bodyFont ? bodyFont.googleHref : null,
+        })} style={{
+          ...B({
+            width:"100%", padding:"11px 16px", borderRadius:RadiusPill,
+            background:Ink, color:Cream,
+            fontSize:12, fontWeight:600, fontFamily:Sans,
+            display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          {T.cust_suggest_adopt}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// SuggestTab : bouton run + loading + 4 SuggestionCombo + reset.
+function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopted }) {
+  const [combos, setCombos] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const cvIsEmpty = !cv.name && !cv.title && !cv.summary
+    && (cv.experience || []).every(e => !e.title && !e.company);
+
+  const run = async () => {
+    if (cvIsEmpty) { notify(T.cust_suggest_no_cv); return; }
+    if (!apiKey)   { notify(T.nk); return; }
+    setLoading(true);
+    setCombos([]);
+    try {
+      const txt = await aiCall(buildStylePrompt(cv, locale));
+      const parsed = parseJSON(txt);
+      const arr = Array.isArray(parsed && parsed.combos) ? parsed.combos : [];
+      setCombos(arr);
+    } catch (err) {
+      notify(T.ea + ": " + (err && err.message ? err.message : ""));
+    }
+    setLoading(false);
+  };
+
+  const adopt = (custom) => {
+    // Applique le custom complet d'un coup (couleurs + fonts).
+    writeCustom(c => ({ ...c, ...custom }));
+    notify(T.cust_adopted);
+    if (onAdopted) onAdopted();
+  };
+
+  return (
+    <div>
+      <button onClick={run} disabled={loading || cvIsEmpty || !apiKey} style={{
+        ...B({
+          width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+          background:loading || cvIsEmpty || !apiKey ? Gray200 : GradPurple,
+          color:loading || cvIsEmpty || !apiKey ? Gray600 : "#fff",
+          fontFamily:Sans, fontWeight:600, fontSize:14,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          marginBottom:18,
+          transition:"all 200ms ease-out",
+        })
+      }}>
+        {loading ? T.cust_suggest_loading : T.cust_suggest_btn}
+        {!loading && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"/>
+          </svg>
+        )}
+      </button>
+
+      {cvIsEmpty && (
+        <div style={{
+          padding:"18px 16px", background:CreamSoft,
+          border:"0.5px solid "+Gray200, borderRadius:RadiusMd,
+          fontSize:12, color:Gray600, lineHeight:1.5,
+          fontFamily:Sans, textAlign:"center",
+        }}>{T.cust_suggest_no_cv}</div>
+      )}
+
+      {!loading && combos.length > 0 && combos.map((c, i) => (
+        <SuggestionCombo
+          key={i}
+          T={T}
+          combo={c}
+          onAdopt={adopt}
+        />
+      ))}
+
+      {loading && (
+        <div style={{
+          padding:"32px 18px", textAlign:"center",
+          color:Gray600, fontSize:13, fontFamily:Sans,
+        }}>
+          <div style={{
+            width:32, height:32,
+            border:"2.5px solid "+Gray200, borderTopColor:Purple,
+            borderRadius:"50%",
+            margin:"0 auto 12px",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+          {T.cust_suggest_loading}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CustomizeSheet v17 : sheet bottom iOS-native pour la personnalisation
+// du CV rendu (couleurs + polices + suggestions IA).
+//
+// Architecture :
+// - Tabs pills : Couleurs / Polices / Suggestions IA
+// - Toggle scope : Style par defaut (global) / Cette version (override)
+// - Reset au theme en bas
+//
+// Etape 1 : skeleton (tabs vides). Les contenus arrivent en etapes 2-4.
+// ============================================================
+function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
+  apiKey, notify, locale, onClose }) {
+
+  // Scope : "global" ou "version" - quel custom on edite.
+  const [scope, setScope] = useState("global");
+  // Tab principal : "colors" | "fonts" | "suggest"
+  const [tab, setTab] = useState("colors");
+
+  // Lit / ecrit le custom selon le scope choisi.
+  const versionCustom = (cv && cv.custom && typeof cv.custom === "object") ? cv.custom : null;
+  const currentCustom = scope === "global" ? cvCustom : versionCustom;
+
+  const writeCustom = useCallback((mutator) => {
+    if (scope === "global") {
+      setCvCustom(prev => {
+        const base = prev || {};
+        const next = mutator({ ...base });
+        // Si tout est vide, on remet null pour garder lsS propre.
+        if (!next || Object.keys(next).length === 0) return null;
+        return next;
+      });
+    } else {
+      // Override de version : on ecrit dans cv.custom.
+      setCvFn(prev => {
+        const base = prev.custom || {};
+        const next = mutator({ ...base });
+        if (!next || Object.keys(next).length === 0) {
+          const { custom, ...rest } = prev;
+          return rest;
+        }
+        return { ...prev, custom: next };
+      });
+    }
+  }, [scope, setCvCustom, setCvFn]);
+
+  const resetCurrent = () => {
+    if (scope === "global") {
+      setCvCustom(null);
+    } else {
+      setCvFn(prev => {
+        const { custom, ...rest } = prev;
+        return rest;
+      });
+    }
+    notify(T.cust_resetted);
+  };
+
+  // Pill style (re-usable in this sheet)
+  const pill = (active) => ({
+    flex:1, padding:"10px 12px", borderRadius:RadiusPill,
+    background:active ? Ink : Paper,
+    color:active ? Cream : Ink,
+    border:"0.5px solid "+(active ? Ink : Gray200),
+    fontFamily:Sans, fontWeight:active ? 600 : 500, fontSize:12,
+    transition:"all 180ms ease-out",
+    cursor:"pointer",
+  });
+
+  return (
+    <Sheet
+      eyebrow={T.cust_eyebrow}
+      title={
+        <>
+          {T.cust_title_a}{" "}
+          <em style={{
+            fontFamily:Serif, fontStyle:"italic", color:Gold,
+          }}>{T.cust_title_em}</em>
+          {T.cust_title_b}
+        </>
+      }
+      onClose={onClose}
+    >
+      <p style={{
+        fontSize:13, color:Gray600, lineHeight:1.5,
+        margin:"0 0 16px", fontFamily:Sans,
+      }}>{T.cust_sub}</p>
+
+      {/* Toggle scope : global / version */}
+      <div style={{display:"flex", gap:8, marginBottom:6}}>
+        <button onClick={()=>setScope("global")} style={{...B(pill(scope==="global"))}}>
+          {T.cust_scope_global}
+        </button>
+        <button onClick={()=>setScope("version")} style={{...B(pill(scope==="version"))}}>
+          {T.cust_scope_version}
+        </button>
+      </div>
+      <div style={{
+        fontSize:11, color:Gray600, lineHeight:1.5,
+        marginBottom:18, fontFamily:Sans,
+      }}>
+        {scope === "global" ? T.cust_scope_global_hint : T.cust_scope_version_hint}
+      </div>
+
+      {/* Tabs principaux */}
+      <div style={{
+        display:"flex", gap:6, marginBottom:18,
+      }}>
+        {[["colors", T.cust_tab_colors],
+          ["fonts",  T.cust_tab_fonts],
+          ["suggest",T.cust_tab_suggest]].map(([k, label]) => (
+            <button key={k} onClick={()=>setTab(k)} style={{...B(pill(tab===k))}}>
+              {label}
+            </button>
+          ))}
+      </div>
+
+      {/* Tab content */}
+      {tab === "colors" && (
+        <ColorsTab
+          T={T} scope={scope} theme={theme}
+          cvCustom={cvCustom} versionCustom={versionCustom}
+          writeCustom={writeCustom}
+        />
+      )}
+      {tab === "fonts" && (
+        <FontsTab
+          T={T} scope={scope} theme={theme}
+          cvCustom={cvCustom} versionCustom={versionCustom}
+          writeCustom={writeCustom}
+        />
+      )}
+      {tab === "suggest" && (
+        <SuggestTab
+          T={T} cv={cv} locale={locale} apiKey={apiKey}
+          notify={notify} scope={scope} writeCustom={writeCustom}
+        />
+      )}
+
+      {/* Reset bouton */}
+      {currentCustom && (
+        <button onClick={resetCurrent} style={{
+          ...B({
+            width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
+            background:CoralSoft, color:Coral,
+            border:"0.5px solid "+Coral,
+            fontSize:13, fontWeight:500, fontFamily:Sans,
+            marginTop:24,
+            transition:"all 200ms ease-out",
+          })
+        }}>{T.cust_reset}</button>
+      )}
     </Sheet>
   );
 }
@@ -4454,6 +4639,43 @@ export default function App() {
   const [showOffer, setShowOffer]     = useState(false);
   // v17 : phase Finaliser
   const [showScore, setShowScore]     = useState(false);
+  // v17 chantier 4 : Score Dashboard 8 axes (resultat IA persiste pour la session).
+  const [dashLoading, setDashLoading] = useState(false);
+  const [dashResult, setDashResult]   = useState(null);
+  // v17 chantier 5 : Gap Repair (Lisser le parcours)
+  const [showGapRepair, setShowGapRepair] = useState(false);
+  // v17 chantier 6 : Interview Continuity (Preparer l'entretien)
+  const [showInterview, setShowInterview] = useState(false);
+  const [interviewLoading, setInterviewLoading] = useState(false);
+  const [interviewResult, setInterviewResult] = useState(null);
+  const [interviewOffer, setInterviewOffer] = useState("");
+  // v17 chantier 7 : Coach IA conversationnel
+  const [showCoach, setShowCoach] = useState(false);
+  const [coachLoading, setCoachLoading] = useState(false);
+  const [coachMessages, setCoachMessages] = useState([]);
+  // v17 chantier 8 : Export LinkedIn
+  const [showLinkedIn, setShowLinkedIn] = useState(false);
+  const [linkedInLoading, setLinkedInLoading] = useState(false);
+  const [linkedInResult, setLinkedInResult] = useState(null);
+  // v17 chantier 9 : CV Compare
+  const [showCompare, setShowCompare] = useState(false);
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareResult, setCompareResult] = useState(null);
+  const [comparePickA, setComparePickA] = useState(null);
+  const [comparePickB, setComparePickB] = useState(null);
+  // v17 chantier 10 : Applications Tracker
+  const [showApplications, setShowApplications] = useState(false);
+  const [applications, setApplications] = useState([]);
+  // v17 chantier 11 : Multi-CV strategie
+  const [showMultiCV, setShowMultiCV] = useState(false);
+  const [multiCVLoading, setMultiCVLoading] = useState(false);
+  const [multiCVResult, setMultiCVResult] = useState(null);
+  const [multiCVOffer, setMultiCVOffer] = useState("");
+  // v17 : Customize CV (couleurs + polices)
+  // cvCustom = custom global (applique partout par defaut).
+  // versionCustom est lu depuis cv.custom (par-version) si present.
+  const [cvCustom, setCvCustom_]      = useState(null);
+  const [showCustomize, setShowCustomize] = useState(false);
   const cRef = useRef();
 
   // Hydrate from localStorage AFTER first render. This is the only safe
@@ -4480,8 +4702,27 @@ export default function App() {
     if (savedLc !== "fr") setLc_(savedLc);
     const savedVs = lsG(SK.VS, []);
     if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
+    const savedCt = lsG(SK.CT, null);
+    if (savedCt && typeof savedCt === "object") setCvCustom_(savedCt);
+    // Load coach conversation history (cap a 50 derniers messages)
+    const savedCo = lsG(SK.CO, []);
+    if (Array.isArray(savedCo) && savedCo.length) {
+      setCoachMessages(savedCo.slice(-50));
+    }
+    // Load applications tracker
+    const savedAp = lsG(SK.AP, []);
+    if (Array.isArray(savedAp) && savedAp.length) {
+      setApplications(savedAp);
+    }
     setHydrated(true);
   }, []);
+
+  // Setter persiste pour le custom global.
+  const setCvCustom = useCallback(fn => setCvCustom_(p => {
+    const n = typeof fn === "function" ? fn(p) : fn;
+    lsS(SK.CT, n);
+    return n;
+  }), []);
 
   const setCVFn = useCallback(fn => setCV_(p => {
     const n = typeof fn==="function" ? fn(p) : fn;
@@ -4506,6 +4747,32 @@ export default function App() {
 
   const T = locale==="en" ? EN_T : FR_T;
   const theme = THEMES[thN] || THEMES.executive;
+
+  // v17 : custom theme effectif (theme < global custom < version custom).
+  // Le custom par-version est stocke directement dans cv.custom.
+  const versionCustom = (cv && cv.custom && typeof cv.custom === "object") ? cv.custom : null;
+  const effTheme = mergeTheme(theme, cvCustom, versionCustom);
+
+  // Charge dynamiquement les Google Fonts custom des qu'elles changent.
+  useEffect(() => {
+    ensureCustomFontsLoaded(cvCustom, versionCustom);
+  }, [cvCustom, versionCustom]);
+
+  // v17 chantier 5 : analyse de chronologie pour Gap Repair.
+  // Tout est calcule a partir de cv.experience, donc on memoize
+  // pour eviter de re-calculer a chaque render.
+  const gapAnalysis = useMemo(() => {
+    const exps = cv && cv.experience ? cv.experience : [];
+    if (exps.length < 2) {
+      return { gaps: [], yearStrategy: null, groupOps: [], unparsableCount: 0 };
+    }
+    const gaps = detectGaps(exps, 1);
+    const yearStrategy = analyzeYearOnlyStrategy(exps, 1);
+    const groupOps = findGroupingOpportunities(exps);
+    const unparsableCount = countUnparsable(exps);
+    return { gaps, yearStrategy, groupOps, unparsableCount };
+  }, [cv]);
+
   const cvIsEmpty = !cv.name && !cv.title && !cv.summary
     && cv.experience.every(e => !e.title && !e.company);
 
@@ -4568,7 +4835,13 @@ export default function App() {
     const s = document.createElement("script");
     s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
     s.onerror = () => notify("Erreur chargement PDF");
-    s.onload = () => {
+    s.onload = async () => {
+      // v17 : attend que les Google Fonts custom soient chargees avant snapshot.
+      try {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      } catch {}
       const fname = "CV_" + cv.name.split(" ").join("_") + ".pdf";
       window.html2pdf().set({
         margin:0, filename:fname,
@@ -4965,36 +5238,694 @@ export default function App() {
     });
   }, [locale]);
 
-  const runBulletTransform = useCallback(async (expId, bulletIdx, text) => {
+  // v17 chantier 4 : Score Dashboard 8 axes.
+  // Demande a l'IA d'evaluer 8 dimensions distinctes du CV. Retour : 8 scores
+  // entre 0 et 100, une recommandation actionnable par axe, un verdict global,
+  // et la priorite numero 1 a corriger.
+  const runScoreDashboard = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.sd_no_cv); return; }
+    setDashLoading(true);
+    try {
+      const expT = (cv.experience || []).map(e =>
+        (e.title||"") + " chez " + (e.company||"")
+        + " (" + (e.period||"") + "): "
+        + (e.bullets||[]).filter(b=>b).join("; ")
+      ).join(" | ");
+      const cvT = "Nom: " + (cv.name||"")
+        + "\nTitre actuel: " + (cv.title||"")
+        + "\nLocalisation: " + (cv.location||"")
+        + "\nLinkedIn: " + (cv.linkedin ? "present" : "absent")
+        + "\nAccroche: " + (cv.summary||"")
+        + "\nExperiences: " + expT
+        + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
+        + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ")
+        + "\nCertifications: " + (cv.certifications||[]).filter(c=>c).join(", ")
+        + "\nLayout actuel: " + layout;
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+      const p = "Tu es expert RH senior, recruteur international avec 15 ans d'experience."
+        + " Analyse le CV ci-dessous selon 8 axes distincts."
+        + "\n\nCV:\n" + cvT
+        + "\n\nREGLES STRICTES:"
+        + "\n- Score chaque axe entre 0 et 100 (sois honnete et exigeant, pas complaisant)."
+        + "\n- Pour chaque axe, ecris une recommandation ACTIONNABLE en 1 phrase (max 25 mots)."
+        + "\n- La recommandation doit etre concrete : 'Reformule X', 'Ajoute Y', pas 'ameliore'."
+        + "\n- Le verdict global est une phrase synthese de 1 a 2 phrases (max 200 caracteres)."
+        + "\n- Le top_priority est l'action numero 1 si l'utilisateur ne fait QU'UNE chose (max 30 mots)."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
+        + "\n\nLES 8 AXES:"
+        + "\n1. title : Clarte du titre. Le titre rend-il le metier evident en 1 seconde ?"
+        + "\n2. bullets : Impact des bullets. Chiffres, verbes d'action, resultats concrets ?"
+        + "\n3. ats : Compatibilite ATS. Mots-cles metier, format propre (pas de tableaux pieges) ?"
+        + "\n4. relevance : Pertinence du parcours. Coherence avec le metier actuel/vise ?"
+        + "\n5. credibility : Credibilite. Phrases solides, sans bullshit ni exagerations vagues ?"
+        + "\n6. design : Style et design. Hierarchie visuelle, lisibilite, presentation pro ?"
+        + "\n7. readability : Lisibilite. Longueur appropriee, densite equilibree, sections proportionnees ?"
+        + "\n8. differentiation : Differenciation. Y-a-t-il un angle qui sort du lot, ou est-ce interchangeable ?"
+        + "\n\nFORMAT DE REPONSE (JSON strict) :"
+        + '\n{"global_score":75,"verdict_global":"phrase synthese","top_priority":"action numero 1 a faire","scores":['
+        + '{"id":"title","score":80,"reco":"phrase actionnable"},'
+        + '{"id":"bullets","score":60,"reco":"phrase actionnable"},'
+        + '{"id":"ats","score":75,"reco":"phrase actionnable"},'
+        + '{"id":"relevance","score":85,"reco":"phrase actionnable"},'
+        + '{"id":"credibility","score":70,"reco":"phrase actionnable"},'
+        + '{"id":"design","score":65,"reco":"phrase actionnable"},'
+        + '{"id":"readability","score":80,"reco":"phrase actionnable"},'
+        + '{"id":"differentiation","score":55,"reco":"phrase actionnable"}'
+        + ']}';
+      const txt = await aiCall(p);
+      const r = parseJSON(txt);
+      setDashResult(r);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setDashLoading(false);
+  }, [apiKey, cv, cvIsEmpty, layout, locale, notify, T]);
+
+  // v17 chantier 4 : dispatcher des CTAs des cards de score vers le bon outil.
+  // Chaque axe a un CTA different (ex "Editer le titre" -> ouvre SheetId).
+  const onCtaAxisDispatch = useCallback((axisId) => {
+    // On ferme la sheet score d'abord pour laisser place a la nouvelle action.
+    const close = () => setShowScore(false);
+    if (axisId === "title") {
+      close();
+      setModal("id");
+    } else if (axisId === "bullets") {
+      close();
+      setModal("exp");
+    } else if (axisId === "ats") {
+      close();
+      setLy("ats");
+      notify(locale === "en" ? "ATS-Safe layout activated" : "Layout ATS-Safe active");
+    } else if (axisId === "relevance" || axisId === "differentiation") {
+      close();
+      runPositioning();
+    } else if (axisId === "credibility") {
+      close();
+      runTruthCheck();
+    } else if (axisId === "design") {
+      close();
+      setShowCustomize(true);
+    } else if (axisId === "readability") {
+      close();
+      setModal("exp");
+    }
+  }, [locale, notify, runPositioning, runTruthCheck]);
+
+  // v17 chantier 5 : Gap Repair handlers (deterministes, pas d'IA).
+  //
+  // Strategy 1 : reformatte toutes les dates des experiences en YYYY (years only).
+  // Strategy 2 : etend une experience precedente jusqu'a la date de debut suivante.
+  // Strategy 3 : fusionne plusieurs experiences en une seule ligne continue.
+
+  // Strategie 1 : reformatte toutes les periodes en YYYY.
+  const applyYearOnlyFormat = useCallback(() => {
+    pushH();
+    setCVFn(p => ({
+      ...p,
+      experience: (p.experience || []).map(e => ({
+        ...e,
+        period: reformatPeriodToYearOnly(e.period || ""),
+      })),
+    }));
+    notify(T.gr_strat_year_done || "Dates reformatees en annees");
+  }, [pushH, setCVFn, notify, T]);
+
+  // Strategie 2 : etend la fin de l'experience "before" pour qu'elle finisse juste
+  // avant le debut de l'experience "after".
+  // gap.beforeIdx pointe sur l'index dans le tableau cv.experience original.
+  const applyExtendDate = useCallback((gapInfo) => {
+    if (!gapInfo || !gapInfo.beforeExp || !gapInfo.afterExp) return;
+    pushH();
+    setCVFn(p => {
+      const exps = [...(p.experience || [])];
+      const targetIdx = gapInfo.beforeIdx;
+      if (targetIdx < 0 || targetIdx >= exps.length) return p;
+      const target = exps[targetIdx];
+      // On parse la periode actuelle et on etend la fin a la date de debut suivante.
+      const parsed = parsePeriod(target.period || "");
+      if (!parsed.start) return p;
+      const newEnd = gapInfo.afterExp.period
+        ? parsePeriod(gapInfo.afterExp.period).start
+        : null;
+      if (!newEnd) return p;
+      // Reconstitue la string period dans le format original (MM/YYYY si on avait des mois,
+      // sinon YYYY).
+      const startStr = parsed.start.month
+        ? String(parsed.start.month).padStart(2, "0") + "/" + parsed.start.year
+        : String(parsed.start.year);
+      const endStr = newEnd.month
+        ? String(newEnd.month).padStart(2, "0") + "/" + newEnd.year
+        : String(newEnd.year);
+      const newPeriod = startStr + " - " + endStr;
+      exps[targetIdx] = { ...target, period: newPeriod };
+      return { ...p, experience: exps };
+    });
+    notify(T.gr_strat_extend_done || "Date etendue");
+  }, [pushH, setCVFn, notify, T]);
+
+  // Strategie 3 : fusionne plusieurs experiences en une seule ligne avec dates en couverture.
+  // indices = liste des index dans cv.experience a regrouper.
+  const applyGroupExperiences = useCallback((indices) => {
+    if (!Array.isArray(indices) || indices.length < 2) return;
+    pushH();
+    setCVFn(p => {
+      const exps = (p.experience || []);
+      const toMerge = indices.map(i => exps[i]).filter(Boolean);
+      if (toMerge.length < 2) return p;
+      // Combinaison : titre = "Conseil et missions" (generique), company = liste,
+      // period = "annee_min - annee_max", bullets = concatenation.
+      const minYear = Math.min(...toMerge.map(e => {
+        const pp = parsePeriod(e.period || ""); return pp.start ? pp.start.year : 9999;
+      }));
+      const maxYear = Math.max(...toMerge.map(e => {
+        const pp = parsePeriod(e.period || ""); return pp.end && !pp.end.present ? pp.end.year : (pp.start ? pp.start.year : 0);
+      }));
+      const combinedTitle = locale === "en"
+        ? "Consulting and missions"
+        : "Conseil et missions";
+      const combinedCompany = toMerge.map(e => e.company).filter(Boolean).join(", ");
+      const combinedBullets = toMerge.flatMap(e =>
+        (e.bullets || []).filter(b => (b || "").trim())
+      );
+      const merged = {
+        id: Date.now(),
+        title: combinedTitle,
+        company: combinedCompany,
+        period: minYear + " - " + maxYear,
+        location: toMerge[0].location || "",
+        bullets: combinedBullets.length > 0 ? combinedBullets : [""],
+      };
+      // Retire les experiences fusionnees, ajoute la nouvelle a la place de la 1ere.
+      const indexSet = new Set(indices);
+      const newExps = [];
+      let inserted = false;
+      exps.forEach((e, i) => {
+        if (indexSet.has(i)) {
+          if (!inserted) {
+            newExps.push(merged);
+            inserted = true;
+          }
+        } else {
+          newExps.push(e);
+        }
+      });
+      return { ...p, experience: newExps };
+    });
+    notify(T.gr_strat_group_done || "Experiences fusionnees");
+  }, [locale, pushH, setCVFn, notify, T]);
+
+  // v17 chantier 6 : Interview Continuity.
+  // L'IA joue le role du recruteur typique du marche (pays + secteur + niveau)
+  // et propose un set adaptatif de questions probables d'entretien, avec reponses STAR.
+  // Pas de quota fixe : c'est l'IA qui decide combien de questions et quel mix
+  // selon le contexte (ex au Japon plus de questions sur la fidelite, en France
+  // plus de cas pratiques, aux US plus de "tell me about a time when").
+  const runInterviewPrep = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    setInterviewLoading(true);
+    setInterviewResult(null);
+    try {
+      const expT = (cv.experience || []).map(e =>
+        (e.title||"") + " chez " + (e.company||"")
+        + " (" + (e.period||"") + "): "
+        + (e.bullets||[]).filter(b=>b).join("; ")
+      ).join(" | ");
+      const cvT = "Nom: " + (cv.name||"")
+        + "\nTitre: " + (cv.title||"")
+        + "\nLocalisation: " + (cv.location||"")
+        + "\nAccroche: " + (cv.summary||"")
+        + "\nExperiences: " + expT
+        + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
+        + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ");
+
+      // Si l'utilisateur a saisi une offre, on l'utilise pour cibler les questions.
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE D'EMPLOI VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+
+      const p = "Tu es recruteur senior international avec 20 ans d'experience."
+        + " Pour le candidat ci-dessous, joue le role du recruteur TYPIQUE de son marche"
+        + " (pays inferé depuis la localisation, secteur infère depuis le titre + experiences,"
+        + " niveau infère depuis la duree totale et les titres)."
+        + "\n\nCANDIDAT:\n" + cvT
+        + offerLine
+        + "\n\nMISSION:"
+        + "\nGenere les questions d'entretien que TU lui poserais en vrai. Le nombre et le mix"
+        + " de questions doivent refletter LES PRATIQUES REELLES de ton marche (pas un quota artificiel)."
+        + " Par exemple:"
+        + "\n- En Asie : plus de questions sur la stabilite, le long terme, la culture entreprise."
+        + "\n- En Amerique du Nord : beaucoup de comportementales 'tell me about a time when'."
+        + "\n- En France : beaucoup de cas pratiques, etudes de cas chiffrees, jugement."
+        + "\n- En Allemagne : tres techniques, processus, methodologie."
+        + "\n- Au UK : un mix equilibre techniques + competency-based."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Entre 8 et 12 questions au total selon le marche (pas plus, pas moins)."
+        + "\n- Chaque question est realiste et FREQUEMMENT posee dans ce contexte."
+        + "\n- Pour CHAQUE question, fournis une reponse modele en methode STAR (Situation, Tache, Action, Resultat)."
+        + "\n- La reponse STAR doit s'inspirer du parcours reel du candidat (pas inventer)."
+        + "\n- Categories possibles : Technique, Comportementale, Cas pratique, Culture, Motivation."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"country":"France","sector":"Banque","level":"Senior",'
+        + '"total_questions":10,"questions":['
+        + '{"category":"Technique","question":"Question concrete posee par recruteur",'
+        + '"why":"pourquoi le recruteur la pose","answer":{'
+        + '"situation":"contexte concret tire du parcours","task":"objectif a atteindre",'
+        + '"action":"actions concretes prises","result":"resultat chiffre ou qualitatif"}}'
+        + ']}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setInterviewResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setInterviewLoading(false);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T]);
+
+  // Pre-rempli le champ offre depuis offerResult de Cibler si dispo.
+  // S'execute a chaque ouverture du modal interview.
+  useEffect(() => {
+    if (showInterview && offerResult && offerResult.offer_text && !interviewOffer) {
+      setInterviewOffer(offerResult.offer_text);
+    }
+  }, [showInterview, offerResult, interviewOffer]);
+
+  // v17 chantier 7 : Coach IA conversationnel.
+  //
+  // Persiste l'historique en localStorage (cap a 50 derniers messages).
+  // L'IA dialogue, peut proposer des reformulations adoptables (kind: summary/title/bullet).
+  //
+  // Format JSON attendu de la reponse IA :
+  //   { "reply": "texte conversationnel", "adopt": {"kind":"summary"|"title"|"bullet", "value":"..."} }
+  //   adopt est optionnel.
+  const runCoachMessage = useCallback(async (userText) => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.co_no_cv); return; }
+    if (!userText || !userText.trim()) return;
+
+    // Append immediately user message (UX feedback instant)
+    const userMsg = { role:"user", content:userText.trim(), ts:Date.now() };
+    let nextMessages;
+    setCoachMessages(prev => {
+      nextMessages = [...prev, userMsg].slice(-50);
+      lsS(SK.CO, nextMessages);
+      return nextMessages;
+    });
+    setCoachLoading(true);
+
+    try {
+      const expT = (cv.experience || []).slice(0, 5).map(e =>
+        (e.title||"") + " chez " + (e.company||"")
+        + " (" + (e.period||"") + "): "
+        + (e.bullets||[]).filter(b=>b).slice(0,3).join("; ")
+      ).join(" | ");
+      const cvCtx = "Nom: " + (cv.name||"")
+        + " | Titre: " + (cv.title||"")
+        + " | Loc: " + (cv.location||"")
+        + " | Accroche: " + (cv.summary||"").slice(0,200)
+        + " | Exp: " + expT
+        + " | Skills: " + (cv.skills||[]).filter(s=>s).slice(0,10).join(", ");
+
+      // Conversation history pour le contexte (transformee en transcription)
+      // On garde les 10 derniers echanges pour eviter context overflow.
+      const recentHistory = (nextMessages || [])
+        .slice(-12)
+        .slice(0, -1)  // exclut le message qu'on vient d'ajouter
+        .map(m => (m.role === "user" ? "USER" : "COACH") + ": " + m.content)
+        .join("\n");
+
+      const langLine = locale === "en"
+        ? "Reply STRICTLY in English. "
+        : "Reply STRICTLY in French. ";
+
+      const p = "You are a senior career coach with 20 years of experience helping job seekers"
+        + " refine their CV through conversation. Your tone is warm, direct, expert, never pushy."
+        + "\n\nCONTEXT - Candidate's CV:\n" + cvCtx
+        + (recentHistory ? "\n\nCONVERSATION HISTORY:\n" + recentHistory : "")
+        + "\n\nLATEST USER MESSAGE: " + userText.trim()
+        + "\n\nINSTRUCTIONS:"
+        + "\n- Reply in 2 to 4 sentences. Be conversational, NOT a wall of text."
+        + "\n- Ask precise follow-up questions to extract concrete details (numbers, scope, impact)."
+        + "\n- When you have enough info, propose a CONCRETE rewrite the user can adopt directly."
+        + "\n- Adoption rewrites must be clean text (no markdown, no quotes around them)."
+        + "\n- " + NO_DASH + " " + langLine + "Output JSON ONLY, no markdown, no backticks."
+        + "\n\nRESPONSE FORMAT (JSON):"
+        + '\n{"reply":"your conversational reply","adopt":{"kind":"summary"|"title"|"bullet","value":"the rewritten text"}}'
+        + '\nIf you don\'t have a concrete rewrite to propose yet, omit "adopt" entirely:'
+        + '\n{"reply":"your reply asking for more details"}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
+      const adopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
+        ? { kind: String(parsed.adopt.kind), value: String(parsed.adopt.value) }
+        : null;
+
+      const aiMsg = {
+        role:"assistant",
+        content: reply,
+        ts: Date.now(),
+        ...(adopt ? { adopt } : {}),
+      };
+      setCoachMessages(prev => {
+        const next = [...prev, aiMsg].slice(-50);
+        lsS(SK.CO, next);
+        return next;
+      });
+    } catch (err) {
+      const errMsg = {
+        role:"assistant",
+        content: T.ea + (err && err.message ? ": " + err.message : ""),
+        ts: Date.now(),
+      };
+      setCoachMessages(prev => {
+        const next = [...prev, errMsg].slice(-50);
+        lsS(SK.CO, next);
+        return next;
+      });
+    }
+    setCoachLoading(false);
+  }, [apiKey, cv, cvIsEmpty, locale, notify, T]);
+
+  // Efface toute la conversation coach.
+  const clearCoach = useCallback(() => {
+    if (!confirm(T.co_clear_confirm)) return;
+    setCoachMessages([]);
+    lsS(SK.CO, []);
+  }, [T]);
+
+  // Adopte une suggestion proposee par le coach dans le CV.
+  const adoptCoachSuggestion = useCallback((kind, value) => {
+    if (!value || !value.trim()) return;
+    pushH(cv);
+    if (kind === "summary") {
+      setCVFn(p => ({...p, summary: value.trim()}));
+    } else if (kind === "title") {
+      setCVFn(p => ({...p, title: value.trim()}));
+    } else if (kind === "bullet") {
+      // Ajoute en bullet a la 1ere experience, ou cree une nouvelle exp si aucune
+      setCVFn(p => {
+        if (!p.experience || p.experience.length === 0) {
+          return {...p, experience:[{
+            id:Date.now(), title:"", company:"", period:"", location:"",
+            bullets:[value.trim()],
+          }]};
+        }
+        const exps = [...p.experience];
+        exps[0] = {...exps[0], bullets:[...(exps[0].bullets||[]), value.trim()]};
+        return {...p, experience: exps};
+      });
+    }
+    notify(T.co_adopted);
+  }, [cv, pushH, setCVFn, notify, T]);
+
+  // v17 chantier 8 : Export LinkedIn.
+  // Genere headline + about + experiences au format LinkedIn (informel, 1ere personne).
+  const runLinkedIn = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.li_no_cv); return; }
+    setLinkedInLoading(true);
+    setLinkedInResult(null);
+    try {
+      const expT = (cv.experience || []).slice(0, 8).map(e =>
+        (e.title||"") + " chez " + (e.company||"")
+        + " (" + (e.period||"") + "): "
+        + (e.bullets||[]).filter(b=>b).join("; ")
+      ).join(" | ");
+      const cvT = "Nom: " + (cv.name||"")
+        + "\nTitre actuel: " + (cv.title||"")
+        + "\nLocalisation: " + (cv.location||"")
+        + "\nAccroche CV: " + (cv.summary||"")
+        + "\nExperiences: " + expT
+        + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ");
+
+      const langLine = locale === "en"
+        ? "Output in English. " : "Output in French. ";
+
+      const p = "Tu es expert LinkedIn. Reformate le CV ci-dessous au format LinkedIn officiel."
+        + "\n\nCV SOURCE:\n" + cvT
+        + "\n\nFORMAT LINKEDIN (regles strictes):"
+        + "\n- HEADLINE (titre du profil, max 220 caracteres) : 3-5 elements separes par |."
+        + "  Ex: 'Senior PM | B2B SaaS | Building data products | ex-Google'"
+        + "\n- ABOUT (4-6 paragraphes, 1ere personne, ton informel mais pro) :"
+        + "  Para 1 = hook accrocheur ('I help X do Y by Z')."
+        + "  Para 2 = parcours en 2-3 phrases."
+        + "  Para 3 = ce qui te distingue."
+        + "  Para 4 = call-to-action (DM, collaboration, etc.)."
+        + "\n- EXPERIENCES : pour chaque exp, reformate role + company + une description"
+        + "  3-5 lignes en bullets format LinkedIn (commence par verbe d'action, KPIs chiffres)."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Premiere personne (I, my, j'ai, mon)."
+        + "\n- Ton informel mais credible."
+        + "\n- Mots-cles ATS pertinents."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"headline":"...","about":"para1\\n\\npara2\\n\\npara3\\n\\npara4",'
+        + '"experiences":[{"role":"...","company":"...","description":"bullet 1\\n\\nbullet 2\\n\\nbullet 3"}]}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setLinkedInResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setLinkedInLoading(false);
+  }, [apiKey, cv, cvIsEmpty, locale, notify, T]);
+
+  // v17 chantier 9 : CV Compare.
+  // Compare 2 versions du CV (selectionnees par leur id dans la liste 'versions')
+  // et demande a l'IA de produire un resume + diffs + verdict + winner.
+  const runCompare = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (!comparePickA || !comparePickB || comparePickA === comparePickB) return;
+
+    const va = (versions || []).find(v => v.id === comparePickA);
+    const vb = (versions || []).find(v => v.id === comparePickB);
+    if (!va || !vb) return;
+
+    setCompareLoading(true);
+    setCompareResult(null);
+    try {
+      const fmt = (cv) => {
+        const expT = (cv.experience || []).slice(0, 6).map(e =>
+          (e.title||"") + " chez " + (e.company||"")
+          + " (" + (e.period||"") + "): "
+          + (e.bullets||[]).filter(b=>b).join("; ")
+        ).join(" | ");
+        return "Titre: " + (cv.title||"")
+          + " | Accroche: " + (cv.summary||"").slice(0,300)
+          + " | Exp: " + expT
+          + " | Skills: " + (cv.skills||[]).filter(s=>s).slice(0,15).join(", ");
+      };
+
+      const langLine = locale === "en"
+        ? "Reply in English. " : "Reply in French. ";
+
+      const p = "Tu es expert en CV. Compare ces 2 versions et identifie ce qui les distingue."
+        + "\n\nVERSION A (\"" + (va.name || "A") + "\"):\n" + fmt(va.cv)
+        + "\n\nVERSION B (\"" + (vb.name || "B") + "\"):\n" + fmt(vb.cv)
+        + "\n\nMISSION:"
+        + "\n1. Resume general des differences (1-2 phrases)."
+        + "\n2. Liste les changements concrets (champ + type=changed/added/removed + ancien/nouveau si applicable)."
+        + "\n3. Verdict d'expert : qui est meilleur et pourquoi (1-2 phrases incisives)."
+        + "\n4. Winner : 'A', 'B', ou 'tie' selon ton analyse."
+        + "\n\nREGLES:"
+        + "\n- Sois honnete et tranchant."
+        + "\n- Liste max 8 changements importants (skip les details mineurs)."
+        + "\n- Ignore les espaces, ponctuation, ordre identique."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"summary":"...","diffs":[{"field":"summary","type":"changed","old":"...","new":"..."}],'
+        + '"verdict":"...","winner":"A"|"B"|"tie"}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setCompareResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setCompareLoading(false);
+  }, [apiKey, comparePickA, comparePickB, versions, locale, notify, T]);
+
+  // v17 chantier 10 : Applications Tracker. CRUD local en localStorage.
+  const addApplication = useCallback((app) => {
+    setApplications(prev => {
+      const next = [...prev, app];
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+  const updateApplication = useCallback((app) => {
+    setApplications(prev => {
+      const next = prev.map(a => a.id === app.id ? app : a);
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+  const deleteApplication = useCallback((id) => {
+    setApplications(prev => {
+      const next = prev.filter(a => a.id !== id);
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+
+  // v17 chantier 11 : Multi-CV strategie.
+  // Compare l'offre a TOUTES les versions sauvegardees et recommande la meilleure.
+  const runMultiCV = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (!multiCVOffer || !multiCVOffer.trim()) return;
+    if (!versions || versions.length < 2) return;
+
+    setMultiCVLoading(true);
+    setMultiCVResult(null);
+    try {
+      const fmt = (cv) => {
+        const expT = (cv.experience || []).slice(0, 5).map(e =>
+          (e.title||"") + " (" + (e.company||"") + "): "
+          + (e.bullets||[]).filter(b=>b).slice(0,2).join("; ")
+        ).join(" | ");
+        return "Titre: " + (cv.title||"")
+          + " | Accroche: " + (cv.summary||"").slice(0,180)
+          + " | Exp: " + expT
+          + " | Skills: " + (cv.skills||[]).filter(s=>s).slice(0,12).join(", ");
+      };
+
+      const versionsBlock = versions.map(v =>
+        "VERSION " + v.id + " (\"" + (v.name||"?") + "\"):\n" + fmt(v.cv)
+      ).join("\n\n");
+
+      const idsList = versions.map(v => v.id).join(", ");
+
+      const langLine = locale === "en"
+        ? "Reply in English. " : "Reply in French. ";
+
+      const p = "Tu es expert en CV. Voici une offre d'emploi et "
+        + versions.length + " versions de CV sauvegardees du candidat."
+        + " Recommande la version la plus pertinente et explique pourquoi."
+        + "\n\nOFFRE D'EMPLOI:\n" + multiCVOffer.trim()
+        + "\n\n" + versionsBlock
+        + "\n\nMISSION:"
+        + "\n1. Analyse le fit de chaque version contre l'offre."
+        + "\n2. Recommande la MEILLEURE version (recommended_id = ID exact d'une des versions)."
+        + "\n3. Score de match 0-100 pour la recommandee."
+        + "\n4. Explique en 2-3 phrases POURQUOI cette version est la meilleure."
+        + "\n5. Pour les autres versions, donne un score 0-100 et un commentaire court."
+        + "\n\nIMPORTANT: recommended_id et alternatives[].id doivent etre des nombres valides "
+        + "presents dans cette liste : [" + idsList + "]"
+        + "\n\nREGLES:"
+        + "\n- Sois honnete et tranchant."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"recommended_id":12345,"recommended_score":85,'
+        + '"why":"explication 2-3 phrases",'
+        + '"alternatives":[{"id":67890,"score":62,"comment":"..."}]}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      // Coerce ids to numbers (au cas où l'IA les retourne en string)
+      if (parsed) {
+        if (parsed.recommended_id) parsed.recommended_id = Number(parsed.recommended_id);
+        if (Array.isArray(parsed.alternatives)) {
+          parsed.alternatives = parsed.alternatives.map(a => ({
+            ...a, id: Number(a.id), score: Number(a.score) || 0,
+          }));
+        }
+      }
+      setMultiCVResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setMultiCVLoading(false);
+  }, [apiKey, multiCVOffer, versions, locale, notify, T]);
+
+  // Pre-rempli le champ offre depuis offerResult de Cibler si dispo.
+  useEffect(() => {
+    if (showMultiCV && offerResult && offerResult.offer_text && !multiCVOffer) {
+      setMultiCVOffer(offerResult.offer_text);
+    }
+  }, [showMultiCV, offerResult, multiCVOffer]);
+
+  // v17 : Bullet/Summary Transformer unifie.
+  // kind = "bullet" : pour les bullets d'experience (ex.bullets[idx]).
+  //   On passe { expId, bulletIdx, text }.
+  // kind = "summary" : pour l'accroche (cv.summary).
+  //   On passe { text } (pas d'expId/bulletIdx).
+  const runTextTransform = useCallback(async (kind, payload) => {
+    if (!apiKey) { notify(T.nk); return; }
+    const text = payload && payload.text;
     if (!text || !text.trim()) {
-      notify(T.bt_empty || "Ecris d'abord un bullet a transformer");
+      notify(kind === "summary"
+        ? (T.bts_empty || "Ecris d'abord une accroche a transformer")
+        : (T.bt_empty || "Ecris d'abord un bullet a transformer"));
       return;
     }
-    setBt({ expId, bulletIdx, original: text, levels: null, loading: true });
+    setBt({
+      kind,
+      expId: payload.expId, bulletIdx: payload.bulletIdx,
+      original: text, levels: null, loading: true,
+    });
     try {
-      const p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
-        + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
-        + "en gardant la langue d'origine.\n\n"
-        + "PHRASE ORIGINALE:\n" + text + "\n\n"
-        + "REGISTRES (5 niveaux):\n"
-        + "1. simple: clarifie sans embellir, langage neutre, plus court si possible.\n"
-        + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
-        + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
-        + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
-        + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
-        + "REGLES:\n"
-        + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
-        + "- Maximum 18 mots par version.\n"
-        + "- " + NO_DASH + "\n"
-        + "- JSON valide strict uniquement.\n\n"
-        + '{\n'
-        + '  "simple": "version simple",\n'
-        + '  "pro": "version pro",\n'
-        + '  "ats": "version ats",\n'
-        + '  "premium": "version premium",\n'
-        + '  "impact": "version chiffree"\n'
-        + '}';
+      let p;
+      if (kind === "summary") {
+        // Prompt summary : 2-3 phrases, registres adaptes (Sobre + Storytelling
+        // remplacent Simple + Impact pour mieux coller a une accroche).
+        p = "Tu es expert CV. On te donne UNE accroche (resume professionnel d'un CV). "
+          + "Tu dois generer 5 reformulations distinctes, chacune dans un registre different, "
+          + "en gardant la langue d'origine.\n\n"
+          + "ACCROCHE ORIGINALE:\n" + text + "\n\n"
+          + "REGISTRES (5 angles):\n"
+          + "1. simple: factuel, sobre, sans superlatifs ni adjectifs creux. Decrit le profil tel quel.\n"
+          + "2. pro: ton corporate sobre, professionnel, structure verbe d'action.\n"
+          + "3. ats: maximise les mots-cles metier pour passer les filtres ATS du secteur. Densifie le vocabulaire technique.\n"
+          + "4. premium: registre executive elegant, tournures litteraires nuancees, mots forts (orchestrer, deployer, piloter).\n"
+          + "5. impact: storytelling avec un fil rouge narratif. Une 'voix' qui raconte le parcours plutot que de l'enumerer.\n\n"
+          + "REGLES STRICTES:\n"
+          + "- Ne pas inventer d'experience, d'entreprise, de titre ou de chiffre nouveau. Reste fidele au sens original.\n"
+          + "- Format : 2 a 3 phrases par version, entre 30 et 60 mots.\n"
+          + "- " + NO_DASH + "\n"
+          + "- JSON valide strict uniquement, sans markdown.\n\n"
+          + '{\n'
+          + '  "simple": "version sobre",\n'
+          + '  "pro": "version pro",\n'
+          + '  "ats": "version ats",\n'
+          + '  "premium": "version premium",\n'
+          + '  "impact": "version storytelling"\n'
+          + '}';
+      } else {
+        // Prompt bullet (inchange par rapport a l'existant).
+        p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
+          + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
+          + "en gardant la langue d'origine.\n\n"
+          + "PHRASE ORIGINALE:\n" + text + "\n\n"
+          + "REGISTRES (5 niveaux):\n"
+          + "1. simple: clarifie sans embellir, langage neutre, plus court si possible.\n"
+          + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
+          + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
+          + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
+          + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
+          + "REGLES:\n"
+          + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
+          + "- Maximum 18 mots par version.\n"
+          + "- " + NO_DASH + "\n"
+          + "- JSON valide strict uniquement.\n\n"
+          + '{\n'
+          + '  "simple": "version simple",\n'
+          + '  "pro": "version pro",\n'
+          + '  "ats": "version ats",\n'
+          + '  "premium": "version premium",\n'
+          + '  "impact": "version chiffree"\n'
+          + '}';
+      }
       const txt = await aiCall(p);
       const r = parseJSON(txt);
       setBt(s => s ? { ...s, levels: r, loading: false } : null);
@@ -5004,21 +5935,35 @@ export default function App() {
     }
   }, [apiKey, notify, T]);
 
-  const adoptBulletVersion = useCallback((newText) => {
+  // Wrapper compat retro : signature legacy attendue par SheetEx.
+  const runBulletTransform = useCallback((expId, bulletIdx, text) => {
+    return runTextTransform("bullet", { expId, bulletIdx, text });
+  }, [runTextTransform]);
+
+  // Adoption d'une version : dispatch selon kind (bullet ou summary).
+  const adoptTextVersion = useCallback((newText) => {
     setBt(curr => {
       if (!curr) return null;
-      setCVFn(p => ({
-        ...p,
-        experience: p.experience.map(e =>
-          e.id === curr.expId
-            ? { ...e, bullets: e.bullets.map((b, i) => i === curr.bulletIdx ? newText : b) }
-            : e
-        )
-      }));
-      notify(T.bt_adopted || "Version adoptee");
+      if (curr.kind === "summary") {
+        setCVFn(p => ({ ...p, summary: newText }));
+        notify(T.bts_adopted || "Accroche adoptee");
+      } else {
+        setCVFn(p => ({
+          ...p,
+          experience: p.experience.map(e =>
+            e.id === curr.expId
+              ? { ...e, bullets: e.bullets.map((b, i) => i === curr.bulletIdx ? newText : b) }
+              : e
+          )
+        }));
+        notify(T.bt_adopted || "Version adoptee");
+      }
       return null;
     });
-  }, [notify, T]);
+  }, [setCVFn, notify, T]);
+
+  // Alias retro-compat (utilise dans <BulletTransformer onAdopt={...} />).
+  const adoptBulletVersion = adoptTextVersion;
 
   const runTranslate = useCallback(async () => {
     if (!apiKey) { notify(T.tr_nk); return; }
@@ -5145,8 +6090,8 @@ export default function App() {
   const CVEl = (
     <div id="cv-print" style={{position:"relative"}}>
       {load && <Shimmer/>}
-      {layout==="sidebar" && <CVSidebar cv={cv} set={setCVFn} t={theme} T={T}/>}
-      {layout==="classic" && <CVSidebar cv={cv} set={setCVFn} t={theme} T={T}/>}
+      {layout==="sidebar" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T}/>}
+      {layout==="classic" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T}/>}
       {layout==="ats"     && <CVAts     cv={cv} set={setCVFn} T={T}/>}
     </div>
   );
@@ -5213,6 +6158,8 @@ export default function App() {
           setShowOffer(true);
         }
       }}
+      onOpenInterview={()=>setShowInterview(true)}
+      onOpenMultiCV={()=>setShowMultiCV(true)}
     />
   );
 
@@ -5311,6 +6258,33 @@ export default function App() {
         <span style={{flex:1}}>{T.fin_score_btn}</span>
         {finRowChevron}
       </button>
+      {/* Transformer l'accroche : disponible uniquement si summary non vide */}
+      <button
+        onClick={()=>{
+          if (!cv.summary || !cv.summary.trim()) {
+            notify(T.bts_empty || "Ecris d'abord une accroche a transformer");
+            return;
+          }
+          runTextTransform("summary", { text: cv.summary });
+        }}
+        style={{
+          ...B({
+            ...finRow,
+            opacity: (cv.summary && cv.summary.trim()) ? 1 : 0.55,
+          })
+        }}
+      >
+        <span style={finIconWrap(PurpleSoft, Purple)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>
+            <circle cx="12" cy="12" r="2.5"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.bts_btn || "Transformer l'accroche"}</span>
+        {finRowChevron}
+      </button>
       <button onClick={runPositioning} style={{...B(finRow)}}>
         <span style={finIconWrap(PurpleSoft, Purple)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -5335,6 +6309,32 @@ export default function App() {
         <span style={{flex:1}}>{T.fin_truth_btn}</span>
         {finRowChevron}
       </button>
+      {/* v17 chantier 5 : Lisser le parcours (Gap Repair) */}
+      <button
+        onClick={()=>{
+          if ((cv.experience || []).length < 2) {
+            notify(T.gr_no_gaps_title || "Aucun trou detecte");
+            return;
+          }
+          setShowGapRepair(true);
+        }}
+        style={{
+          ...B({
+            ...finRow,
+            opacity: (cv.experience || []).length >= 2 ? 1 : 0.55,
+          })
+        }}
+      >
+        <span style={finIconWrap(CoralSoft, Coral)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12h4l3-9 4 18 3-9h4"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.gr_btn || "Lisser le parcours"}</span>
+        {finRowChevron}
+      </button>
       <button onClick={()=>setShowVersions(true)} style={{...B(finRow)}}>
         <span style={finIconWrap("rgba(201,169,110,.15)", GoldDeep)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
@@ -5348,9 +6348,70 @@ export default function App() {
         <span style={{flex:1}}>{T.fin_versions_btn} ({versions.length})</span>
         {finRowChevron}
       </button>
+      <button onClick={()=>setShowCompare(true)} disabled={versions.length < 2}
+        style={{
+          ...B(finRow),
+          opacity: versions.length < 2 ? 0.45 : 1,
+          cursor: versions.length < 2 ? "not-allowed" : "pointer",
+        }}>
+        <span style={finIconWrap(PurpleSoft, Purple)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/>
+            <path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/>
+            <path d="M12 3v18"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.cmp_btn}</span>
+        {finRowChevron}
+      </button>
+      <button onClick={()=>setShowApplications(true)} style={{...B(finRow)}}>
+        <span style={finIconWrap(GreenSoft, Green)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.ap_btn}{applications.length > 0 ? ` (${applications.length})` : ""}</span>
+        {finRowChevron}
+      </button>
 
       {/* === Apparence === */}
       <div style={finEyebrow}>{T.fin_section_design}</div>
+
+      {/* CTA Personnaliser le CV (couleurs + polices + IA) */}
+      <button onClick={()=>setShowCustomize(true)} style={{
+        ...B({
+          width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+          background:GradPurple, color:"#fff",
+          fontFamily:Sans, fontWeight:600, fontSize:14,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          marginBottom:14,
+          transition:"all 200ms ease-out",
+          position:"relative",
+        })
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>
+        </svg>
+        {T.cust_btn}
+        {(cvCustom || versionCustom) && (
+          <span style={{
+            position:"absolute", top:6, right:14,
+            width:8, height:8, background:Gold, borderRadius:"50%",
+          }}/>
+        )}
+      </button>
+
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.06em", color:Gray600,
@@ -5499,6 +6560,40 @@ export default function App() {
           border:"0.5px solid "+Gray200,
         }}>{T.t_ath}</div>
       )}
+      {/* Bouton Export LinkedIn */}
+      <button onClick={()=>setShowLinkedIn(true)} disabled={cvIsEmpty} style={{
+        ...B({
+          width:"100%", padding:"13px 18px", borderRadius:RadiusMd,
+          background: cvIsEmpty ? Gray100 : Paper,
+          color: cvIsEmpty ? Gray400 : Ink,
+          border:"0.5px solid "+(cvIsEmpty ? Gray200 : Gold),
+          boxShadow: cvIsEmpty ? "none" : ShadowSm,
+          fontSize:13, fontWeight:600, fontFamily:Sans,
+          display:"flex", alignItems:"center", gap:12,
+          marginBottom:10, textAlign:"left",
+          transition:"all 200ms ease-out",
+          opacity: cvIsEmpty ? 0.6 : 1,
+        })
+      }}>
+        <div style={{
+          width:32, height:32, borderRadius:9,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          background:"#0a66c2", color:"#fff", flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 1 1 8.3 6.5a1.78 1.78 0 0 1-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0 0 13 14.19a.66.66 0 0 0 0 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 0 1 2.7-1.4c1.55 0 3.36.86 3.36 3.66z"/>
+          </svg>
+        </div>
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{
+            fontSize:13, fontWeight:600,
+            color: cvIsEmpty ? Gray400 : Ink, marginBottom:2,
+          }}>{T.li_btn}</div>
+          <div style={{fontSize:11, color:Gray600, lineHeight:1.4}}>
+            {T.li_btn_desc}
+          </div>
+        </div>
+      </button>
       <button onClick={undo} disabled={!hist.length} style={{
         ...B({
           width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
@@ -5576,7 +6671,9 @@ export default function App() {
 
   const Modals = (
     <>
-      {modal==="id"  && <SheetId cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
+      {modal==="id"  && <SheetId cv={cv} set={setCVFn} onClose={()=>setModal(null)}
+        onTransformSummary={(text)=>runTextTransform("summary", { text })}
+        T={T}/>}
       {modal==="exp" && <SheetEx cv={cv} set={setCVFn} onClose={()=>setModal(null)}
         onTransformBullet={runBulletTransform} T={T}/>}
       {modal==="edu" && <SheetEd cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
@@ -5598,12 +6695,121 @@ export default function App() {
           title={T.fin_score_btn}
           onClose={()=>setShowScore(false)}
         >
-          <ScorePanel cv={cv} apiKey={apiKey} notify={notify}
-            layout={layout} T={T}/>
+          <ScorePanel
+            cv={cv} apiKey={apiKey} notify={notify}
+            layout={layout} T={T}
+            dashLoading={dashLoading}
+            dashResult={dashResult}
+            onRunDashboard={runScoreDashboard}
+            onCtaAxis={onCtaAxisDispatch}
+          />
         </Sheet>
+      )}
+      {showCustomize && (
+        <CustomizeSheet
+          T={T} cv={cv} theme={theme}
+          cvCustom={cvCustom} setCvCustom={setCvCustom}
+          setCvFn={setCVFn}
+          apiKey={apiKey} notify={notify} locale={locale}
+          onClose={()=>setShowCustomize(false)}
+        />
+      )}
+      {showGapRepair && (
+        <GapRepairModal
+          T={T} cv={cv}
+          loading={false}
+          gaps={gapAnalysis.gaps}
+          yearStrategy={gapAnalysis.yearStrategy}
+          groupOps={gapAnalysis.groupOps}
+          unparsableCount={gapAnalysis.unparsableCount}
+          onApplyYearOnly={()=>{
+            applyYearOnlyFormat();
+            setShowGapRepair(false);
+          }}
+          onApplyExtend={(gapInfo)=>{
+            applyExtendDate(gapInfo);
+            setShowGapRepair(false);
+          }}
+          onApplyGroup={(indices)=>{
+            applyGroupExperiences(indices);
+            setShowGapRepair(false);
+          }}
+          onClose={()=>setShowGapRepair(false)}
+        />
+      )}
+      {showInterview && (
+        <InterviewModal
+          T={T} cv={cv} apiKey={apiKey}
+          loading={interviewLoading}
+          result={interviewResult}
+          offerText={interviewOffer}
+          setOfferText={setInterviewOffer}
+          prefilledOffer={!!(offerResult && offerResult.offer_text && interviewOffer === offerResult.offer_text)}
+          onRun={runInterviewPrep}
+          onClose={()=>setShowInterview(false)}
+        />
+      )}
+      {showCoach && (
+        <CoachModal
+          T={T} cv={cv} apiKey={apiKey}
+          loading={coachLoading}
+          messages={coachMessages}
+          onSend={runCoachMessage}
+          onClear={clearCoach}
+          onAdopt={adoptCoachSuggestion}
+          onClose={()=>setShowCoach(false)}
+        />
+      )}
+      {showLinkedIn && (
+        <LinkedInExportModal
+          T={T} cv={cv} apiKey={apiKey}
+          loading={linkedInLoading}
+          result={linkedInResult}
+          onRun={runLinkedIn}
+          onCopy={copyToClipboard}
+          onClose={()=>{ if (!linkedInLoading) { setShowLinkedIn(false); setLinkedInResult(null); }}}
+        />
+      )}
+      {showCompare && (
+        <CVCompareModal
+          T={T} versions={versions} apiKey={apiKey}
+          loading={compareLoading}
+          result={compareResult}
+          pickA={comparePickA} setPickA={setComparePickA}
+          pickB={comparePickB} setPickB={setComparePickB}
+          onRun={runCompare}
+          onClose={()=>{ if (!compareLoading) { setShowCompare(false); setCompareResult(null); }}}
+        />
+      )}
+      {showApplications && (
+        <ApplicationsTrackerModal
+          T={T} applications={applications}
+          onAdd={addApplication}
+          onUpdate={updateApplication}
+          onDelete={deleteApplication}
+          onClose={()=>setShowApplications(false)}
+        />
+      )}
+      {showMultiCV && (
+        <MultiCVStrategyModal
+          T={T} versions={versions} apiKey={apiKey}
+          loading={multiCVLoading}
+          result={multiCVResult}
+          offerText={multiCVOffer}
+          setOfferText={setMultiCVOffer}
+          prefilledOffer={!!(offerResult && offerResult.offer_text && multiCVOffer === offerResult.offer_text)}
+          onRun={runMultiCV}
+          onLoadVersion={(id)=>{
+            loadVersion(id);
+            setShowMultiCV(false);
+            setMultiCVResult(null);
+          }}
+          onClose={()=>{ if (!multiCVLoading) { setShowMultiCV(false); setMultiCVResult(null); }}}
+        />
       )}
       {showAudit && (
         <AuditModal 
+          T={T}
           cv={cv}
           country={auditCountry}
           setCountry={setAuditCountry}
@@ -5632,6 +6838,7 @@ export default function App() {
       )}
       {showPack && (
         <ApplicationPackModal
+          T={T}
           pack={packResult}
           loading={packLoading}
           msgIdx={packMsgIdx}
@@ -5646,6 +6853,7 @@ export default function App() {
       )}
       {showPos && (
         <PositioningModal
+          T={T}
           result={posResult}
           loading={posLoading}
           onAdopt={adoptAngle}
@@ -5658,6 +6866,7 @@ export default function App() {
       )}
       {showTruth && (
         <TruthModal
+          T={T}
           result={truthResult}
           loading={truthLoading}
           onApplyFix={(iss)=>{
@@ -5678,8 +6887,8 @@ export default function App() {
       )}
       {showVersions && (
         <VersionsModal
+          T={T}
           versions={versions}
-          currentCv={cv}
           onSave={saveVersion}
           onLoad={loadVersion}
           onDelete={deleteVersion}
@@ -5688,10 +6897,11 @@ export default function App() {
       )}
       {bt && (
         <BulletTransformer
+          kind={bt.kind || "bullet"}
           original={bt.original}
           levels={bt.levels}
           loading={bt.loading}
-          onAdopt={adoptBulletVersion}
+          onAdopt={adoptTextVersion}
           onClose={()=>{ if (!bt.loading) setBt(null); }}
           T={T}
         />
@@ -5900,6 +7110,16 @@ export default function App() {
             || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
         <BottomNav active={phase} onPhase={setPhase} T={T}/>
+        <CoachFAB T={T} onOpen={()=>setShowCoach(true)}
+          hidden={
+            cvIsEmpty
+            || showCoach || showAudit || showTranslate || showPack
+            || showPos || showTruth || showVersions || !!bt
+            || showOffer || showScore || showGapRepair || showInterview
+            || showCustomize || !!modal
+            || showLinkedIn || showCompare || showApplications
+            || showMultiCV
+          }/>
       </div>
     </>
   );
