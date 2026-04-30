@@ -36,6 +36,8 @@ export default function Sheet({ title, eyebrow, onClose, children }) {
         maxHeight:"92vh", display:"flex", flexDirection:"column",
         boxShadow:"0 -20px 60px rgba(0,0,0,.2)",
         animation:"cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
+        width:"100%", maxWidth:840,
+        marginLeft:"auto", marginRight:"auto",
       }}>
         {/* Handle iOS */}
         <div style={{
