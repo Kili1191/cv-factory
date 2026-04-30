@@ -170,12 +170,278 @@ function Flashcard({ T, q }) {
   );
 }
 
+// === v2 Interview Continuity ===
+// Helper : accent par categorie de "question a poser au recruteur"
+function categoryAccentAsk(cat) {
+  if (!cat) return { fg: Gray600, bg: Gray100, label: "" };
+  const c = String(cat).toLowerCase();
+  if (c === "role")     return { fg: Purple,  bg: PurpleSoft };
+  if (c === "team")     return { fg: Green,   bg: GreenSoft };
+  if (c === "strategy") return { fg: GoldDeep,bg: "#fff3d9" };
+  if (c === "culture")  return { fg: Coral,   bg: CoralSoft };
+  if (c === "next")     return { fg: Ink,     bg: Gray100 };
+  return { fg: Gray600, bg: Gray100 };
+}
+
+// Section "Questions a poser au recruteur" : se rend dans le tab "before"
+// apres les flashcards principales. Cards organisees par categorie avec
+// "why this question" et "best for" (round suggere).
+function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyAll }) {
+  const [copiedIdx, setCopiedIdx] = useState(-1);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const questions = result && Array.isArray(result.questions) ? result.questions : [];
+
+  // Group questions by category to render sections.
+  const grouped = useMemo(() => {
+    const order = ["role", "team", "strategy", "culture", "next"];
+    const buckets = {};
+    questions.forEach(q => {
+      const k = String(q.category || "role").toLowerCase();
+      if (!buckets[k]) buckets[k] = [];
+      buckets[k].push(q);
+    });
+    return order.map(cat => ({ cat, items: buckets[cat] || [] })).filter(g => g.items.length > 0);
+  }, [questions]);
+
+  const labelFor = (cat) => {
+    if (cat === "role")     return T.iv_qta_cat_role;
+    if (cat === "team")     return T.iv_qta_cat_team;
+    if (cat === "strategy") return T.iv_qta_cat_strategy;
+    if (cat === "culture")  return T.iv_qta_cat_culture;
+    if (cat === "next")     return T.iv_qta_cat_next;
+    return cat;
+  };
+
+  const copyOne = (idx, text) => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedIdx(idx);
+      setTimeout(() => setCopiedIdx(-1), 1800);
+    });
+  };
+
+  const copyAll = () => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    const text = grouped.map(g =>
+      "## " + labelFor(g.cat).toUpperCase() + "\n"
+      + g.items.map((q, i) => (i+1) + ". " + (q.question || "")).join("\n")
+    ).join("\n\n");
+    navigator.clipboard.writeText(text).then(() => {
+      setCopiedAll(true);
+      setTimeout(() => setCopiedAll(false), 1800);
+      if (onCopyAll) onCopyAll();
+    });
+  };
+
+  return (
+    <div style={{
+      marginTop:32,
+      paddingTop:24,
+      borderTop:"0.5px solid "+Gray200,
+    }}>
+      {/* Eyebrow + titre */}
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.12em", textTransform:"uppercase",
+        color:GoldDeep, marginBottom:4, fontFamily:Sans,
+      }}>{T.iv_qta_eyebrow}</div>
+      <div style={{
+        fontFamily:Serif, fontWeight:400, fontSize:20,
+        letterSpacing:"-0.02em", color:Ink, lineHeight:1.2,
+        marginBottom:6,
+      }}>{T.iv_qta_title}</div>
+      <div style={{
+        fontSize:12, color:Gray600, marginBottom:18,
+        lineHeight:1.5, fontFamily:Sans,
+      }}>{T.iv_qta_sub}</div>
+
+      {/* Etat 1 : pas encore de main result, on dit qu'il faut commencer par la */}
+      {!hasMainResult && !loading && (
+        <div style={{
+          padding:"18px 16px",
+          background:CreamSoft, borderRadius:RadiusMd,
+          border:"0.5px solid "+Gray200,
+          textAlign:"center", color:Gray600,
+          fontSize:12, fontFamily:Sans, lineHeight:1.5,
+        }}>{T.iv_qta_empty}</div>
+      )}
+
+      {/* Etat 2 : main result OK mais ask-recruiter pas encore lance : bouton run */}
+      {hasMainResult && !loading && questions.length === 0 && (
+        <button onClick={onRun} style={{
+          ...B({
+            width:"100%", padding:"14px 22px", borderRadius:RadiusPill,
+            background: GradPurple, color: "#fff",
+            fontFamily:Sans, fontWeight:600, fontSize:13,
+            display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          {T.iv_qta_run}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Etat 3 : loading */}
+      {loading && (
+        <div style={{
+          padding:"32px 18px", textAlign:"center",
+          background:Paper, borderRadius:RadiusMd,
+          border:"0.5px solid "+Gray200,
+        }}>
+          <div style={{
+            width:32, height:32, margin:"0 auto 12px",
+            border:"2.5px solid "+Gray200, borderTopColor:Purple,
+            borderRadius:"50%",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+          <div style={{
+            fontSize:13, color:Gray600, fontFamily:Sans,
+          }}>{T.iv_qta_loading}</div>
+        </div>
+      )}
+
+      {/* Etat 4 : questions affichees */}
+      {!loading && questions.length > 0 && (
+        <>
+          {/* Bouton copier toutes */}
+          <div style={{
+            display:"flex", justifyContent:"flex-end",
+            marginBottom:14,
+          }}>
+            <button onClick={copyAll} style={{
+              ...B({
+                padding:"7px 14px", borderRadius:RadiusPill,
+                background: copiedAll ? GreenSoft : Paper,
+                color: copiedAll ? Green : Ink,
+                border:"0.5px solid "+(copiedAll ? Green : Gray200),
+                fontSize:11, fontWeight:600,
+                fontFamily:Sans, letterSpacing:"0.02em",
+                display:"inline-flex", alignItems:"center", gap:6,
+                transition:"all 200ms ease-out",
+              })
+            }}>
+              {copiedAll ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M5 13l4 4L19 7"/>
+                  </svg>
+                  {T.iv_qta_copied}
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                  {T.iv_qta_copy_all}
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Sections par categorie */}
+          {grouped.map((g, gi) => {
+            const accent = categoryAccentAsk(g.cat);
+            return (
+              <div key={g.cat} style={{ marginBottom:gi === grouped.length - 1 ? 0 : 22 }}>
+                <div style={{
+                  display:"inline-block",
+                  padding:"4px 10px", borderRadius:RadiusPill,
+                  background:accent.bg, color:accent.fg,
+                  fontSize:10, fontWeight:700,
+                  letterSpacing:"0.08em", textTransform:"uppercase",
+                  marginBottom:10, fontFamily:Sans,
+                }}>{labelFor(g.cat)}</div>
+                {g.items.map((q, qi) => {
+                  const globalIdx = grouped.slice(0, gi).reduce((acc, prev) => acc + prev.items.length, 0) + qi;
+                  const isCopied = copiedIdx === globalIdx;
+                  return (
+                    <div key={qi} style={{
+                      background:Paper, borderRadius:RadiusMd,
+                      border:"0.5px solid "+Gray200,
+                      boxShadow:ShadowSm,
+                      padding:"14px 16px",
+                      marginBottom:10,
+                      fontFamily:Sans,
+                    }}>
+                      <div style={{
+                        fontFamily:Serif, fontSize:15, fontWeight:500,
+                        color:Ink, lineHeight:1.5,
+                        letterSpacing:"-0.005em",
+                        marginBottom:8,
+                      }}>"{q.question || ""}"</div>
+                      {q.why && (
+                        <div style={{
+                          fontSize:11, color:Gray600,
+                          lineHeight:1.5, marginBottom:6,
+                        }}>
+                          <span style={{fontWeight:600, color:GoldDeep}}>{T.iv_qta_why}</span>
+                          {" : " + q.why}
+                        </div>
+                      )}
+                      <div style={{
+                        display:"flex", alignItems:"center",
+                        justifyContent:"space-between", gap:10,
+                        flexWrap:"wrap",
+                      }}>
+                        {q.best_for ? (
+                          <span style={{
+                            fontSize:10, color:Gray600,
+                            fontFamily:Sans, letterSpacing:"0.04em",
+                            textTransform:"uppercase", fontWeight:600,
+                          }}>
+                            {T.iv_qta_for + " : " + q.best_for}
+                          </span>
+                        ) : <span/>}
+                        <button onClick={()=>copyOne(globalIdx, q.question || "")} style={{
+                          ...B({
+                            padding:"5px 11px", borderRadius:RadiusPill,
+                            background: isCopied ? GreenSoft : "transparent",
+                            color: isCopied ? Green : Gray600,
+                            border:"0.5px solid "+(isCopied ? Green : Gray200),
+                            fontSize:10, fontWeight:600,
+                            fontFamily:Sans, letterSpacing:"0.04em",
+                            textTransform:"uppercase",
+                            display:"inline-flex", alignItems:"center", gap:5,
+                            transition:"all 200ms ease-out",
+                          })
+                        }}>
+                          {isCopied ? T.iv_qta_copied : T.iv_qta_copy_one}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function InterviewModal({
   T, cv, apiKey, loading, result,
   offerText, setOfferText, prefilledOffer,
   onRun, onClose,
+  // v2 Interview Continuity : nouveaux props
+  round, setRound,
+  askRecruiterLoading, askRecruiterResult, onRunAskRecruiter,
 }) {
   const [idx, setIdx] = useState(0);
+  // v2 : tab actif (Avant / Pendant / Apres). Par defaut "before".
+  const [tab, setTab] = useState("before");
 
   // Lock body scroll
   useEffect(() => {
@@ -283,6 +549,76 @@ export default function InterviewModal({
           }}>x</button>
         </div>
 
+        {/* v2 Interview Continuity : Round selector + Tabs */}
+        <div style={{
+          padding:"14px 24px 6px",
+          borderBottom:"0.5px solid "+Gray200,
+          flexShrink:0,
+          background:CreamSoft,
+        }}>
+          {/* Round selector */}
+          {setRound && (
+            <div style={{marginBottom:14}}>
+              <div style={{
+                fontSize:10, fontWeight:600,
+                letterSpacing:"0.1em", textTransform:"uppercase",
+                color:GoldDeep, marginBottom:6, fontFamily:Sans,
+              }}>{T.iv_round_label}</div>
+              <select
+                value={round || "all"}
+                onChange={e => setRound(e.target.value)}
+                style={{
+                  width:"100%", padding:"9px 12px",
+                  borderRadius:RadiusSm,
+                  border:"0.5px solid "+Gray200,
+                  background:Paper, color:Ink,
+                  fontSize:13, fontFamily:Sans,
+                  outline:"none", cursor:"pointer",
+                  boxSizing:"border-box",
+                }}>
+                <option value="all">{T.iv_round_all}</option>
+                <option value="hr">{T.iv_round_hr}</option>
+                <option value="manager">{T.iv_round_manager}</option>
+                <option value="board">{T.iv_round_board}</option>
+              </select>
+              <div style={{
+                fontSize:10, color:Gray600,
+                marginTop:5, fontFamily:Sans, lineHeight:1.4,
+                fontStyle:"italic",
+              }}>
+                {round === "hr" ? T.iv_round_hint_hr
+                  : round === "manager" ? T.iv_round_hint_manager
+                  : round === "board" ? T.iv_round_hint_board
+                  : T.iv_round_hint_all}
+              </div>
+            </div>
+          )}
+
+          {/* Tabs Avant / Pendant / Apres */}
+          <div style={{
+            display:"flex", gap:6,
+          }}>
+            {[
+              ["before", T.iv_tab_before],
+              ["during", T.iv_tab_during],
+              ["after",  T.iv_tab_after],
+            ].map(([k, label]) => (
+              <button key={k} onClick={()=>setTab(k)} style={{
+                ...B({
+                  flex:1, padding:"9px 12px", borderRadius:RadiusPill,
+                  background: tab === k ? Ink : Paper,
+                  color: tab === k ? Cream : Ink,
+                  border:"0.5px solid "+(tab === k ? Ink : Gray200),
+                  fontFamily:Sans, fontWeight: tab === k ? 600 : 500,
+                  fontSize:12,
+                  transition:"all 180ms ease-out",
+                  cursor:"pointer",
+                })
+              }}>{label}</button>
+            ))}
+          </div>
+        </div>
+
         {/* Body scrollable */}
         <div style={{
           overflowY:"auto",
@@ -290,6 +626,30 @@ export default function InterviewModal({
           flex:1,
         }}>
 
+          {/* Tab "Pendant" : placeholder en attendant chantier 6.4 */}
+          {tab === "during" && (
+            <div style={{
+              padding:"40px 22px",
+              background:CreamSoft, borderRadius:RadiusMd,
+              border:"0.5px solid "+Gray200,
+              textAlign:"center", color:Gray600,
+              fontSize:13, fontFamily:Sans, lineHeight:1.6,
+            }}>{T.iv_during_placeholder}</div>
+          )}
+
+          {/* Tab "Apres" : placeholder en attendant chantier 6.3 */}
+          {tab === "after" && (
+            <div style={{
+              padding:"40px 22px",
+              background:CreamSoft, borderRadius:RadiusMd,
+              border:"0.5px solid "+Gray200,
+              textAlign:"center", color:Gray600,
+              fontSize:13, fontFamily:Sans, lineHeight:1.6,
+            }}>{T.iv_after_placeholder}</div>
+          )}
+
+          {/* Tab "Avant" : tout le contenu existant + nouvelle section ask-recruiter */}
+          {tab === "before" && (<>
           {/* Etat 1 : pas de CV */}
           {cvIsEmpty && !loading && (
             <div style={{
@@ -549,6 +909,18 @@ export default function InterviewModal({
               )}
             </>
           )}
+
+          {/* v2 : Section "Questions a poser au recruteur" sous les flashcards */}
+          {!cvIsEmpty && (
+            <AskRecruiterSection
+              T={T}
+              loading={!!askRecruiterLoading}
+              result={askRecruiterResult}
+              hasMainResult={!!result}
+              onRun={onRunAskRecruiter}
+            />
+          )}
+          </>)}
 
         </div>
 
