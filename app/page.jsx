@@ -49,6 +49,14 @@ const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";
 const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";
 const GradCoral  = "linear-gradient(135deg, #ff5a36 0%, #ffa800 100%)";
 
+// Keyframes globales injectees une fois par branche (mobile/desktop/spinner).
+// cvfSpin existe deja en v16. cvfFadeIn et cvfSlideUp servent l'IOSSheet v17.
+const KEYFRAMES_V17 = `
+@keyframes cvfSpin{to{transform:rotate(360deg)}}
+@keyframes cvfFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes cvfSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+`;
+
 // REGLE TIRETS - duplicated in every AI prompt for maximum compliance
 const NO_DASH =
   "INTERDICTION ABSOLUE des tirets cadratin (em dash, caractere Unicode U+2014) "
@@ -177,6 +185,97 @@ const FR_T = {
   bt_premium:"Premium", bt_premium_hint:"Registre executive elegant",
   bt_impact:"Impact", bt_impact_hint:"Avec estimation chiffree",
   bt_adopt:"Adopter",
+  // === v17 : 3 phases narratives ===
+  ph_start:"Demarrer", ph_target:"Cibler", ph_finalize:"Finaliser",
+  // Hero onboarding (style editorial Fraunces)
+  hero_h1_a:"Un CV qui ouvre", hero_h1_em:"des portes", hero_h1_b:"pas qui prend la poussiere.",
+  hero_sub:"Strategie, ciblage et redaction par une IA recruteur senior.",
+  // CTA cards onboarding
+  ob_import_desc:"L'IA structure ton CV existant en 10 secondes",
+  ob_adapt:"Adapter a une offre", ob_adapt_desc:"Importe ton CV puis colle l'offre, l'IA fait le pont",
+  ob_generate_desc:"Cree un CV complet a partir de ton profil",
+  ob_blank_desc:"Tu construis ligne par ligne",
+  // Hub Cibler
+  hub_eyebrow:"Le pivot strategique",
+  hub_title_a:"Une", hub_title_em:"offre", hub_title_b:"une candidature complete.",
+  hub_cta_paste:"Coller une offre",
+  hub_cta_change:"Changer d'offre",
+  hub_match_label:"Match offre",
+  hub_subhead:"Ou commence par une analyse",
+  hub_audit:"Audit recruteur", hub_audit_desc:"Analyse honnete de ton CV par marche",
+  hub_pos:"Positionnement", hub_pos_desc:"3 angles strategiques pour ton parcours",
+  hub_truth:"Truth check", hub_truth_desc:"Phrases faibles, vagues ou risquees",
+  hub_pack:"Pack candidature", hub_pack_desc:"Lettre, LinkedIn, pitch et reponses",
+  hub_empty:"Charge d'abord un CV depuis Demarrer pour activer le ciblage.",
+  // Phase Finaliser
+  fin_eyebrow:"Edition fine",
+  fin_sections:"Modifier par section",
+  fin_eyebrow_design:"Design",
+  fin_eyebrow_strategy:"Strategie et versions",
+  fin_eyebrow_export:"Export et historique",
+  fin_eyebrow_translate:"Traduction",
+  fin_eyebrow_api:"Cle API",
+  // Sheet labels
+  sheet_close:"Fermer",
+  // Onboarding v17 (cartes de choix)
+  ob_choose:"Choisis ce qui correspond a ta situation",
+  ob_card_have:"J'ai deja un CV",
+  ob_card_have_desc:"L'IA structure ton CV existant en 10 secondes",
+  ob_card_adapt:"J'adapte a une offre",
+  ob_card_adapt_desc:"Importe ton CV puis colle l'offre, l'IA fait le pont",
+  ob_card_create:"Je cree un CV",
+  ob_card_create_desc:"Pas encore de CV ? L'IA en genere un a partir de tes infos",
+  ob_card_blank:"Ou commencer vierge",
+  // Steps bar
+  ob_step_import:"Importer", ob_step_paste_offer:"Coller l'offre",
+  ob_step_adapt:"Adapter", ob_step_boost:"Booster", ob_step_download:"Telecharger",
+  // Import screen
+  ob_import_first:"Importe d'abord ton CV",
+  ob_import_title:"Importe ton CV",
+  ob_import_sub_adapt:"L'IA va d'abord structurer ton CV, puis tu colleras l'offre.",
+  ob_import_sub_boost:"L'IA va lire ton CV et le restructurer automatiquement.",
+  ob_import_format:"Format accepte : PDF, Word, ou texte.",
+  ob_pick_file:"Cliquer pour selectionner mon CV",
+  ob_pick_file_hint:"PDF, Word (.docx) ou texte (.txt)",
+  ob_or_paste:"ou copier-coller le contenu",
+  ob_paste_label:"Colle ton CV en texte brut",
+  ob_paste_ph:"Nom, titre, email...\nExperiences, formation, competences...",
+  ob_continue_adapt:"Continuer vers l'adaptation",
+  // File upload errors
+  ob_file_format_err:"Format non supporte. Utilise PDF, DOCX ou TXT.",
+  ob_file_read_err:"Erreur lors de la lecture du fichier",
+  // Generic UI
+  back:"Retour",
+  // Offer sheet (Cibler)
+  off_eyebrow:"Analyse d'offre",
+  off_title_a:"Une", off_title_em:"offre", off_title_b:"decodee.",
+  off_sub:"L'IA decode l'offre et adapte ton CV.",
+  off_paste_label:"Colle l'offre d'emploi",
+  off_paste_ph:"Description du poste, missions, exigences...",
+  off_run:"Analyser et adapter",
+  off_running:"Analyse en cours...",
+  off_running_sub:"L'IA decode l'offre et adapte ton CV.",
+  off_apply:"Appliquer le CV adapte",
+  off_change:"Nouvelle offre",
+  off_score_label:"Match offre",
+  off_no_offer:"Colle une offre d'abord",
+  // Finalize phase (sections + boutons)
+  fin_section_edit:"Editer le CV",
+  fin_section_design:"Apparence",
+  fin_section_strategy:"Strategie",
+  fin_section_export:"Export et reglages",
+  fin_section_translate:"Traduction",
+  fin_section_settings:"Reglages",
+  fin_score_btn:"Voir le score CV",
+  fin_score_eyebrow:"Diagnostic",
+  fin_pos_btn:"Positionnement carriere",
+  fin_truth_btn:"Truth check",
+  fin_versions_btn:"Versions",
+  fin_undo_btn:"Annuler le dernier ajustement",
+  fin_template_section:"Templates",
+  fin_template_load:"Charger ce CV",
+  fin_template_loaded:"Template charge",
+  fin_iface_lang:"Langue de l'interface",
 };
 
 const EN_T = {
@@ -298,6 +397,97 @@ const EN_T = {
   bt_premium:"Premium", bt_premium_hint:"Executive elegant register",
   bt_impact:"Impact", bt_impact_hint:"With quantified estimate",
   bt_adopt:"Adopt",
+  // === v17 : 3 narrative phases ===
+  ph_start:"Start", ph_target:"Target", ph_finalize:"Finalize",
+  // Hero onboarding (editorial Fraunces)
+  hero_h1_a:"A CV that opens", hero_h1_em:"doors", hero_h1_b:"not one that gathers dust.",
+  hero_sub:"Strategy, targeting and writing by a senior recruiter AI.",
+  // CTA cards onboarding
+  ob_import_desc:"AI structures your existing CV in 10 seconds",
+  ob_adapt:"Adapt to a job posting", ob_adapt_desc:"Import your CV then paste the posting, AI bridges the gap",
+  ob_generate_desc:"Build a full CV from your profile",
+  ob_blank_desc:"You build it line by line",
+  // Targeting hub
+  hub_eyebrow:"The strategic pivot",
+  hub_title_a:"One", hub_title_em:"posting", hub_title_b:"one full application.",
+  hub_cta_paste:"Paste a job posting",
+  hub_cta_change:"Change posting",
+  hub_match_label:"Posting match",
+  hub_subhead:"Or start with an analysis",
+  hub_audit:"Recruiter audit", hub_audit_desc:"Honest analysis of your CV per market",
+  hub_pos:"Positioning", hub_pos_desc:"3 strategic angles for your career",
+  hub_truth:"Truth check", hub_truth_desc:"Weak, vague or risky sentences",
+  hub_pack:"Application pack", hub_pack_desc:"Letter, LinkedIn, pitch and answers",
+  hub_empty:"Load a CV from Start first to unlock targeting.",
+  // Finalize phase
+  fin_eyebrow:"Fine editing",
+  fin_sections:"Edit by section",
+  fin_eyebrow_design:"Design",
+  fin_eyebrow_strategy:"Strategy and versions",
+  fin_eyebrow_export:"Export and history",
+  fin_eyebrow_translate:"Translation",
+  fin_eyebrow_api:"API key",
+  // Sheet labels
+  sheet_close:"Close",
+  // Onboarding v17 (choice cards)
+  ob_choose:"Choose what fits your situation",
+  ob_card_have:"I already have a CV",
+  ob_card_have_desc:"AI structures your existing CV in 10 seconds",
+  ob_card_adapt:"I adapt to a posting",
+  ob_card_adapt_desc:"Import your CV then paste the posting, AI bridges the gap",
+  ob_card_create:"I create a CV",
+  ob_card_create_desc:"No CV yet? AI generates one from your info",
+  ob_card_blank:"Or start blank",
+  // Steps bar
+  ob_step_import:"Import", ob_step_paste_offer:"Paste posting",
+  ob_step_adapt:"Adapt", ob_step_boost:"Boost", ob_step_download:"Download",
+  // Import screen
+  ob_import_first:"First, import your CV",
+  ob_import_title:"Import your CV",
+  ob_import_sub_adapt:"AI will first structure your CV, then you'll paste the posting.",
+  ob_import_sub_boost:"AI will read your CV and restructure it automatically.",
+  ob_import_format:"Accepted formats: PDF, Word, or text.",
+  ob_pick_file:"Click to select my CV",
+  ob_pick_file_hint:"PDF, Word (.docx) or text (.txt)",
+  ob_or_paste:"or copy and paste the content",
+  ob_paste_label:"Paste your CV as plain text",
+  ob_paste_ph:"Name, title, email...\nExperience, education, skills...",
+  ob_continue_adapt:"Continue to adaptation",
+  // File upload errors
+  ob_file_format_err:"Unsupported format. Use PDF, DOCX or TXT.",
+  ob_file_read_err:"Error while reading the file",
+  // Generic UI
+  back:"Back",
+  // Offer sheet (Target)
+  off_eyebrow:"Posting analysis",
+  off_title_a:"A", off_title_em:"posting", off_title_b:"decoded.",
+  off_sub:"AI decodes the posting and tailors your CV.",
+  off_paste_label:"Paste the job posting",
+  off_paste_ph:"Job description, missions, requirements...",
+  off_run:"Analyze and adapt",
+  off_running:"Analyzing...",
+  off_running_sub:"AI decodes the posting and tailors your CV.",
+  off_apply:"Apply tailored CV",
+  off_change:"New posting",
+  off_score_label:"Posting match",
+  off_no_offer:"Paste a posting first",
+  // Finalize phase (sections + buttons)
+  fin_section_edit:"Edit CV",
+  fin_section_design:"Appearance",
+  fin_section_strategy:"Strategy",
+  fin_section_export:"Export and settings",
+  fin_section_translate:"Translation",
+  fin_section_settings:"Settings",
+  fin_score_btn:"See CV score",
+  fin_score_eyebrow:"Diagnostic",
+  fin_pos_btn:"Career positioning",
+  fin_truth_btn:"Truth check",
+  fin_versions_btn:"Versions",
+  fin_undo_btn:"Undo last adjustment",
+  fin_template_section:"Templates",
+  fin_template_load:"Load this CV",
+  fin_template_loaded:"Template loaded",
+  fin_iface_lang:"Interface language",
 };
 
 const THEMES = {
@@ -628,30 +818,74 @@ function Shimmer() {
   );
 }
 
-function Sheet({ title, onClose, children }) {
+// IOSSheet v17 : sheet bottom iOS-native avec handle, backdrop blur, slide-up.
+// Conserve la signature de l'ancien `Sheet({title,onClose,children})`
+// pour que tous les Sheet*/Modals existants l'heritent automatiquement.
+// Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
+function Sheet({ title, eyebrow, onClose, children }) {
   return (
     <div style={{
       position:"fixed", inset:0, zIndex:2000,
       display:"flex", flexDirection:"column", justifyContent:"flex-end",
+      fontFamily:Sans,
     }}>
-      <div style={{position:"absolute", inset:0, background:"rgba(0,0,0,.5)"}}
-        onClick={onClose}/>
       <div style={{
-        position:"relative", background:"#fff",
-        borderRadius:"20px 20px 0 0",
-        maxHeight:"90vh", display:"flex", flexDirection:"column",
+        position:"absolute", inset:0,
+        background:"rgba(10,10,10,.55)",
+        backdropFilter:"blur(8px)",
+        WebkitBackdropFilter:"blur(8px)",
+        animation:"cvfFadeIn 200ms ease-out",
+      }} onClick={onClose}/>
+      <div style={{
+        position:"relative", background:CreamSoft,
+        borderRadius:"32px 32px 0 0",
+        maxHeight:"92vh", display:"flex", flexDirection:"column",
+        boxShadow:"0 -20px 60px rgba(0,0,0,.2)",
+        animation:"cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
       }}>
+        {/* Handle iOS */}
         <div style={{
-          display:"flex", justifyContent:"space-between", alignItems:"center",
-          padding:"16px 20px 12px", borderBottom:"1px solid #f0f0f0", flexShrink:0,
+          width:40, height:4, background:Gray200,
+          borderRadius:RadiusPill,
+          margin:"10px auto 6px",
+          flexShrink:0,
+        }}/>
+        {/* Header editorial */}
+        <div style={{
+          padding:"6px 24px 14px",
+          borderBottom:"0.5px solid "+Gray200,
+          flexShrink:0,
+          display:"flex", alignItems:"flex-start",
+          justifyContent:"space-between", gap:12,
         }}>
-          <span style={{fontWeight:700, fontSize:15, color:Dark}}>{title}</span>
-          <button onClick={onClose} style={{
-            ...B({background:"#f0f0f0", borderRadius:"50%",
-              width:30, height:30, fontSize:18, color:"#666"})
+          <div style={{flex:1, minWidth:0}}>
+            {eyebrow && (
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.12em", textTransform:"uppercase",
+                color:GoldDeep, marginBottom:4,
+              }}>{eyebrow}</div>
+            )}
+            <div style={{
+              fontFamily:Serif, fontWeight:400, fontSize:22,
+              letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
+            }}>{title}</div>
+          </div>
+          <button onClick={onClose} aria-label="close" style={{
+            ...B({
+              background:Paper, borderRadius:RadiusPill,
+              width:32, height:32, fontSize:16, color:Gray600,
+              border:"0.5px solid "+Gray200,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              flexShrink:0,
+            })
           }}>x</button>
         </div>
-        <div style={{overflowY:"auto", padding:"14px 18px 48px", flex:1}}>
+        <div style={{
+          overflowY:"auto",
+          padding:"18px 24px 48px",
+          flex:1,
+        }}>
           {children}
         </div>
       </div>
@@ -1292,13 +1526,33 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [parc, setParc] = useState("");
   const [offre, setOffre] = useState("");
 
-  const Ch = ({v, cur, set, l}) => (
+  // v17 helpers : inputs paper-on-cream + eyebrow editorial
+  const inV17 = (extra={}) => ({
+    width:"100%", padding:"12px 14px", borderRadius:RadiusSm,
+    border:"0.5px solid "+Gray200, background:Paper,
+    fontSize:13, color:Ink, fontFamily:Sans,
+    boxSizing:"border-box", outline:"none",
+    transition:"border-color 200ms ease-out",
+    ...extra,
+  });
+  const eyV17 = {
+    fontSize:11, fontWeight:600,
+    letterSpacing:"0.1em", textTransform:"uppercase",
+    color:GoldDeep, marginBottom:8, marginTop:14,
+    display:"block",
+  };
+
+  // Pill toggle (tone, lang)
+  const Pill = ({v, cur, set, l}) => (
     <button onClick={()=>set(v)} style={{
       ...B({
-        padding:"8px 5px", borderRadius:7,
-        border:cur===v?"2px solid "+Gold:"1px solid #e0e0e0",
-        background:cur===v?"#fff9f0":"#f8f8f8",
-        fontWeight:cur===v?700:400, fontSize:11, color:"#333", flex:1,
+        flex:1, padding:"10px 8px", borderRadius:RadiusPill,
+        border:"0.5px solid "+(cur===v ? Ink : Gray200),
+        background:cur===v ? Ink : Paper,
+        color:cur===v ? Cream : Ink,
+        fontWeight:cur===v ? 600 : 500, fontSize:12,
+        fontFamily:Sans,
+        transition:"all 180ms ease-out",
       })
     }}>{l}</button>
   );
@@ -1330,78 +1584,110 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   };
 
   return (
-    <div>
+    <div style={{fontFamily:Sans}}>
       {!apiKey && (
         <div style={{
-          background:"#fff3cd", border:"1px solid #ffc107",
-          borderRadius:9, padding:"9px 13px", marginBottom:12,
-          fontSize:12, color:"#664d03",
+          background:CoralSoft,
+          border:"0.5px solid "+Coral,
+          borderRadius:RadiusSm,
+          padding:"10px 14px", marginBottom:14,
+          fontSize:12, color:Ink, lineHeight:1.5,
         }}>
           {T.ai_nk}
         </div>
       )}
       {!cvIsEmpty && (
         <div style={{
-          background:"#fef2f2", border:"1px solid #fecaca",
-          borderRadius:9, padding:"11px 14px", marginBottom:14,
-          fontSize:12, color:"#991b1b",
+          background:Paper,
+          borderRadius:RadiusMd,
+          padding:"16px 18px", marginBottom:18,
+          border:"0.5px solid "+Gray200,
+          boxShadow:ShadowSm,
         }}>
-          <div style={{fontWeight:700, marginBottom:6}}>
-            {T.ai_existing_title || "Tu as deja un CV"}
-          </div>
-          <div style={{lineHeight:1.5, marginBottom:9, color:"#7f1d1d"}}>
-            {T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}
-          </div>
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.12em", textTransform:"uppercase",
+            color:Coral, marginBottom:6,
+          }}>{T.ai_existing_title || "Tu as deja un CV"}</div>
+          <div style={{
+            fontFamily:Serif, fontWeight:400,
+            fontSize:18, lineHeight:1.25,
+            letterSpacing:"-0.01em",
+            color:Ink, marginBottom:10,
+          }}>{T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}</div>
           <button onClick={onSwitchToAdjust} style={{
             ...B({
-              padding:"6px 12px", borderRadius:7,
-              background:Dark, color:"#fff",
-              fontSize:11, fontWeight:700,
-              textTransform:"uppercase", letterSpacing:1,
+              padding:"10px 18px", borderRadius:RadiusPill,
+              background:Ink, color:Cream,
+              fontSize:12, fontWeight:600,
+              fontFamily:Sans,
+              display:"inline-flex", alignItems:"center", gap:6,
             })
           }}>
             {T.ai_existing_btn || "Aller a Ajuster"}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
           </button>
         </div>
       )}
-      <label style={LBL}>{T.ai_job}</label>
+
+      <label style={{...eyV17, marginTop:0}}>{T.ai_job}</label>
       <input value={job} onChange={e=>setJob(e.target.value)}
-        placeholder={T.ai_jph} style={{...IN({marginBottom:12})}}/>
-      <label style={LBL}>{T.ai_sec}</label>
+        placeholder={T.ai_jph} style={inV17()}/>
+
+      <label style={eyV17}>{T.ai_sec}</label>
       <select value={sec} onChange={e=>setSec(Number(e.target.value))}
-        style={{...IN({marginBottom:12})}}>
+        style={inV17()}>
         {T.ai_secs.map((s,i) => <option key={i} value={i}>{s}</option>)}
       </select>
-      <label style={LBL}>{T.ai_yrs}</label>
+
+      <label style={eyV17}>{T.ai_yrs}</label>
       <input value={yrs} onChange={e=>setYrs(e.target.value)}
-        placeholder="ex: 12" style={{...IN({marginBottom:12})}}/>
-      <label style={LBL}>{T.ai_tone}</label>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:5, marginBottom:12}}>
-        <Ch v="p" cur={tone} set={setTone} l={T.ai_tp}/>
-        <Ch v="c" cur={tone} set={setTone} l={T.ai_tc}/>
-        <Ch v="k" cur={tone} set={setTone} l={T.ai_tk}/>
+        placeholder="12" style={inV17()}/>
+
+      <label style={eyV17}>{T.ai_tone}</label>
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6}}>
+        <Pill v="p" cur={tone} set={setTone} l={T.ai_tp}/>
+        <Pill v="c" cur={tone} set={setTone} l={T.ai_tc}/>
+        <Pill v="k" cur={tone} set={setTone} l={T.ai_tk}/>
       </div>
-      <label style={LBL}>{T.ai_lang}</label>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:5, marginBottom:12}}>
-        <Ch v="fr" cur={lang} set={setLang} l="Francais"/>
-        <Ch v="en" cur={lang} set={setLang} l="English"/>
+
+      <label style={eyV17}>{T.ai_lang}</label>
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:6}}>
+        <Pill v="fr" cur={lang} set={setLang} l="Francais"/>
+        <Pill v="en" cur={lang} set={setLang} l="English"/>
       </div>
-      <label style={LBL}>{T.ai_parc}</label>
+
+      <label style={eyV17}>{T.ai_parc}</label>
       <textarea value={parc} onChange={e=>setParc(e.target.value)}
-        rows={3} style={{...IN({resize:"vertical", marginBottom:12})}}/>
-      <label style={LBL}>{T.ai_off}</label>
+        rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+
+      <label style={eyV17}>{T.ai_off}</label>
       <textarea value={offre} onChange={e=>setOffre(e.target.value)}
-        rows={3} style={{...IN({resize:"vertical", marginBottom:18})}}/>
+        rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+
       <button onClick={go} disabled={loading||!apiKey} style={{
         ...B({
-          width:"100%", padding:13, borderRadius:11,
-          background:loading||!apiKey
-            ? "#ccc"
-            : "linear-gradient(135deg,"+Dark+","+Gold+")",
-          color:"#fff", fontWeight:800, fontSize:14,
+          width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+          background:loading||!apiKey ? Gray200 : GradDark,
+          color:loading||!apiKey ? Gray600 : Cream,
+          fontWeight:600, fontSize:14, fontFamily:Sans,
+          marginTop:22,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          transition:"all 200ms ease-out",
         })
       }}>
         {loading ? T.ai_gen : T.ai_btn}
+        {!loading && (
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        )}
       </button>
     </div>
   );
@@ -1579,14 +1865,15 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
   );
 }
 
-function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest }) {
+function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
+  onResult, onApplied, initialResult }) {
   const [offer, setOffer] = useState("");
   const [load, setLoad]   = useState(false);
-  const [res, setRes]     = useState(null);
-  const [ph, setPh]       = useState("input");
+  const [res, setRes]     = useState(initialResult || null);
+  const [ph, setPh]       = useState(initialResult ? "done" : "input");
 
   const analyze = async () => {
-    if (!offer.trim()) { notify("Colle une offre d'abord"); return; }
+    if (!offer.trim()) { notify(T.off_no_offer); return; }
     if (!apiKey) { notify(T.nk); return; }
     setLoad(true);
     setPh("loading");
@@ -1633,6 +1920,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest }) {
       const r = parseJSON(txt);
       setRes(r);
       setPh("done");
+      if (onResult) onResult(r);
     } catch { notify(T.ea); setPh("input"); }
     setLoad(false);
   };
@@ -1644,6 +1932,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest }) {
     setPh("input");
     setRes(null);
     setOffer("");
+    if (onApplied) onApplied();
   };
 
   const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
@@ -2149,306 +2438,550 @@ function ScorePanel({ cv, apiKey, notify, layout, T }) {
   );
 }
 
-function BottomNav({ active, set, T }) {
-  const tabs = [
-    ["ai","*",T.tab_ai],
-    ["edit","~",T.tab_edit],
-    ["design","*",T.tab_design],
-    ["score","*",T.tab_score],
-    ["tools","*",T.tab_tools],
+// === v17 helpers : 3 phases narratives ===
+// Le state legacy `tab` (5 valeurs) est conserve pour ne pas tout casser.
+// `phaseFromTab` mappe vers les 3 phases narratives affichees dans la nav.
+// En v17 on introduit la valeur "target" comme un onglet dedie au hub Cibler.
+function phaseFromTab(tab) {
+  if (tab === "target") return "target";
+  if (tab === "ai") return "start";
+  if (tab === "edit" || tab === "design"
+   || tab === "score" || tab === "tools") return "finalize";
+  return "start";
+}
+// Inverse : quel `tab` legacy declencher quand on choisit une phase ?
+// Etape 4 remplacera "edit" par un Finalize unifie phase-natif.
+function tabFromPhase(phase) {
+  if (phase === "start") return { tab:"ai",     aiMode:"generate" };
+  if (phase === "target") return { tab:"target", aiMode:null };
+  if (phase === "finalize") return { tab:"edit", aiMode:null };
+  return { tab:"ai", aiMode:"generate" };
+}
+
+// Icones SVG fines pour la nav 3 phases
+const IconStart = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.7"
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <path d="M14 2v6h6"/>
+  </svg>
+);
+const IconTarget = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2"
+    strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <circle cx="12" cy="12" r="6"/>
+    <circle cx="12" cy="12" r="2"/>
+  </svg>
+);
+const IconFinalize = (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="1.7"
+    strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+  </svg>
+);
+
+// BottomNav v17 : 3 phases (Demarrer / Cibler / Finaliser).
+// `active` est une phase ("start"/"target"/"finalize"), `onPhase` re-route.
+function BottomNav({ active, onPhase, T }) {
+  const items = [
+    ["start",    IconStart,    T.ph_start],
+    ["target",   IconTarget,   T.ph_target],
+    ["finalize", IconFinalize, T.ph_finalize],
   ];
   return (
     <div style={{
-      display:"flex", background:"#fff",
-      borderTop:"1px solid #eee",
-      boxShadow:"0 -2px 12px rgba(0,0,0,.08)", flexShrink:0,
+      display:"flex",
+      background:Paper,
+      borderTop:"0.5px solid "+Gray200,
+      padding:"10px 8px 22px",
+      flexShrink:0,
+      fontFamily:Sans,
+      justifyContent:"space-around",
     }}>
-      {tabs.map(([key,icon,label]) => (
-        <button key={key} onClick={()=>set(key)} style={{
-          ...B({
-            flex:1, padding:"10px 0 12px",
-            display:"flex", flexDirection:"column",
-            alignItems:"center", gap:3,
-            background:"none", position:"relative",
-          })
-        }}>
-          {active===key && (
-            <div style={{
-              position:"absolute", top:0, left:"50%",
-              transform:"translateX(-50%)",
-              width:28, height:3, background:Gold,
-              borderRadius:"0 0 3px 3px",
-            }}/>
-          )}
-          <span style={{fontSize:17, lineHeight:1}}>{icon}</span>
-          <span style={{
-            fontSize:9,
-            fontWeight:active===key?700:400,
-            color:active===key?Dark:"#bbb",
-          }}>{label}</span>
-        </button>
-      ))}
+      {items.map(([key, icon, label]) => {
+        const isActive = active === key;
+        return (
+          <button key={key} onClick={()=>onPhase(key)} style={{
+            ...B({
+              display:"flex", flexDirection:"column",
+              alignItems:"center", gap:4,
+              padding:"6px 14px", borderRadius:RadiusMd,
+              background:"transparent",
+              flex:1, maxWidth:108,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            <span style={{
+              width:24, height:24,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              color:isActive ? Ink : Gray400,
+              transition:"color 200ms ease-out",
+            }}>{icon}</span>
+            <span style={{
+              fontSize:11,
+              fontWeight:isActive ? 600 : 500,
+              color:isActive ? Ink : Gray400,
+              letterSpacing:"0.01em",
+              transition:"color 200ms ease-out",
+            }}>{label}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
 
+
+
+// ============================================================
+// OnboardScreen v17 : style editorial, fond cream-soft, hero Fraunces
+// 4 cartes paper-on-cream avec icones gradient, mode import-adapt en Coral
+// ============================================================
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   raw, setRaw, imping, onImport, setTab, setAiMode }) {
+
+  // Style accent par mode (gold pour import simple, coral pour adapt)
+  const accent     = mode === "import-adapt" ? Coral     : Gold;
+  const accentSoft = mode === "import-adapt" ? CoralSoft : "rgba(201,169,110,.15)";
+  const accentGrad = mode === "import-adapt" ? GradCoral : GradGold;
+
+  // === Ecran de choix initial ===
+  if (!mode) {
+    const cards = [
+      {
+        key:"have", grad:GradGold,
+        title:T.ob_card_have, desc:T.ob_card_have_desc,
+        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2v6"/><path d="m9 5 3-3 3 3"/>
+          <rect x="4" y="8" width="16" height="14" rx="2"/>
+        </svg>),
+        onClick:()=>setMode("import"),
+      },
+      {
+        key:"adapt", grad:GradCoral,
+        title:T.ob_card_adapt, desc:T.ob_card_adapt_desc,
+        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <circle cx="12" cy="12" r="6"/>
+          <circle cx="12" cy="12" r="2"/>
+        </svg>),
+        onClick:()=>setMode("import-adapt"),
+      },
+      {
+        key:"create", grad:GradPurple,
+        title:T.ob_card_create, desc:T.ob_card_create_desc,
+        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="m4.93 4.93 4.24 4.24"/>
+          <path d="m14.83 9.17 4.24-4.24"/>
+          <path d="m14.83 14.83 4.24 4.24"/>
+          <path d="m9.17 14.83-4.24 4.24"/>
+          <circle cx="12" cy="12" r="4"/>
+        </svg>),
+        onClick:()=>{ setMode("done"); setTab("ai"); setAiMode("generate"); },
+      },
+      {
+        key:"blank", grad:"linear-gradient(135deg,#0a0a0a,#1a1a1f)",
+        iconColor:Gold,
+        title:T.ob_card_blank, desc:T.ob_blank_desc,
+        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6"/>
+        </svg>),
+        onClick:()=>setMode("done"),
+      },
+    ];
+    return (
+      <div style={{
+        position:"fixed", inset:0, zIndex:500,
+        background:CreamSoft,
+        overflowY:"auto",
+        fontFamily:Sans,
+      }}>
+        <div style={{
+          maxWidth:480, margin:"0 auto",
+          padding:"28px 24px 40px",
+          minHeight:"100%",
+          display:"flex", flexDirection:"column",
+        }}>
+          {/* Brand */}
+          <div style={{
+            display:"flex", alignItems:"center", gap:10, marginBottom:48,
+          }}>
+            <div style={{
+              width:36, height:36, background:GradDark,
+              borderRadius:10, display:"flex",
+              alignItems:"center", justifyContent:"center",
+              color:Gold, fontFamily:Serif, fontWeight:600, fontSize:16,
+              letterSpacing:"-0.02em",
+            }}>CV</div>
+            <div style={{
+              fontFamily:Serif, fontWeight:500, fontSize:20,
+              letterSpacing:"-0.01em", color:Ink,
+            }}>Factory</div>
+          </div>
+          {/* Hero editorial */}
+          <h1 style={{
+            fontFamily:Serif, fontWeight:300,
+            fontSize:42, lineHeight:1.05,
+            letterSpacing:"-0.025em",
+            color:Ink, margin:"0 0 18px",
+          }}>
+            {T.hero_h1_a}
+            {" "}
+            <em style={{
+              fontStyle:"italic", fontWeight:400,
+              background:GradPurple,
+              WebkitBackgroundClip:"text",
+              backgroundClip:"text",
+              color:"transparent",
+            }}>{T.hero_h1_em}</em>
+            {" "}
+            {T.hero_h1_b}
+          </h1>
+          <p style={{
+            fontSize:15, lineHeight:1.55,
+            color:Gray600, margin:"0 0 32px",
+            maxWidth:"94%",
+          }}>{T.hero_sub}</p>
+
+          {/* Eyebrow */}
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.12em", textTransform:"uppercase",
+            color:GoldDeep, marginBottom:12,
+          }}>{T.ob_choose}</div>
+
+          {/* Cartes CTA */}
+          <div style={{
+            display:"flex", flexDirection:"column", gap:12,
+          }}>
+            {cards.map(c => (
+              <button key={c.key} onClick={c.onClick} style={{
+                ...B({
+                  background:Paper,
+                  borderRadius:RadiusMd,
+                  padding:"18px 20px",
+                  display:"flex", alignItems:"center", gap:14,
+                  boxShadow:ShadowSm,
+                  border:"0.5px solid "+Gray200,
+                  textAlign:"left",
+                  transition:"all 200ms ease-out",
+                  width:"100%",
+                })
+              }}>
+                <div style={{
+                  width:48, height:48,
+                  borderRadius:14,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  background:c.grad,
+                  color:c.iconColor || "#fff",
+                  flexShrink:0,
+                }}>{c.icon}</div>
+                <div style={{flex:1, minWidth:0}}>
+                  <div style={{
+                    fontFamily:Serif, fontWeight:500, fontSize:16,
+                    letterSpacing:"-0.01em", color:Ink, marginBottom:2,
+                  }}>{c.title}</div>
+                  <div style={{
+                    fontSize:12, color:Gray600,
+                    lineHeight:1.4,
+                  }}>{c.desc}</div>
+                </div>
+                <span style={{color:Gray400, flexShrink:0}}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <path d="m9 18 6-6-6-6"/>
+                  </svg>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {/* Locale pills */}
+          <div style={{
+            display:"flex", justifyContent:"center", gap:8,
+            padding:"32px 0 8px",
+          }}>
+            {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
+              <button key={lc} onClick={()=>setLocale(lc)} style={{
+                ...B({
+                  padding:"6px 14px", borderRadius:RadiusPill,
+                  fontSize:12, fontWeight:500,
+                  color:locale===lc ? Cream : Gray600,
+                  background:locale===lc ? Ink : Paper,
+                  border:"0.5px solid "+(locale===lc ? Ink : Gray200),
+                })
+              }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // === Ecran d'import (mode "import" ou "import-adapt") ===
   return (
     <div style={{
       position:"fixed", inset:0, zIndex:500,
-      background:"linear-gradient(135deg,"+Dark+" 0%,#2d2418 100%)",
-      display:"flex", flexDirection:"column",
-      alignItems:"center", justifyContent:"center",
-      padding:24, fontFamily:"'Lato',sans-serif",
+      background:CreamSoft,
+      overflowY:"auto",
+      fontFamily:Sans,
     }}>
-      <div style={{position:"absolute", top:14, right:14, display:"flex", gap:6}}>
-        {[["fr","FR"],["en","EN"]].map(([lc,flag]) => (
-          <button key={lc} onClick={()=>setLocale(lc)} style={{
-            ...B({
-              padding:"5px 11px", borderRadius:18,
-              background:locale===lc?Gold:"rgba(255,255,255,.1)",
-              color:locale===lc?Dark:"rgba(255,255,255,.6)",
-              fontWeight:locale===lc?700:400, fontSize:13,
-              border:locale===lc?"none":"1px solid rgba(255,255,255,.2)",
-            })
-          }}>{flag}</button>
-        ))}
-      </div>
-      <div style={{fontSize:32, marginBottom:7}}>*</div>
       <div style={{
-        color:Gold, fontWeight:800, fontSize:20,
-        letterSpacing:3, textTransform:"uppercase", marginBottom:3,
-      }}>{T.appName}</div>
-      <div style={{color:"rgba(255,255,255,.5)", fontSize:12, marginBottom:36}}>
-        {T.appSub}
-      </div>
-      {!mode && (
-        <>
+        maxWidth:520, margin:"0 auto",
+        padding:"24px 24px 40px",
+        minHeight:"100%",
+        display:"flex", flexDirection:"column",
+      }}>
+        {/* Bouton retour */}
+        <button onClick={()=>setMode(null)} style={{
+          ...B({
+            background:"none", color:Gray600, fontSize:13,
+            fontFamily:Sans, fontWeight:500,
+            textAlign:"left", padding:"4px 0", marginBottom:14,
+            display:"inline-flex", alignItems:"center", gap:6,
+          })
+        }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="m15 18-6-6 6-6"/>
+          </svg>
+          {T.back}
+        </button>
+
+        {/* Steps bar editoriale */}
+        <div style={{
+          display:"flex", alignItems:"center", justifyContent:"center",
+          gap:8, marginBottom:22, fontSize:11,
+          fontWeight:600, letterSpacing:"0.04em",
+        }}>
+          <span style={{color:accent}}>1. {T.ob_step_import}</span>
+          <span style={{color:Gray400}}>{">"}</span>
+          <span style={{color:Gray600}}>
+            2. {mode==="import-adapt" ? T.ob_step_paste_offer : T.ob_step_boost}
+          </span>
+          <span style={{color:Gray400}}>{">"}</span>
+          <span style={{color:Gray600}}>
+            3. {mode==="import-adapt" ? T.ob_step_adapt : T.ob_step_download}
+          </span>
+        </div>
+
+        {/* Hero editorial */}
+        <h2 style={{
+          fontFamily:Serif, fontWeight:400,
+          fontSize:32, lineHeight:1.1,
+          letterSpacing:"-0.02em", color:Ink,
+          textAlign:"center", margin:"0 0 10px",
+        }}>{mode==="import-adapt" ? T.ob_import_first : T.ob_import_title}</h2>
+        <p style={{
+          fontSize:13, color:Gray600, lineHeight:1.6,
+          textAlign:"center", margin:"0 0 24px",
+        }}>
+          {mode==="import-adapt" ? T.ob_import_sub_adapt : T.ob_import_sub_boost}
+          {" "}{T.ob_import_format}
+        </p>
+
+        {/* Hidden file input */}
+        <input
+          type="file"
+          id="cv-file-upload"
+          accept=".pdf,.docx,.txt"
+          style={{display:"none"}}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            try {
+              const ext = file.name.split('.').pop().toLowerCase();
+              if (ext === 'txt') {
+                const text = await file.text();
+                setRaw(text);
+              } else if (ext === 'pdf') {
+                const pdfjsLib = await import('pdfjs-dist/build/pdf');
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                  const page = await pdf.getPage(i);
+                  const textContent = await page.getTextContent();
+                  const pageText = textContent.items.map(item => item.str).join(' ');
+                  fullText += pageText + '\n\n';
+                }
+                setRaw(fullText.trim());
+              } else if (ext === 'docx') {
+                const mammoth = await import('mammoth/mammoth.browser');
+                const arrayBuffer = await file.arrayBuffer();
+                const result = await mammoth.extractRawText({arrayBuffer});
+                setRaw(result.value);
+              } else {
+                alert(T.ob_file_format_err);
+              }
+            } catch (err) {
+              alert(T.ob_file_read_err + ': ' + err.message);
+            }
+            e.target.value = '';
+          }}
+        />
+
+        {/* Big upload card (paper, dashed accent) */}
+        <button
+          onClick={() => document.getElementById('cv-file-upload').click()}
+          style={{
+            ...B({
+              padding:"26px 18px",
+              borderRadius:RadiusMd,
+              background:Paper,
+              border:"1.5px dashed "+accent,
+              color:accent,
+              fontWeight:600, fontSize:14,
+              display:"flex", flexDirection:"column",
+              alignItems:"center", gap:10,
+              fontFamily:Sans,
+              boxShadow:ShadowSm,
+              transition:"all 200ms ease-out",
+            })
+          }}
+        >
           <div style={{
-            color:"rgba(255,255,255,.7)", fontSize:13,
-            marginBottom:24, textAlign:"center", maxWidth:520,
+            width:48, height:48, borderRadius:14,
+            background:accentGrad, color:"#fff",
+            display:"flex", alignItems:"center", justifyContent:"center",
           }}>
-            Choisis ce qui correspond a ta situation :
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
           </div>
           <div style={{
-            display:"flex", flexDirection:"row", gap:14,
-            flexWrap:"wrap", justifyContent:"center",
-            width:"100%", maxWidth:920,
-          }}>
-            {/* Carte 1 : J'ai deja un CV */}
-            <button onClick={()=>setMode("import")} style={{
-              ...B({
-                flex:"1 1 240px", maxWidth:280, minHeight:200,
-                padding:"22px 18px", borderRadius:15,
-                background:"rgba(201,169,110,.15)",
-                border:"2px solid "+Gold, color:"#fff",
-                display:"flex", flexDirection:"column",
-                alignItems:"center", justifyContent:"center", gap:10,
-                textAlign:"center",
-              })
-            }}>
-              <div style={{fontSize:36}}>+</div>
-              <div style={{fontWeight:800, fontSize:16, color:Gold}}>
-                J'ai deja un CV
-              </div>
-              <div style={{fontSize:12, opacity:.75, lineHeight:1.5}}>
-                Importe ton CV (PDF, Word, texte) - l'IA le boost et l'optimise
-              </div>
-            </button>
-            
-            {/* Carte 2 : J'ai un CV ET une offre */}
-            <button onClick={()=>{setMode("import-adapt");}} style={{
-              ...B({
-                flex:"1 1 240px", maxWidth:280, minHeight:200,
-                padding:"22px 18px", borderRadius:15,
-                background:"rgba(233,69,96,.12)",
-                border:"2px solid #e94560", color:"#fff",
-                display:"flex", flexDirection:"column",
-                alignItems:"center", justifyContent:"center", gap:10,
-                textAlign:"center",
-              })
-            }}>
-              <div style={{fontSize:36}}>~</div>
-              <div style={{fontWeight:800, fontSize:16, color:"#e94560"}}>
-                J'adapte mon CV a une offre
-              </div>
-              <div style={{fontSize:12, opacity:.75, lineHeight:1.5}}>
-                Importe ton CV + l'offre - l'IA adapte ton CV au job vise
-              </div>
-            </button>
-            
-            {/* Carte 3 : Je cree mon CV */}
-            <button onClick={()=>{setMode("done");setTab("ai");setAiMode("generate");}} style={{
-              ...B({
-                flex:"1 1 240px", maxWidth:280, minHeight:200,
-                padding:"22px 18px", borderRadius:15,
-                background:"rgba(255,255,255,.07)",
-                border:"2px solid rgba(255,255,255,.25)",
-                color:"#fff",
-                display:"flex", flexDirection:"column",
-                alignItems:"center", justifyContent:"center", gap:10,
-                textAlign:"center",
-              })
-            }}>
-              <div style={{fontSize:36}}>*</div>
-              <div style={{fontWeight:800, fontSize:16}}>
-                Je cree un CV
-              </div>
-              <div style={{fontSize:12, opacity:.65, lineHeight:1.5}}>
-                Pas encore de CV ? L'IA en genere un a partir de tes infos
-              </div>
-            </button>
-          </div>
-          
+            fontFamily:Serif, fontWeight:500, fontSize:16,
+            letterSpacing:"-0.01em", color:Ink,
+          }}>{T.ob_pick_file}</div>
+          <div style={{
+            fontSize:11, color:Gray600, fontWeight:400,
+          }}>{T.ob_pick_file_hint}</div>
+        </button>
+
+        {/* Separator */}
+        <div style={{
+          textAlign:"center",
+          color:Gray400,
+          fontSize:11,
+          letterSpacing:"0.08em",
+          textTransform:"uppercase",
+          margin:"18px 0 12px",
+          fontWeight:500,
+        }}>{T.ob_or_paste}</div>
+
+        {/* Paste textarea */}
+        <label style={{
+          fontSize:11, fontWeight:600,
+          letterSpacing:"0.1em", textTransform:"uppercase",
+          color:GoldDeep, marginBottom:8, display:"block",
+        }}>{T.ob_paste_label}</label>
+        <textarea value={raw} onChange={e=>setRaw(e.target.value)}
+          placeholder={T.ob_paste_ph}
+          rows={8}
+          style={{
+            width:"100%",
+            padding:"14px 16px",
+            borderRadius:RadiusMd,
+            border:"0.5px solid "+Gray200,
+            background:Paper,
+            color:Ink, fontSize:13, lineHeight:1.6,
+            resize:"vertical",
+            fontFamily:Sans,
+            outline:"none",
+            boxShadow:ShadowSm,
+            boxSizing:"border-box",
+          }}/>
+
+        {/* API key warning */}
+        {!apiKey && (
+          <div style={{
+            background:CoralSoft,
+            border:"0.5px solid "+Coral,
+            borderRadius:RadiusSm,
+            padding:"10px 14px",
+            fontSize:12, color:Ink,
+            marginTop:12, lineHeight:1.5,
+          }}>{T.ob_no_key}</div>
+        )}
+
+        {/* Submit button */}
+        <button onClick={onImport} disabled={imping||!raw.trim()||!apiKey} style={{
+          ...B({
+            padding:"15px 22px",
+            borderRadius:RadiusPill,
+            background:imping||!raw.trim()||!apiKey
+              ? Gray200
+              : (mode==="import-adapt" ? GradCoral : GradGold),
+            color:imping||!raw.trim()||!apiKey ? Gray600 : "#fff",
+            fontWeight:600, fontSize:14,
+            fontFamily:Sans,
+            marginTop:14,
+            transition:"all 200ms ease-out",
+            display:"inline-flex",
+            alignItems:"center", justifyContent:"center", gap:8,
+          })
+        }}>
+          {imping ? T.ob_parsing : (mode==="import-adapt" ? T.ob_continue_adapt : T.ob_parse)}
+          {!imping && (
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          )}
+        </button>
+
+        {/* Continue without key (only when key missing) */}
+        {!apiKey && (
           <button onClick={()=>setMode("done")} style={{
             ...B({
-              marginTop:24, padding:"9px 22px", borderRadius:9,
+              padding:"10px 22px", borderRadius:RadiusPill,
               background:"transparent",
-              color:"rgba(255,255,255,.35)",
-              fontWeight:500, fontSize:11, textAlign:"center",
+              color:Gray600, fontSize:12,
+              marginTop:8,
             })
-          }}>Ou commencer vierge</button>
-        </>
-      )}
-      {(mode==="import" || mode==="import-adapt") && (
+          }}>{T.ob_continue}</button>
+        )}
+
+        {/* Locale pills */}
         <div style={{
-          width:"100%", maxWidth:520,
-          display:"flex", flexDirection:"column", gap:11,
+          display:"flex", justifyContent:"center", gap:8,
+          padding:"24px 0 8px",
         }}>
-          <button onClick={()=>setMode(null)} style={{
-            ...B({background:"none", color:"rgba(255,255,255,.4)", fontSize:12, textAlign:"left", marginBottom:6})
-          }}>← Retour</button>
-          
-          {/* Barre d'étapes */}
-          <div style={{
-            display:"flex", justifyContent:"center", gap:8,
-            marginBottom:14, fontSize:11,
-          }}>
-            <div style={{color:mode==="import-adapt"?"#e94560":Gold, fontWeight:700}}>1. Importer</div>
-            <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
-            <div style={{color:"rgba(255,255,255,.4)"}}>{mode==="import-adapt"?"2. Coller l'offre":"2. Booster"}</div>
-            <div style={{color:"rgba(255,255,255,.25)"}}>→</div>
-            <div style={{color:"rgba(255,255,255,.4)"}}>{mode==="import-adapt"?"3. Adapter":"3. Telecharger"}</div>
-          </div>
-          
-          <div style={{
-            color:mode==="import-adapt"?"#e94560":Gold, fontSize:18, fontWeight:800,
-            textAlign:"center", marginBottom:4,
-          }}>{mode==="import-adapt"?"Importe d'abord ton CV":"Importe ton CV"}</div>
-          <div style={{
-            color:"rgba(255,255,255,.55)", fontSize:12,
-            textAlign:"center", marginBottom:18, lineHeight:1.6,
-          }}>{mode==="import-adapt"
-            ? <>L'IA va d'abord structurer ton CV, puis tu colleras l'offre.<br/>Format accepte : PDF, Word, ou texte.</>
-            : <>L'IA va lire ton CV et le restructurer automatiquement.<br/>Format accepte : PDF, Word, ou texte.</>
-          }</div>
-          
-          {/* Bouton d'upload de fichier */}
-          <input
-            type="file"
-            id="cv-file-upload"
-            accept=".pdf,.docx,.txt"
-            style={{display:"none"}}
-            onChange={async (e) => {
-              const file = e.target.files?.[0];
-              if (!file) return;
-              try {
-                const ext = file.name.split('.').pop().toLowerCase();
-                if (ext === 'txt') {
-                  const text = await file.text();
-                  setRaw(text);
-                } else if (ext === 'pdf') {
-                  const pdfjsLib = await import('pdfjs-dist/build/pdf');
-                  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                  const arrayBuffer = await file.arrayBuffer();
-                  const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                  let fullText = '';
-                  for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += pageText + '\n\n';
-                  }
-                  setRaw(fullText.trim());
-                } else if (ext === 'docx') {
-                  const mammoth = await import('mammoth/mammoth.browser');
-                  const arrayBuffer = await file.arrayBuffer();
-                  const result = await mammoth.extractRawText({arrayBuffer});
-                  setRaw(result.value);
-                } else {
-                  alert('Format non supporte. Utilise PDF, DOCX ou TXT.');
-                }
-              } catch (err) {
-                alert('Erreur lors de la lecture du fichier: ' + err.message);
-              }
-              e.target.value = '';
-            }}
-          />
-          <button
-            onClick={() => document.getElementById('cv-file-upload').click()}
-            style={{
+          {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
+            <button key={lc} onClick={()=>setLocale(lc)} style={{
               ...B({
-                padding:"22px 18px", borderRadius:13,
-                background:mode==="import-adapt"?"rgba(233,69,96,.15)":"rgba(201,169,110,.18)",
-                border:"2px dashed "+(mode==="import-adapt"?"#e94560":Gold),
-                color:mode==="import-adapt"?"#e94560":Gold, fontWeight:800, fontSize:15,
-                display:"flex", flexDirection:"column", alignItems:"center", gap:6,
+                padding:"6px 14px", borderRadius:RadiusPill,
+                fontSize:12, fontWeight:500,
+                color:locale===lc ? Cream : Gray600,
+                background:locale===lc ? Ink : Paper,
+                border:"0.5px solid "+(locale===lc ? Ink : Gray200),
               })
-            }}
-          >
-            <div style={{fontSize:28, lineHeight:1}}>+</div>
-            <div>Cliquer pour selectionner mon CV</div>
-            <div style={{fontSize:11, opacity:.7, fontWeight:400}}>PDF, Word (.docx) ou texte (.txt)</div>
-          </button>
-          <div style={{
-            textAlign:"center",
-            color:"rgba(255,255,255,.3)",
-            fontSize:11,
-            margin:"6px 0",
-          }}>- ou copier-coller le contenu -</div>
-          
-          <label style={{...LBL, color:"rgba(255,255,255,.5)", fontSize:11}}>Colle ton CV en texte brut</label>
-          <textarea value={raw} onChange={e=>setRaw(e.target.value)}
-            placeholder={"Nom, titre, email...\nExperiences, formation, competences..."}
-            rows={9} style={{
-              ...IN({
-                background:"rgba(255,255,255,.08)",
-                border:"1px solid rgba(201,169,110,.4)",
-                color:"#fff", fontSize:12, lineHeight:1.7, resize:"vertical",
-              })
-            }}/>
-          {!apiKey && (
-            <div style={{
-              background:"rgba(255,193,7,.15)",
-              border:"1px solid rgba(255,193,7,.4)",
-              borderRadius:7, padding:"9px 12px",
-              fontSize:11, color:"#ffc107",
-            }}>{T.ob_no_key}</div>
-          )}
-          <button onClick={onImport} disabled={imping||!raw.trim()||!apiKey} style={{
-            ...B({
-              padding:13, borderRadius:11,
-              background:imping||!raw.trim()||!apiKey
-                ? "rgba(255,255,255,.15)"
-                : (mode==="import-adapt"
-                    ? "linear-gradient(135deg,#e94560,#c73850)"
-                    : "linear-gradient(135deg,"+Gold+",#a07840)"),
-              color:"#fff", fontWeight:800, fontSize:14,
-            })
-          }}>
-            {imping ? T.ob_parsing : (mode==="import-adapt" ? "Continuer vers l'adaptation" : T.ob_parse)}
-          </button>
-          {!apiKey && (
-            <button onClick={()=>setMode("done")} style={{
-              ...B({
-                padding:9, borderRadius:9, background:"transparent",
-                color:"rgba(255,255,255,.35)", fontSize:11,
-              })
-            }}>{T.ob_continue}</button>
-          )}
+            }}>{label}</button>
+          ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -3536,6 +4069,334 @@ function VersionsModal({ versions, currentCv, onSave, onLoad, onDelete, onClose 
 }
 
 
+// ============================================================
+// TargetHub v17 : phase Cibler, hub strategique central
+// - Hero card Ink/Gold "Une offre -> candidature complete" + CTA cream
+// - Score card violet si offre deja analysee (gradient purple sur le chiffre)
+// - Grille 2x2 des 4 super-pouvoirs : Audit / Positioning / Truth / Pack
+// ============================================================
+function TargetHub({ T, cvIsEmpty, offerResult, locale,
+  onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack }) {
+
+  // Couleur du score (vert/jaune/orange/rouge)
+  const scoreColor = (s) => {
+    if (s >= 80) return Green;
+    if (s >= 65) return GoldDeep;
+    if (s >= 50) return Coral;
+    return "#dc2626";
+  };
+
+  // Cas vide : rien a cibler tant qu'on n'a pas de CV.
+  if (cvIsEmpty) {
+    return (
+      <div style={{fontFamily:Sans, padding:"8px 4px"}}>
+        <h1 style={{
+          fontFamily:Serif, fontWeight:400,
+          fontSize:28, lineHeight:1.1,
+          letterSpacing:"-0.02em", color:Ink,
+          margin:"0 0 18px",
+        }}>{T.ph_target}</h1>
+        <div style={{
+          background:Paper, borderRadius:RadiusLg,
+          padding:"24px 22px", border:"0.5px solid "+Gray200,
+          boxShadow:ShadowSm,
+        }}>
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.12em", textTransform:"uppercase",
+            color:GoldDeep, marginBottom:8,
+          }}>{T.hub_eyebrow}</div>
+          <p style={{
+            fontFamily:Serif, fontWeight:400,
+            fontSize:18, lineHeight:1.35,
+            letterSpacing:"-0.01em",
+            color:Ink, margin:0,
+          }}>{T.hub_empty}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Cartes "super-pouvoirs"
+  const powers = [
+    {
+      key:"audit", icon:(
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+      ),
+      iconBg:"rgba(201,169,110,.15)", iconColor:GoldDeep,
+      title:T.hub_audit, desc:T.hub_audit_desc, onClick:onOpenAudit,
+    },
+    {
+      key:"pos", icon:(
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>
+        </svg>
+      ),
+      iconBg:PurpleSoft, iconColor:Purple,
+      title:T.hub_pos, desc:T.hub_pos_desc, onClick:onOpenPos,
+    },
+    {
+      key:"truth", icon:(
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/>
+          <path d="M16 19h6"/><path d="M19 16v6"/>
+          <path d="M8 7h8"/><path d="M8 11h6"/>
+        </svg>
+      ),
+      iconBg:CoralSoft, iconColor:Coral,
+      title:T.hub_truth, desc:T.hub_truth_desc, onClick:onOpenTruth,
+    },
+    {
+      key:"pack", icon:(
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <path d="M14 2v6h6"/>
+          <path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
+        </svg>
+      ),
+      iconBg:GreenSoft, iconColor:Green,
+      title:T.hub_pack, desc:T.hub_pack_desc, onClick:onOpenPack,
+    },
+  ];
+
+  const hasOffer = !!(offerResult && typeof offerResult.match_score === "number");
+
+  return (
+    <div style={{fontFamily:Sans, padding:"8px 4px"}}>
+      {/* Header editorial */}
+      <h1 style={{
+        fontFamily:Serif, fontWeight:400,
+        fontSize:28, lineHeight:1.1,
+        letterSpacing:"-0.02em", color:Ink,
+        margin:"0 0 16px",
+      }}>{T.ph_target}</h1>
+
+      {/* Hero card Ink/Gold avec radial gradient */}
+      <div style={{
+        position:"relative", overflow:"hidden",
+        background:Ink, color:Cream,
+        borderRadius:RadiusLg,
+        padding:"24px 22px", marginBottom:14,
+      }}>
+        <div style={{
+          position:"absolute", inset:0,
+          background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(201,169,110,.4) 0%, transparent 60%)",
+          pointerEvents:"none",
+        }}/>
+        <div style={{
+          fontSize:11, fontWeight:600,
+          letterSpacing:"0.12em", textTransform:"uppercase",
+          color:Gold, marginBottom:10, position:"relative",
+        }}>{T.hub_eyebrow}</div>
+        <h2 style={{
+          fontFamily:Serif, fontWeight:400,
+          fontSize:26, lineHeight:1.15,
+          letterSpacing:"-0.02em",
+          margin:"0 0 14px", position:"relative",
+        }}>
+          {T.hub_title_a}
+          {" "}
+          <em style={{fontStyle:"italic", color:Gold}}>
+            {T.hub_title_em}
+          </em>
+          {", "}
+          {T.hub_title_b}
+        </h2>
+        <button onClick={onOpenOffer} style={{
+          ...B({
+            display:"inline-flex", alignItems:"center", gap:8,
+            background:Cream, color:Ink,
+            padding:"13px 22px", borderRadius:RadiusPill,
+            fontSize:14, fontWeight:600,
+            fontFamily:Sans,
+            position:"relative",
+            transition:"all 200ms ease-out",
+          })
+        }}>
+          {hasOffer ? T.hub_cta_change : T.hub_cta_paste}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      </div>
+
+      {/* Score card si offre analysee */}
+      {hasOffer && (
+        <button onClick={onOpenOffer} style={{
+          ...B({
+            width:"100%", textAlign:"left",
+            background:Paper, borderRadius:RadiusLg,
+            padding:"22px 22px", marginBottom:14,
+            border:"0.5px solid "+Gray200,
+            boxShadow:ShadowSm,
+            fontFamily:Sans, color:Ink,
+            transition:"all 200ms ease-out",
+            display:"block", cursor:"pointer",
+          })
+        }}>
+          <div style={{display:"flex", alignItems:"center", gap:18}}>
+            <div style={{
+              fontFamily:Serif, fontWeight:300,
+              fontSize:56, lineHeight:1,
+              letterSpacing:"-0.04em",
+              background:GradPurple,
+              WebkitBackgroundClip:"text",
+              backgroundClip:"text",
+              color:"transparent",
+              flexShrink:0,
+            }}>{offerResult.match_score}</div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.1em", textTransform:"uppercase",
+                color:Gray400, marginBottom:4,
+              }}>{T.hub_match_label}</div>
+              <div style={{
+                fontFamily:Serif, fontSize:15, fontWeight:500,
+                letterSpacing:"-0.01em",
+                color:Ink, marginBottom:8,
+                overflow:"hidden", textOverflow:"ellipsis",
+                whiteSpace:"nowrap",
+              }}>
+                {offerResult.job_title || ""}
+                {offerResult.company ? " - " + offerResult.company : ""}
+              </div>
+              <div style={{
+                width:"100%", height:6, background:Gray100,
+                borderRadius:RadiusPill, overflow:"hidden",
+              }}>
+                <div style={{
+                  height:"100%",
+                  width:Math.max(2, Math.min(100, offerResult.match_score)) + "%",
+                  background:GradPurple,
+                  borderRadius:RadiusPill,
+                }}/>
+              </div>
+            </div>
+          </div>
+          {/* Tags mots-cles a integrer */}
+          {(offerResult.keywords_to_add || []).length > 0 && (
+            <div style={{
+              display:"flex", flexWrap:"wrap", gap:6,
+              marginTop:14,
+            }}>
+              {(offerResult.keywords_to_add || []).slice(0, 6).map((k,i)=>(
+                <span key={i} style={{
+                  padding:"5px 11px", borderRadius:RadiusPill,
+                  fontSize:11, fontWeight:500,
+                  background:Ink, color:Gold,
+                  border:"0.5px solid "+Ink,
+                }}>+ {k}</span>
+              ))}
+            </div>
+          )}
+        </button>
+      )}
+
+      {/* Eyebrow grille */}
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.12em", textTransform:"uppercase",
+        color:GoldDeep, marginTop:18, marginBottom:10,
+      }}>{T.hub_subhead}</div>
+
+      {/* Grille 2x2 super-pouvoirs */}
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"1fr 1fr",
+        gap:12,
+      }}>
+        {powers.map(p => (
+          <button key={p.key} onClick={p.onClick} style={{
+            ...B({
+              background:Paper, borderRadius:RadiusMd,
+              padding:"18px 16px",
+              border:"0.5px solid "+Gray200,
+              transition:"all 200ms ease-out",
+              minHeight:130,
+              display:"flex", flexDirection:"column",
+              justifyContent:"space-between",
+              textAlign:"left", fontFamily:Sans,
+              boxShadow:ShadowSm,
+            })
+          }}>
+            <div>
+              <div style={{
+                width:36, height:36, borderRadius:11,
+                display:"flex", alignItems:"center", justifyContent:"center",
+                background:p.iconBg, color:p.iconColor,
+                marginBottom:12,
+              }}>{p.icon}</div>
+              <div style={{
+                fontFamily:Serif, fontWeight:500,
+                fontSize:15, letterSpacing:"-0.01em",
+                color:Ink, marginBottom:4,
+              }}>{p.title}</div>
+              <div style={{
+                fontSize:11, color:Gray600, lineHeight:1.4,
+              }}>{p.desc}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
+// Permet d'analyser l'offre OU de re-consulter le resultat persiste.
+// ============================================================
+function OfferSheet({ T, cv, setCVFn, notify, apiKey,
+  initialResult, onResult, onApplied, onPackRequest, onClose }) {
+  return (
+    <Sheet
+      title={
+        <>
+          {T.off_title_a}{" "}
+          <em style={{
+            fontFamily:Serif, fontStyle:"italic", color:Gold,
+          }}>{T.off_title_em}</em>
+          {", "}{T.off_title_b}
+        </>
+      }
+      eyebrow={T.off_eyebrow}
+      onClose={onClose}
+    >
+      <p style={{
+        fontSize:13, color:Gray600, lineHeight:1.5,
+        margin:"0 0 18px", fontFamily:Sans,
+      }}>{T.off_sub}</p>
+      <MatchPanel
+        cv={cv}
+        setCVFn={setCVFn}
+        notify={notify}
+        apiKey={apiKey}
+        T={T}
+        onPackRequest={onPackRequest}
+        initialResult={initialResult}
+        onResult={onResult}
+        onApplied={onApplied}
+      />
+    </Sheet>
+  );
+}
+
+
 export default function App() {
   // === HYDRATION-SAFE STATE INITIALIZATION ===
   // All states that depend on localStorage or window are initialized to
@@ -3588,6 +4449,11 @@ export default function App() {
   const [showVersions, setShowVersions] = useState(false);
   const [versions, setVersions]       = useState([]);
   const [bt, setBt]                   = useState(null);
+  // v17 : phase Cibler
+  const [offerResult, setOfferResult] = useState(null);
+  const [showOffer, setShowOffer]     = useState(false);
+  // v17 : phase Finaliser
+  const [showScore, setShowScore]     = useState(false);
   const cRef = useRef();
 
   // Hydrate from localStorage AFTER first render. This is the only safe
@@ -3626,6 +4492,17 @@ export default function App() {
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
   const setLc = useCallback(v => { setLc_(v);  lsS(SK.LC, v); }, []);
+
+  // === v17 : phase router ===
+  // Expose un setPhase qui pilote le couple (tab, aiMode) pour rester compat
+  // avec tout le code legacy qui aiguille via setTab/setAiMode.
+  // phase : "start" | "target" | "finalize"
+  const phase = phaseFromTab(tab);
+  const setPhase = useCallback(p => {
+    const m = tabFromPhase(p);
+    setTab(m.tab);
+    if (m.aiMode) setAiMode(m.aiMode);
+  }, []);
 
   const T = locale==="en" ? EN_T : FR_T;
   const theme = THEMES[thN] || THEMES.executive;
@@ -4212,8 +5089,9 @@ export default function App() {
       const wasAdaptMode = obMode === "import-adapt";
       setObMode(null);
       if (wasAdaptMode) {
-        setTab("ai");
-        setAiMode("match");
+        // Apres import-adapt : aller en phase Cibler et ouvrir le sheet d'offre
+        setTab("target");
+        setShowOffer(true);
       } else {
         // Apres import simple : aller sur Ajuster (le CV existe deja)
         setTab("ai");
@@ -4222,7 +5100,7 @@ export default function App() {
       notify(T.okimp);
     } catch { notify(T.ep); }
     setObImp(false);
-  }, [obRaw, apiKey, T, setCVFn, notify, obMode, setTab, setAiMode]);
+  }, [obRaw, apiKey, T, setCVFn, notify, obMode, setTab, setAiMode, setShowOffer]);
 
   const loadTpl = useCallback(tpl => {
     try {
@@ -4276,25 +5154,27 @@ export default function App() {
   const AITabContent = (
     <div>
       <div style={{
-        display:"flex", gap:4, marginBottom:14,
-        background:"#f0ede5", padding:4, borderRadius:9,
+        display:"flex", gap:6, marginBottom:18,
+        padding:4,
       }}>
-        {[["generate",T.tab_gen,"*"],["adjust",T.tab_adj,"~"],["match",T.tab_match,">>"]].map(
-          ([m,label,icon]) => (
-            <button key={m} onClick={()=>setAiMode(m)} style={{
-              ...B({
-                flex:1, padding:"7px 5px", borderRadius:7,
-                background:aiMode===m?"#fff":"transparent",
-                color:aiMode===m?Dark:"#888",
-                fontWeight:aiMode===m?700:500, fontSize:11,
-                textAlign:"center", lineHeight:1.3,
-              })
-            }}>
-              <span style={{display:"block", fontSize:13}}>{icon}</span>
-              {label}
-            </button>
-          )
-        )}
+        {[["generate", T.tab_gen],
+          ["adjust",   T.tab_adj]].map(([m, label]) => {
+            const a = aiMode === m;
+            return (
+              <button key={m} onClick={()=>setAiMode(m)} style={{
+                ...B({
+                  flex:1, padding:"10px 14px", borderRadius:RadiusPill,
+                  background:a ? Ink : Paper,
+                  color:a ? Cream : Ink,
+                  border:"0.5px solid "+(a ? Ink : Gray200),
+                  fontWeight:a ? 600 : 500, fontSize:13,
+                  fontFamily:Sans,
+                  textAlign:"center",
+                  transition:"all 180ms ease-out",
+                })
+              }}>{label}</button>
+            );
+          })}
       </div>
       {aiMode==="generate" && (
         <AIPanel onGen={handleGen} loading={load} apiKey={apiKey} T={T}
@@ -4307,236 +5187,387 @@ export default function App() {
       )}
       {aiMode==="match" && (
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
-          onPackRequest={requestPack}/>
+          onPackRequest={requestPack}
+          initialResult={offerResult}
+          onResult={setOfferResult}
+          onApplied={()=>setOfferResult(null)}/>
       )}
     </div>
   );
 
-  const DesignContent = (
-    <div>
-      <div style={SH()}>{T.dth}</div>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:4}}>
-        {Object.entries(THEMES).map(([k,th]) => (
-          <button key={k} onClick={()=>setTh(k)} style={{
-            ...B({
-              display:"flex", alignItems:"center", gap:8,
-              padding:"10px 11px", borderRadius:9,
-              border:thN===k?"2px solid "+th.ac:"1px solid #e8e4dc",
-              background:thN===k?"#fff9f0":"#fff", textAlign:"left",
-            })
-          }}>
-            <div style={{
-              width:20, height:20, borderRadius:4,
-              background:th.sb, border:"2px solid "+th.ac, flexShrink:0,
-            }}/>
-            <span style={{fontSize:12, fontWeight:thN===k?700:500, color:"#333"}}>
-              {th.name}
-            </span>
-          </button>
-        ))}
+  // v17 : phase Cibler (le hub) + sheet d'offre quand on l'ouvre.
+  const TargetHubContent = (
+    <TargetHub
+      T={T} cvIsEmpty={cvIsEmpty}
+      offerResult={offerResult} locale={locale}
+      onOpenOffer={()=>setShowOffer(true)}
+      onOpenAudit={()=>setShowAudit(true)}
+      onOpenPos={runPositioning}
+      onOpenTruth={runTruthCheck}
+      onOpenPack={()=>{
+        // Si on a deja une analyse offre, on lance le pack avec ce contexte.
+        // Sinon on demande d'abord de coller une offre.
+        if (offerResult) {
+          requestPack("", offerResult);
+        } else {
+          setShowOffer(true);
+        }
+      }}
+    />
+  );
+
+  // ============================================================
+  // FinalizeContent v17 : remplace EditContent + DesignContent + ToolsContent.
+  // Sections editoriales avec eyebrow gold-deep, titres Fraunces, cards Paper.
+  // ============================================================
+  const finEyebrow = {
+    fontSize:11, fontWeight:600,
+    letterSpacing:"0.12em", textTransform:"uppercase",
+    color:GoldDeep, marginTop:24, marginBottom:10,
+    display:"block",
+  };
+  const finRow = {
+    width:"100%", padding:"14px 16px",
+    borderRadius:RadiusMd,
+    background:Paper, color:Ink,
+    border:"0.5px solid "+Gray200,
+    boxShadow:ShadowSm,
+    display:"flex", alignItems:"center", gap:12,
+    textAlign:"left", fontFamily:Sans, fontSize:14,
+    fontWeight:500, marginBottom:8,
+    transition:"all 200ms ease-out",
+  };
+  const finRowChevron = (
+    <span style={{
+      color:Gray400, marginLeft:"auto", flexShrink:0,
+      display:"inline-flex",
+    }}>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round">
+        <path d="m9 18 6-6-6-6"/>
+      </svg>
+    </span>
+  );
+  const finIconWrap = (bg, color) => ({
+    width:32, height:32, borderRadius:10,
+    background:bg, color:color,
+    display:"flex", alignItems:"center", justifyContent:"center",
+    flexShrink:0,
+  });
+  const finPill = (active) => ({
+    padding:"10px 14px", borderRadius:RadiusPill,
+    fontSize:12, fontWeight:active ? 600 : 500,
+    color:active ? Cream : Ink,
+    background:active ? Ink : Paper,
+    border:"0.5px solid "+(active ? Ink : Gray200),
+    fontFamily:Sans,
+    transition:"all 180ms ease-out",
+  });
+
+  const FinalizeContent = (
+    <div style={{fontFamily:Sans, padding:"8px 4px"}}>
+      <h1 style={{
+        fontFamily:Serif, fontWeight:400,
+        fontSize:28, lineHeight:1.1,
+        letterSpacing:"-0.02em", color:Ink,
+        margin:"0 0 4px",
+      }}>{T.ph_finalize}</h1>
+
+      {/* === Editer le CV === */}
+      <div style={finEyebrow}>{T.fin_section_edit}</div>
+      {editSects.map(([label, m]) => (
+        <button key={m} onClick={()=>setModal(m)} style={{...B(finRow)}}>
+          <span style={finIconWrap("rgba(201,169,110,.15)", GoldDeep)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </span>
+          <span style={{flex:1}}>{label}</span>
+          {finRowChevron}
+        </button>
+      ))}
+      <div style={{
+        padding:"10px 14px", background:CreamSoft,
+        borderRadius:RadiusSm, fontSize:11, color:Gray600,
+        lineHeight:1.6, marginTop:6,
+        border:"0.5px solid "+Gray200,
+      }}>{T.edit_tip}</div>
+
+      {/* === Stratégie === */}
+      <div style={finEyebrow}>{T.fin_section_strategy}</div>
+      <button onClick={()=>setShowScore(true)} style={{...B(finRow)}}>
+        <span style={finIconWrap(PurpleSoft, Purple)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.fin_score_btn}</span>
+        {finRowChevron}
+      </button>
+      <button onClick={runPositioning} style={{...B(finRow)}}>
+        <span style={finIconWrap(PurpleSoft, Purple)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.fin_pos_btn}</span>
+        {finRowChevron}
+      </button>
+      <button onClick={runTruthCheck} style={{...B(finRow)}}>
+        <span style={finIconWrap(CoralSoft, Coral)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/>
+            <path d="M16 19h6"/><path d="M19 16v6"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.fin_truth_btn}</span>
+        {finRowChevron}
+      </button>
+      <button onClick={()=>setShowVersions(true)} style={{...B(finRow)}}>
+        <span style={finIconWrap("rgba(201,169,110,.15)", GoldDeep)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 8v13H3V8"/>
+            <path d="M1 3h22v5H1z"/>
+            <path d="M10 12h4"/>
+          </svg>
+        </span>
+        <span style={{flex:1}}>{T.fin_versions_btn} ({versions.length})</span>
+        {finRowChevron}
+      </button>
+
+      {/* === Apparence === */}
+      <div style={finEyebrow}>{T.fin_section_design}</div>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.06em", color:Gray600,
+        marginBottom:8, marginTop:4,
+      }}>{T.dth}</div>
+      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:14}}>
+        {Object.entries(THEMES).map(([k, th]) => {
+          const active = thN === k;
+          return (
+            <button key={k} onClick={()=>setTh(k)} style={{
+              ...B({
+                display:"flex", alignItems:"center", gap:10,
+                padding:"12px 12px", borderRadius:RadiusMd,
+                border:active ? "1.5px solid "+Ink : "0.5px solid "+Gray200,
+                background:active ? CreamSoft : Paper,
+                textAlign:"left",
+                boxShadow:active ? "none" : ShadowSm,
+                transition:"all 180ms ease-out",
+              })
+            }}>
+              <div style={{
+                width:22, height:22, borderRadius:6,
+                background:th.sb, border:"1.5px solid "+th.ac, flexShrink:0,
+              }}/>
+              <span style={{
+                fontSize:12, fontWeight:active ? 600 : 500,
+                color:Ink, fontFamily:Sans,
+              }}>{th.name}</span>
+            </button>
+          );
+        })}
       </div>
-      <div style={SH()}>{T.dly}</div>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.06em", color:Gray600,
+        marginBottom:8,
+      }}>{T.dly}</div>
       <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6, marginBottom:8}}>
         {LAYOUTS.map(k => (
-          <button key={k} onClick={()=>setLy(k)} style={{
-            ...B({
-              padding:"9px 6px", borderRadius:9, textAlign:"center",
-              border:layout===k?"2px solid "+Gold:"1px solid #e8e4dc",
-              background:layout===k?"#fff9f0":"#fff",
-            })
-          }}>
-            <span style={{
-              fontSize:11, fontWeight:layout===k?700:600,
-              color:layout===k?Dark:"#333",
-            }}>{k.charAt(0).toUpperCase()+k.slice(1)}</span>
+          <button key={k} onClick={()=>setLy(k)} style={{...B(finPill(layout===k))}}>
+            {k.charAt(0).toUpperCase() + k.slice(1)}
           </button>
         ))}
       </div>
       {layout==="ats" && (
         <div style={{
-          marginTop:8, padding:9, background:"#f0fff4",
-          borderRadius:7, fontSize:11, color:"#166534",
+          marginTop:6, padding:"10px 14px", background:GreenSoft,
+          borderRadius:RadiusSm, fontSize:11, color:"#166534",
+          border:"0.5px solid rgba(22,163,74,.25)",
         }}>{T.dats}</div>
       )}
-      <div style={SH({marginTop:16})}>{T.dlg}</div>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:16}}>
-        {[["fr","FR Francais"],["en","EN English"]].map(([lc,label]) => (
-          <button key={lc} onClick={()=>setLc(lc)} style={{
-            ...B({
-              padding:"10px", borderRadius:9,
-              border:locale===lc?"2px solid "+Gold:"1px solid #e8e4dc",
-              background:locale===lc?"#fff9f0":"#fff",
-              fontSize:12, fontWeight:locale===lc?700:500, color:"#333",
-            })
-          }}>{label}{locale===lc?" v":""}</button>
-        ))}
-      </div>
-      <div style={SH()}>Templates</div>
+
+      {/* Templates */}
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.06em", color:Gray600,
+        marginBottom:8, marginTop:14,
+      }}>{T.fin_template_section}</div>
       {TEMPLATES.map(tpl => (
         <div key={tpl.id} style={{
-          borderRadius:9, border:"1px solid #e8e4dc",
-          background:"#fff", overflow:"hidden", marginBottom:7,
+          borderRadius:RadiusMd, border:"0.5px solid "+Gray200,
+          background:Paper, overflow:"hidden", marginBottom:8,
+          boxShadow:ShadowSm,
         }}>
-          <div style={{padding:"9px 11px", display:"flex", alignItems:"center", gap:9}}>
-            <span style={{fontSize:20}}>{tpl.emoji}</span>
-            <div>
-              <div style={{fontSize:12, fontWeight:700, color:Dark}}>{tpl.label}</div>
-              <div style={{fontSize:10, color:"#aaa"}}>{tpl.cv.title.slice(0,35)}</div>
+          <div style={{padding:"12px 14px"}}>
+            <div style={{
+              fontFamily:Serif, fontSize:14, fontWeight:500,
+              letterSpacing:"-0.01em", color:Ink, marginBottom:2,
+            }}>{tpl.label}</div>
+            <div style={{fontSize:11, color:Gray600}}>
+              {(tpl.cv.title || "").slice(0, 50)}
             </div>
           </div>
           <button onClick={()=>loadTpl(tpl)} style={{
             ...B({
-              width:"100%", padding:"7px 11px",
-              background:"#f8f6f1", color:Gold,
-              fontWeight:600, fontSize:11,
-              borderTop:"1px solid #eee", textAlign:"center",
+              width:"100%", padding:"9px 14px",
+              background:CreamSoft, color:Ink,
+              fontWeight:500, fontSize:12,
+              borderTop:"0.5px solid "+Gray200,
+              fontFamily:Sans, textAlign:"center",
             })
-          }}>Charger ce CV</button>
+          }}>{T.fin_template_load}</button>
         </div>
       ))}
-    </div>
-  );
 
-  const ToolsContent = (
-    <div>
-      <div style={SH()}>{T.t_api}</div>
-      <input type="password" value={apiKey}
-        onChange={e=>setAK(e.target.value)}
-        placeholder={T.t_aph}
-        style={{...IN({fontFamily:"monospace", fontSize:12, marginBottom:3})}}/>
-      <div style={{fontSize:10, color:"#aaa", marginBottom:14}}>{T.t_ahi}</div>
-      <div style={SH()}>{T.t_exp}</div>
-      <button onClick={exportPDF} style={{
-        ...B({
-          width:"100%", padding:"11px", borderRadius:11,
-          background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-          color:"#fff", fontWeight:700, fontSize:13, marginBottom:8,
-        })
-      }}>{T.t_pdf}</button>
-      {layout!=="ats" && (
-        <div style={{
-          fontSize:11, color:"#888", marginBottom:12,
-          padding:"8px 10px", background:"#f8f6f1",
-          borderRadius:7, lineHeight:1.6,
-        }}>{T.t_ath}</div>
-      )}
-      <div style={SH()}>{T.t_hist}</div>
-      <button onClick={undo} disabled={!hist.length} style={{
-        ...B({
-          width:"100%", padding:"10px", borderRadius:9,
-          border:"1px solid #e0e0e0",
-          background:!hist.length?"#f5f5f5":"#fff9f0",
-          color:!hist.length?"#ccc":Gold,
-          fontWeight:700, fontSize:13, marginBottom:7,
-        })
-      }}>{T.t_undo} ({hist.length})</button>
-      <button onClick={doReset} style={{
-        ...B({
-          width:"100%", padding:"10px", borderRadius:9,
-          border:"1px solid #eee", background:"#fee2e2",
-          color:"#dc2626", fontSize:13, marginBottom:14,
-        })
-      }}>{T.t_rst}</button>
-      <div style={SH()}>{T.tr_section}</div>
+      {/* === Traduction === */}
+      <div style={finEyebrow}>{T.fin_section_translate}</div>
       <button onClick={()=>setShowTranslate(true)} style={{
         ...B({
-          width:"100%", padding:"11px", borderRadius:11,
-          background:"linear-gradient(135deg,"+Gold+",#a07840)",
-          color:"#fff", fontWeight:700, fontSize:13, marginBottom:8,
-          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+          width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+          background:GradGold, color:"#fff",
+          fontFamily:Sans, fontWeight:600, fontSize:14,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          marginBottom:8,
+          transition:"all 200ms ease-out",
         })
       }}>
-        <span style={{fontSize:15}}>~</span>
-        <span>{T.tr_btn}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/>
+          <path d="M2 5h12"/><path d="M7 2h1"/>
+          <path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>
+        </svg>
+        {T.tr_btn}
       </button>
       {hasBackup && (
         <button onClick={restoreBackup} style={{
           ...B({
-            width:"100%", padding:"10px", borderRadius:9,
-            border:"1px solid #e0e0e0", background:"#fff9f0",
-            color:Dark, fontSize:12, fontWeight:600, marginBottom:14,
+            width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
+            background:Paper, color:Ink,
+            border:"0.5px solid "+Gray200,
+            fontSize:13, fontWeight:500, fontFamily:Sans,
+            boxShadow:ShadowSm,
+            transition:"all 200ms ease-out",
           })
         }}>{T.tr_restore}</button>
       )}
-      {!hasBackup && <div style={{marginBottom:14}}/>}
-      <div style={SH()}>{locale==="en" ? "Strategy" : "Strategie"}</div>
-      <button onClick={runPositioning} style={{
-        ...B({
-          width:"100%", padding:"11px", borderRadius:11,
-          background:"linear-gradient(135deg,#7c3aed,"+Gold+")",
-          color:"#fff", fontWeight:700, fontSize:13, marginBottom:7,
-          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-        })
-      }}>
-        <span style={{fontSize:15}}>*</span>
-        <span>{locale==="en" ? "Career positioning" : "Positionnement carriere"}</span>
-      </button>
-      <button onClick={runTruthCheck} style={{
-        ...B({
-          width:"100%", padding:"11px", borderRadius:11,
-          background:"#1a1a2e", color:"#fff",
-          fontWeight:700, fontSize:13, marginBottom:7,
-          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-        })
-      }}>
-        <span style={{fontSize:15}}>!</span>
-        <span>{locale==="en" ? "Truth check" : "Truth check"}</span>
-      </button>
-      <button onClick={()=>setShowVersions(true)} style={{
-        ...B({
-          width:"100%", padding:"11px", borderRadius:11,
-          border:"1px solid "+Gold+"55", background:"#fdfaf3",
-          color:Dark, fontWeight:700, fontSize:13, marginBottom:14,
-          display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-        })
-      }}>
-        <span style={{fontSize:15}}>=</span>
-        <span>
-          {locale==="en" ? "Versions" : "Versions"} ({versions.length})
-        </span>
-      </button>
-      <div style={SH()}>{T.t_qck}</div>
-      {quick.map(([l,fn,bg]) => (
-        <button key={l} onClick={fn} style={{
-          ...B({
-            width:"100%", marginBottom:7, padding:"10px 13px",
-            borderRadius:9, border:"1px solid #eee",
-            background:bg, textAlign:"left", fontSize:13, color:"#333",
-          })
-        }}>{l}</button>
-      ))}
-    </div>
-  );
 
-  const EditContent = (
-    <div>
-      <div style={SH()}>{T.edit_t}</div>
-      {editSects.map(([label,m,bg]) => (
-        <button key={m} onClick={()=>setModal(m)} style={{
-          ...B({
-            display:"flex", alignItems:"center",
-            justifyContent:"space-between",
-            width:"100%", marginBottom:8,
-            padding:"13px 14px", borderRadius:11,
-            border:"1px solid #e0ddd7", background:bg,
-            textAlign:"left", fontSize:13, color:Dark, fontWeight:600,
-          })
-        }}>
-          {label}
-          <span style={{color:Gold, fontSize:18, lineHeight:1}}>{">"}</span>
-        </button>
-      ))}
+      {/* === Export & historique === */}
+      <div style={finEyebrow}>{T.fin_section_export}</div>
+      <button onClick={exportPDF} style={{
+        ...B({
+          width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
+          background:GradDark, color:Cream,
+          fontFamily:Sans, fontWeight:600, fontSize:14,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          marginBottom:8,
+          transition:"all 200ms ease-out",
+        })
+      }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2"
+          strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        {T.t_pdf}
+      </button>
+      {layout!=="ats" && (
+        <div style={{
+          fontSize:11, color:Gray600, marginBottom:10,
+          padding:"10px 14px", background:CreamSoft,
+          borderRadius:RadiusSm, lineHeight:1.6,
+          border:"0.5px solid "+Gray200,
+        }}>{T.t_ath}</div>
+      )}
+      <button onClick={undo} disabled={!hist.length} style={{
+        ...B({
+          width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
+          background:Paper, color:!hist.length ? Gray400 : Ink,
+          border:"0.5px solid "+Gray200,
+          fontSize:13, fontWeight:500, fontFamily:Sans,
+          boxShadow:!hist.length ? "none" : ShadowSm,
+          marginBottom:8,
+          transition:"all 200ms ease-out",
+        })
+      }}>{T.fin_undo_btn} ({hist.length})</button>
+      <button onClick={doReset} style={{
+        ...B({
+          width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
+          background:CoralSoft, color:Coral,
+          border:"0.5px solid "+Coral,
+          fontSize:13, fontWeight:500, fontFamily:Sans,
+          transition:"all 200ms ease-out",
+        })
+      }}>{T.t_rst}</button>
+
+      {/* === Réglages === */}
+      <div style={finEyebrow}>{T.fin_section_settings}</div>
       <div style={{
-        padding:10, background:"#f8f6f1", borderRadius:9,
-        fontSize:11, color:"#888", lineHeight:1.7, marginTop:3,
-      }}>{T.edit_tip}</div>
-      <div style={SH({marginTop:14})}>{T.t_qck}</div>
-      {quick.map(([l,fn,bg]) => (
-        <button key={l} onClick={fn} style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.06em", color:Gray600,
+        marginBottom:8,
+      }}>{T.fin_iface_lang}</div>
+      <div style={{display:"flex", gap:8, marginBottom:14}}>
+        {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
+          <button key={lc} onClick={()=>setLc(lc)} style={{...B(finPill(locale===lc))}}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.06em", color:Gray600,
+        marginBottom:8,
+      }}>{T.t_api}</div>
+      <input type="password" value={apiKey}
+        onChange={e=>setAK(e.target.value)}
+        placeholder={T.t_aph}
+        style={{
+          width:"100%", padding:"12px 14px",
+          borderRadius:RadiusSm,
+          border:"0.5px solid "+Gray200,
+          background:Paper,
+          fontFamily:"ui-monospace, monospace", fontSize:12,
+          color:Ink, outline:"none", boxSizing:"border-box",
+          marginBottom:6,
+        }}/>
+      <div style={{
+        fontSize:11, color:Gray400, lineHeight:1.5,
+        marginBottom:14,
+      }}>{T.t_ahi}</div>
+
+      {/* Quick actions */}
+      <div style={finEyebrow}>{T.t_qck}</div>
+      {quick.map(([l, fn], i) => (
+        <button key={i} onClick={fn} style={{
           ...B({
-            width:"100%", marginBottom:6, padding:"9px 13px",
-            borderRadius:8, border:"1px solid #eee",
-            background:bg, textAlign:"left", fontSize:12, color:"#333",
+            width:"100%", padding:"12px 14px", borderRadius:RadiusMd,
+            background:Paper, color:Ink,
+            border:"0.5px solid "+Gray200,
+            fontSize:13, fontWeight:500, fontFamily:Sans,
+            textAlign:"left", marginBottom:7,
+            boxShadow:ShadowSm,
+            transition:"all 200ms ease-out",
           })
         }}>{l}</button>
       ))}
@@ -4550,6 +5581,27 @@ export default function App() {
         onTransformBullet={runBulletTransform} T={T}/>}
       {modal==="edu" && <SheetEd cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {modal==="sk"  && <SheetSk cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
+      {showOffer && (
+        <OfferSheet
+          T={T} cv={cv} setCVFn={setCVFn}
+          notify={notify} apiKey={apiKey}
+          initialResult={offerResult}
+          onResult={setOfferResult}
+          onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
+          onPackRequest={requestPack}
+          onClose={()=>setShowOffer(false)}
+        />
+      )}
+      {showScore && (
+        <Sheet
+          eyebrow={T.fin_score_eyebrow}
+          title={T.fin_score_btn}
+          onClose={()=>setShowScore(false)}
+        >
+          <ScorePanel cv={cv} apiKey={apiKey} notify={notify}
+            layout={layout} T={T}/>
+        </Sheet>
+      )}
       {showAudit && (
         <AuditModal 
           cv={cv}
@@ -4658,9 +5710,9 @@ export default function App() {
     return (
       <div suppressHydrationWarning style={{
         minHeight:"100vh",
-        background:"#f8f6f1",
+        background:CreamSoft,
         display:"flex", alignItems:"center", justifyContent:"center",
-        fontFamily:"'Lato',sans-serif",
+        fontFamily:Sans,
       }}>
         <div style={{
           width:48, height:48,
@@ -4668,7 +5720,7 @@ export default function App() {
           borderRadius:"50%",
           animation:"cvfSpin 1s linear infinite",
         }}/>
-        <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
+        <style>{KEYFRAMES_V17}</style>
       </div>
     );
   }
@@ -4676,72 +5728,73 @@ export default function App() {
     if (!mob) {
     const tS = a => ({
       ...B({
-        flex:1, padding:"10px 0", fontSize:11,
-        fontWeight:a?700:400, color:a?Dark:"#aaa",
-        borderBottom:a?"2.5px solid "+Gold:"2.5px solid transparent",
-        textAlign:"center",
+        flex:1, padding:"14px 0", fontSize:13,
+        fontWeight:a?600:500, color:a?Ink:Gray400,
+        borderBottom:a?"2px solid "+Ink:"2px solid transparent",
+        textAlign:"center", fontFamily:Sans,
+        background:"transparent",
+        transition:"all 200ms ease-out",
       })
     });
     return (
       <>
         <link href={FONT} rel="stylesheet"/>
-        <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
+        <style>{KEYFRAMES_V17}</style>
         {notif && <Notif msg={notif}/>}
         {Modals}
         {Onboard}
-        {!cvIsEmpty && (
-          <button onClick={()=>setShowAudit(true)} style={{
-            position:"fixed", bottom:24, right:24, zIndex:400,
-            padding:"14px 22px", borderRadius:50,
-            background:"linear-gradient(135deg,"+Gold+",#a07840)",
-            color:"#fff", fontWeight:800, fontSize:13,
-            border:"none", cursor:"pointer",
-            boxShadow:"0 8px 24px rgba(201,169,110,.4)",
-            display:"flex", alignItems:"center", gap:8,
-            fontFamily:"'Lato',sans-serif",
-          }}>
-            <span style={{fontSize:18}}>*</span>
-            <span>{T.audit_btn}</span>
-          </button>
-        )}
         <div style={{
           display:"flex", height:"100vh",
-          fontFamily:"'Lato',sans-serif",
-          background:"#edeae4", overflow:"hidden",
+          fontFamily:Sans,
+          background:CreamSoft, overflow:"hidden",
         }}>
           <div style={{
-            width:270, background:"#fff",
-            borderRight:"1px solid #e8e4dc",
+            width:300, background:Paper,
+            borderRight:"0.5px solid "+Gray200,
             display:"flex", flexDirection:"column",
             overflow:"hidden", flexShrink:0,
           }}>
-            <div style={{padding:"13px 18px", background:Dark}}>
+            <div style={{padding:"18px 20px", background:Paper,
+              borderBottom:"0.5px solid "+Gray200,
+              display:"flex", alignItems:"center", gap:10}}>
               <div style={{
-                color:Gold, fontWeight:800, fontSize:13,
-                letterSpacing:2, textTransform:"uppercase",
-              }}>{T.appName}</div>
-              <div style={{color:"#ffffff44", fontSize:9, marginTop:1}}>
-                {T.appSub}
+                width:30, height:30, background:GradDark,
+                borderRadius:9, display:"flex",
+                alignItems:"center", justifyContent:"center",
+                color:Gold, fontFamily:Serif, fontWeight:600, fontSize:14,
+                letterSpacing:"-0.02em",
+              }}>CV</div>
+              <div>
+                <div style={{
+                  fontFamily:Serif, fontWeight:500, fontSize:17,
+                  letterSpacing:"-0.01em", color:Ink, lineHeight:1,
+                }}>Factory</div>
+                <div style={{
+                  color:Gray400, fontSize:10, marginTop:3,
+                  fontFamily:Sans,
+                }}>{T.appSub}</div>
               </div>
             </div>
-            <div style={{display:"flex", borderBottom:"1px solid #eee"}}>
-              {[["ai","*"],["design","*"],["edit","~"],["score","*"],["tools","*"]].map(
-                ([k,ic]) => (
-                  <button key={k} style={tS(tab===k)} onClick={()=>setTab(k)}>
-                    {ic}
+            <div style={{
+              display:"flex",
+              borderBottom:"0.5px solid "+Gray200,
+              padding:"0 8px",
+            }}>
+              {[["start", T.ph_start],
+                ["target", T.ph_target],
+                ["finalize", T.ph_finalize]].map(([k, label]) => (
+                  <button key={k}
+                    style={tS(phase===k)}
+                    onClick={()=>setPhase(k)}>
+                    {label}
                   </button>
-                )
-              )}
+                ))}
             </div>
-            <div style={{flex:1, overflowY:"auto", padding:"14px"}}>
+            <div style={{flex:1, overflowY:"auto", padding:"18px 18px 24px"}}>
               {tab==="ai"     && AITabContent}
-              {tab==="design" && DesignContent}
-              {tab==="edit"   && EditContent}
-              {tab==="score"  && (
-                <ScorePanel cv={cv} apiKey={apiKey} notify={notify}
-                  layout={layout} T={T}/>
-              )}
-              {tab==="tools"  && ToolsContent}
+              {tab==="target" && TargetHubContent}
+              {(tab==="edit" || tab==="design"
+                || tab==="score" || tab==="tools") && FinalizeContent}
             </div>
           </div>
           <div style={{
@@ -4764,25 +5817,10 @@ export default function App() {
     return (
     <>
       <link href={FONT} rel="stylesheet"/>
-      <style>{`@keyframes cvfSpin{to{transform:rotate(360deg)}}`}</style>
+      <style>{KEYFRAMES_V17}</style>
       {notif && <Notif msg={notif}/>}
       {Modals}
       {Onboard}
-      {!cvIsEmpty && (
-        <button onClick={()=>setShowAudit(true)} style={{
-          position:"fixed", bottom:78, right:14, zIndex:400,
-          padding:"12px 18px", borderRadius:50,
-          background:"linear-gradient(135deg,"+Gold+",#a07840)",
-          color:"#fff", fontWeight:800, fontSize:12,
-          border:"none", cursor:"pointer",
-          boxShadow:"0 8px 24px rgba(201,169,110,.4)",
-          display:"flex", alignItems:"center", gap:6,
-          fontFamily:"'Lato',sans-serif",
-        }}>
-          <span style={{fontSize:16}}>*</span>
-          <span>{T.audit_btn}</span>
-        </button>
-      )}
       {zoomed && (
         <div style={{
           position:"fixed", inset:0, zIndex:1500,
@@ -4793,43 +5831,52 @@ export default function App() {
       )}
       <div style={{
         display:"flex", flexDirection:"column", height:"100vh",
-        overflow:"hidden", background:"#edeae4",
-        fontFamily:"'Lato',sans-serif",
+        overflow:"hidden", background:CreamSoft,
+        fontFamily:Sans,
       }}>
         <div style={{
           display:"flex", alignItems:"center",
           justifyContent:"space-between",
-          padding:"10px 14px", background:Dark, flexShrink:0,
+          padding:"12px 16px", background:Paper,
+          borderBottom:"0.5px solid "+Gray200,
+          flexShrink:0,
         }}>
-          <div>
+          <div style={{display:"flex", alignItems:"center", gap:10}}>
             <div style={{
-              color:Gold, fontWeight:800, fontSize:13,
-              letterSpacing:2, textTransform:"uppercase",
-            }}>{T.appName}</div>
-            <div style={{color:"#ffffff44", fontSize:9}}>{T.appSub}</div>
+              width:28, height:28, background:GradDark,
+              borderRadius:8, display:"flex",
+              alignItems:"center", justifyContent:"center",
+              color:Gold, fontFamily:Serif, fontWeight:600, fontSize:13,
+              letterSpacing:"-0.02em",
+            }}>CV</div>
+            <div style={{
+              fontFamily:Serif, fontWeight:500, fontSize:16,
+              letterSpacing:"-0.01em", color:Ink, lineHeight:1,
+            }}>Factory</div>
           </div>
-          <div style={{display:"flex", gap:7}}>
+          <div style={{display:"flex", gap:6}}>
             <button onClick={()=>setZoomed(true)} style={{
               ...B({
-                background:"rgba(201,169,110,.15)",
-                border:"1px solid rgba(201,169,110,.3)",
-                color:Gold, borderRadius:6, padding:"5px 9px",
-                fontSize:11, fontWeight:600,
+                background:Paper, color:Ink,
+                border:"0.5px solid "+Gray200,
+                borderRadius:RadiusPill, padding:"6px 12px",
+                fontSize:11, fontWeight:500, fontFamily:Sans,
               })
             }}>{T.zoom}</button>
             <button onClick={()=>setShowCV(p=>!p)} style={{
               ...B({
-                background:"rgba(201,169,110,.2)",
-                border:"1px solid rgba(201,169,110,.4)",
-                color:Gold, borderRadius:6, padding:"5px 9px",
-                fontSize:11, fontWeight:700,
+                background:showCV ? Paper : Ink,
+                color:showCV ? Ink : Cream,
+                border:"0.5px solid "+(showCV ? Gray200 : Ink),
+                borderRadius:RadiusPill, padding:"6px 12px",
+                fontSize:11, fontWeight:500, fontFamily:Sans,
               })
             }}>{showCV ? T.hide : T.show}</button>
           </div>
         </div>
         {showCV && (
           <div ref={cRef} style={{
-            background:"#ccc9c0", padding:"7px", flexShrink:0,
+            background:Gray100, padding:"7px", flexShrink:0,
           }}>
             <div style={{
               height:cvH, overflow:"hidden",
@@ -4848,15 +5895,11 @@ export default function App() {
         )}
         <div style={{flex:1, overflowY:"auto", padding:"13px 13px 4px"}}>
           {tab==="ai"     && AITabContent}
-          {tab==="edit"   && EditContent}
-          {tab==="design" && DesignContent}
-          {tab==="score"  && (
-            <ScorePanel cv={cv} apiKey={apiKey} notify={notify}
-              layout={layout} T={T}/>
-          )}
-          {tab==="tools"  && ToolsContent}
+          {tab==="target" && TargetHubContent}
+          {(tab==="edit" || tab==="design"
+            || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
-        <BottomNav active={tab} set={setTab} T={T}/>
+        <BottomNav active={phase} onPhase={setPhase} T={T}/>
       </div>
     </>
   );
