@@ -4385,10 +4385,14 @@ function buildStylePrompt(cv, locale) {
     + "\n\nREGLES STRICTES:"
     + "\n- accentId, sidebarId, paperId, hfId, bfId DOIVENT etre des ids valides du catalogue ci-dessus."
     + "\n- 4 combinaisons distinctes ciblant des CULTURES DIFFERENTES (premium classique, moderne tech, creative, sobre)."
-    + "\n- Coherence couleur: accent doit contraster avec sidebar (lisibilite des titres en accent sur sidebar)."
+    + "\n- CONTRASTE OBLIGATOIRE accent vs sidebar: l'accent doit etre clairement lisible sur le sidebar (le titre en accent doit ressortir)."
+    + "\n  -> Sidebar fonce (ink, midnight, charcoal, forest, darkwine) accepte uniquement accent CLAIR (gold) ou accent moyen-vif (rust)."
+    + "\n  -> Sidebar clair (cream) accepte uniquement accent FONCE (bordeaux, navy, plum, charcoal, forest, teal)."
+    + "\n  -> JAMAIS deux foncees ensemble: bordeaux+ink, navy+midnight, forest+forest, plum+darkwine, teal+forest sont INTERDITS."
+    + "\n  -> Si tu hesites, prefere accent gold (le plus polyvalent) sur sidebar fonce, ou bordeaux/navy sur sidebar cream."
     + "\n- Le 'why' doit etre 1 phrase concrete (max 25 mots) qui cite le secteur ou la culture cible et explique le choix typographique."
     + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-    + '\n\n{"combos":[{"name":"Banque classique","accentId":"bordeaux","sidebarId":"ink","paperId":"cream","hfId":"playfair","bfId":"lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
+    + '\n\n{"combos":[{"name":"Banque classique","accentId":"gold","sidebarId":"ink","paperId":"cream","hfId":"playfair","bfId":"lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
   );
 }
 
@@ -4476,16 +4480,42 @@ function validateAndEnrichCombo(raw) {
   };
 
   const accent  = tryColor(raw.accentId  || raw.accent,  ACCENT_PRESETS);
-  const sidebar = tryColor(raw.sidebarId || raw.sidebar, SIDEBAR_PRESETS);
+  let   sidebar = tryColor(raw.sidebarId || raw.sidebar, SIDEBAR_PRESETS);
   const paper   = tryColor(raw.paperId   || raw.paper,   PAPER_PRESETS);
   const hf      = tryFont(raw.hfId       || raw.header_font || raw.headerFont, HEADER_FONTS);
   const bf      = tryFont(raw.bfId       || raw.body_font   || raw.bodyFont,   BODY_FONTS);
+
+  // Auto-fix contraste accent vs sidebar.
+  // L'accent est l'element typographique fort (titres, separateurs, dates). Il
+  // doit etre clairement lisible sur le sidebar. Si le combo IA echoue WCAG AA
+  // (ratio < 4.5), on cherche dans SIDEBAR_PRESETS celui qui maximise le
+  // contraste avec cet accent et on snap dessus.
+  // Note: WCAG AA pour texte large c'est 3.0, mais l'accent fait souvent le
+  // role d'un titre fin (separateur, lettre capitale) donc on vise 4.5 (AA
+  // texte normal) pour la securite.
+  const accentVsSidebar = contrastRatio(accent.color, sidebar.color);
+  if (accentVsSidebar < 4.5) {
+    let bestSidebar = sidebar;
+    let bestRatio = accentVsSidebar;
+    for (const sb of SIDEBAR_PRESETS) {
+      const r = contrastRatio(accent.color, sb.color);
+      if (r > bestRatio) { bestRatio = r; bestSidebar = sb; }
+    }
+    // On ne snap que si on trouve significativement mieux ET au-dessus du seuil.
+    if (bestRatio >= 4.5) {
+      sidebar = bestSidebar;
+    }
+  }
+
+  // Calcul du contraste final (apres auto-fix eventuel) pour l'afficher en UI.
+  const contrast = contrastRatio(accent.color, sidebar.color);
 
   return {
     name:    String(raw.name   || "").slice(0, 60) || "Style",
     target:  String(raw.target || "").slice(0, 80),
     why:     String(raw.why    || "").slice(0, 240),
     accent, sidebar, paper, hf, bf,
+    contrast, // ratio numerique pour le badge WCAG dans la card
   };
 }
 
@@ -4519,7 +4549,40 @@ function SuggestionCombo({ T, combo, onAdopt }) {
       <div style={{
         display:"flex", height:110,
         borderBottom:"0.5px solid "+Gray200,
+        position:"relative",
       }}>
+        {/* Badge WCAG accent vs sidebar : transparence sur la qualite du combo */}
+        {combo.contrast && (
+          <div style={{
+            position:"absolute", top:8, right:8, zIndex:2,
+            padding:"3px 8px", borderRadius:RadiusPill,
+            background: combo.contrast >= 7
+              ? GreenSoft
+              : combo.contrast >= 4.5
+                ? "#fff3d9"
+                : CoralSoft,
+            color: combo.contrast >= 7
+              ? Green
+              : combo.contrast >= 4.5
+                ? GoldDeep
+                : Coral,
+            fontSize:9, fontWeight:700, fontFamily:Sans,
+            letterSpacing:"0.06em", textTransform:"uppercase",
+            display:"inline-flex", alignItems:"center", gap:5,
+            border:"0.5px solid "+(combo.contrast >= 7
+              ? Green
+              : combo.contrast >= 4.5
+                ? GoldDeep
+                : Coral),
+          }}>
+            <span>
+              {combo.contrast >= 7 ? "AAA" : combo.contrast >= 4.5 ? "AA" : "Bas"}
+            </span>
+            <span style={{opacity:.75, fontWeight:600, letterSpacing:"0.02em"}}>
+              {combo.contrast.toFixed(1)}:1
+            </span>
+          </div>
+        )}
         <div style={{
           width:"32%", background:sidebar,
           display:"flex", flexDirection:"column",
