@@ -759,7 +759,7 @@ const FR_T = {
   cust_color_picker:"Choisir une autre couleur",
   cust_font_header:"Police des titres",
   cust_font_body:"Police du corps",
-  cust_font_sample_header:"Aa",
+  cust_font_sample_header:"Directeur General",
   cust_font_sample_body:"Profil et experience",
   cust_font_url_label:"Ou colle une URL Google Fonts",
   cust_font_url_ph:"https://fonts.googleapis.com/css2?family=...",
@@ -1420,7 +1420,7 @@ const EN_T = {
   cust_color_picker:"Pick another color",
   cust_font_header:"Heading font",
   cust_font_body:"Body font",
-  cust_font_sample_header:"Aa",
+  cust_font_sample_header:"Senior Director",
   cust_font_sample_body:"Profile and experience",
   cust_font_url_label:"Or paste a Google Fonts URL",
   cust_font_url_ph:"https://fonts.googleapis.com/css2?family=...",
@@ -3879,17 +3879,19 @@ function ColorPickerBlock({
         )}
       </div>
 
-      {/* Presets en grille */}
+      {/* Presets en ligne unique, palette-style condensee */}
       <div style={{
-        display:"grid",
-        gridTemplateColumns:"repeat("+columns+", 1fr)",
-        gap:10,
+        display:"flex",
+        gap:8,
         marginBottom:12,
+        overflowX:"auto",
+        paddingBottom:4,
       }}>
         {presets.map(p => (
           <div key={p.id} style={{
             display:"flex", flexDirection:"column",
             alignItems:"center", gap:6,
+            flexShrink:0, minWidth:62,
           }}>
             <ColorSwatch
               color={p.color}
@@ -3901,15 +3903,16 @@ function ColorPickerBlock({
               fontSize:10, color:Gray600,
               textAlign:"center", lineHeight:1.3,
               fontFamily:Sans, fontWeight:500,
+              maxWidth:72,
             }}>{p.name}</span>
           </div>
         ))}
       </div>
 
-      {/* Color picker libre HTML5 */}
+      {/* Color picker libre HTML5 - version compacte chip */}
       <label style={{
-        display:"flex", alignItems:"center", gap:10,
-        padding:"10px 14px", borderRadius:RadiusMd,
+        display:"inline-flex", alignItems:"center", gap:8,
+        padding:"7px 12px 7px 7px", borderRadius:RadiusPill,
         background:Paper, border:"0.5px solid "+Gray200,
         cursor:"pointer", boxShadow:ShadowSm,
         fontFamily:Sans,
@@ -3919,18 +3922,19 @@ function ColorPickerBlock({
           value={value || "#c9a96e"}
           onChange={e => onChange(e.target.value)}
           style={{
-            width:30, height:30, border:"none",
+            width:24, height:24, border:"none",
             background:"none", cursor:"pointer",
-            padding:0,
+            padding:0, borderRadius:"50%",
           }}
         />
         <span style={{
-          flex:1, fontSize:12, color:Gray600,
+          fontSize:11, color:Gray600,
           fontWeight:500,
         }}>{T.cust_color_picker}</span>
         <span style={{
-          fontSize:11, color:Gray400,
+          fontSize:10, color:Gray400,
           fontFamily:"ui-monospace, monospace",
+          marginLeft:4,
         }}>{value || ""}</span>
       </label>
     </div>
@@ -4007,7 +4011,7 @@ function FontCard({ font, active, onClick, sample, isBody }) {
         display:"flex", alignItems:"center", gap:14,
       })
     }}>
-      {/* Apercu rendu dans la font cible */}
+      {/* Apercu compact "Aa" rendu dans la font cible */}
       <div style={{
         width:48, height:48, flexShrink:0,
         borderRadius:10,
@@ -4019,17 +4023,32 @@ function FontCard({ font, active, onClick, sample, isBody }) {
         color:Ink,
         letterSpacing:isBody ? "0" : "-0.02em",
         border:"0.5px solid "+Gray200,
-      }}>{sample}</div>
+        overflow:"hidden",
+      }}>Aa</div>
       <div style={{flex:1, minWidth:0}}>
+        {/* Phrase d'apercu dans la font cible : c'est le vrai test visuel */}
         <div style={{
-          fontFamily:Sans, fontSize:13, fontWeight:600,
-          color:Ink, marginBottom:2,
-        }}>{font.name}</div>
+          fontFamily:font.family,
+          fontSize:isBody ? 14 : 18,
+          fontWeight:isBody ? 500 : 600,
+          color:Ink,
+          letterSpacing:isBody ? "0" : "-0.01em",
+          lineHeight:1.2,
+          marginBottom:4,
+          whiteSpace:"nowrap",
+          overflow:"hidden",
+          textOverflow:"ellipsis",
+        }}>{sample}</div>
+        {/* Meta : nom de la font + vibe (toujours en Sans pour la lisibilite) */}
         <div style={{
           fontFamily:Sans, fontSize:11, color:Gray600,
           lineHeight:1.4,
+          whiteSpace:"nowrap",
+          overflow:"hidden",
+          textOverflow:"ellipsis",
         }}>
-          {font.vibe}
+          <span style={{fontWeight:600, color:Ink}}>{font.name}</span>
+          {font.vibe ? " - " + font.vibe : ""}
           {font.target ? " - " + font.target : ""}
         </div>
       </div>
@@ -4065,7 +4084,9 @@ function FontSection({ T, label, fonts, value, onPick, sample, isBody }) {
         fontFamily:Sans,
       }}>{label}</div>
       <div style={{
-        display:"flex", flexDirection:"column", gap:8,
+        display:"grid",
+        gridTemplateColumns:"repeat(auto-fill, minmax(280px, 1fr))",
+        gap:8,
       }}>
         {fonts.map(f => (
           <FontCard
@@ -4228,6 +4249,15 @@ function FontsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
   const editing = scope === "global" ? cvCustom : versionCustom;
   const eff     = mergeTheme(theme, cvCustom, versionCustom);
 
+  // Precharge TOUTES les fonts du catalogue au mount, pour que les apercus
+  // dans les FontCard rendent dans la font cible des le premier paint.
+  // Sans ce preload, le useEffect interne au FontCard se declenche apres le
+  // premier render et l'utilisateur voit brievement le fallback systeme.
+  useEffect(() => {
+    HEADER_FONTS.forEach(f => ensureFontLoaded(f.googleHref));
+    BODY_FONTS.forEach(f => ensureFontLoaded(f.googleHref));
+  }, []);
+
   const pickHeader = (font) => writeCustom(c => ({
     ...c, hf: font.family, hfHref: font.googleHref,
   }));
@@ -4274,6 +4304,28 @@ function FontsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
 // Construit le prompt deep pour les suggestions de style.
 // Analyse en profondeur : secteur, seniorite (deduite des dates), pays,
 // niveau (executive / mid / junior), culture cible.
+// Construit la liste serialisable des presets pour le prompt IA.
+// Format : "id: name (description)" - une ligne par item.
+function _serializePresetsForPrompt(presets, type) {
+  return presets.map(p => {
+    let extra = "";
+    if (type === "accent") {
+      extra = " (couleur " + p.color + ")";
+    } else if (type === "sidebar" || type === "paper") {
+      extra = " (couleur " + p.color + ")";
+    }
+    return p.id + ": " + p.name + extra;
+  }).join("\n");
+}
+
+function _serializeFontsForPrompt(fonts) {
+  return fonts.map(f => {
+    const target = f.target ? " - cible: " + f.target : "";
+    const ats = f.ats ? " - ATS: " + f.ats : "";
+    return f.id + ": " + f.name + " (" + (f.vibe || "") + target + ats + ")";
+  }).join("\n");
+}
+
 function buildStylePrompt(cv, locale) {
   const yrs = (cv.experience || []).reduce((acc, e) => {
     const m = (e.period || "").match(/(\d{4})\s*[-]\s*(\d{4}|present|now|en cours|aujourd|actuel)/i);
@@ -4298,52 +4350,162 @@ function buildStylePrompt(cv, locale) {
     + "\nCompetences cles: " + (skillsSummary || "(aucune)")
     + "\nAnnees d'experience cumulees (estimation): " + yrs;
 
+  // Bibliotheques curees serialisees pour que l'IA pick des IDs (pas du libre).
+  const accentCatalog  = _serializePresetsForPrompt(ACCENT_PRESETS, "accent");
+  const sidebarCatalog = _serializePresetsForPrompt(SIDEBAR_PRESETS, "sidebar");
+  const paperCatalog   = _serializePresetsForPrompt(PAPER_PRESETS, "paper");
+  const headerFontCatalog = _serializeFontsForPrompt(HEADER_FONTS);
+  const bodyFontCatalog   = _serializeFontsForPrompt(BODY_FONTS);
+
+  // Mapping secteur > combos forts (regles deterministes integrees au prompt).
+  const sectorRules = [
+    "Banque, finance, conseil senior, juridique > accent bordeaux/navy + sidebar ink/midnight + hf playfair/cormorant + bf lato/sourcesans",
+    "Tech, produit, design, startup > accent charcoal/teal + sidebar ink + hf space/inter + bf inter/dmsans",
+    "Marketing, communication, branding > accent rust/plum + sidebar ink/charcoal + hf montserrat/dmserif + bf opensans/work",
+    "Executive, direction generale, comex > accent gold/bordeaux + sidebar ink + hf playfair/fraunces + bf lato/sourcesans",
+    "Creative, art, mode > accent plum/rust + sidebar darkwine/cream + hf cormorant/dmserif + bf nunito/lora",
+    "RH, coaching, social, ONG > accent forest/teal + sidebar forest/midnight + hf lora/fraunces + bf nunito/lato",
+  ].join("\n");
+
   const langLine = locale === "en"
-    ? "Reponds STRICTEMENT en anglais. "
+    ? "Reponds STRICTEMENT en anglais (les champs name, target et why en anglais). "
     : "Reponds STRICTEMENT en francais. ";
 
   return (
-    "Tu es directeur artistique senior pour CV executifs."
-    + " Analyse le profil ci-dessous et propose EXACTEMENT 4 combinaisons style"
-    + " (couleurs + polices) qui maximisent l'impact recruteur."
+    "Tu es directeur artistique senior, expert typographie et CV executifs."
+    + " Analyse le profil ci-dessous et propose EXACTEMENT 4 combinaisons de style"
+    + " (couleurs + polices). Tu DOIS choisir uniquement parmi les IDs des catalogues fournis."
     + "\n\nPROFIL:\n" + profileLine
+    + "\n\nCATALOGUE COULEUR D'ACCENT (choisis 1 id par combo):\n" + accentCatalog
+    + "\n\nCATALOGUE COULEUR SIDEBAR (choisis 1 id par combo):\n" + sidebarCatalog
+    + "\n\nCATALOGUE COULEUR PAPER (choisis 1 id par combo):\n" + paperCatalog
+    + "\n\nCATALOGUE POLICE TITRES (choisis 1 id par combo):\n" + headerFontCatalog
+    + "\n\nCATALOGUE POLICE CORPS (choisis 1 id par combo):\n" + bodyFontCatalog
+    + "\n\nREGLES MAPPING SECTORIEL (orientation, pas obligation):\n" + sectorRules
     + "\n\nREGLES STRICTES:"
-    + "\n- Chaque combinaison doit etre COHERENTE avec le secteur et le niveau."
-    + "\n- 4 combinaisons distinctes ciblant des CULTURES DIFFERENTES (ex: banque classique, fintech, conseil premium, tech moderne)."
-    + "\n- Couleurs en hex valides (#RRGGBB)."
-    + "\n- Polices choisies parmi: Playfair Display, Fraunces, Cormorant Garamond, DM Serif Display, Space Grotesk, Montserrat, Inter, Lora, Lato, Source Sans 3, DM Sans, IBM Plex Sans, Open Sans, Nunito Sans, Work Sans."
-    + "\n- Le 'why' doit expliquer en 1 phrase precise pourquoi ce combo colle au profil."
+    + "\n- accentId, sidebarId, paperId, hfId, bfId DOIVENT etre des ids valides du catalogue ci-dessus."
+    + "\n- 4 combinaisons distinctes ciblant des CULTURES DIFFERENTES (premium classique, moderne tech, creative, sobre)."
+    + "\n- Coherence couleur: accent doit contraster avec sidebar (lisibilite des titres en accent sur sidebar)."
+    + "\n- Le 'why' doit etre 1 phrase concrete (max 25 mots) qui cite le secteur ou la culture cible et explique le choix typographique."
     + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-    + '\n\n{"combos":[{"name":"Banque classique","accent":"#7a1f2b","sidebar":"#0a0a0a","paper":"#f8f6f1","header_font":"Playfair Display","body_font":"Lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
+    + '\n\n{"combos":[{"name":"Banque classique","accentId":"bordeaux","sidebarId":"ink","paperId":"cream","hfId":"playfair","bfId":"lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
   );
 }
 
-// Resout un nom de font (ex "Playfair Display") en entree de la lib curee.
-// Retourne null si pas trouve.
-function resolveFontByName(name) {
-  if (!name) return null;
-  const lower = name.toLowerCase().trim();
-  return HEADER_FONTS.find(f => f.name.toLowerCase() === lower)
-      || BODY_FONTS.find(f => f.name.toLowerCase() === lower)
-      || null;
+// Resolution stricte par ID dans les catalogues curees.
+// Retourne l'entree complete ou null.
+function resolveAccentId(id) {
+  if (!id) return null;
+  return ACCENT_PRESETS.find(p => p.id === id) || null;
+}
+function resolveSidebarId(id) {
+  if (!id) return null;
+  return SIDEBAR_PRESETS.find(p => p.id === id) || null;
+}
+function resolvePaperId(id) {
+  if (!id) return null;
+  return PAPER_PRESETS.find(p => p.id === id) || null;
+}
+function resolveHeaderFontId(id) {
+  if (!id) return null;
+  return HEADER_FONTS.find(f => f.id === id) || null;
+}
+function resolveBodyFontId(id) {
+  if (!id) return null;
+  return BODY_FONTS.find(f => f.id === id) || null;
+}
+
+// Snap : si l'IA renvoie une couleur hex au lieu d'un id, on cherche le preset
+// le plus proche par distance euclidienne RGB. Garantit qu'on reste dans la
+// palette curee meme si l'IA devie.
+function _hexDistance(a, b) {
+  const ra = _hexToRgb(a), rb = _hexToRgb(b);
+  if (!ra || !rb) return Infinity;
+  const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2];
+  return Math.sqrt(dr*dr + dg*dg + db*db);
+}
+function snapColorToPreset(color, presets) {
+  if (!color || !presets || presets.length === 0) return presets[0] || null;
+  let best = presets[0];
+  let bestDist = _hexDistance(color, presets[0].color);
+  for (let i = 1; i < presets.length; i++) {
+    const d = _hexDistance(color, presets[i].color);
+    if (d < bestDist) { bestDist = d; best = presets[i]; }
+  }
+  return best;
+}
+
+// Validation et reconstruction d'un combo IA.
+// Garantit que tous les champs sont des entrees valides du catalogue.
+// Si l'IA a renvoye un hex au lieu d'un id, on snap au preset le plus proche.
+// Si elle a renvoye un nom au lieu d'un id, on cherche par nom.
+// Retourne le combo enrichi avec les VRAIES entrees catalogue, ou null si irreparable.
+function validateAndEnrichCombo(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  // Couleurs : try id first, then name match, then hex snap, then fallback.
+  const tryColor = (val, presets) => {
+    if (!val) return presets[0];
+    const s = String(val).trim();
+    // Direct id match
+    const byId = presets.find(p => p.id === s);
+    if (byId) return byId;
+    // Name match (case insensitive)
+    const byName = presets.find(p => p.name.toLowerCase() === s.toLowerCase());
+    if (byName) return byName;
+    // Hex match
+    if (/^#[0-9a-f]{3,8}$/i.test(s)) {
+      return snapColorToPreset(s, presets);
+    }
+    // Fallback: first preset
+    return presets[0];
+  };
+
+  // Fonts : try id first, then name match, then fallback.
+  const tryFont = (val, fonts) => {
+    if (!val) return fonts[0];
+    const s = String(val).trim().toLowerCase();
+    const byId = fonts.find(f => f.id === s);
+    if (byId) return byId;
+    const byName = fonts.find(f => f.name.toLowerCase() === s);
+    if (byName) return byName;
+    // Partial match (ex "Playfair" matche "Playfair Display")
+    const byPartial = fonts.find(f => s.includes(f.id) || f.name.toLowerCase().includes(s));
+    if (byPartial) return byPartial;
+    return fonts[0];
+  };
+
+  const accent  = tryColor(raw.accentId  || raw.accent,  ACCENT_PRESETS);
+  const sidebar = tryColor(raw.sidebarId || raw.sidebar, SIDEBAR_PRESETS);
+  const paper   = tryColor(raw.paperId   || raw.paper,   PAPER_PRESETS);
+  const hf      = tryFont(raw.hfId       || raw.header_font || raw.headerFont, HEADER_FONTS);
+  const bf      = tryFont(raw.bfId       || raw.body_font   || raw.bodyFont,   BODY_FONTS);
+
+  return {
+    name:    String(raw.name   || "").slice(0, 60) || "Style",
+    target:  String(raw.target || "").slice(0, 80),
+    why:     String(raw.why    || "").slice(0, 240),
+    accent, sidebar, paper, hf, bf,
+  };
 }
 
 // Carte d'un combo IA : bandeau de couleurs + apercu fonts + why + adopter.
 function SuggestionCombo({ T, combo, onAdopt }) {
-  const headerFont = resolveFontByName(combo.header_font);
-  const bodyFont   = resolveFontByName(combo.body_font);
+  // Apres validateAndEnrichCombo, combo a la forme:
+  // { name, target, why,
+  //   accent:{id,name,color}, sidebar:{id,name,color}, paper:{id,name,color},
+  //   hf:{id,name,family,googleHref,vibe,target}, bf:{id,name,family,googleHref,vibe,ats} }
+  const accent  = combo.accent  ? combo.accent.color  : "#c9a96e";
+  const sidebar = combo.sidebar ? combo.sidebar.color : "#0a0a0a";
+  const paper   = combo.paper   ? combo.paper.color   : "#f8f6f1";
+  const headerFont = combo.hf || null;
+  const bodyFont   = combo.bf || null;
 
   // Charge les fonts du combo des le mount (pour l'apercu).
   useEffect(() => {
     if (headerFont) ensureFontLoaded(headerFont.googleHref);
     if (bodyFont)   ensureFontLoaded(bodyFont.googleHref);
   }, [headerFont, bodyFont]);
-
-  // Validation minimale des couleurs hex
-  const validHex = (s) => typeof s === "string" && /^#[0-9a-fA-F]{6}$/.test(s);
-  const accent  = validHex(combo.accent)  ? combo.accent  : "#c9a96e";
-  const sidebar = validHex(combo.sidebar) ? combo.sidebar : "#0a0a0a";
-  const paper   = validHex(combo.paper)   ? combo.paper   : "#f8f6f1";
 
   return (
     <div style={{
@@ -4355,72 +4517,81 @@ function SuggestionCombo({ T, combo, onAdopt }) {
     }}>
       {/* Apercu visuel : bandeau sidebar + zone paper avec accent */}
       <div style={{
-        display:"flex", height:96,
+        display:"flex", height:110,
         borderBottom:"0.5px solid "+Gray200,
       }}>
         <div style={{
-          width:"30%", background:sidebar,
+          width:"32%", background:sidebar,
           display:"flex", flexDirection:"column",
           justifyContent:"center", alignItems:"center",
           padding:8,
         }}>
           <div style={{
             fontFamily:headerFont ? headerFont.family : Serif,
-            fontSize:22, fontWeight:600,
+            fontSize:26, fontWeight:600,
             color:accent, letterSpacing:"-0.02em",
             lineHeight:1,
           }}>Aa</div>
           <div style={{
             width:18, height:2, background:accent,
-            marginTop:6, borderRadius:1,
+            marginTop:8, borderRadius:1,
           }}/>
         </div>
         <div style={{
           flex:1, background:paper,
-          padding:"14px 16px",
+          padding:"14px 18px",
           display:"flex", flexDirection:"column", justifyContent:"center",
+          minWidth:0,
         }}>
           <div style={{
             fontFamily:headerFont ? headerFont.family : Serif,
-            fontSize:14, fontWeight:600,
-            color:Ink, marginBottom:4,
+            fontSize:16, fontWeight:600,
+            color:Ink, marginBottom:5,
             letterSpacing:"-0.01em",
+            whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
           }}>{combo.name || "Combo"}</div>
           <div style={{
             fontFamily:bodyFont ? bodyFont.family : Sans,
-            fontSize:11, color:"#444",
+            fontSize:12, color:"#444",
             lineHeight:1.4,
-          }}>The quick brown fox jumps</div>
+          }}>Profil et experience</div>
           <div style={{
-            display:"flex", gap:5, marginTop:6,
+            display:"flex", gap:5, marginTop:8,
           }}>
-            <span style={{width:10, height:10, borderRadius:"50%", background:accent, border:"0.5px solid "+Gray200}}/>
-            <span style={{width:10, height:10, borderRadius:"50%", background:sidebar, border:"0.5px solid "+Gray200}}/>
-            <span style={{width:10, height:10, borderRadius:"50%", background:paper, border:"0.5px solid "+Gray200}}/>
+            <span title={combo.accent ? combo.accent.name : ""}
+                  style={{width:11, height:11, borderRadius:"50%", background:accent, border:"0.5px solid "+Gray200}}/>
+            <span title={combo.sidebar ? combo.sidebar.name : ""}
+                  style={{width:11, height:11, borderRadius:"50%", background:sidebar, border:"0.5px solid "+Gray200}}/>
+            <span title={combo.paper ? combo.paper.name : ""}
+                  style={{width:11, height:11, borderRadius:"50%", background:paper, border:"0.5px solid "+Gray200}}/>
           </div>
         </div>
       </div>
 
       {/* Body de la card : nom du combo + why + adopter */}
       <div style={{padding:"14px 16px 16px"}}>
+        {combo.target && (
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:GoldDeep, marginBottom:6,
+          }}>{combo.target}</div>
+        )}
+        {combo.why && (
+          <div style={{
+            fontFamily:Serif, fontWeight:400, fontStyle:"italic",
+            fontSize:14, lineHeight:1.5,
+            color:Ink, marginBottom:4,
+            letterSpacing:"-0.005em",
+          }}>"{combo.why}"</div>
+        )}
         <div style={{
-          fontSize:11, fontWeight:600,
-          letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:6,
-        }}>{combo.target || ""}</div>
-        <div style={{
-          fontFamily:Serif, fontWeight:400, fontStyle:"italic",
-          fontSize:14, lineHeight:1.5,
-          color:Ink, marginBottom:4,
-          letterSpacing:"-0.005em",
-        }}>"{combo.why || ""}"</div>
-        <div style={{
-          fontSize:11, color:Gray600, marginTop:8,
+          fontSize:11, color:Gray600, marginTop:10,
           marginBottom:12, fontFamily:Sans,
         }}>
-          {combo.header_font || "?"}
+          {(headerFont ? headerFont.name : "?")}
           {" + "}
-          {combo.body_font || "?"}
+          {(bodyFont ? bodyFont.name : "?")}
         </div>
         <button onClick={()=>onAdopt({
           ac: accent, sb: sidebar, bg: paper,
@@ -4465,8 +4636,12 @@ function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopt
     try {
       const txt = await aiCall(buildStylePrompt(cv, locale));
       const parsed = parseJSON(txt);
-      const arr = Array.isArray(parsed && parsed.combos) ? parsed.combos : [];
-      setCombos(arr);
+      const raw = Array.isArray(parsed && parsed.combos) ? parsed.combos : [];
+      // Validation + enrichment : chaque combo passe par le filtre qui garantit
+      // que tous les champs (couleurs, fonts) sont des entrees valides du
+      // catalogue curee. Si l'IA devie (hex libre, font inconnue), on snap.
+      const validated = raw.map(validateAndEnrichCombo).filter(Boolean);
+      setCombos(validated);
     } catch (err) {
       notify(T.ea + ": " + (err && err.message ? err.message : ""));
     }
@@ -4872,6 +5047,37 @@ export default function App() {
     return () => clearTimeout(t);
   }, [autoSaved]);
 
+  // v17 chantier 16 : Raccourcis clavier globaux.
+  useEffect(() => {
+    if (!hydrated) return;
+    const onKey = (e) => {
+      // Ne pas intercepter si l'user est en train de taper dans un input/textarea
+      const tag = (e.target && e.target.tagName) || "";
+      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+      const cmdOrCtrl = e.metaKey || e.ctrlKey;
+      // Esc : ferme le modal actif (chaque modal a deja son propre handler Esc, donc rien a faire ici)
+      // Cmd+S : export PDF (uniquement si pas de modal ouvert et pas en train de taper)
+      if (cmdOrCtrl && e.key === "s" && !isTyping) {
+        e.preventDefault();
+        if (typeof exportPDF === "function") exportPDF();
+      }
+      // Cmd+K : ouvre coach
+      if (cmdOrCtrl && e.key === "k") {
+        e.preventDefault();
+        if (!cvIsEmpty) setShowCoach(true);
+      }
+      // Cmd+, : ouvre reglages (la virgule est le standard mac pour preferences)
+      if (cmdOrCtrl && e.key === ",") {
+        e.preventDefault();
+        setShowSettings(true);
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("keydown", onKey);
+      return () => window.removeEventListener("keydown", onKey);
+    }
+  }, [hydrated, cvIsEmpty]);  // exportPDF defined after, mais useCallback re-created => on l'evite ici (hoisting)
+
   const setTh = useCallback(v => { setThN_(v); lsS(SK.TH, v); }, []);
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
@@ -5003,34 +5209,6 @@ export default function App() {
     setCVFn(() => EMPTY);
     notify(T.okr);
   }, [T, pushH, setCVFn, notify]);
-
-  // v17 chantier 16 : Raccourcis clavier globaux.
-  // IMPORTANT: doit etre declare APRES exportPDF, cvIsEmpty et tous les setters
-  // qu'il utilise, sinon TDZ ReferenceError au premier render (Vercel minification).
-  useEffect(() => {
-    if (!hydrated) return;
-    const onKey = (e) => {
-      const tag = (e.target && e.target.tagName) || "";
-      const isTyping = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
-      const cmdOrCtrl = e.metaKey || e.ctrlKey;
-      if (cmdOrCtrl && e.key === "s" && !isTyping) {
-        e.preventDefault();
-        exportPDF();
-      }
-      if (cmdOrCtrl && e.key === "k") {
-        e.preventDefault();
-        if (!cvIsEmpty) setShowCoach(true);
-      }
-      if (cmdOrCtrl && e.key === ",") {
-        e.preventDefault();
-        setShowSettings(true);
-      }
-    };
-    if (typeof window !== "undefined") {
-      window.addEventListener("keydown", onKey);
-      return () => window.removeEventListener("keydown", onKey);
-    }
-  }, [hydrated, cvIsEmpty, exportPDF]);
 
   const auditMessages = [
     "Analyse de ton parcours en cours...",
