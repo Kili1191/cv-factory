@@ -35,7 +35,7 @@
 //   onRun()
 //   onClose()
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
@@ -431,6 +431,896 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
   );
 }
 
+// === v2 Tab Apres : composants ===
+
+// AfterContextForm : formulaire de contexte (recruteur, type, duree, date, recap)
+// Composant controle, prend afterContext + setAfterContext.
+function AfterContextForm({ T, afterContext, setAfterContext }) {
+  const update = (key, val) => setAfterContext(prev => ({ ...prev, [key]: val }));
+  const fld = {
+    fontSize:11, fontWeight:600,
+    letterSpacing:"0.08em", textTransform:"uppercase",
+    color:GoldDeep, marginBottom:6, fontFamily:Sans,
+  };
+  const inputStyle = {
+    width:"100%", padding:"9px 12px",
+    borderRadius:RadiusSm,
+    border:"0.5px solid "+Gray200,
+    background:Paper, color:Ink,
+    fontSize:13, fontFamily:Sans,
+    outline:"none",
+    boxSizing:"border-box",
+  };
+  return (
+    <div style={{marginBottom:24}}>
+      <div style={{
+        fontSize:11, fontWeight:600,
+        letterSpacing:"0.12em", textTransform:"uppercase",
+        color:GoldDeep, marginBottom:14, fontFamily:Sans,
+      }}>{T.iv_af_section_context}</div>
+
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))",
+        gap:12, marginBottom:14,
+      }}>
+        <div>
+          <div style={fld}>{T.iv_af_recruiter_name}</div>
+          <input type="text" value={afterContext.recruiterName || ""}
+            onChange={e => update("recruiterName", e.target.value)}
+            placeholder={T.iv_af_recruiter_ph}
+            style={inputStyle}/>
+        </div>
+        <div>
+          <div style={fld}>{T.iv_af_type}</div>
+          <select value={afterContext.type || "video"}
+            onChange={e => update("type", e.target.value)}
+            style={{...inputStyle, cursor:"pointer"}}>
+            <option value="video">{T.iv_af_type_video}</option>
+            <option value="phone">{T.iv_af_type_phone}</option>
+            <option value="onsite">{T.iv_af_type_onsite}</option>
+            <option value="panel">{T.iv_af_type_panel}</option>
+          </select>
+        </div>
+        <div>
+          <div style={fld}>{T.iv_af_duration}</div>
+          <input type="number" min="0" value={afterContext.duration || ""}
+            onChange={e => update("duration", e.target.value)}
+            placeholder={T.iv_af_duration_ph}
+            style={inputStyle}/>
+        </div>
+        <div>
+          <div style={fld}>{T.iv_af_date}</div>
+          <input type="date" value={afterContext.date || ""}
+            onChange={e => update("date", e.target.value)}
+            style={inputStyle}/>
+        </div>
+      </div>
+
+      <div>
+        <div style={fld}>{T.iv_af_recap_label}</div>
+        <textarea value={afterContext.recap || ""}
+          onChange={e => update("recap", e.target.value)}
+          placeholder={T.iv_af_recap_ph}
+          rows={6}
+          style={{
+            ...inputStyle,
+            minHeight:120, resize:"vertical",
+            lineHeight:1.5,
+          }}/>
+      </div>
+    </div>
+  );
+}
+
+// EmailCard : carte email de remerciement avec etats run / loading / result.
+function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
+  const [copiedSubject, setCopiedSubject] = useState(false);
+  const [copiedBody, setCopiedBody] = useState(false);
+  const [copiedAll, setCopiedAll] = useState(false);
+
+  const copy = (text, setter) => {
+    if (typeof navigator === "undefined" || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(() => {
+      setter(true);
+      setTimeout(() => setter(false), 1800);
+    });
+  };
+
+  const tonePill = (val, label) => ({
+    padding:"6px 12px", borderRadius:RadiusPill,
+    background: tone === val ? Ink : Paper,
+    color: tone === val ? Cream : Ink,
+    border:"0.5px solid "+(tone === val ? Ink : Gray200),
+    fontFamily:Sans, fontWeight: tone === val ? 600 : 500,
+    fontSize:11, letterSpacing:"0.02em",
+    transition:"all 180ms ease-out", cursor:"pointer",
+  });
+
+  return (
+    <div style={{
+      background:Paper, borderRadius:RadiusMd,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      padding:18, marginBottom:16,
+      fontFamily:Sans,
+    }}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:10,
+        marginBottom:10,
+      }}>
+        <div style={{
+          width:34, height:34, borderRadius:9,
+          background:GoldDeep, color:Cream,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{
+            fontFamily:Serif, fontWeight:500, fontSize:16,
+            color:Ink, letterSpacing:"-0.01em",
+          }}>{T.iv_em_card_title}</div>
+          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+            {T.iv_em_card_sub}
+          </div>
+        </div>
+      </div>
+
+      {/* Etat 1 : pas encore genere : tone selector + bouton run */}
+      {!loading && !result && (
+        <>
+          <div style={{
+            fontSize:10, fontWeight:600,
+            letterSpacing:"0.08em", textTransform:"uppercase",
+            color:Gray600, marginBottom:8, marginTop:6,
+            fontFamily:Sans,
+          }}>{T.iv_em_tone_label}</div>
+          <div style={{
+            display:"flex", flexWrap:"wrap", gap:6, marginBottom:14,
+          }}>
+            <button onClick={()=>setTone("warm")} style={B(tonePill("warm", T.iv_em_tone_warm))}>{T.iv_em_tone_warm}</button>
+            <button onClick={()=>setTone("pro")} style={B(tonePill("pro", T.iv_em_tone_pro))}>{T.iv_em_tone_pro}</button>
+            <button onClick={()=>setTone("concise")} style={B(tonePill("concise", T.iv_em_tone_concise))}>{T.iv_em_tone_concise}</button>
+            <button onClick={()=>setTone("assertive")} style={B(tonePill("assertive", T.iv_em_tone_assertive))}>{T.iv_em_tone_assertive}</button>
+          </div>
+          <button onClick={onRun} disabled={!recapFilled} style={{
+            ...B({
+              width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
+              background: recapFilled ? Ink : Gray200,
+              color: recapFilled ? Cream : Gray600,
+              fontFamily:Sans, fontWeight:600, fontSize:13,
+              display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            {T.iv_em_run}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          </button>
+        </>
+      )}
+
+      {/* Etat 2 : loading */}
+      {loading && (
+        <div style={{
+          padding:"24px 12px", textAlign:"center",
+        }}>
+          <div style={{
+            width:28, height:28, margin:"0 auto 10px",
+            border:"2px solid "+Gray200, borderTopColor:GoldDeep,
+            borderRadius:"50%",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+          <div style={{fontSize:12, color:Gray600}}>{T.iv_em_loading}</div>
+        </div>
+      )}
+
+      {/* Etat 3 : result : sujet + corps + boutons copier + tone selector pour regenerer */}
+      {!loading && result && (
+        <>
+          {/* Sujet */}
+          <div style={{
+            background:CreamSoft, borderRadius:RadiusSm,
+            padding:"10px 12px", marginBottom:10,
+            border:"0.5px solid "+Gray200,
+          }}>
+            <div style={{
+              fontSize:9, fontWeight:700,
+              letterSpacing:"0.1em", textTransform:"uppercase",
+              color:GoldDeep, marginBottom:3,
+            }}>{T.iv_em_subject}</div>
+            <div style={{
+              fontSize:13, fontWeight:500, color:Ink,
+              lineHeight:1.4,
+            }}>{result.subject || ""}</div>
+          </div>
+          {/* Corps */}
+          <div style={{
+            background:CreamSoft, borderRadius:RadiusSm,
+            padding:"12px 14px", marginBottom:14,
+            border:"0.5px solid "+Gray200,
+          }}>
+            <div style={{
+              fontSize:9, fontWeight:700,
+              letterSpacing:"0.1em", textTransform:"uppercase",
+              color:GoldDeep, marginBottom:6,
+            }}>{T.iv_em_body}</div>
+            <div style={{
+              fontSize:13, color:Ink, lineHeight:1.6,
+              whiteSpace:"pre-wrap",
+              fontFamily:Sans,
+            }}>{result.body || ""}</div>
+          </div>
+          {/* Boutons copier */}
+          <div style={{display:"flex", flexWrap:"wrap", gap:6, marginBottom:14}}>
+            <button onClick={()=>copy(result.subject || "", setCopiedSubject)} style={{
+              ...B({
+                padding:"7px 12px", borderRadius:RadiusPill,
+                background: copiedSubject ? GreenSoft : Paper,
+                color: copiedSubject ? Green : Ink,
+                border:"0.5px solid "+(copiedSubject ? Green : Gray200),
+                fontSize:11, fontWeight:600, fontFamily:Sans,
+                letterSpacing:"0.02em",
+              })
+            }}>
+              {copiedSubject ? T.iv_em_copied : T.iv_em_copy_subject}
+            </button>
+            <button onClick={()=>copy(result.body || "", setCopiedBody)} style={{
+              ...B({
+                padding:"7px 12px", borderRadius:RadiusPill,
+                background: copiedBody ? GreenSoft : Paper,
+                color: copiedBody ? Green : Ink,
+                border:"0.5px solid "+(copiedBody ? Green : Gray200),
+                fontSize:11, fontWeight:600, fontFamily:Sans,
+                letterSpacing:"0.02em",
+              })
+            }}>
+              {copiedBody ? T.iv_em_copied : T.iv_em_copy_body}
+            </button>
+            <button onClick={()=>copy(
+                "Sujet: " + (result.subject || "") + "\n\n" + (result.body || ""),
+                setCopiedAll
+              )} style={{
+              ...B({
+                padding:"7px 12px", borderRadius:RadiusPill,
+                background: copiedAll ? GreenSoft : Ink,
+                color: copiedAll ? Green : Cream,
+                border:"0.5px solid "+(copiedAll ? Green : Ink),
+                fontSize:11, fontWeight:600, fontFamily:Sans,
+                letterSpacing:"0.02em",
+              })
+            }}>
+              {copiedAll ? T.iv_em_copied : T.iv_em_copy_all}
+            </button>
+          </div>
+          {/* Tone selector + regenerate */}
+          <div style={{
+            paddingTop:14,
+            borderTop:"0.5px solid "+Gray200,
+          }}>
+            <div style={{
+              fontSize:10, fontWeight:600,
+              letterSpacing:"0.08em", textTransform:"uppercase",
+              color:Gray600, marginBottom:8,
+            }}>{T.iv_em_regenerate}</div>
+            <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
+              <button onClick={()=>{ setTone("warm"); onRun(); }} style={B(tonePill("warm", T.iv_em_tone_warm))}>{T.iv_em_tone_warm}</button>
+              <button onClick={()=>{ setTone("pro"); onRun(); }} style={B(tonePill("pro", T.iv_em_tone_pro))}>{T.iv_em_tone_pro}</button>
+              <button onClick={()=>{ setTone("concise"); onRun(); }} style={B(tonePill("concise", T.iv_em_tone_concise))}>{T.iv_em_tone_concise}</button>
+              <button onClick={()=>{ setTone("assertive"); onRun(); }} style={B(tonePill("assertive", T.iv_em_tone_assertive))}>{T.iv_em_tone_assertive}</button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// DebriefCard : carte auto-debrief avec forces / improvements / red flags / verdict / next steps.
+function DebriefCard({ T, loading, result, recapFilled, onRun }) {
+  return (
+    <div style={{
+      background:Paper, borderRadius:RadiusMd,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      padding:18, marginBottom:16,
+      fontFamily:Sans,
+    }}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:10,
+        marginBottom:10,
+      }}>
+        <div style={{
+          width:34, height:34, borderRadius:9,
+          background:Purple, color:Cream,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{
+            fontFamily:Serif, fontWeight:500, fontSize:16,
+            color:Ink, letterSpacing:"-0.01em",
+          }}>{T.iv_db_card_title}</div>
+          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+            {T.iv_db_card_sub}
+          </div>
+        </div>
+      </div>
+
+      {/* Etat 1 : pas encore genere : bouton run */}
+      {!loading && !result && (
+        <button onClick={onRun} disabled={!recapFilled} style={{
+          ...B({
+            width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
+            background: recapFilled ? GradPurple : Gray200,
+            color: recapFilled ? Cream : Gray600,
+            fontFamily:Sans, fontWeight:600, fontSize:13,
+            display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+            transition:"all 200ms ease-out",
+            marginTop:6,
+          })
+        }}>
+          {T.iv_db_run}
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+          </svg>
+        </button>
+      )}
+
+      {/* Etat 2 : loading */}
+      {loading && (
+        <div style={{
+          padding:"24px 12px", textAlign:"center",
+        }}>
+          <div style={{
+            width:28, height:28, margin:"0 auto 10px",
+            border:"2px solid "+Gray200, borderTopColor:Purple,
+            borderRadius:"50%",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+          <div style={{fontSize:12, color:Gray600}}>{T.iv_db_loading}</div>
+        </div>
+      )}
+
+      {/* Etat 3 : result */}
+      {!loading && result && (
+        <div style={{marginTop:6}}>
+          {/* Verdict en haut, tres visible */}
+          {result.verdict && (
+            <div style={{
+              padding:"14px 16px",
+              background:CreamSoft,
+              border:"0.5px solid "+Gray200,
+              borderRadius:RadiusMd,
+              marginBottom:14,
+            }}>
+              <div style={{
+                fontSize:10, fontWeight:700,
+                letterSpacing:"0.1em", textTransform:"uppercase",
+                color:GoldDeep, marginBottom:5,
+              }}>{T.iv_db_verdict}</div>
+              <div style={{
+                fontFamily:Serif, fontWeight:500, fontSize:16,
+                color:Ink, letterSpacing:"-0.01em",
+                marginBottom:4,
+              }}>{result.verdict.label || ""}</div>
+              <div style={{
+                fontSize:12, color:Gray600, lineHeight:1.5,
+                fontStyle:"italic",
+              }}>{result.verdict.why || ""}</div>
+            </div>
+          )}
+
+          {/* Forces */}
+          {Array.isArray(result.strengths) && result.strengths.length > 0 && (
+            <div style={{marginBottom:14}}>
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.08em", textTransform:"uppercase",
+                color:Green, marginBottom:8,
+              }}>{T.iv_db_strengths}</div>
+              {result.strengths.map((s, i) => (
+                <div key={i} style={{
+                  display:"flex", gap:8, alignItems:"flex-start",
+                  padding:"9px 12px", marginBottom:6,
+                  background:GreenSoft, borderRadius:RadiusSm,
+                  border:"0.5px solid "+Green,
+                  fontSize:12, color:Ink, lineHeight:1.5,
+                }}>
+                  <span style={{color:Green, fontWeight:700, flexShrink:0}}>+</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Improvements */}
+          {Array.isArray(result.improvements) && result.improvements.length > 0 && (
+            <div style={{marginBottom:14}}>
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.08em", textTransform:"uppercase",
+                color:GoldDeep, marginBottom:8,
+              }}>{T.iv_db_improvements}</div>
+              {result.improvements.map((s, i) => (
+                <div key={i} style={{
+                  display:"flex", gap:8, alignItems:"flex-start",
+                  padding:"9px 12px", marginBottom:6,
+                  background:"#fff8e6", borderRadius:RadiusSm,
+                  border:"0.5px solid "+GoldDeep,
+                  fontSize:12, color:Ink, lineHeight:1.5,
+                }}>
+                  <span style={{color:GoldDeep, fontWeight:700, flexShrink:0}}>!</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Red flags */}
+          {Array.isArray(result.red_flags) && (
+            <div style={{marginBottom:14}}>
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.08em", textTransform:"uppercase",
+                color:Coral, marginBottom:8,
+              }}>{T.iv_db_red_flags}</div>
+              {result.red_flags.length === 0 ? (
+                <div style={{
+                  padding:"9px 12px",
+                  background:CreamSoft, borderRadius:RadiusSm,
+                  border:"0.5px solid "+Gray200,
+                  fontSize:12, color:Gray600, fontStyle:"italic",
+                }}>{T.iv_db_no_red_flags}</div>
+              ) : (
+                result.red_flags.map((s, i) => (
+                  <div key={i} style={{
+                    display:"flex", gap:8, alignItems:"flex-start",
+                    padding:"9px 12px", marginBottom:6,
+                    background:CoralSoft, borderRadius:RadiusSm,
+                    border:"0.5px solid "+Coral,
+                    fontSize:12, color:Ink, lineHeight:1.5,
+                  }}>
+                    <span style={{color:Coral, fontWeight:700, flexShrink:0}}>x</span>
+                    <span>{s}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Next steps */}
+          {Array.isArray(result.next_steps) && result.next_steps.length > 0 && (
+            <div>
+              <div style={{
+                fontSize:11, fontWeight:600,
+                letterSpacing:"0.08em", textTransform:"uppercase",
+                color:Purple, marginBottom:8,
+              }}>{T.iv_db_next_steps}</div>
+              {result.next_steps.map((s, i) => (
+                <div key={i} style={{
+                  display:"flex", gap:8, alignItems:"flex-start",
+                  padding:"9px 12px", marginBottom:6,
+                  background:PurpleSoft, borderRadius:RadiusSm,
+                  border:"0.5px solid "+Purple,
+                  fontSize:12, color:Ink, lineHeight:1.5,
+                }}>
+                  <span style={{color:Purple, fontWeight:700, flexShrink:0}}>{i + 1}.</span>
+                  <span>{s}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// === v2 Tab Pendant : composants ===
+
+// CheatSheetCard : pense-bete A4 imprimable.
+// Etat 1 : bouton run. Etat 2 : loading. Etat 3 : preview imprimable + boutons
+// imprimer / telecharger PDF.
+function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }) {
+  const sheetRef = useRef(null);
+  const [downloading, setDownloading] = useState(false);
+
+  // Imprime le pense-bete via window.print() avec un container clone temporaire
+  // qui passe par une feuille de style "print" injectee a la volee.
+  const printSheet = () => {
+    if (!sheetRef.current) return;
+    const html = sheetRef.current.innerHTML;
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) {
+      if (notify) notify("Bloque par le navigateur");
+      return;
+    }
+    w.document.write(
+      '<html><head><title>' + (T.iv_cs_card_title || "Pense-bete") + '</title>'
+      + '<style>'
+      + '@page { size: A4 portrait; margin: 12mm; }'
+      + '* { box-sizing: border-box; }'
+      + 'body { font-family: Inter, Helvetica, Arial, sans-serif; color:#0a0a0a; margin:0; padding:0; }'
+      + '</style></head><body>' + html + '</body></html>'
+    );
+    w.document.close();
+    setTimeout(() => { w.print(); }, 250);
+  };
+
+  // Telecharge le pense-bete en PDF (A4 portrait, 1 page)
+  const downloadPDF = async () => {
+    if (!sheetRef.current) return;
+    setDownloading(true);
+    try {
+      // Charge html2pdf depuis le CDN si pas deja charge
+      const loadHtml2pdf = () => new Promise((resolve, reject) => {
+        if (typeof window === "undefined") return reject(new Error("no window"));
+        if (window.html2pdf) return resolve(window.html2pdf);
+        const existing = document.querySelector('script[data-cvf-html2pdf]');
+        if (existing) {
+          const check = setInterval(() => {
+            if (window.html2pdf) { clearInterval(check); resolve(window.html2pdf); }
+          }, 100);
+          setTimeout(() => clearInterval(check), 10000);
+          return;
+        }
+        const s = document.createElement("script");
+        s.setAttribute("data-cvf-html2pdf", "1");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+        s.onload = () => resolve(window.html2pdf);
+        s.onerror = () => reject(new Error("Erreur chargement PDF"));
+        document.head.appendChild(s);
+      });
+      const html2pdf = await loadHtml2pdf();
+      const opt = {
+        margin: 10,
+        filename: "pense-bete-entretien-" + (cv && cv.name ? cv.name.replace(/[^a-z0-9]/gi, "_") : "candidat") + ".pdf",
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+      await html2pdf().set(opt).from(sheetRef.current).save();
+    } catch (err) {
+      if (notify) notify("Erreur PDF: " + (err && err.message ? err.message : ""));
+    }
+    setDownloading(false);
+  };
+
+  return (
+    <div style={{
+      background:Paper, borderRadius:RadiusMd,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      padding:18, marginBottom:16,
+      fontFamily:Sans,
+    }}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:10,
+        marginBottom:10,
+      }}>
+        <div style={{
+          width:34, height:34, borderRadius:9,
+          background:GoldDeep, color:Cream,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"/>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+            <rect x="6" y="14" width="12" height="8"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{
+            fontFamily:Serif, fontWeight:500, fontSize:16,
+            color:Ink, letterSpacing:"-0.01em",
+          }}>{T.iv_cs_card_title}</div>
+          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+            {T.iv_cs_card_sub}
+          </div>
+        </div>
+      </div>
+
+      {/* Etat 1 : pas encore genere */}
+      {!loading && !result && (
+        <button onClick={onRun} disabled={!hasMainResult} style={{
+          ...B({
+            width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
+            background: hasMainResult ? GradGold : Gray200,
+            color: hasMainResult ? Cream : Gray600,
+            fontFamily:Sans, fontWeight:600, fontSize:13,
+            display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+            transition:"all 200ms ease-out",
+            marginTop:6,
+          })
+        }}>
+          {hasMainResult ? T.iv_cs_run : T.iv_cs_empty}
+          {hasMainResult && (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
+          )}
+        </button>
+      )}
+
+      {/* Etat 2 : loading */}
+      {loading && (
+        <div style={{
+          padding:"24px 12px", textAlign:"center",
+        }}>
+          <div style={{
+            width:28, height:28, margin:"0 auto 10px",
+            border:"2px solid "+Gray200, borderTopColor:GoldDeep,
+            borderRadius:"50%",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+          <div style={{fontSize:12, color:Gray600}}>{T.iv_cs_loading}</div>
+        </div>
+      )}
+
+      {/* Etat 3 : pense-bete genere : preview + boutons imprimer / pdf */}
+      {!loading && result && (
+        <>
+          {/* Boutons d'action */}
+          <div style={{
+            display:"flex", gap:8, marginTop:12, marginBottom:14,
+            flexWrap:"wrap",
+          }}>
+            <button onClick={printSheet} style={{
+              ...B({
+                flex:1, minWidth:130,
+                padding:"10px 14px", borderRadius:RadiusPill,
+                background:Ink, color:Cream,
+                fontSize:12, fontWeight:600, fontFamily:Sans,
+                display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
+              })
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+              </svg>
+              {T.iv_cs_print}
+            </button>
+            <button onClick={downloadPDF} disabled={downloading} style={{
+              ...B({
+                flex:1, minWidth:130,
+                padding:"10px 14px", borderRadius:RadiusPill,
+                background: downloading ? Gray200 : Paper,
+                color: downloading ? Gray600 : Ink,
+                border:"0.5px solid "+(downloading ? Gray200 : Ink),
+                fontSize:12, fontWeight:600, fontFamily:Sans,
+                display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
+              })
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              {downloading ? "..." : T.iv_cs_download}
+            </button>
+          </div>
+
+          {/* Preview du pense-bete (rendu A4 simule) */}
+          <div ref={sheetRef} style={{
+            background:"#ffffff",
+            border:"0.5px solid "+Gray200,
+            borderRadius:8,
+            padding:"24px 28px",
+            fontFamily:"Inter, Helvetica, Arial, sans-serif",
+            color:"#0a0a0a",
+          }}>
+            <div style={{
+              borderBottom:"2px solid #0a0a0a",
+              paddingBottom:10, marginBottom:18,
+            }}>
+              <div style={{
+                fontSize:9, letterSpacing:"0.12em",
+                textTransform:"uppercase", color:"#a07e3a",
+                fontWeight:600, marginBottom:3,
+              }}>CV Factory</div>
+              <div style={{
+                fontFamily:"Georgia, serif", fontSize:20,
+                fontWeight:600, letterSpacing:"-0.02em",
+              }}>{T.iv_cs_card_title}</div>
+              {cv && cv.name && (
+                <div style={{fontSize:10, color:"#666", marginTop:3}}>
+                  {cv.name}{cv.title ? " - " + cv.title : ""}
+                </div>
+              )}
+            </div>
+
+            {/* Section 1 : Messages cles */}
+            {Array.isArray(result.key_messages) && result.key_messages.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{
+                  fontFamily:"Georgia, serif", fontSize:14,
+                  fontWeight:600, color:"#0a0a0a",
+                  marginBottom:8, paddingBottom:3,
+                  borderBottom:"1px solid #ccc",
+                }}>{T.iv_cs_section_messages}</div>
+                {result.key_messages.map((m, i) => (
+                  <div key={i} style={{
+                    display:"flex", gap:8, alignItems:"flex-start",
+                    fontSize:12, lineHeight:1.5,
+                    marginBottom:5,
+                  }}>
+                    <span style={{
+                      color:"#a07e3a", fontWeight:700,
+                      flexShrink:0, minWidth:18,
+                    }}>{i + 1}.</span>
+                    <span>{m}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Section 2 : Top 3 questions a poser */}
+            {Array.isArray(result.top_questions) && result.top_questions.length > 0 && (
+              <div style={{marginBottom:16}}>
+                <div style={{
+                  fontFamily:"Georgia, serif", fontSize:14,
+                  fontWeight:600, color:"#0a0a0a",
+                  marginBottom:8, paddingBottom:3,
+                  borderBottom:"1px solid #ccc",
+                }}>{T.iv_cs_section_ask}</div>
+                {result.top_questions.map((q, i) => (
+                  <div key={i} style={{
+                    fontSize:12, lineHeight:1.5,
+                    marginBottom:6, fontStyle:"italic",
+                    paddingLeft:14, position:"relative",
+                  }}>
+                    <span style={{
+                      position:"absolute", left:0,
+                      color:"#7a4d96", fontWeight:700,
+                      fontStyle:"normal",
+                    }}>?</span>
+                    "{q}"
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Section 3 : Checklist last-minute */}
+            {Array.isArray(result.checklist) && result.checklist.length > 0 && (
+              <div>
+                <div style={{
+                  fontFamily:"Georgia, serif", fontSize:14,
+                  fontWeight:600, color:"#0a0a0a",
+                  marginBottom:8, paddingBottom:3,
+                  borderBottom:"1px solid #ccc",
+                }}>{T.iv_cs_section_checklist}</div>
+                {result.checklist.map((c, i) => (
+                  <div key={i} style={{
+                    display:"flex", gap:8, alignItems:"flex-start",
+                    fontSize:12, lineHeight:1.5,
+                    marginBottom:4,
+                  }}>
+                    <span style={{
+                      flexShrink:0, width:13, height:13,
+                      border:"1.5px solid #0a0a0a",
+                      borderRadius:2, marginTop:2,
+                    }}/>
+                    <span>{c}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// PackPdfCard : carte qui declenche l'export PDF du pack complet
+// (questions a recevoir + STAR + questions a poser).
+function PackPdfCard({ T, loading, hasMainResult, onRun }) {
+  return (
+    <div style={{
+      background:Paper, borderRadius:RadiusMd,
+      border:"0.5px solid "+Gray200,
+      boxShadow:ShadowSm,
+      padding:18, marginBottom:16,
+      fontFamily:Sans,
+    }}>
+      <div style={{
+        display:"flex", alignItems:"center", gap:10,
+        marginBottom:10,
+      }}>
+        <div style={{
+          width:34, height:34, borderRadius:9,
+          background:Purple, color:Cream,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          flexShrink:0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{
+            fontFamily:Serif, fontWeight:500, fontSize:16,
+            color:Ink, letterSpacing:"-0.01em",
+          }}>{T.iv_pk_card_title}</div>
+          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+            {T.iv_pk_card_sub}
+          </div>
+        </div>
+      </div>
+
+      <button onClick={onRun} disabled={!hasMainResult || loading} style={{
+        ...B({
+          width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
+          background: !hasMainResult ? Gray200 : (loading ? Gray200 : GradPurple),
+          color: !hasMainResult ? Gray600 : (loading ? Gray600 : Cream),
+          fontFamily:Sans, fontWeight:600, fontSize:13,
+          display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+          transition:"all 200ms ease-out",
+          marginTop:6,
+        })
+      }}>
+        {!hasMainResult ? T.iv_pk_empty
+          : loading ? T.iv_pk_loading
+          : T.iv_pk_run}
+        {hasMainResult && !loading && (
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        )}
+        {loading && (
+          <span style={{
+            display:"inline-block",
+            width:14, height:14,
+            border:"2px solid "+Gray400, borderTopColor:Gray600,
+            borderRadius:"50%",
+            animation:"cvfSpin 1s linear infinite",
+          }}/>
+        )}
+      </button>
+    </div>
+  );
+}
+
 export default function InterviewModal({
   T, cv, apiKey, loading, result,
   offerText, setOfferText, prefilledOffer,
@@ -438,6 +1328,13 @@ export default function InterviewModal({
   // v2 Interview Continuity : nouveaux props
   round, setRound,
   askRecruiterLoading, askRecruiterResult, onRunAskRecruiter,
+  // v2 Tab Apres
+  afterContext, setAfterContext,
+  emailLoading, emailResult, emailTone, setEmailTone, onRunEmail,
+  debriefLoading, debriefResult, onRunDebrief,
+  // v2 Tab Pendant
+  cheatSheetLoading, cheatSheetResult, onRunCheatSheet,
+  packLoading, onRunPackPDF,
 }) {
   const [idx, setIdx] = useState(0);
   // v2 : tab actif (Avant / Pendant / Apres). Par defaut "before".
@@ -626,26 +1523,141 @@ export default function InterviewModal({
           flex:1,
         }}>
 
-          {/* Tab "Pendant" : placeholder en attendant chantier 6.4 */}
+          {/* Tab "Pendant" : pense-bete imprimable + export PDF du pack */}
           {tab === "during" && (
-            <div style={{
-              padding:"40px 22px",
-              background:CreamSoft, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200,
-              textAlign:"center", color:Gray600,
-              fontSize:13, fontFamily:Sans, lineHeight:1.6,
-            }}>{T.iv_during_placeholder}</div>
+            <>
+              {cvIsEmpty ? (
+                <div style={{
+                  padding:"24px 18px",
+                  background:CreamSoft, borderRadius:RadiusMd,
+                  border:"0.5px solid "+Gray200,
+                  textAlign:"center", color:Gray600,
+                  fontSize:13, fontFamily:Sans,
+                }}>{T.iv_no_cv}</div>
+              ) : (
+                <>
+                  {/* Header editorial du tab Pendant */}
+                  <div style={{marginBottom:20}}>
+                    <div style={{
+                      fontSize:11, fontWeight:600,
+                      letterSpacing:"0.12em", textTransform:"uppercase",
+                      color:GoldDeep, marginBottom:4, fontFamily:Sans,
+                    }}>{T.iv_during_eyebrow}</div>
+                    <div style={{
+                      fontFamily:Serif, fontWeight:400, fontSize:22,
+                      letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
+                    }}>
+                      {T.iv_during_title_a}
+                      {" "}<em style={{
+                        fontStyle:"italic", color:Gold,
+                      }}>{T.iv_during_title_em}</em>
+                      {T.iv_during_title_b}
+                    </div>
+                    <div style={{
+                      fontSize:12, color:Gray600, marginTop:5,
+                      lineHeight:1.5,
+                    }}>{T.iv_during_sub}</div>
+                  </div>
+
+                  {/* Section "Tes outils du jour J" */}
+                  <div style={{
+                    fontSize:11, fontWeight:600,
+                    letterSpacing:"0.12em", textTransform:"uppercase",
+                    color:GoldDeep, marginBottom:14, fontFamily:Sans,
+                  }}>{T.iv_during_section_tools}</div>
+
+                  {/* Cartes pense-bete + pack PDF */}
+                  <CheatSheetCard
+                    T={T}
+                    cv={cv}
+                    loading={!!cheatSheetLoading}
+                    result={cheatSheetResult}
+                    hasMainResult={!!result}
+                    onRun={onRunCheatSheet || (()=>{})}
+                  />
+                  <PackPdfCard
+                    T={T}
+                    loading={!!packLoading}
+                    hasMainResult={!!result}
+                    onRun={onRunPackPDF || (()=>{})}
+                  />
+                </>
+              )}
+            </>
           )}
 
-          {/* Tab "Apres" : placeholder en attendant chantier 6.3 */}
+          {/* Tab "Apres" : email thank-you + auto-debrief */}
           {tab === "after" && (
-            <div style={{
-              padding:"40px 22px",
-              background:CreamSoft, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200,
-              textAlign:"center", color:Gray600,
-              fontSize:13, fontFamily:Sans, lineHeight:1.6,
-            }}>{T.iv_after_placeholder}</div>
+            <>
+              {cvIsEmpty ? (
+                <div style={{
+                  padding:"24px 18px",
+                  background:CreamSoft, borderRadius:RadiusMd,
+                  border:"0.5px solid "+Gray200,
+                  textAlign:"center", color:Gray600,
+                  fontSize:13, fontFamily:Sans,
+                }}>{T.iv_no_cv}</div>
+              ) : (
+                <>
+                  {/* Header editorial du tab Apres */}
+                  <div style={{marginBottom:20}}>
+                    <div style={{
+                      fontSize:11, fontWeight:600,
+                      letterSpacing:"0.12em", textTransform:"uppercase",
+                      color:GoldDeep, marginBottom:4, fontFamily:Sans,
+                    }}>{T.iv_after_eyebrow}</div>
+                    <div style={{
+                      fontFamily:Serif, fontWeight:400, fontSize:22,
+                      letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
+                    }}>
+                      {T.iv_after_title_a}
+                      {" "}<em style={{
+                        fontStyle:"italic", color:Gold,
+                      }}>{T.iv_after_title_em}</em>
+                      {T.iv_after_title_b}
+                    </div>
+                    <div style={{
+                      fontSize:12, color:Gray600, marginTop:5,
+                      lineHeight:1.5,
+                    }}>{T.iv_after_sub}</div>
+                  </div>
+
+                  {/* Formulaire de contexte */}
+                  {afterContext && setAfterContext && (
+                    <AfterContextForm
+                      T={T}
+                      afterContext={afterContext}
+                      setAfterContext={setAfterContext}
+                    />
+                  )}
+
+                  {/* Section "Tes outils de suivi" */}
+                  <div style={{
+                    fontSize:11, fontWeight:600,
+                    letterSpacing:"0.12em", textTransform:"uppercase",
+                    color:GoldDeep, marginBottom:14, fontFamily:Sans,
+                  }}>{T.iv_af_section_tools}</div>
+
+                  {/* Cartes email + debrief */}
+                  <EmailCard
+                    T={T}
+                    loading={!!emailLoading}
+                    result={emailResult}
+                    tone={emailTone || "warm"}
+                    setTone={setEmailTone || (()=>{})}
+                    recapFilled={!!(afterContext && afterContext.recap && afterContext.recap.trim())}
+                    onRun={onRunEmail || (()=>{})}
+                  />
+                  <DebriefCard
+                    T={T}
+                    loading={!!debriefLoading}
+                    result={debriefResult}
+                    recapFilled={!!(afterContext && afterContext.recap && afterContext.recap.trim())}
+                    onRun={onRunDebrief || (()=>{})}
+                  />
+                </>
+              )}
+            </>
           )}
 
           {/* Tab "Avant" : tout le contenu existant + nouvelle section ask-recruiter */}
