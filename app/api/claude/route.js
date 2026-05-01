@@ -19,20 +19,9 @@ Match the requested language exactly (French or English) without mixing.`;
 
 function buildSystemBlocks(cvContext) {
   const blocks = [
-    {
-      type: "text",
-      text: NO_DASH_BLOCK,
-      cache_control: { type: "ephemeral" },
-    },
-    {
-      type: "text",
-      text: JSON_FORMAT_BLOCK,
-      cache_control: { type: "ephemeral" },
-    },
-    {
-      type: "text",
-      text: QUALITY_BLOCK,
-    },
+    { type: "text", text: NO_DASH_BLOCK, cache_control: { type: "ephemeral" } },
+    { type: "text", text: JSON_FORMAT_BLOCK, cache_control: { type: "ephemeral" } },
+    { type: "text", text: QUALITY_BLOCK },
   ];
 
   if (cvContext && typeof cvContext === "string" && cvContext.length > 0) {
@@ -54,20 +43,6 @@ function pickMaxTokens(requestedMax) {
     return requestedMax;
   }
   return 8000;
-}
-
-function computeCostUSD(inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens) {
-  const SONNET_IN = 3.00;
-  const SONNET_OUT = 15.00;
-  const SONNET_CACHE_HIT = 0.30;
-  const SONNET_CACHE_WRITE = 3.75;
-
-  const inputCost = (inputTokens * SONNET_IN) / 1_000_000;
-  const outputCost = (outputTokens * SONNET_OUT) / 1_000_000;
-  const cacheReadCost = (cacheReadTokens * SONNET_CACHE_HIT) / 1_000_000;
-  const cacheWriteCost = (cacheCreationTokens * SONNET_CACHE_WRITE) / 1_000_000;
-
-  return inputCost + outputCost + cacheReadCost + cacheWriteCost;
 }
 
 export async function POST(request) {
@@ -147,12 +122,6 @@ export async function POST(request) {
               (data && data.error && data.error.message) ||
               `Anthropic API error ${upstreamRes.status}`,
             type: (data && data.error && data.error.type) || "api_error",
-            upstream_status: upstreamRes.status,
-          },
-          _cvf_meta: {
-            task_name: taskName,
-            elapsed_ms: elapsed,
-            error: true,
           },
         }),
         { status: upstreamRes.status, headers: { "Content-Type": "application/json" } }
@@ -165,17 +134,6 @@ export async function POST(request) {
     const inputTokens = usage.input_tokens || 0;
     const outputTokens = usage.output_tokens || 0;
 
-    const totalInput = inputTokens + cacheReadTokens + cacheCreationTokens;
-    const cachedRatio =
-      totalInput > 0 ? Math.round((cacheReadTokens / totalInput) * 100) : 0;
-
-    const costUSD = computeCostUSD(
-      inputTokens,
-      outputTokens,
-      cacheReadTokens,
-      cacheCreationTokens
-    );
-
     const response = {
       ...data,
       _cvf_meta: {
@@ -185,10 +143,6 @@ export async function POST(request) {
         cache_creation_tokens: cacheCreationTokens,
         input_tokens: inputTokens,
         output_tokens: outputTokens,
-        total_input_tokens: totalInput,
-        cached_ratio_pct: cachedRatio,
-        cost_usd: Number(costUSD.toFixed(6)),
-        cost_eur: Number((costUSD * 0.92).toFixed(6)),
       },
     };
 
@@ -202,11 +156,6 @@ export async function POST(request) {
         error: {
           message: err && err.message ? err.message : "Unknown server error",
           type: "internal_error",
-        },
-        _cvf_meta: {
-          task_name: taskName,
-          elapsed_ms: Date.now() - startTime,
-          error: true,
         },
       }),
       { status: 500, headers: { "Content-Type": "application/json" } }
