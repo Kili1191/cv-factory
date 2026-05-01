@@ -501,7 +501,84 @@ const FR_T = {
   iv_qta_cat_culture:"La culture",
   iv_qta_cat_next:"Les prochaines etapes",
   // Tabs Pendant et Apres : placeholders en attendant 6.3 et 6.4
+  // Tab "Pendant" : pense-bete imprimable + export PDF du pack
+  iv_during_eyebrow:"Pendant l'entretien",
+  iv_during_title_a:"Tout ce que tu dois",
+  iv_during_title_em:"avoir en tete",
+  iv_during_title_b:".",
+  iv_during_sub:"Le pense-bete A4 et le pack PDF complet pour reviser ou avoir sous la main.",
+  iv_during_section_tools:"Tes outils du jour J",
+  // Cheat sheet
+  iv_cs_card_title:"Pense-bete A4",
+  iv_cs_card_sub:"1 page imprimable avec tes 5 messages cles, top 3 questions a poser et checklist last-minute.",
+  iv_cs_run:"Generer mon pense-bete",
+  iv_cs_loading:"L'IA prepare ton pense-bete...",
+  iv_cs_empty:"Genere d'abord les questions principales.",
+  iv_cs_print:"Imprimer",
+  iv_cs_download:"Telecharger en PDF",
+  iv_cs_section_messages:"5 messages cles a faire passer",
+  iv_cs_section_ask:"Top 3 questions a poser",
+  iv_cs_section_checklist:"Checklist last-minute",
+  // Pack PDF
+  iv_pk_card_title:"Pack PDF complet",
+  iv_pk_card_sub:"Exporte toutes tes flashcards et questions a poser dans un PDF multi-pages.",
+  iv_pk_run:"Telecharger le pack PDF",
+  iv_pk_loading:"Generation du PDF...",
+  iv_pk_empty:"Genere d'abord le pack (questions a recevoir + questions a poser).",
+  iv_pk_done:"PDF telecharge",
+  iv_pk_pdf_title:"Preparation entretien",
+  iv_pk_pdf_section_recv:"Questions probables et reponses STAR",
+  iv_pk_pdf_section_ask:"Tes questions a poser au recruteur",
   iv_during_placeholder:"Pense-bete imprimable et mode flashcard plein-ecran arrivent bientot.",
+  // Tab "Apres" : email thank-you + auto-debrief
+  iv_after_eyebrow:"Apres l'entretien",
+  iv_after_title_a:"Le suivi qui",
+  iv_after_title_em:"fait la difference",
+  iv_after_title_b:".",
+  iv_after_sub:"L'IA t'aide a envoyer un email de remerciement personnalise et a debriefer pour progresser.",
+  iv_af_section_context:"Contexte de l'entretien",
+  iv_af_recruiter_name:"Nom du recruteur",
+  iv_af_recruiter_ph:"Marie Durand",
+  iv_af_type:"Type d'entretien",
+  iv_af_type_video:"Visio",
+  iv_af_type_phone:"Telephone",
+  iv_af_type_onsite:"Sur site",
+  iv_af_type_panel:"Panel / jury",
+  iv_af_duration:"Duree (min)",
+  iv_af_duration_ph:"45",
+  iv_af_date:"Date",
+  iv_af_recap_label:"Comment ca s'est passe ?",
+  iv_af_recap_ph:"Decris ce qui s'est dit, les questions imprevues, ton ressenti, ce qui t'a marque, les points forts et les points faibles que tu as percus.",
+  iv_af_recap_required:"Ce champ est requis pour generer un email ou un debrief precis.",
+  iv_af_section_tools:"Tes outils de suivi",
+  // Email
+  iv_em_card_title:"Email de remerciement",
+  iv_em_card_sub:"Personnalise selon ce qui s'est dit pendant l'entretien.",
+  iv_em_run:"Generer l'email",
+  iv_em_loading:"L'IA redige ton email...",
+  iv_em_subject:"Sujet",
+  iv_em_body:"Corps",
+  iv_em_copy_subject:"Copier le sujet",
+  iv_em_copy_body:"Copier le corps",
+  iv_em_copy_all:"Copier tout l'email",
+  iv_em_copied:"Copie",
+  iv_em_regenerate:"Regenerer avec un autre ton",
+  iv_em_tone_label:"Ton",
+  iv_em_tone_warm:"Chaleureux",
+  iv_em_tone_pro:"Professionnel",
+  iv_em_tone_concise:"Concis",
+  iv_em_tone_assertive:"Affirmatif",
+  // Debrief
+  iv_db_card_title:"Auto-debrief",
+  iv_db_card_sub:"Analyse honnete de ta performance, forces, axes d'amelioration, verdict probable.",
+  iv_db_run:"Analyser ma performance",
+  iv_db_loading:"L'IA analyse ton entretien...",
+  iv_db_strengths:"Tes forces",
+  iv_db_improvements:"Axes d'amelioration",
+  iv_db_red_flags:"Points de vigilance",
+  iv_db_verdict:"Verdict probable",
+  iv_db_next_steps:"Prochaines etapes recommandees",
+  iv_db_no_red_flags:"Aucun signal d'alarme detecte.",
   iv_after_placeholder:"Email de remerciement et auto-debrief apres l'entretien arrivent bientot.",
   // === Versions multi-CV ===
   vs_eyebrow:"Multi-CV",
@@ -1196,7 +1273,84 @@ const EN_T = {
   iv_qta_cat_culture:"The culture",
   iv_qta_cat_next:"Next steps",
   // Tabs During and After : placeholders pending 6.3 and 6.4
+  // Tab "During" : printable cheat sheet + PDF pack export
+  iv_during_eyebrow:"During the interview",
+  iv_during_title_a:"Everything you need",
+  iv_during_title_em:"in mind",
+  iv_during_title_b:".",
+  iv_during_sub:"The A4 cheat sheet and the full PDF pack to review or keep handy.",
+  iv_during_section_tools:"Your day-of tools",
+  // Cheat sheet
+  iv_cs_card_title:"A4 cheat sheet",
+  iv_cs_card_sub:"1 printable page with your 5 key messages, top 3 questions to ask, and last-minute checklist.",
+  iv_cs_run:"Generate my cheat sheet",
+  iv_cs_loading:"The AI is preparing your cheat sheet...",
+  iv_cs_empty:"Generate the main questions first.",
+  iv_cs_print:"Print",
+  iv_cs_download:"Download as PDF",
+  iv_cs_section_messages:"5 key messages to convey",
+  iv_cs_section_ask:"Top 3 questions to ask",
+  iv_cs_section_checklist:"Last-minute checklist",
+  // PDF pack
+  iv_pk_card_title:"Full PDF pack",
+  iv_pk_card_sub:"Export all flashcards and questions to ask in a multi-page PDF.",
+  iv_pk_run:"Download PDF pack",
+  iv_pk_loading:"Generating PDF...",
+  iv_pk_empty:"Generate the pack first (questions to receive + questions to ask).",
+  iv_pk_done:"PDF downloaded",
+  iv_pk_pdf_title:"Interview preparation",
+  iv_pk_pdf_section_recv:"Likely questions and STAR answers",
+  iv_pk_pdf_section_ask:"Your questions to ask the recruiter",
   iv_during_placeholder:"Printable cheat sheet and full-screen flashcard mode coming soon.",
+  // Tab "After" : thank-you email + self-debrief
+  iv_after_eyebrow:"After the interview",
+  iv_after_title_a:"The follow-up that",
+  iv_after_title_em:"makes the difference",
+  iv_after_title_b:".",
+  iv_after_sub:"The AI helps you send a personalized thank-you email and debrief to keep improving.",
+  iv_af_section_context:"Interview context",
+  iv_af_recruiter_name:"Recruiter name",
+  iv_af_recruiter_ph:"Mary Doe",
+  iv_af_type:"Interview type",
+  iv_af_type_video:"Video",
+  iv_af_type_phone:"Phone",
+  iv_af_type_onsite:"On-site",
+  iv_af_type_panel:"Panel",
+  iv_af_duration:"Duration (min)",
+  iv_af_duration_ph:"45",
+  iv_af_date:"Date",
+  iv_af_recap_label:"How did it go?",
+  iv_af_recap_ph:"Describe what was discussed, unexpected questions, your feelings, what struck you, strengths and weaknesses you sensed.",
+  iv_af_recap_required:"This field is required to generate a precise email or debrief.",
+  iv_af_section_tools:"Your follow-up tools",
+  // Email
+  iv_em_card_title:"Thank-you email",
+  iv_em_card_sub:"Personalized based on what was discussed in the interview.",
+  iv_em_run:"Generate the email",
+  iv_em_loading:"The AI is drafting your email...",
+  iv_em_subject:"Subject",
+  iv_em_body:"Body",
+  iv_em_copy_subject:"Copy subject",
+  iv_em_copy_body:"Copy body",
+  iv_em_copy_all:"Copy whole email",
+  iv_em_copied:"Copied",
+  iv_em_regenerate:"Regenerate with another tone",
+  iv_em_tone_label:"Tone",
+  iv_em_tone_warm:"Warm",
+  iv_em_tone_pro:"Professional",
+  iv_em_tone_concise:"Concise",
+  iv_em_tone_assertive:"Assertive",
+  // Debrief
+  iv_db_card_title:"Self-debrief",
+  iv_db_card_sub:"Honest analysis of your performance, strengths, improvement areas, likely verdict.",
+  iv_db_run:"Analyze my performance",
+  iv_db_loading:"The AI is analyzing your interview...",
+  iv_db_strengths:"Your strengths",
+  iv_db_improvements:"Improvement areas",
+  iv_db_red_flags:"Watchpoints",
+  iv_db_verdict:"Likely verdict",
+  iv_db_next_steps:"Recommended next steps",
+  iv_db_no_red_flags:"No red flags detected.",
   iv_after_placeholder:"Thank-you email and post-interview self-debrief coming soon.",
   // === Multi-CV versions ===
   vs_eyebrow:"Multi-CV",
@@ -1669,6 +1823,47 @@ function parseGoogleFontUrl(url) {
     name: familyRaw,
     googleHref: url,
   };
+}
+
+// === Helper escapeHtml ===
+// Utilise pour echapper le texte utilisateur dans les chaines HTML genere
+// (notamment dans le PDF export qui injecte du HTML via innerHTML).
+function escapeHtml(str) {
+  if (str == null) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// === Helper : charge html2pdf depuis CDN si pas deja charge ===
+// Resout en window.html2pdf pret a l'emploi, ou rejette si echec reseau.
+// Utilise par tous les PDF exports (CV, pack entretien, pense-bete).
+function ensureHtml2pdfLoaded() {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return reject(new Error("no window"));
+    if (window.html2pdf) return resolve(window.html2pdf);
+    const existing = document.querySelector('script[data-cvf-html2pdf]');
+    if (existing) {
+      // Deja en train de se charger : attendre
+      const check = setInterval(() => {
+        if (window.html2pdf) {
+          clearInterval(check);
+          resolve(window.html2pdf);
+        }
+      }, 100);
+      setTimeout(() => clearInterval(check), 10000);
+      return;
+    }
+    const s = document.createElement("script");
+    s.setAttribute("data-cvf-html2pdf", "1");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    s.onload = () => resolve(window.html2pdf);
+    s.onerror = () => reject(new Error("Erreur chargement PDF"));
+    document.head.appendChild(s);
+  });
 }
 
 // === Helpers WCAG (luminance + ratio de contraste) ===
@@ -5075,6 +5270,19 @@ export default function App() {
   const [interviewRound, setInterviewRound] = useState("all"); // "all"|"hr"|"manager"|"board"
   const [askRecruiterLoading, setAskRecruiterLoading] = useState(false);
   const [askRecruiterResult, setAskRecruiterResult] = useState(null);
+  // v2 Tab Apres : contexte + email + debrief
+  const [afterContext, setAfterContext] = useState({
+    recruiterName: "", type: "video", duration: "", date: "", recap: "",
+  });
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailResult, setEmailResult] = useState(null); // { subject, body }
+  const [emailTone, setEmailTone] = useState("warm"); // warm|pro|concise|assertive
+  const [debriefLoading, setDebriefLoading] = useState(false);
+  const [debriefResult, setDebriefResult] = useState(null);
+  // v2 Tab Pendant : pense-bete + pack PDF
+  const [cheatSheetLoading, setCheatSheetLoading] = useState(false);
+  const [cheatSheetResult, setCheatSheetResult] = useState(null);
+  const [packPdfLoading, setPackPdfLoading] = useState(false);
   // v17 chantier 7 : Coach IA conversationnel
   const [showCoach, setShowCoach] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
@@ -6090,6 +6298,308 @@ export default function App() {
     setAskRecruiterLoading(false);
   }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
       buildInterviewCvText, roundDirective]);
+
+  // === v2 Tab Apres : runEmail (email de remerciement) ===
+  // Genere un email de remerciement personnalise base sur :
+  // - Le CV du candidat (parcours, secteur, niveau)
+  // - L'offre (si disponible)
+  // - Le contexte de l'entretien (recruteur, type, duree, date, recap)
+  // - Le ton choisi (warm/pro/concise/assertive)
+  // Retourne { subject, body } pret a copier-coller dans Gmail/Outlook.
+  const runEmail = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (!afterContext.recap || !afterContext.recap.trim()) {
+      notify(T.iv_af_recap_required || "Decris d'abord comment ca s'est passe");
+      return;
+    }
+    setEmailLoading(true);
+    setEmailResult(null);
+    try {
+      const cvT = buildInterviewCvText();
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE D'EMPLOI VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      // Contexte de l'entretien serialise
+      const ctxLines = [];
+      if (afterContext.recruiterName) ctxLines.push("Nom du recruteur: " + afterContext.recruiterName);
+      if (afterContext.type) ctxLines.push("Type d'entretien: " + afterContext.type);
+      if (afterContext.duration) ctxLines.push("Duree: " + afterContext.duration + " min");
+      if (afterContext.date) ctxLines.push("Date: " + afterContext.date);
+      const ctxBlock = ctxLines.length > 0 ? "\n\nCONTEXTE ENTRETIEN:\n" + ctxLines.join("\n") : "";
+      const recapBlock = "\n\nRECAP DE L'ENTRETIEN PAR LE CANDIDAT:\n" + afterContext.recap.trim();
+
+      // Ton
+      const toneMap = {
+        warm: "Chaleureux mais professionnel. Authentique, montre de l'enthousiasme sans en faire trop.",
+        pro: "Professionnel sobre. Direct, factuel, courtois. Pas d'exclamation.",
+        concise: "Tres court : 4-5 phrases maximum. Va droit au but.",
+        assertive: "Affirmatif et confiant. Reaffirme clairement ta motivation et ta valeur ajoutee.",
+      };
+      const toneLine = "Ton: " + (toneMap[emailTone] || toneMap.warm);
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+
+      const p = "Tu es coach carriere et expert en communication professionnelle."
+        + " Tu rediges un email de remerciement post-entretien pour le candidat ci-dessous."
+        + "\n\nCANDIDAT:\n" + cvT
+        + offerLine
+        + ctxBlock
+        + recapBlock
+        + "\n\n" + toneLine
+        + roundDirective(false)
+        + "\n\nMISSION:"
+        + "\nRedige un email de remerciement complet, pret a envoyer."
+        + " L'email doit faire reference A UN POINT PRECIS de ce que le candidat a vecu pendant l'entretien"
+        + " (une question particuliere, un sujet aborde, un point de connexion humaine)."
+        + " Cela transforme un email standard en un message memorable."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Le sujet doit etre court, professionnel, sans superlatifs (pas de 'Merci infiniment !!')."
+        + "\n- Le corps commence par 'Bonjour " + (afterContext.recruiterName || "[Nom du recruteur]") + "' (ou en anglais si applicable)."
+        + "\n- Reference precise au contenu de l'entretien (basee sur le recap)."
+        + "\n- Reaffirme la motivation EN UNE PHRASE percutante."
+        + "\n- Termine par une signature ouverte (Cordialement, prenom)."
+        + "\n- Ne PAS poser de questions auxquelles le recruteur a deja repondu."
+        + "\n- Ne PAS demander quand sera la decision (signe d'impatience)."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"subject":"Sujet court professionnel","body":"Bonjour ...\\n\\nCorps complet de l\'email avec sauts de ligne via \\\\n.\\n\\nCordialement,\\n[Prenom]"}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setEmailResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setEmailLoading(false);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
+      buildInterviewCvText, roundDirective, afterContext, emailTone]);
+
+  // === v2 Tab Apres : runDebrief (auto-debrief de la performance) ===
+  // Analyse la performance du candidat sur la base du recap et propose :
+  // - 3 forces (ce qui a brille)
+  // - 2-3 axes d'amelioration (ou il aurait pu mieux faire)
+  // - Red flags potentiels (signaux negatifs detectes)
+  // - Verdict probable (passage prochaine etape, hesitation, refus probable)
+  // - Next steps recommandees
+  const runDebrief = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (!afterContext.recap || !afterContext.recap.trim()) {
+      notify(T.iv_af_recap_required || "Decris d'abord comment ca s'est passe");
+      return;
+    }
+    setDebriefLoading(true);
+    setDebriefResult(null);
+    try {
+      const cvT = buildInterviewCvText();
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE D'EMPLOI VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      const ctxLines = [];
+      if (afterContext.recruiterName) ctxLines.push("Nom du recruteur: " + afterContext.recruiterName);
+      if (afterContext.type) ctxLines.push("Type d'entretien: " + afterContext.type);
+      if (afterContext.duration) ctxLines.push("Duree: " + afterContext.duration + " min");
+      if (afterContext.date) ctxLines.push("Date: " + afterContext.date);
+      const ctxBlock = ctxLines.length > 0 ? "\n\nCONTEXTE ENTRETIEN:\n" + ctxLines.join("\n") : "";
+      const recapBlock = "\n\nRECAP DE L'ENTRETIEN PAR LE CANDIDAT:\n" + afterContext.recap.trim();
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+
+      const p = "Tu es coach senior et ancien recruteur executive search."
+        + " Tu fais un debrief HONNETE et UTILE de l'entretien que le candidat vient de passer."
+        + " Pas de complaisance, pas non plus de demolition. Le but : aider le candidat a apprendre"
+        + " et a progresser pour les prochains entretiens."
+        + "\n\nCANDIDAT:\n" + cvT
+        + offerLine
+        + ctxBlock
+        + recapBlock
+        + roundDirective(false)
+        + "\n\nMISSION:"
+        + "\nAnalyse en profondeur le recap pour identifier:"
+        + "\n- 3 FORCES (ce qui a probablement bien marche, indices dans le recap qui suggerent une bonne performance)"
+        + "\n- 2 a 3 AXES D'AMELIORATION (ou le candidat aurait pu mieux preparer ou repondre)"
+        + "\n- RED FLAGS si presents (signaux negatifs detectes : hesitations, sujets evites, questions auxquelles il n'a pas repondu, dynamique froide). Si rien : tableau vide []."
+        + "\n- VERDICT PROBABLE : passage probable / hesitation / refus probable, avec rationale 1 phrase."
+        + "\n- NEXT STEPS : 3 actions concretes recommandees pour la suite (preparer le prochain round, contacter quelqu'un, completer info, etc.)."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Sois HONNETE. Si le recap suggere que ca s'est mal passe, dis-le clairement."
+        + "\n- Sois SPECIFIQUE. Pas de conseils generiques type 'continue a t'entrainer'."
+        + "\n- Chaque point est ancre dans un detail du recap (pas invente)."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"strengths":["force 1 specifique","force 2","force 3"],'
+        + '"improvements":["axe 1 concret","axe 2"],'
+        + '"red_flags":["flag 1 si present","flag 2 si present"],'
+        + '"verdict":{"label":"passage probable|hesitation|refus probable","why":"explication 1 phrase"},'
+        + '"next_steps":["action 1","action 2","action 3"]}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setDebriefResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setDebriefLoading(false);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
+      buildInterviewCvText, roundDirective, afterContext]);
+
+  // === v2 Tab Pendant : runCheatSheet (pense-bete A4) ===
+  // Genere un pense-bete imprimable A4 avec :
+  // - 5 messages cles a faire passer pendant l'entretien
+  // - Top 3 questions a poser (selectionnees parmi les meilleures pour le round)
+  // - Checklist last-minute (5 items pratiques)
+  const runCheatSheet = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    setCheatSheetLoading(true);
+    setCheatSheetResult(null);
+    try {
+      const cvT = buildInterviewCvText();
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE D'EMPLOI VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+
+      const p = "Tu es coach senior qui prepare un candidat pour un entretien."
+        + " Tu produis un pense-bete A4 a glisser dans la poche : tres synthetique,"
+        + " concret, qui aide a se centrer dans les 5 minutes avant l'entretien."
+        + "\n\nCANDIDAT:\n" + cvT
+        + offerLine
+        + roundDirective(false)
+        + "\n\nMISSION:"
+        + "\nGenere un pense-bete avec 3 sections:"
+        + "\n1. '5 messages cles a faire passer' : 5 phrases courtes (max 12 mots)"
+        + " que le candidat DOIT placer durant l'entretien. Exemple: 'J'ai pilote"
+        + " une transformation de 50 personnes sur 18 mois'. Chaque message est"
+        + " un argument fort et CHIFFRE issu du parcours."
+        + "\n2. 'Top 3 questions a poser' : les 3 meilleures questions strategiques"
+        + " a poser en fin d'entretien. Tres concretes, ancrees dans le contexte."
+        + "\n3. 'Checklist last-minute' : 5 items pratiques a verifier 30 min avant"
+        + " l'entretien (ex 'Verifier le micro / camera', 'Avoir un verre d'eau',"
+        + " 'Relire les 3 dernieres news de l'entreprise', etc.). Pratique, pas vague."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Tres synthetique, format pense-bete imprimable."
+        + "\n- Chaque message cle est CHIFFRE quand possible."
+        + "\n- Les questions sont specifiques au profil et au round."
+        + "\n- La checklist est PRATIQUE (logistique, pas conseil moral)."
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"key_messages":["msg 1","msg 2","msg 3","msg 4","msg 5"],'
+        + '"top_questions":["question 1","question 2","question 3"],'
+        + '"checklist":["check 1","check 2","check 3","check 4","check 5"]}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setCheatSheetResult(parsed);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setCheatSheetLoading(false);
+  }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
+      buildInterviewCvText, roundDirective]);
+
+  // === v2 Tab Pendant : runPackPDF (export pack complet) ===
+  // Compile tout ce qui a ete genere (questions a recevoir + STAR + questions a poser)
+  // dans un PDF multi-pages telechargable.
+  // Utilise html2pdf.js qui est deja dans le projet pour CV export.
+  const runPackPDF = useCallback(async () => {
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (!interviewResult || !Array.isArray(interviewResult.questions) || interviewResult.questions.length === 0) {
+      notify(T.iv_pk_empty || "Genere d'abord les questions");
+      return;
+    }
+    setPackPdfLoading(true);
+    try {
+      // Charge html2pdf depuis le CDN (pattern existant pour CV export)
+      const html2pdf = await ensureHtml2pdfLoaded();
+
+      // Construire un document HTML complet pour le PDF.
+      const container = document.createElement("div");
+      container.style.cssText = "padding:30px 36px; font-family:Inter, Helvetica, Arial, sans-serif; color:#0a0a0a; max-width:780px;";
+
+      const title = T.iv_pk_pdf_title || "Preparation entretien";
+      const sectionRecv = T.iv_pk_pdf_section_recv || "Questions probables et reponses STAR";
+      const sectionAsk = T.iv_pk_pdf_section_ask || "Tes questions a poser au recruteur";
+
+      let html = "";
+
+      // En-tete
+      html += '<div style="border-bottom: 2px solid #0a0a0a; padding-bottom: 12px; margin-bottom: 24px;">';
+      html += '<div style="font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:#a07e3a; font-weight:600; margin-bottom:4px;">CV Factory - Pack entretien</div>';
+      html += '<div style="font-family:Georgia, serif; font-size:24px; font-weight:600; color:#0a0a0a; letter-spacing:-0.02em;">' + escapeHtml(title) + '</div>';
+      html += '<div style="font-size:11px; color:#666; margin-top:4px;">' + escapeHtml(cv.name || "") + (cv.title ? " - " + escapeHtml(cv.title) : "") + '</div>';
+      html += '</div>';
+
+      // Section 1 : Questions a recevoir avec STAR
+      html += '<div style="font-family:Georgia, serif; font-size:18px; font-weight:600; color:#0a0a0a; margin-bottom:14px; padding-bottom:6px; border-bottom:1px solid #ccc;">';
+      html += escapeHtml(sectionRecv) + '</div>';
+
+      interviewResult.questions.forEach((q, i) => {
+        html += '<div style="margin-bottom:18px; page-break-inside: avoid;">';
+        html += '<div style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#a07e3a; font-weight:700; margin-bottom:4px;">Q' + (i + 1) + ' - ' + escapeHtml(q.category || "") + '</div>';
+        html += '<div style="font-family:Georgia, serif; font-size:14px; font-weight:500; color:#0a0a0a; line-height:1.4; margin-bottom:6px;">' + escapeHtml(q.question || "") + '</div>';
+        if (q.why) {
+          html += '<div style="font-size:11px; color:#666; font-style:italic; margin-bottom:6px;">Pourquoi : ' + escapeHtml(q.why) + '</div>';
+        }
+        if (q.answer) {
+          html += '<div style="background:#faf6ed; border-left:3px solid #a07e3a; padding:8px 12px; border-radius:3px;">';
+          if (q.answer.situation) html += '<div style="font-size:11px; line-height:1.5; margin-bottom:3px;"><b style="color:#a07e3a;">S:</b> ' + escapeHtml(q.answer.situation) + '</div>';
+          if (q.answer.task)      html += '<div style="font-size:11px; line-height:1.5; margin-bottom:3px;"><b style="color:#a07e3a;">T:</b> ' + escapeHtml(q.answer.task) + '</div>';
+          if (q.answer.action)    html += '<div style="font-size:11px; line-height:1.5; margin-bottom:3px;"><b style="color:#a07e3a;">A:</b> ' + escapeHtml(q.answer.action) + '</div>';
+          if (q.answer.result)    html += '<div style="font-size:11px; line-height:1.5;"><b style="color:#a07e3a;">R:</b> ' + escapeHtml(q.answer.result) + '</div>';
+          html += '</div>';
+        }
+        html += '</div>';
+      });
+
+      // Section 2 : Questions a poser (si dispo)
+      if (askRecruiterResult && Array.isArray(askRecruiterResult.questions) && askRecruiterResult.questions.length > 0) {
+        html += '<div style="font-family:Georgia, serif; font-size:18px; font-weight:600; color:#0a0a0a; margin-top:30px; margin-bottom:14px; padding-bottom:6px; border-bottom:1px solid #ccc; page-break-before: auto;">';
+        html += escapeHtml(sectionAsk) + '</div>';
+
+        askRecruiterResult.questions.forEach((q, i) => {
+          html += '<div style="margin-bottom:14px; page-break-inside: avoid;">';
+          html += '<div style="font-size:10px; letter-spacing:0.08em; text-transform:uppercase; color:#7a4d96; font-weight:700; margin-bottom:4px;">Q' + (i + 1) + ' - ' + escapeHtml(q.category || "") + '</div>';
+          html += '<div style="font-family:Georgia, serif; font-size:13px; font-weight:500; color:#0a0a0a; line-height:1.4; font-style:italic; margin-bottom:4px;">"' + escapeHtml(q.question || "") + '"</div>';
+          if (q.why) {
+            html += '<div style="font-size:11px; color:#666; line-height:1.5;">Angle : ' + escapeHtml(q.why) + '</div>';
+          }
+          html += '</div>';
+        });
+      }
+
+      // Footer
+      html += '<div style="margin-top:30px; padding-top:12px; border-top:1px solid #ccc; font-size:10px; color:#999; text-align:center;">CV Factory - Genere par IA</div>';
+
+      container.innerHTML = html;
+      document.body.appendChild(container);
+
+      const opt = {
+        margin: 8,
+        filename: "interview-pack-" + (cv.name || "candidate").replace(/[^a-z0-9]/gi, "_") + ".pdf",
+        image: { type: "jpeg", quality: 0.95 },
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: { mode: ["css", "legacy"] },
+      };
+
+      await html2pdf().set(opt).from(container).save();
+      document.body.removeChild(container);
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setPackPdfLoading(false);
+  }, [cv, cvIsEmpty, interviewResult, askRecruiterResult, notify, T]);
 
   // Pre-rempli le champ offre depuis offerResult de Cibler si dispo.
   // S'execute a chaque ouverture du modal interview.
@@ -7397,6 +7907,21 @@ export default function App() {
           askRecruiterLoading={askRecruiterLoading}
           askRecruiterResult={askRecruiterResult}
           onRunAskRecruiter={runAskRecruiter}
+          afterContext={afterContext}
+          setAfterContext={setAfterContext}
+          emailLoading={emailLoading}
+          emailResult={emailResult}
+          emailTone={emailTone}
+          setEmailTone={setEmailTone}
+          onRunEmail={runEmail}
+          debriefLoading={debriefLoading}
+          debriefResult={debriefResult}
+          onRunDebrief={runDebrief}
+          cheatSheetLoading={cheatSheetLoading}
+          cheatSheetResult={cheatSheetResult}
+          onRunCheatSheet={runCheatSheet}
+          packLoading={packPdfLoading}
+          onRunPackPDF={runPackPDF}
         />
       )}
       {showCoach && (
