@@ -1,105 +1,217 @@
-// app/api/claude/route.js
-//
-// Route API qui relaie les requetes vers Anthropic avec :
-// - timeout etendu a 60s (vs 10s par defaut sur Vercel Hobby) pour eviter les 504
-// - gestion d'erreur claire renvoyee au client (status code Anthropic propage)
-// - pas de cle API cote client : tout passe par cette route serveur
-//
-// Pour le bon fonctionnement il faut definir ANTHROPIC_API_KEY dans
-// les Environment Variables de Vercel (Settings > Environment Variables)
-// OU dans .env.local en local.
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
-export const runtime = "nodejs";
-export const maxDuration = 60;
+const MODEL_DEFAULT = "claude-sonnet-4-6";
 
-const SYSTEM_RULES =
-  "Tu es un assistant qui produit du contenu professionnel pour un editeur de CV. "
-  + "REGLE ABSOLUE: tu ne dois JAMAIS, sous aucun pretexte, utiliser de tiret cadratin "
-  + "(em dash, caractere Unicode U+2014) ni de tiret demi-cadratin (en dash, U+2013) "
-  + "dans tes reponses. Cette interdiction s'applique a TOUT contenu que tu produis: "
-  + "phrases, accroches, descriptions, titres, listes, dates, intervalles numeriques, "
-  + "incises, ainsi qu'a tout contenu textuel a l'interieur d'un JSON. "
-  + "Utilise uniquement: virgule, parentheses, deux-points, point-virgule, "
-  + "ou tiret simple - (hyphen-minus U+002D). "
-  + "Si tu detectes que tu allais ecrire un tiret cadratin ou demi-cadratin, "
-  + "corrige-toi immediatement avant d'emettre le caractere. "
-  + "Quand on te demande du JSON, reponds UNIQUEMENT avec du JSON valide strict, "
-  + "sans markdown, sans backticks, sans commentaire avant ou apres.";
+const NO_DASH_BLOCK = `IMPORTANT FORMATTING RULE
+Never use em dash (U+2014) or en dash (U+2013) characters anywhere in your output.
+Use commas, parentheses, or rephrase the sentence instead.
+This rule is absolute and overrides any other instruction.`;
 
-export async function POST(req) {
-  let body;
+const JSON_FORMAT_BLOCK = `RESPONSE FORMAT
+When the user asks for structured data, respond ONLY with valid JSON.
+No preamble, no markdown code fences, no explanation outside the JSON object.
+Strings inside JSON must respect the formatting rule above.`;
+
+const QUALITY_BLOCK = `QUALITY GUIDELINES
+Be precise and concrete. Avoid vague phrases like very, really, quite.
+Use active voice. Quantify when possible (numbers, percentages, ranges).
+Match the requested language exactly (French or English) without mixing.`;
+
+function buildSystemBlocks(cvContext) {
+  const blocks = [
+    {
+      type: "text",
+      text: NO_DASH_BLOCK,
+      cache_control: { type: "ephemeral" },
+    },
+    {
+      type: "text",
+      text: JSON_FORMAT_BLOCK,
+      cache_control: { type: "ephemeral" },
+    },
+    {
+      type: "text",
+      text: QUALITY_BLOCK,
+    },
+  ];
+
+  if (cvContext && typeof cvContext === "string" && cvContext.length > 0) {
+    blocks.push({
+      type: "text",
+      text: `CURRENT CV CONTEXT
+The user is working on the following CV. Use it as the source of truth for any task that requires knowledge of their experience, skills, or background.
+
+${cvContext}`,
+      cache_control: { type: "ephemeral" },
+    });
+  }
+
+  return blocks;
+}
+
+function pickMaxTokens(requestedMax) {
+  if (typeof requestedMax === "number" && requestedMax > 0 && requestedMax <= 16000) {
+    return requestedMax;
+  }
+  return 8000;
+}
+
+function computeCostUSD(inputTokens, outputTokens, cacheReadTokens, cacheCreationTokens) {
+  const SONNET_IN = 3.00;
+  const SONNET_OUT = 15.00;
+  const SONNET_CACHE_HIT = 0.30;
+  const SONNET_CACHE_WRITE = 3.75;
+
+  const inputCost = (inputTokens * SONNET_IN) / 1_000_000;
+  const outputCost = (outputTokens * SONNET_OUT) / 1_000_000;
+  const cacheReadCost = (cacheReadTokens * SONNET_CACHE_HIT) / 1_000_000;
+  const cacheWriteCost = (cacheCreationTokens * SONNET_CACHE_WRITE) / 1_000_000;
+
+  return inputCost + outputCost + cacheReadCost + cacheWriteCost;
+}
+
+export async function POST(request) {
+  const startTime = Date.now();
+  let taskName = "unknown";
+
   try {
-    body = await req.json();
-  } catch {
-    return Response.json(
-      { error: { message: "Body invalide" } },
-      { status: 400 }
-    );
-  }
+    const body = await request.json();
+    const {
+      prompt,
+      messages: providedMessages,
+      cv_context: cvContext,
+      max_tokens: requestedMaxTokens,
+      temperature: requestedTemperature,
+      task_name: requestedTaskName,
+    } = body || {};
 
-  const { prompt } = body || {};
-  if (!prompt || typeof prompt !== "string") {
-    return Response.json(
-      { error: { message: "Champ 'prompt' manquant ou invalide" } },
-      { status: 400 }
-    );
-  }
+    if (typeof requestedTaskName === "string" && requestedTaskName.length > 0) {
+      taskName = requestedTaskName;
+    }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      { error: { message: "ANTHROPIC_API_KEY non configuree sur le serveur" } },
-      { status: 500 }
-    );
-  }
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: { message: "ANTHROPIC_API_KEY missing in env" } }),
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
 
-  // AbortController pour eviter de tenir Vercel jusqu'a la limite de 60s
-  // si Anthropic met trop de temps. On laisse 55s a Anthropic, 5s de marge.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 55000);
+    const max_tokens = pickMaxTokens(requestedMaxTokens);
+    const temperature =
+      typeof requestedTemperature === "number" &&
+      requestedTemperature >= 0 &&
+      requestedTemperature <= 1
+        ? requestedTemperature
+        : 0.7;
 
-  try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const messages = Array.isArray(providedMessages) && providedMessages.length > 0
+      ? providedMessages
+      : prompt
+      ? [{ role: "user", content: prompt }]
+      : [];
+
+    if (messages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: { message: "Missing prompt or messages" } }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    const system = buildSystemBlocks(cvContext);
+
+    const upstreamRes = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 4096,
-        system: SYSTEM_RULES,
-        messages: [{ role: "user", content: prompt }],
+        model: MODEL_DEFAULT,
+        max_tokens,
+        temperature,
+        system,
+        messages,
       }),
-      signal: controller.signal,
     });
 
-    clearTimeout(timer);
+    const data = await upstreamRes.json();
+    const elapsed = Date.now() - startTime;
 
-    const data = await r.json();
-
-    if (!r.ok) {
-      // Anthropic renvoie { type: 'error', error: { type, message } }
-      const msg =
-        (data && data.error && data.error.message) ||
-        ("Erreur Anthropic " + r.status);
-      return Response.json(
-        { error: { message: msg, status: r.status } },
-        { status: r.status }
+    if (!upstreamRes.ok) {
+      return new Response(
+        JSON.stringify({
+          error: {
+            message:
+              (data && data.error && data.error.message) ||
+              `Anthropic API error ${upstreamRes.status}`,
+            type: (data && data.error && data.error.type) || "api_error",
+            upstream_status: upstreamRes.status,
+          },
+          _cvf_meta: {
+            task_name: taskName,
+            elapsed_ms: elapsed,
+            error: true,
+          },
+        }),
+        { status: upstreamRes.status, headers: { "Content-Type": "application/json" } }
       );
     }
 
-    return Response.json(data);
+    const usage = data.usage || {};
+    const cacheReadTokens = usage.cache_read_input_tokens || 0;
+    const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
+    const inputTokens = usage.input_tokens || 0;
+    const outputTokens = usage.output_tokens || 0;
+
+    const totalInput = inputTokens + cacheReadTokens + cacheCreationTokens;
+    const cachedRatio =
+      totalInput > 0 ? Math.round((cacheReadTokens / totalInput) * 100) : 0;
+
+    const costUSD = computeCostUSD(
+      inputTokens,
+      outputTokens,
+      cacheReadTokens,
+      cacheCreationTokens
+    );
+
+    const response = {
+      ...data,
+      _cvf_meta: {
+        task_name: taskName,
+        elapsed_ms: elapsed,
+        cache_read_tokens: cacheReadTokens,
+        cache_creation_tokens: cacheCreationTokens,
+        input_tokens: inputTokens,
+        output_tokens: outputTokens,
+        total_input_tokens: totalInput,
+        cached_ratio_pct: cachedRatio,
+        cost_usd: Number(costUSD.toFixed(6)),
+        cost_eur: Number((costUSD * 0.92).toFixed(6)),
+      },
+    };
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err) {
-    clearTimeout(timer);
-    const isAbort = err && (err.name === "AbortError" || err.code === "ABORT_ERR");
-    const msg = isAbort
-      ? "Timeout: Anthropic met plus de 55s a repondre. Reessaie ou reduis le contenu du CV."
-      : "Erreur reseau: " + (err && err.message ? err.message : String(err));
-    return Response.json(
-      { error: { message: msg } },
-      { status: isAbort ? 504 : 500 }
+    return new Response(
+      JSON.stringify({
+        error: {
+          message: err && err.message ? err.message : "Unknown server error",
+          type: "internal_error",
+        },
+        _cvf_meta: {
+          task_name: taskName,
+          elapsed_ms: Date.now() - startTime,
+          error: true,
+        },
+      }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 }
+
+export const maxDuration = 60;
