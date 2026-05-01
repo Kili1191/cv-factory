@@ -2043,7 +2043,20 @@ function sanDeep(v) {
   return v;
 }
 
-async function aiCall(prompt) {
+async function aiCall(prompt, options = {}) {
+  // Options: { cv, max_tokens, temperature, task_name, messages }
+  const { cv, max_tokens, temperature, task_name = "unknown", messages } = options;
+  
+  // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
+  let cv_context = null;
+  if (cv) {
+    try {
+      cv_context = serializeCvForContext(cv);
+    } catch (e) {
+      cv_context = null;
+    }
+  }
+  
   // Timeout cote client a 60s (legerement plus que le serveur a 55s)
   // pour qu'on lise toujours la reponse du serveur plutot que de couper avant.
   const ctrl = new AbortController();
@@ -2053,7 +2066,14 @@ async function aiCall(prompt) {
     r = await fetch("/api/claude", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ 
+        prompt, 
+        messages,
+        cv_context, 
+        max_tokens, 
+        temperature,
+        task_name,
+      }),
       signal: ctrl.signal,
     });
   } catch (err) {
@@ -2064,7 +2084,6 @@ async function aiCall(prompt) {
     throw new Error("Erreur reseau: " + (err.message || String(err)));
   }
   clearTimeout(timer);
-
   // Si le serveur renvoie une erreur HTTP (504, 500, 401, 429...) on le voit ici
   let d;
   try {
@@ -2072,6 +2091,16 @@ async function aiCall(prompt) {
   } catch {
     throw new Error("Reponse serveur invalide (HTTP " + r.status + "). Probablement un timeout Vercel.");
   }
+  
+  // Logging observabilité (gain via détection des doublons et erreurs)
+  if (d && d._cvf_meta && typeof window !== "undefined") {
+    try {
+      const log = JSON.parse(window.localStorage.getItem("cvf_api_log") || "[]");
+      log.push({ ts: Date.now(), ...d._cvf_meta });
+      window.localStorage.setItem("cvf_api_log", JSON.stringify(log.slice(-500)));
+    } catch (e) {}
+  }
+  
   if (!r.ok || (d && d.error)) {
     const m = (d && d.error && d.error.message) || ("Erreur HTTP " + r.status);
     throw new Error(m);
