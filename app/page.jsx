@@ -5658,15 +5658,22 @@ export default function App() {
       + '}';
     
     try {
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
+      const { value: r } = await cachedAiCall(
+        "audit",
+        cv,
+        { country: auditCountry, locale },
+        async () => {
+          const txt = await aiCall(p, { cv, task_name: "audit" });
+          return parseJSON(txt);
+        }
+      );
       setAuditResult(r);
     } catch (err) {
       notify("Audit: " + (err && err.message ? err.message : "erreur inconnue"));
     } finally {
       setAuditLoading(false);
     }
-  }, [cv, auditCountry, notify]);
+  }, [cv, auditCountry, locale, notify]);
 
   const applyAuditSuggestion = useCallback((suggestion) => {
     setShowAudit(false);
@@ -5846,8 +5853,15 @@ export default function App() {
       +'  ]\n'
       +'}';
     try {
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
+      const { value: r } = await cachedAiCall(
+        "positioning",
+        cv,
+        { locale },
+        async () => {
+          const txt = await aiCall(p, { cv, task_name: "positioning" });
+          return parseJSON(txt);
+        }
+      );
       setPosResult(r);
     } catch (err) {
       notify("Erreur positionnement: " + (err.message || ""));
@@ -5909,8 +5923,15 @@ export default function App() {
       +'  "overall_verdict": "Verdict global en 1-2 phrases"\n'
       +'}';
     try {
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
+      const { value: r } = await cachedAiCall(
+        "truth",
+        cv,
+        { locale },
+        async () => {
+          const txt = await aiCall(p, { cv, task_name: "truth" });
+          return parseJSON(txt);
+        }
+      );
       setTruthResult(r);
     } catch (err) {
       notify("Erreur truth check: " + (err.message || ""));
@@ -6791,7 +6812,7 @@ export default function App() {
       const langLine = locale === "en"
         ? "Output in English. " : "Output in French. ";
 
-      const p = "Tu es expert LinkedIn. Reformate le CV ci-dessous au format LinkedIn officiel."
+      const p = "Tu es best expert LinkedIn in the world. Reformate le CV ci-dessous au format LinkedIn officiel."
         + "\n\nCV SOURCE:\n" + cvT
         + "\n\nFORMAT LINKEDIN (regles strictes):"
         + "\n- HEADLINE (titre du profil, max 220 caracteres) : 3-5 elements separes par |."
@@ -6812,8 +6833,15 @@ export default function App() {
         + '\n{"headline":"...","about":"para1\\n\\npara2\\n\\npara3\\n\\npara4",'
         + '"experiences":[{"role":"...","company":"...","description":"bullet 1\\n\\nbullet 2\\n\\nbullet 3"}]}';
 
-      const txt = await aiCall(p);
-      const parsed = parseJSON(txt);
+      const { value: parsed } = await cachedAiCall(
+        "linkedin",
+        cv,
+        { locale },
+        async () => {
+          const txt = await aiCall(p, { cv, task_name: "linkedin" });
+          return parseJSON(txt);
+        }
+      );
       setLinkedInResult(parsed);
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
@@ -7144,8 +7172,15 @@ export default function App() {
       + "Reply with the translated CV as VALID JSON only, no markdown, no commentary, same structure exactly.";
 
     try {
-      const txt = await aiCall(p);
-      const json = parseJSON(txt);
+      const { value: json } = await cachedAiCall(
+        "translate",
+        cv,
+        { dir: trDir },
+        async () => {
+          const txt = await aiCall(p, { cv, task_name: "translate" });
+          return parseJSON(txt);
+        }
+      );
       pushH();
       setCVFn(() => normCV(json, cv));
       notify(T.tr_ok);
