@@ -8328,18 +8328,8 @@ export default function App() {
           flexShrink:0,
         }}>
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-            <div style={{
-              width:28, height:28, background:GradDark,
-              borderRadius:8, display:"flex",
-              alignItems:"center", justifyContent:"center",
-              color:Gold, fontFamily:Serif, fontWeight:600, fontSize:13,
-              letterSpacing:"-0.02em",
-            }}>CV</div>
-            <div style={{
-              fontFamily:Serif, fontWeight:500, fontSize:16,
-              letterSpacing:"-0.01em", color:Ink, lineHeight:1,
-            }}>Factory</div>
-          </div>
+  <Logo size={28} factoryFontSize={16} inkColor={Ink} serifFamily={Serif} sansFamily={Sans} />
+</div>
           <div style={{display:"flex", gap:6}}>
             <button onClick={()=>setZoomed(true)} style={{
               ...B({
