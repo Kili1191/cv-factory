@@ -26,6 +26,7 @@ import {
   detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
 } from "./components/dateUtils";
+import Logo from "./components/Logo";
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
