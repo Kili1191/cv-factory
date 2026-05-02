@@ -8390,7 +8390,7 @@ export default function App() {
           hidden={
             cvIsEmpty
             || showCoach || showAudit || showTranslate || showPack
-            || showPos || showTruth || showVersions || !!bt
+            || showPos || showTruth || showVersions
             || showOffer || showScore || showGapRepair || showInterview
             || showCustomize || !!modal
             || showLinkedIn || showCompare || showApplications
