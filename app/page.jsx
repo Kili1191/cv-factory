@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from "react";
+import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
@@ -10,35 +11,36 @@ import ScoreDashboard from "./components/ScoreDashboard";
 // Ils sont chargés à la volée la première fois qu'ils s'ouvrent, ce qui
 // allège significativement le First Paint. Les chunks sont mis en cache
 // par le navigateur pour les ouvertures suivantes.
-const GapRepairModal = lazy(() => import("./components/GapRepairModal"));
-const InterviewModal = lazy(() => import("./components/InterviewModal"));
-const VersionsModal = lazy(() => import("./components/VersionsModal"));
-const TruthModal = lazy(() => import("./components/TruthModal"));
-const PositioningModal = lazy(() => import("./components/PositioningModal"));
-const TranslateModal = lazy(() => import("./components/TranslateModal"));
-const AuditModal = lazy(() => import("./components/AuditModal"));
-const ApplicationPackModal = lazy(() => import("./components/ApplicationPackModal"));
-const LinkedInExportModal = lazy(() => import("./components/LinkedInExportModal"));
-const CVCompareModal = lazy(() => import("./components/CVCompareModal"));
-const ApplicationsTrackerModal = lazy(() => import("./components/ApplicationsTrackerModal"));
-const MultiCVStrategyModal = lazy(() => import("./components/MultiCVStrategyModal"));
-const TutorialOverlay = lazy(() => import("./components/TutorialOverlay"));
-const SettingsPanel = lazy(() => import("./components/SettingsPanel"));
+const GapRepairModal = dynamic(() => import("./components/GapRepairModal"), { ssr: false });
+const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ssr: false });
+const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr: false });
+const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
+const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
+const TranslateModal = dynamic(() => import("./components/TranslateModal"), { ssr: false });
+const AuditModal = dynamic(() => import("./components/AuditModal"), { ssr: false });
+const ApplicationPackModal = dynamic(() => import("./components/ApplicationPackModal"), { ssr: false });
+const LinkedInExportModal = dynamic(() => import("./components/LinkedInExportModal"), { ssr: false });
+const CVCompareModal = dynamic(() => import("./components/CVCompareModal"), { ssr: false });
+const ApplicationsTrackerModal = dynamic(() => import("./components/ApplicationsTrackerModal"), { ssr: false });
+const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyModal"), { ssr: false });
+const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
+const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 
-// CoachModal est lazy mais CoachFAB (bouton flottant toujours visible)
+// CoachModal est dynamic mais CoachFAB (bouton flottant toujours visible)
 // reste en eager loading pour qu'il s'affiche immédiatement.
-const CoachModal = lazy(() =>
-  import("./components/CoachModal").then(m => ({ default: m.default }))
+const CoachModal = dynamic(
+  () => import("./components/CoachModal").then(m => ({ default: m.default })),
+  { ssr: false }
 );
 import { CoachFAB } from "./components/CoachModal";
 
 // === LAZY UI COMPONENTS (extracted from page.jsx) ===
 // Composants conditionnels lourds extraits dans des fichiers séparés.
 // Chargés à la demande via React.lazy pour alléger le First Paint.
-const OnboardScreen = lazy(() => import("./components/OnboardScreen"));
-const TargetHub     = lazy(() => import("./components/TargetHub"));
-const MatchPanel    = lazy(() => import("./components/MatchPanel"));
-const ScorePanel    = lazy(() => import("./components/ScorePanel"));
+const OnboardScreen = dynamic(() => import("./components/OnboardScreen"), { ssr: false });
+const TargetHub     = dynamic(() => import("./components/TargetHub"), { ssr: false });
+const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: false });
+const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
