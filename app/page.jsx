@@ -5563,7 +5563,24 @@ export default function App() {
         }}>
           <NuviSidebar
             active={navSection}
-            onSelect={setNavSection}
+            onSelect={(key) => {
+              setNavSection(key);
+              // Wire chaque section à la modale existante correspondante
+              if (key === "target") {
+                setShowOffer(true);
+              } else if (key === "pack") {
+                setShowPack(true);
+              } else if (key === "score") {
+                setShowScore(true);
+              } else if (key === "cvs") {
+                setShowMultiCV(true);
+              } else if (key === "design") {
+                setShowCustomize(true);
+              } else if (key === "tracking") {
+                setShowApplications(true);
+              }
+              // "home" = juste mettre la section active, ne rien ouvrir
+            }}
             lang={locale}
             onCoachOpen={() => openCoach()}
             onSettingsOpen={() => setShowSettings(true)}
