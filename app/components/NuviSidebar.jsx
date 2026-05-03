@@ -1,5 +1,11 @@
 "use client";
 import React, { useState, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+
+// [Nuvi v2] Logo wordmark anime importe en dynamic (ssr:false) pour eviter
+// les mismatch d'hydratation. C'est l'ancre de marque permanente : il doit
+// TOUJOURS apparaitre en haut a gauche, sur toutes les pages et modales.
+const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 
 /**
  * NuviSidebar v2 - Sidebar Apple-like avec sub-items flottants
@@ -370,6 +376,28 @@ export default function NuviSidebar({
           position: "relative",
         }}
       >
+        {/* [Nuvi v2] Header avec NuviLogo anime en haut a gauche.
+            En mode collapsed (56px) : taille reduite, centre.
+            En mode expanded (240px) : wordmark complet, aligne a gauche.
+            Le NuviLogo gere ses propres animations (11 personnalites, 65s cycle). */}
+        <div style={{
+          height: 56,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: expanded ? "flex-start" : "center",
+          paddingLeft: expanded ? 18 : 0,
+          paddingRight: expanded ? 18 : 0,
+          flexShrink: 0,
+          borderBottom: "0.5px solid " + Hairline,
+          overflow: "hidden",
+          transition: "padding 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+        }}>
+          <NuviLogo
+            size={expanded ? 32 : 26}
+            inkColor={Ink}
+          />
+        </div>
+
         <div style={{ paddingTop: 16, overflowY: "auto", overflowX: "visible" }}>
           {topItems.map(renderItem)}
         </div>
