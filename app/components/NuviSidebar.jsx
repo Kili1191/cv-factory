@@ -224,7 +224,7 @@ export default function NuviSidebar({
   const handleItemMouseLeave = () => {
     closeTimerRef.current = setTimeout(() => {
       setHoveredItem(null);
-    }, 150);
+    }, 250);
   };
 
   const handlePanelMouseEnter = () => {
@@ -237,7 +237,7 @@ export default function NuviSidebar({
   const handlePanelMouseLeave = () => {
     closeTimerRef.current = setTimeout(() => {
       setHoveredItem(null);
-    }, 150);
+    }, 250);
   };
 
   useEffect(() => {
@@ -482,7 +482,7 @@ function FloatingPanel({
                   + SEPARATOR_HEIGHT + middleIdx * ITEM_HEIGHT;
   }
 
-  const leftPosition = sidebarExpanded ? 248 : 64;
+  const leftPosition = sidebarExpanded ? 244 : 60;
 
   return (
     <div
@@ -510,10 +510,11 @@ function FloatingPanel({
     >
       <div style={{
         position: "absolute",
-        left: -8,
+        left: -16,
         top: 0,
-        width: 8,
+        width: 16,
         height: "100%",
+        background: "transparent",
       }} />
 
       <div style={{
