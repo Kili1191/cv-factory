@@ -7,7 +7,7 @@
 // de scripts Python qui injectaient T. dans les valeurs.
 
 const FR_T = {
-  appName:"Nuvi", appSub:"Sois retenu.",
+  appName:"Nuvi", appSub:"Sors de la pile.",
   tab_ai:"IA", tab_edit:"Editer", tab_design:"Design",
   tab_score:"Score", tab_tools:"Outils",
   tab_gen:"Generer", tab_adj:"Ajuster", tab_match:"Offre",
