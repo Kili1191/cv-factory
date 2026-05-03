@@ -5991,12 +5991,39 @@ export default function App() {
           </div>
         )}
         <div style={{flex:1, overflowY:"auto", padding:"13px 13px 4px"}}>
+          {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
+              Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales
+              via NuviBottomNav, donc pas besoin d'afficher leur contenu inline.
+              On garde TargetHubContent et FinalizeContent au cas ou un legacy tab les active. */}
           {tab==="ai"     && AITabContent}
           {tab==="target" && TargetHubContent}
           {(tab==="edit" || tab==="design"
             || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
-        <BottomNav active={phase} onPhase={setPhase} T={T}/>
+        <NuviBottomNav
+          active={navSection}
+          onSelect={(key) => {
+            setNavSection(key);
+            // Wire chaque section à la modale existante (cohérent avec sidebar desktop)
+            if (key === "target") {
+              setShowOffer(true);
+            } else if (key === "pack") {
+              setShowPack(true);
+            } else if (key === "score") {
+              setShowScore(true);
+            } else if (key === "cvs") {
+              setShowMultiCV(true);
+            } else if (key === "design") {
+              setShowCustomize(true);
+            } else if (key === "tracking") {
+              setShowApplications(true);
+            }
+            // "home" = juste mettre la section active
+          }}
+          lang={locale}
+          onCoachOpen={() => openCoach()}
+          onSettingsOpen={() => setShowSettings(true)}
+        />
         {/* Bouton Coach intelligent (mobile + desktop) : drag (long press), shrink, scroll-hide */}
         {!(
           cvIsEmpty
