@@ -1,18 +1,29 @@
-// CV Factory v17 - Design tokens partages.
+// Nuvi v2 - Design tokens partages.
 // Importes par page.jsx ET les composants extraits dans /components.
 // Source de verite unique pour la palette, les fonts, les radius, les shadows.
+//
+// [Nuvi v2 alignment] :
+//   - Coral passe de #ff5a36 (orange vif) a #d97757 (terracotta doux)
+//   - Cream/CreamSoft alignes sur la palette Nuvi (#faf8f3 / #f6f2e8)
+//   - Ajout Magenta (#b91c8c) pour les gradients CTA primaires
+//   - Ajout Hairline et InkMuted (utilises dans NuviSidebar v2 et AdjustModal)
+//   - GradCoral passe en terracotta only (au lieu de orange->jaune)
+//   - Gold/GoldDeep RESERVES au CV preview (elegance pro), inchanges
 
-// ===== Palette v17 =====
+// ===== Palette Nuvi =====
 export const Ink       = "#0a0a0a";   // noir profond, surface principale
-export const Cream     = "#f5f1e8";   // creme chaude, fond editorial
-export const CreamSoft = "#faf7ef";   // creme clair, fond app
+export const InkMuted  = "#5a5a62";   // [Nuvi v2] gris-bleu pour text muted
+export const Cream     = "#faf8f3";   // [Nuvi v2] cream Nuvi (etait #f5f1e8)
+export const CreamSoft = "#f6f2e8";   // [Nuvi v2] cream soft Nuvi (etait #faf7ef)
 export const Paper     = "#ffffff";   // cards
-export const Gold      = "#c9a96e";   // gold luxe
-export const GoldDeep  = "#a07840";   // gold profond pour text-on-cream
-export const Purple    = "#5b3df5";   // violet electrique pour accents
+export const Hairline  = "#e8e3d6";   // [Nuvi v2] border subtle (utilise sidebar v2)
+export const Gold      = "#c9a96e";   // RESERVE au CV preview (elegance pro)
+export const GoldDeep  = "#a07840";   // RESERVE au CV preview
+export const Purple    = "#5b3df5";   // violet electrique : Coach, IA, CTA primaires
 export const PurpleSoft= "#ede9fe";
-export const Coral     = "#ff5a36";   // corail vif
-export const CoralSoft = "#fff1ed";
+export const Magenta   = "#b91c8c";   // [Nuvi v2] magenta pour gradients CTA
+export const Coral     = "#d97757";   // [Nuvi v2] terracotta doux (etait #ff5a36)
+export const CoralSoft = "#fce7dd";   // [Nuvi v2] terracotta tres clair (coherent)
 export const Green     = "#16a34a";
 export const GreenSoft = "#dcfce7";
 
@@ -41,9 +52,9 @@ export const ShadowMd   = "0 4px 12px rgba(10,10,10,.08), 0 0 0 0.5px rgba(10,10
 
 // ===== Gradients reserves aux moments forts =====
 export const GradDark   = "linear-gradient(135deg, #0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)";
-export const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";
-export const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";
-export const GradCoral  = "linear-gradient(135deg, #ff5a36 0%, #ffa800 100%)";
+export const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";              // RESERVE au CV
+export const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";              // [Nuvi v2] CTA primaire
+export const GradCoral  = "linear-gradient(135deg, #d97757 0%, #c25c3d 100%)";              // [Nuvi v2] terracotta only
 
 // Keyframes globales (cvfSpin / cvfFadeIn / cvfSlideUp).
 export const KEYFRAMES_V17 = `
