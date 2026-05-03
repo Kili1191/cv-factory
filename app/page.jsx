@@ -41,6 +41,7 @@ const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: fa
 const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr: false });
 const NuviLogo      = dynamic(() => import("./components/NuviLogo"), { ssr: false });
+const NuviIntro     = dynamic(() => import("./components/NuviIntro"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2483,6 +2484,10 @@ export default function App() {
   const coachLongPressTimer = useRef(null);
   const coachDragStartRef = useRef(null);
   const coachScrollTimerRef = useRef(null);
+  // NuviIntro : présentation initiale du compagnon
+  const [showIntro, setShowIntro] = useState(false);
+  const [showIntroBubble, setShowIntroBubble] = useState(false); // bulle "Clique sur moi"
+  const [introOrigin, setIntroOrigin] = useState(null); // { x, y } position de départ
   // v17 chantier 8 : Export LinkedIn
   const [showLinkedIn, setShowLinkedIn] = useState(false);
   const [linkedInLoading, setLinkedInLoading] = useState(false);
@@ -2556,6 +2561,13 @@ export default function App() {
     const savedCu = lsG("nv-coach-usage", 0);
     if (typeof savedCu === "number" && savedCu > 0) {
       setCoachUsageCount(savedCu);
+    }
+    // Load intro seen flag : si jamais vu, declencher la bulle "Clique sur moi" apres 1.5s
+    const savedIntro = lsG("nv-intro-seen", false);
+    if (savedIntro !== true) {
+      setTimeout(() => {
+        setShowIntroBubble(true);
+      }, 1500);
     }
     // Load applications tracker
     const savedAp = lsG(SK.AP, []);
@@ -3941,13 +3953,60 @@ export default function App() {
   }, [T]);
 
   // Ouvre le coach et incremente le compteur d'usage (pour shrink auto apres N usages)
-  const openCoach = useCallback(() => {
+  const openCoach = useCallback((event) => {
+    // Si l'intro n'a jamais ete vue, on la lance au lieu d'ouvrir le Coach
+    const introSeen = lsG("nv-intro-seen", false);
+    if (introSeen !== true) {
+      // Calcule l'origine (position du bouton Coach pour l'animation)
+      let origin = null;
+      if (event && event.currentTarget) {
+        const rect = event.currentTarget.getBoundingClientRect();
+        origin = {
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        };
+      }
+      setIntroOrigin(origin);
+      setShowIntroBubble(false);
+      setShowIntro(true);
+      return;
+    }
     setShowCoach(true);
     setCoachUsageCount(prev => {
       const next = prev + 1;
       lsS("nv-coach-usage", next);
       return next;
     });
+  }, []);
+
+  // Fin de la presentation NuviIntro
+  const completeIntro = useCallback(() => {
+    lsS("nv-intro-seen", true);
+    setShowIntro(false);
+    setShowIntroBubble(false);
+    // Optionnel : on peut ouvrir directement le Coach apres l'intro
+    setTimeout(() => {
+      setShowCoach(true);
+      setCoachUsageCount(prev => {
+        const next = prev + 1;
+        lsS("nv-coach-usage", next);
+        return next;
+      });
+    }, 200);
+  }, []);
+
+  // Skip de l'intro (l'utilisateur clique sur Passer)
+  const skipIntro = useCallback(() => {
+    lsS("nv-intro-seen", true);
+    setShowIntro(false);
+    setShowIntroBubble(false);
+  }, []);
+
+  // Relancer l'intro depuis Settings
+  const replayIntro = useCallback(() => {
+    setIntroOrigin(null);
+    setShowIntroBubble(false);
+    setShowIntro(true);
   }, []);
 
   // Adopte une suggestion proposee par le coach dans le CV.
@@ -5272,6 +5331,7 @@ export default function App() {
           darkMode={darkMode}
           onToggleDark={toggleDarkMode}
           onRelaunchTutorial={relaunchTutorial}
+          onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
           onClose={()=>setShowSettings(false)}
         />
         </Suspense>
@@ -5446,6 +5506,15 @@ export default function App() {
         )}
         {Modals}
         {Onboard}
+        {showIntro && (
+          <NuviIntro
+            lang={lc}
+            mob={false}
+            origin={introOrigin}
+            onComplete={completeIntro}
+            onSkip={skipIntro}
+          />
+        )}
         <div style={{
           display:"flex", height:"100vh",
           fontFamily:Sans,
@@ -5520,9 +5589,9 @@ export default function App() {
           || showTutorial || showSettings
         ) && (
           <button
-            onClick={() => {
+            onClick={(e) => {
               if (coachDragging) { setCoachDragging(false); return; }
-              openCoach();
+              openCoach(e);
             }}
             onMouseDown={(e) => {
               const startX = e.clientX;
@@ -5627,6 +5696,51 @@ export default function App() {
             `}</style>
           </button>
         )}
+        {showIntroBubble && !showIntro && !cvIsEmpty && (
+          <div
+            onClick={() => {
+              setShowIntroBubble(false);
+              setIntroOrigin(coachPos
+                ? { x: coachPos.x + 60, y: coachPos.y + 60 }
+                : { x: window.innerWidth - 80, y: window.innerHeight - 80 }
+              );
+              setShowIntro(true);
+            }}
+            style={{
+              position: "fixed",
+              ...(coachPos
+                ? { left: coachPos.x - 120, top: coachPos.y - 16 }
+                : { right: 110, bottom: 50 }),
+              zIndex: 89,
+              background: "#0f0f12",
+              color: "#faf8f3",
+              borderRadius: 14,
+              padding: "10px 16px",
+              fontSize: 14,
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)",
+              cursor: "pointer",
+              animation: "introBubbleBounce 1800ms ease-in-out infinite",
+              maxWidth: 220,
+              lineHeight: 1.3,
+              userSelect: "none",
+            }}
+          >
+            <div>{lc === "en" ? "👋 Click me!" : "👋 Clique sur moi !"}</div>
+            <div style={{
+              position: "absolute",
+              right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
+              width: 12, height: 12, background: "#0f0f12",
+            }} />
+            <style>{`
+              @keyframes introBubbleBounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-6px); }
+              }
+            `}</style>
+          </div>
+        )}
       </>
     );
   }
@@ -5648,6 +5762,15 @@ export default function App() {
       )}
       {Modals}
       {Onboard}
+      {showIntro && (
+        <NuviIntro
+          lang={lc}
+          mob={true}
+          origin={introOrigin}
+          onComplete={completeIntro}
+          onSkip={skipIntro}
+        />
+      )}
       {zoomed && (
         <div style={{
           position:"fixed", inset:0, zIndex:1500,
@@ -5757,9 +5880,9 @@ export default function App() {
           || (mob && coachScrolling)
         ) && (
           <button
-            onClick={() => {
+            onClick={(e) => {
               if (coachDragging) { setCoachDragging(false); return; }
-              openCoach();
+              openCoach(e);
             }}
             onMouseDown={(e) => {
               if (mob) return;
@@ -5911,6 +6034,51 @@ export default function App() {
               }
             `}</style>
           </button>
+        )}
+        {showIntroBubble && !showIntro && !cvIsEmpty && (
+          <div
+            onClick={() => {
+              setShowIntroBubble(false);
+              setIntroOrigin(coachPos
+                ? { x: coachPos.x + 40, y: coachPos.y + 40 }
+                : { x: window.innerWidth - 60, y: window.innerHeight - 130 }
+              );
+              setShowIntro(true);
+            }}
+            style={{
+              position: "fixed",
+              ...(coachPos
+                ? { left: Math.max(12, coachPos.x - 140), top: Math.max(12, coachPos.y - 18) }
+                : { right: 100, bottom: 110 }),
+              zIndex: 89,
+              background: "#0f0f12",
+              color: "#faf8f3",
+              borderRadius: 14,
+              padding: "10px 14px",
+              fontSize: 13,
+              fontWeight: 500,
+              fontFamily: "'Inter', sans-serif",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)",
+              cursor: "pointer",
+              animation: "introBubbleBounce 1800ms ease-in-out infinite",
+              maxWidth: 200,
+              lineHeight: 1.3,
+              userSelect: "none",
+            }}
+          >
+            <div>{lc === "en" ? "👋 Tap me!" : "👋 Touche-moi !"}</div>
+            <div style={{
+              position: "absolute",
+              right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
+              width: 12, height: 12, background: "#0f0f12",
+            }} />
+            <style>{`
+              @keyframes introBubbleBounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-6px); }
+              }
+            `}</style>
+          </div>
         )}
       </div>
     </>
