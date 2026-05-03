@@ -2475,6 +2475,14 @@ export default function App() {
   const [showCoach, setShowCoach] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachMessages, setCoachMessages] = useState([]);
+  // Coach button : position custom, count d'usage, drag mode, scroll detection
+  const [coachPos, setCoachPos] = useState(null); // {x, y} ou null = position par défaut
+  const [coachUsageCount, setCoachUsageCount] = useState(0);
+  const [coachDragging, setCoachDragging] = useState(false);
+  const [coachScrolling, setCoachScrolling] = useState(false);
+  const coachLongPressTimer = useRef(null);
+  const coachDragStartRef = useRef(null);
+  const coachScrollTimerRef = useRef(null);
   // v17 chantier 8 : Export LinkedIn
   const [showLinkedIn, setShowLinkedIn] = useState(false);
   const [linkedInLoading, setLinkedInLoading] = useState(false);
@@ -2538,6 +2546,16 @@ export default function App() {
     const savedCo = lsG(SK.CO, []);
     if (Array.isArray(savedCo) && savedCo.length) {
       setCoachMessages(savedCo.slice(-50));
+    }
+    // Load coach button position custom (drag persistance)
+    const savedCp = lsG("nv-coach-pos", null);
+    if (savedCp && typeof savedCp === "object" && typeof savedCp.x === "number" && typeof savedCp.y === "number") {
+      setCoachPos(savedCp);
+    }
+    // Load coach usage count (pour shrink apres N utilisations)
+    const savedCu = lsG("nv-coach-usage", 0);
+    if (typeof savedCu === "number" && savedCu > 0) {
+      setCoachUsageCount(savedCu);
     }
     // Load applications tracker
     const savedAp = lsG(SK.AP, []);
@@ -3921,6 +3939,16 @@ export default function App() {
     setCoachMessages([]);
     lsS(SK.CO, []);
   }, [T]);
+
+  // Ouvre le coach et incremente le compteur d'usage (pour shrink auto apres N usages)
+  const openCoach = useCallback(() => {
+    setShowCoach(true);
+    setCoachUsageCount(prev => {
+      const next = prev + 1;
+      lsS("nv-coach-usage", next);
+      return next;
+    });
+  }, []);
 
   // Adopte une suggestion proposee par le coach dans le CV.
   const adoptCoachSuggestion = useCallback((kind, value) => {
@@ -5480,7 +5508,7 @@ export default function App() {
             </div>
           </div>
         </div>
-        {/* Bouton Coach desktop avec texte, icône et animation pulse */}
+        {/* Bouton Coach intelligent : drag (long press), shrink apres N usages, scroll-hide */}
         {!(
           cvIsEmpty
           || showCoach || showAudit || showTranslate || showPack
@@ -5492,37 +5520,91 @@ export default function App() {
           || showTutorial || showSettings
         ) && (
           <button
-            onClick={() => setShowCoach(true)}
+            onClick={() => {
+              if (coachDragging) { setCoachDragging(false); return; }
+              openCoach();
+            }}
+            onMouseDown={(e) => {
+              const startX = e.clientX;
+              const startY = e.clientY;
+              coachDragStartRef.current = { startX, startY, moved: false };
+              coachLongPressTimer.current = setTimeout(() => {
+                setCoachDragging(true);
+              }, 500);
+            }}
+            onMouseMove={(e) => {
+              if (!coachDragging) {
+                if (coachDragStartRef.current) {
+                  const dx = Math.abs(e.clientX - coachDragStartRef.current.startX);
+                  const dy = Math.abs(e.clientY - coachDragStartRef.current.startY);
+                  if (dx > 5 || dy > 5) {
+                    clearTimeout(coachLongPressTimer.current);
+                    coachDragStartRef.current = null;
+                  }
+                }
+                return;
+              }
+              const btn = e.currentTarget.getBoundingClientRect();
+              const newX = e.clientX - btn.width / 2;
+              const newY = e.clientY - btn.height / 2;
+              const maxX = window.innerWidth - btn.width - 8;
+              const maxY = window.innerHeight - btn.height - 8;
+              setCoachPos({
+                x: Math.max(8, Math.min(maxX, newX)),
+                y: Math.max(8, Math.min(maxY, newY)),
+              });
+            }}
+            onMouseUp={() => {
+              clearTimeout(coachLongPressTimer.current);
+              if (coachDragging && coachPos) {
+                lsS("nv-coach-pos", coachPos);
+              }
+              setTimeout(() => setCoachDragging(false), 50);
+              coachDragStartRef.current = null;
+            }}
+            onMouseLeave={() => {
+              clearTimeout(coachLongPressTimer.current);
+              if (coachDragging && coachPos) {
+                lsS("nv-coach-pos", coachPos);
+              }
+              setCoachDragging(false);
+              coachDragStartRef.current = null;
+            }}
             aria-label="Coach"
             style={{
               position: "fixed",
-              right: 24,
-              bottom: 24,
+              ...(coachPos
+                ? { left: coachPos.x, top: coachPos.y, right: "auto", bottom: "auto" }
+                : { right: 24, bottom: 24 }),
               zIndex: 90,
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              padding: "10px 24px 10px 12px",
+              gap: coachUsageCount >= 3 ? 0 : 12,
+              padding: coachUsageCount >= 3 ? "8px" : "10px 24px 10px 12px",
               background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
               color: "#fff",
               border: "none",
               borderRadius: 999,
-              cursor: "pointer",
+              cursor: coachDragging ? "grabbing" : "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               fontSize: 15,
               fontWeight: 600,
               letterSpacing: 0.2,
-              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
-              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
-              animation: "coachPulse 2.6s ease-in-out infinite",
+              boxShadow: coachDragging
+                ? "0 16px 40px rgba(91, 61, 245, 0.55), 0 6px 14px rgba(91, 61, 245, 0.4)"
+                : "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              transition: coachDragging
+                ? "none"
+                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, gap 250ms ease, padding 250ms ease",
+              animation: coachDragging ? "none" : "coachPulse 2.6s ease-in-out infinite",
+              transform: coachDragging ? "scale(1.08)" : "",
+              userSelect: "none",
+              touchAction: "none",
             }}
             onMouseEnter={(e) => {
+              if (coachDragging) return;
               e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
               e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
             }}
           >
             <span
@@ -5536,7 +5618,7 @@ export default function App() {
             >
               <NuviCompanion size={52} mode="idle" cycleDuration={60} />
             </span>
-            <span>Coach</span>
+            {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
               @keyframes coachPulse {
                 0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
@@ -5619,7 +5701,27 @@ export default function App() {
         {showCV && (
           <div ref={cRef} style={{
             background:Gray100, padding:"7px", flexShrink:0,
-          }}>
+            maxHeight:"55vh", overflow:"auto",
+            WebkitOverflowScrolling:"touch",
+          }}
+          onScroll={() => {
+            setCoachScrolling(true);
+            if (coachScrollTimerRef.current) clearTimeout(coachScrollTimerRef.current);
+            coachScrollTimerRef.current = setTimeout(() => {
+              setCoachScrolling(false);
+            }, 800);
+          }}
+          onTouchStart={() => {
+            setCoachScrolling(true);
+            if (coachScrollTimerRef.current) clearTimeout(coachScrollTimerRef.current);
+          }}
+          onTouchEnd={() => {
+            if (coachScrollTimerRef.current) clearTimeout(coachScrollTimerRef.current);
+            coachScrollTimerRef.current = setTimeout(() => {
+              setCoachScrolling(false);
+            }, 600);
+          }}
+          >
             <div data-cvf="cv" style={{
               height:cvH, overflow:"hidden",
               background:"#fff", borderRadius:5,
@@ -5642,7 +5744,7 @@ export default function App() {
             || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
         <BottomNav active={phase} onPhase={setPhase} T={T}/>
-        {/* Bouton Coach unifié (mobile + desktop) avec texte, icône et animation pulse */}
+        {/* Bouton Coach intelligent (mobile + desktop) : drag (long press), shrink, scroll-hide */}
         {!(
           cvIsEmpty
           || showCoach || showAudit || showTranslate || showPack
@@ -5652,40 +5754,140 @@ export default function App() {
           || showLinkedIn || showCompare || showApplications
           || showMultiCV
           || showTutorial || showSettings
+          || (mob && coachScrolling)
         ) && (
           <button
-            onClick={() => setShowCoach(true)}
+            onClick={() => {
+              if (coachDragging) { setCoachDragging(false); return; }
+              openCoach();
+            }}
+            onMouseDown={(e) => {
+              if (mob) return;
+              const startX = e.clientX;
+              const startY = e.clientY;
+              coachDragStartRef.current = { startX, startY };
+              coachLongPressTimer.current = setTimeout(() => {
+                setCoachDragging(true);
+              }, 500);
+            }}
+            onMouseMove={(e) => {
+              if (mob) return;
+              if (!coachDragging) {
+                if (coachDragStartRef.current) {
+                  const dx = Math.abs(e.clientX - coachDragStartRef.current.startX);
+                  const dy = Math.abs(e.clientY - coachDragStartRef.current.startY);
+                  if (dx > 5 || dy > 5) {
+                    clearTimeout(coachLongPressTimer.current);
+                    coachDragStartRef.current = null;
+                  }
+                }
+                return;
+              }
+              const btn = e.currentTarget.getBoundingClientRect();
+              const newX = e.clientX - btn.width / 2;
+              const newY = e.clientY - btn.height / 2;
+              const maxX = window.innerWidth - btn.width - 8;
+              const maxY = window.innerHeight - btn.height - 8;
+              setCoachPos({
+                x: Math.max(8, Math.min(maxX, newX)),
+                y: Math.max(8, Math.min(maxY, newY)),
+              });
+            }}
+            onMouseUp={() => {
+              if (mob) return;
+              clearTimeout(coachLongPressTimer.current);
+              if (coachDragging && coachPos) {
+                lsS("nv-coach-pos", coachPos);
+              }
+              setTimeout(() => setCoachDragging(false), 50);
+              coachDragStartRef.current = null;
+            }}
+            onTouchStart={(e) => {
+              if (!mob) return;
+              const touch = e.touches[0];
+              const startX = touch.clientX;
+              const startY = touch.clientY;
+              coachDragStartRef.current = { startX, startY };
+              coachLongPressTimer.current = setTimeout(() => {
+                setCoachDragging(true);
+                if (navigator.vibrate) navigator.vibrate(50);
+              }, 500);
+            }}
+            onTouchMove={(e) => {
+              if (!mob) return;
+              const touch = e.touches[0];
+              if (!coachDragging) {
+                if (coachDragStartRef.current) {
+                  const dx = Math.abs(touch.clientX - coachDragStartRef.current.startX);
+                  const dy = Math.abs(touch.clientY - coachDragStartRef.current.startY);
+                  if (dx > 5 || dy > 5) {
+                    clearTimeout(coachLongPressTimer.current);
+                    coachDragStartRef.current = null;
+                  }
+                }
+                return;
+              }
+              e.preventDefault();
+              const btn = e.currentTarget.getBoundingClientRect();
+              const newX = touch.clientX - btn.width / 2;
+              const newY = touch.clientY - btn.height / 2;
+              const maxX = window.innerWidth - btn.width - 8;
+              const maxY = window.innerHeight - btn.height - 8;
+              setCoachPos({
+                x: Math.max(8, Math.min(maxX, newX)),
+                y: Math.max(8, Math.min(maxY, newY)),
+              });
+            }}
+            onTouchEnd={() => {
+              if (!mob) return;
+              clearTimeout(coachLongPressTimer.current);
+              if (coachDragging && coachPos) {
+                lsS("nv-coach-pos", coachPos);
+              }
+              setTimeout(() => setCoachDragging(false), 50);
+              coachDragStartRef.current = null;
+            }}
             aria-label="Coach"
             style={{
               position: "fixed",
-              right: mob ? 16 : 24,
-              // Sur mobile, on remonte au-dessus de la BottomNav (~70px de haut)
-              bottom: mob ? 86 : 24,
+              ...(coachPos
+                ? { left: coachPos.x, top: coachPos.y, right: "auto", bottom: "auto" }
+                : { right: mob ? 16 : 24, bottom: mob ? 86 : 24 }),
               zIndex: 90,
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              padding: mob ? "8px 18px 8px 10px" : "10px 24px 10px 12px",
+              gap: coachUsageCount >= 3 ? 0 : 12,
+              padding: coachUsageCount >= 3
+                ? "6px"
+                : (mob ? "8px 18px 8px 10px" : "10px 24px 10px 12px"),
               background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
               color: "#fff",
               border: "none",
               borderRadius: 999,
-              cursor: "pointer",
+              cursor: coachDragging ? "grabbing" : "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               fontSize: mob ? 14 : 15,
               fontWeight: 600,
               letterSpacing: 0.2,
-              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
-              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
-              animation: "coachPulse 2.6s ease-in-out infinite",
+              boxShadow: coachDragging
+                ? "0 16px 40px rgba(91, 61, 245, 0.55), 0 6px 14px rgba(91, 61, 245, 0.4)"
+                : "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              transition: coachDragging
+                ? "none"
+                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, gap 250ms ease, padding 250ms ease, opacity 200ms ease",
+              animation: coachDragging ? "none" : "coachPulse 2.6s ease-in-out infinite",
+              transform: coachDragging ? "scale(1.08)" : "",
+              userSelect: "none",
+              touchAction: "none",
+              opacity: coachScrolling && !mob ? 0.4 : 1,
             }}
             onMouseEnter={(e) => {
-              if (mob) return;
+              if (mob || coachDragging) return;
               e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
               e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
             }}
             onMouseLeave={(e) => {
-              if (mob) return;
+              if (mob || coachDragging) return;
               e.currentTarget.style.transform = "";
               e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
             }}
@@ -5699,9 +5901,9 @@ export default function App() {
                 flexShrink: 0,
               }}
             >
-              <NuviCompanion size={mob ? 44 : 52} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={mob ? 36 : 52} mode="idle" cycleDuration={60} />
             </span>
-            <span>Coach</span>
+            {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
               @keyframes coachPulse {
                 0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
