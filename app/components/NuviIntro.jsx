@@ -3,25 +3,25 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import NuviCompanion from "./NuviCompanion";
 
 /**
- * NuviIntro — Présentation initiale du compagnon Nuvi.
+ * NuviIntro : Présentation initiale du compagnon Nuvi.
  * Version béton : streaming basé sur step uniquement (pas de currentLine en deps).
  */
 
 // Scripts STATIQUES - hors composant pour stabilité de référence
 const SCRIPTS = {
   fr: [
-    { text: "Hello, je suis Nuvi.", emoji: "👋" },
-    { text: "Ton compagnon jusqu'au succes.", emoji: "" },
-    { text: "Plus jamais perdu dans une pile de CV ignores.", emoji: "" },
+    { text: "Bonjour, je suis Nuvi.", emoji: "👋" },
+    { text: "Ton compagnon jusqu'au succès.", emoji: "" },
+    { text: "Plus jamais perdu dans une pile de CV ignorés.", emoji: "" },
     { text: "Mon job : faire en sorte que les recruteurs te voient. Vraiment.", emoji: "" },
     { text: "Voici comment je t'accompagne :", emoji: "✨" },
-    { text: "Generation CV — je cree ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
-    { text: "Audit ATS — je verifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
-    { text: "Match offre — j'adapte ton CV a chaque candidature.", emoji: "🔍", isFeature: true },
-    { text: "Coach — pose-moi tes questions, je te guide a chaque etape.", emoji: "💬", isFeature: true },
-    { text: "Pack candidature — lettre de motivation, email, LinkedIn, tout est pret.", emoji: "✉️", isFeature: true },
-    { text: "Ensemble, on va decrocher LE bon job.", emoji: "" },
-    { text: "Pret(e) ? Allez, on y va.", emoji: "🚀" },
+    { text: "Génération CV : je crée ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
+    { text: "Audit ATS : je vérifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
+    { text: "Match offre : j'adapte ton CV à chaque candidature.", emoji: "🔍", isFeature: true },
+    { text: "Coach : pose-moi tes questions, je te guide à chaque étape.", emoji: "💬", isFeature: true },
+    { text: "Pack candidature : lettre de motivation, email, LinkedIn, tout est prêt.", emoji: "✉️", isFeature: true },
+    { text: "Ensemble, on va décrocher LE bon job.", emoji: "" },
+    { text: "Prêt(e) ? Allez, on y va.", emoji: "🚀" },
   ],
   en: [
     { text: "Hi, I'm Nuvi.", emoji: "👋" },
@@ -29,11 +29,11 @@ const SCRIPTS = {
     { text: "No more getting lost in a pile of ignored CVs.", emoji: "" },
     { text: "My job: making sure recruiters actually see you.", emoji: "" },
     { text: "Here's how I'll help you:", emoji: "✨" },
-    { text: "CV Generation — I create or import yours in seconds.", emoji: "📝", isFeature: true },
-    { text: "ATS Audit — I check you pass automated filters.", emoji: "🎯", isFeature: true },
-    { text: "Job Match — I tailor your CV for every application.", emoji: "🔍", isFeature: true },
-    { text: "Coach — ask me anything, I'll guide you through.", emoji: "💬", isFeature: true },
-    { text: "Application Pack — cover letter, email, LinkedIn, all ready.", emoji: "✉️", isFeature: true },
+    { text: "CV Generation: I create or import yours in seconds.", emoji: "📝", isFeature: true },
+    { text: "ATS Audit: I check you pass automated filters.", emoji: "🎯", isFeature: true },
+    { text: "Job Match: I tailor your CV for every application.", emoji: "🔍", isFeature: true },
+    { text: "Coach: ask me anything, I'll guide you through.", emoji: "💬", isFeature: true },
+    { text: "Application Pack: cover letter, email, LinkedIn, all ready.", emoji: "✉️", isFeature: true },
     { text: "Together, we'll land THE right job.", emoji: "" },
     { text: "Ready? Let's go.", emoji: "🚀" },
   ],
@@ -141,7 +141,8 @@ export default function NuviIntro({
     if (isLastStep) return;
 
     const line = script[step];
-    const delay = line && line.isFeature ? 2400 : 2000;
+    // Delais plus longs pour laisser le temps de lire et comprendre
+    const delay = line && line.isFeature ? 4500 : 3500;
 
     const t = setTimeout(() => {
       setStep(prev => Math.min(prev + 1, script.length - 1));
