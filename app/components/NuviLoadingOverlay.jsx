@@ -32,12 +32,13 @@ export default function NuviLoadingOverlay({
       setShouldRender(true);
       setFadingOut(false);
     } else if (shouldRender) {
-      // Trigger fade out
+      // Trigger fade out (raccourci a 250ms pour eviter le glitch
+      // ou on voit l'ancienne version de la page transparaitre pendant 600ms)
       setFadingOut(true);
       const timer = setTimeout(() => {
         setShouldRender(false);
         setFadingOut(false);
-      }, 600); // duration of fade out
+      }, 250);
       return () => clearTimeout(timer);
     }
   }, [active, shouldRender]);
@@ -67,7 +68,7 @@ export default function NuviLoadingOverlay({
         justifyContent: "center",
         padding: mob ? "20px" : "40px",
         opacity: fadingOut ? 0 : 1,
-        transition: "opacity 600ms cubic-bezier(0.22, 1, 0.36, 1)",
+        transition: "opacity 250ms cubic-bezier(0.4, 0, 0.2, 1)",
         pointerEvents: fadingOut ? "none" : "auto",
       }}
     >
