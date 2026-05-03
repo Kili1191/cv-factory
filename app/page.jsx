@@ -5484,6 +5484,75 @@ export default function App() {
             </div>
           </div>
         </div>
+        {/* Bouton Coach desktop avec texte, icône et animation pulse */}
+        {!(
+          cvIsEmpty
+          || showCoach || showAudit || showTranslate || showPack
+          || showPos || showTruth || showVersions
+          || showOffer || showScore || showGapRepair || showInterview
+          || showCustomize || !!modal
+          || showLinkedIn || showCompare || showApplications
+          || showMultiCV
+          || showTutorial || showSettings
+        ) && (
+          <button
+            onClick={() => setShowCoach(true)}
+            aria-label="Coach"
+            style={{
+              position: "fixed",
+              right: 24,
+              bottom: 24,
+              zIndex: 90,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "14px 22px 14px 18px",
+              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize: 14,
+              fontWeight: 600,
+              letterSpacing: 0.2,
+              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
+              animation: "coachPulse 2.6s ease-in-out infinite",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: 28,
+                height: 28,
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 16,
+              }}
+            >
+              💬
+            </span>
+            <span>Coach</span>
+            <style>{`
+              @keyframes coachPulse {
+                0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
+                50% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.45), 0 2px 6px rgba(91, 61, 245, 0.3), 0 0 0 8px rgba(91, 61, 245, 0); }
+              }
+            `}</style>
+          </button>
+        )}
       </>
     );
   }
