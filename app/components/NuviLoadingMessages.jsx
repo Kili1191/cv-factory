@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 /**
  * NuviLoadingMessages — Copy à haut impact pour le chargement
@@ -37,15 +37,25 @@ export default function NuviLoadingMessages({
   const phases = useMemo(() => getPhases(series, user), [series, user]);
   const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const startTimeRef = useRef(Date.now());
+  const currentPhaseIdxRef = useRef(0);
+
+  // Reset start time si phases changent (changement de serie)
+  useEffect(() => {
+    startTimeRef.current = Date.now();
+    currentPhaseIdxRef.current = 0;
+    setCurrentPhaseIdx(0);
+    setIsVisible(true);
+  }, [phases]);
 
   useEffect(() => {
-    const startTime = Date.now();
     const tick = () => {
-      const elapsed = (Date.now() - startTime) / 1000;
+      const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const phaseTime = elapsed % cycleDuration;
       const progress = phaseTime / cycleDuration; // 0 to 1
       const phaseIdx = phases.findIndex(p => progress >= p.from && progress < p.to);
-      if (phaseIdx >= 0 && phaseIdx !== currentPhaseIdx) {
+      if (phaseIdx >= 0 && phaseIdx !== currentPhaseIdxRef.current) {
+        currentPhaseIdxRef.current = phaseIdx;
         setIsVisible(false);
         setTimeout(() => {
           setCurrentPhaseIdx(phaseIdx);
@@ -55,7 +65,7 @@ export default function NuviLoadingMessages({
     };
     const interval = setInterval(tick, 200);
     return () => clearInterval(interval);
-  }, [phases, currentPhaseIdx, cycleDuration]);
+  }, [phases, cycleDuration]);
 
   const current = phases[currentPhaseIdx] || phases[0];
 
