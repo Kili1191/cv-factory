@@ -42,6 +42,7 @@ const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: fa
 const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr: false });
 const NuviLogo      = dynamic(() => import("./components/NuviLogo"), { ssr: false });
 const NuviIntro     = dynamic(() => import("./components/NuviIntro"), { ssr: false });
+const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2577,12 +2578,8 @@ export default function App() {
     // Load dark mode preference
     const savedDk = lsG(SK.DK, false);
     if (savedDk === true) setDarkMode(true);
-    // Load tutorial seen flag : si jamais vu, on le declenche au premier render
-    const savedTu = lsG(SK.TU, false);
-    if (!savedTu) {
-      // Delai pour laisser le premier render se faire (evite flash)
-      setTimeout(() => setShowTutorial(true), 600);
-    }
+    // Tutorial : remplace par NuviIntro (presentation Nuvi). On marque tutorial comme vu.
+    lsS(SK.TU, true);
     setHydrated(true);
   }, []);
 
@@ -2612,6 +2609,37 @@ export default function App() {
   // qui le reference dans son deps array. Sinon ReferenceError au mount.
   const cvIsEmpty = !cv.name && !cv.title && !cv.summary
     && cv.experience.every(e => !e.title && !e.company);
+
+  // NuviLoadingOverlay : determine quel loading est actif et quelle serie afficher
+  const loadingState = useMemo(() => {
+    // Generation CV (le plus important - serie "generation")
+    if (load) return { active: true, series: "generation" };
+    // Audit ATS
+    if (auditLoading) return { active: true, series: "audit" };
+    // Match offre / keywords
+    if (kwLoading) return { active: true, series: "match" };
+    // Interview prep
+    if (interviewLoading) return { active: true, series: "interview" };
+    // Autres loadings (generic series)
+    if (trLoading || packLoading || posLoading || truthLoading
+        || dashLoading || askRecruiterLoading || emailLoading
+        || debriefLoading || cheatSheetLoading || packPdfLoading
+        || linkedInLoading || compareLoading || multiCVLoading) {
+      return { active: true, series: "generic" };
+    }
+    return { active: false, series: "generic" };
+  }, [load, auditLoading, kwLoading, interviewLoading, trLoading, packLoading,
+      posLoading, truthLoading, dashLoading, askRecruiterLoading, emailLoading,
+      debriefLoading, cheatSheetLoading, packPdfLoading, linkedInLoading,
+      compareLoading, multiCVLoading]);
+
+  // Donnees user pour personnaliser les messages NuviLoadingMessages
+  const loadingUser = useMemo(() => ({
+    nom: cv.name || "",
+    metier: cv.title || "",
+    secteur: (cv.experience && cv.experience[0] && cv.experience[0].company) || "",
+    annees: cv.experience ? cv.experience.length : 0,
+  }), [cv.name, cv.title, cv.experience]);
 
   // v17 chantier 16 : Raccourcis clavier globaux.
   useEffect(() => {
@@ -5515,6 +5543,13 @@ export default function App() {
             onSkip={skipIntro}
           />
         )}
+        <NuviLoadingOverlay
+          active={loadingState.active}
+          series={loadingState.series}
+          user={loadingUser}
+          lang={locale}
+          mob={false}
+        />
         <div style={{
           display:"flex", height:"100vh",
           fontFamily:Sans,
@@ -5709,28 +5744,28 @@ export default function App() {
             style={{
               position: "fixed",
               ...(coachPos
-                ? { left: coachPos.x - 120, top: coachPos.y - 16 }
-                : { right: 110, bottom: 50 }),
-              zIndex: 89,
+                ? { left: Math.max(12, coachPos.x - 80), top: Math.max(12, coachPos.y - 60) }
+                : { right: 30, bottom: 100 }),
+              zIndex: 91,
               background: "#0f0f12",
               color: "#faf8f3",
               borderRadius: 14,
-              padding: "10px 16px",
+              padding: "10px 18px",
               fontSize: 14,
               fontWeight: 500,
               fontFamily: "'Inter', sans-serif",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.35), 0 4px 8px rgba(0,0,0,0.2)",
               cursor: "pointer",
               animation: "introBubbleBounce 1800ms ease-in-out infinite",
-              maxWidth: 220,
+              whiteSpace: "nowrap",
               lineHeight: 1.3,
               userSelect: "none",
             }}
           >
-            <div>{locale === "en" ? "👋 Click me!" : "👋 Clique sur moi !"}</div>
+            {locale === "en" ? "👋 Click me!" : "👋 Clique sur moi !"}
             <div style={{
               position: "absolute",
-              right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
+              bottom: -6, left: "75%", transform: "translateX(-50%) rotate(45deg)",
               width: 12, height: 12, background: "#0f0f12",
             }} />
             <style>{`
@@ -5771,6 +5806,13 @@ export default function App() {
           onSkip={skipIntro}
         />
       )}
+      <NuviLoadingOverlay
+        active={loadingState.active}
+        series={loadingState.series}
+        user={loadingUser}
+        lang={locale}
+        mob={true}
+      />
       {zoomed && (
         <div style={{
           position:"fixed", inset:0, zIndex:1500,
@@ -6048,28 +6090,28 @@ export default function App() {
             style={{
               position: "fixed",
               ...(coachPos
-                ? { left: Math.max(12, coachPos.x - 140), top: Math.max(12, coachPos.y - 18) }
-                : { right: 100, bottom: 110 }),
-              zIndex: 89,
+                ? { left: Math.max(12, coachPos.x - 60), top: Math.max(12, coachPos.y - 50) }
+                : { right: 16, bottom: 158 }),
+              zIndex: 91,
               background: "#0f0f12",
               color: "#faf8f3",
               borderRadius: 14,
-              padding: "10px 14px",
+              padding: "10px 16px",
               fontSize: 13,
               fontWeight: 500,
               fontFamily: "'Inter', sans-serif",
-              boxShadow: "0 12px 32px rgba(0,0,0,0.25), 0 4px 8px rgba(0,0,0,0.15)",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.35), 0 4px 8px rgba(0,0,0,0.2)",
               cursor: "pointer",
               animation: "introBubbleBounce 1800ms ease-in-out infinite",
-              maxWidth: 200,
+              whiteSpace: "nowrap",
               lineHeight: 1.3,
               userSelect: "none",
             }}
           >
-            <div>{locale === "en" ? "👋 Tap me!" : "👋 Touche-moi !"}</div>
+            {locale === "en" ? "👋 Tap me!" : "👋 Touche-moi !"}
             <div style={{
               position: "absolute",
-              right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
+              bottom: -6, left: "75%", transform: "translateX(-50%) rotate(45deg)",
               width: 12, height: 12, background: "#0f0f12",
             }} />
             <style>{`
