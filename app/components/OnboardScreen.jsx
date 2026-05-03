@@ -36,7 +36,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         onClick:()=>setMode("import"),
       },
       {
-        key:"adapt", grad:GradPurple,  // [Nuvi] violet pour "j'adapte a une offre" (IA)
+        key:"adapt", grad:GradPurple,  // [Nuvi] violet pour "j'adapte a une offre" (Nuvi)
         title:T.ob_card_adapt, desc:T.ob_card_adapt_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
@@ -48,7 +48,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         onClick:()=>setMode("import-adapt"),
       },
       {
-        key:"create", grad:GradPurple,  // [Nuvi] violet pour "creation IA"
+        key:"create", grad:GradPurple,  // [Nuvi] violet pour "creation Nuvi"
         title:T.ob_card_create, desc:T.ob_card_create_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
