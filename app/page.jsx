@@ -5508,7 +5508,7 @@ export default function App() {
         {Onboard}
         {showIntro && (
           <NuviIntro
-            lang={lc}
+            lang={locale}
             mob={false}
             origin={introOrigin}
             onComplete={completeIntro}
@@ -5727,7 +5727,7 @@ export default function App() {
               userSelect: "none",
             }}
           >
-            <div>{lc === "en" ? "👋 Click me!" : "👋 Clique sur moi !"}</div>
+            <div>{locale === "en" ? "👋 Click me!" : "👋 Clique sur moi !"}</div>
             <div style={{
               position: "absolute",
               right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
@@ -5764,7 +5764,7 @@ export default function App() {
       {Onboard}
       {showIntro && (
         <NuviIntro
-          lang={lc}
+          lang={locale}
           mob={true}
           origin={introOrigin}
           onComplete={completeIntro}
@@ -6066,7 +6066,7 @@ export default function App() {
               userSelect: "none",
             }}
           >
-            <div>{lc === "en" ? "👋 Tap me!" : "👋 Touche-moi !"}</div>
+            <div>{locale === "en" ? "👋 Tap me!" : "👋 Touche-moi !"}</div>
             <div style={{
               position: "absolute",
               right: -6, top: "50%", transform: "translateY(-50%) rotate(45deg)",
