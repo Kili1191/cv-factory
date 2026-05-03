@@ -163,13 +163,19 @@ export default function AdjustModal({
   // Handler envoi instruction (intro mode ou chat mode)
   const sendInstruction = useCallback(async (textToSend) => {
     const text = (textToSend || instruction || chatInput || "").trim();
+
+    // [DIAGNOSTIC] Logging pour comprendre les bugs
+    console.log("[AdjustModal] sendInstruction called:", { text, hasApiKey: !!apiKey, mode });
+
     if (!text) {
+      console.warn("[AdjustModal] No text - aborting");
       notify && notify(lang === "fr"
         ? "Ecris une instruction d'abord."
         : "Write an instruction first.");
       return;
     }
     if (!apiKey) {
+      console.warn("[AdjustModal] No apiKey - aborting");
       notify && notify(lang === "fr"
         ? "Cle API requise dans les Reglages."
         : "API key required in Settings.");
@@ -187,8 +193,6 @@ export default function AdjustModal({
     setMode("chat");
 
     try {
-      // Construire le prompt comme AdjustPanel original
-      // (signature aiCall(prompt, options) - prompt est un STRING)
       const noDash = "Tu interdis tous les tirets cadratin (em dash) ou demi-cadratin (en dash). "
         + "Pour separer ou ponctuer, utilise UNIQUEMENT virgule, parenthese, deux points "
         + "ou tiret simple - (hyphen-minus U+002D).";
@@ -203,11 +207,14 @@ export default function AdjustModal({
         + "\n\nINSTRUCTION: \"" + text + "\""
         + "\n\nRetourne UNIQUEMENT le JSON modifie.";
 
+      console.log("[AdjustModal] Calling aiCall with prompt length:", prompt.length);
       const txt = await aiCall(prompt, { task_name: "adjust_modal" });
+      console.log("[AdjustModal] aiCall returned, response length:", (txt || "").length);
+
       const newCv = parseJSON(txt);
+      console.log("[AdjustModal] parseJSON result:", newCv ? "SUCCESS (object)" : "FAILED (null/undefined)");
 
       if (newCv && typeof newCv === "object") {
-        // IMPORTANT : setCVFn attend une FONCTION, pas un objet
         setCVFn(() => newCv);
 
         const replyText = lang === "fr"
@@ -218,22 +225,27 @@ export default function AdjustModal({
 
         notify && notify(lang === "fr" ? "CV ajuste" : "CV adjusted");
       } else {
+        console.error("[AdjustModal] parseJSON failed - raw response:", txt);
         const errMsg = lang === "fr"
-          ? "Desole, je n'ai pas pu appliquer la modification. Essaie de reformuler."
-          : "Sorry, I couldn't apply the change. Try rephrasing.";
+          ? "Desole, je n'ai pas pu interpreter ma propre reponse. Reformule l'instruction."
+          : "Sorry, I couldn't parse my own response. Try rephrasing.";
         const errReply = { role: "nuvi", text: errMsg, ts: Date.now() };
         setHistory(prev => [...prev, errReply]);
+        // Notif visible aussi
+        notify && notify(errMsg);
       }
     } catch (e) {
+      console.error("[AdjustModal] Error during sendInstruction:", e);
       const errMsg = lang === "fr"
         ? "Erreur. " + (e?.message || "Reessaie dans un instant.")
         : "Error. " + (e?.message || "Try again in a moment.");
       const errReply = { role: "nuvi", text: errMsg, ts: Date.now() };
       setHistory(prev => [...prev, errReply]);
+      notify && notify(errMsg);
     } finally {
       setLoading(false);
     }
-  }, [instruction, chatInput, cv, apiKey, lang, aiCall, parseJSON, setCVFn, notify]);
+  }, [instruction, chatInput, cv, apiKey, lang, aiCall, parseJSON, setCVFn, notify, mode]);
 
   // Handler chip click : remplit le champ
   const handleChipClick = (sug) => {
