@@ -46,6 +46,7 @@ const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay
 const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
+const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2420,6 +2421,7 @@ export default function App() {
   const [obRaw, setObRaw]   = useState("");
   const [obImp, setObImp]   = useState(false);
   const [showAudit, setShowAudit] = useState(false);
+  const [showAdjust, setShowAdjust] = useState(false);  // [Nuvi v2] AdjustModal sliding from right
   const [auditCountry, setAuditCountry] = useState("FR");
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditResult, setAuditResult]   = useState(null);
@@ -5388,6 +5390,24 @@ export default function App() {
         />
         </Suspense>
       )}
+      {/* [Nuvi v2] AdjustModal sliding from right (chat hybride avec Nuvi) */}
+      {showAdjust && (
+        <Suspense fallback={null}>
+        <AdjustModal
+          open={showAdjust}
+          onClose={() => setShowAdjust(false)}
+          cv={cv}
+          setCVFn={setCVFn}
+          apiKey={apiKey}
+          T={T}
+          lang={locale}
+          aiCall={aiCall}
+          parseJSON={parseJSON}
+          notify={notify}
+          mob={false}
+        />
+        </Suspense>
+      )}
       {showTranslate && (
         <Suspense fallback={null}>
         <TranslateModal
@@ -5592,70 +5612,63 @@ export default function App() {
             active={navSection}
             onSelect={(key) => {
               setNavSection(key);
-              // Wire chaque section à la modale existante correspondante
-              if (key === "target") {
+              // Wire chaque section a la modale ou comportement correspondant
+              if (key === "home") {
+                // "home" = revient au dashboard d'accueil (CV preview + stats)
+                // Rien a ouvrir, le main contient deja le CV preview
+              } else if (key === "adjust") {
+                // Ouvre l'AdjustModal (chat-style avec Nuvi)
+                setShowAdjust(true);
+              } else if (key === "target") {
                 setShowOffer(true);
               } else if (key === "pack") {
                 setShowPack(true);
-              } else if (key === "score") {
-                setShowScore(true);
-              } else if (key === "cvs") {
-                setShowMultiCV(true);
-              } else if (key === "design") {
-                setShowCustomize(true);
               } else if (key === "tracking") {
                 setShowApplications(true);
               }
-              // "home" = juste mettre la section active, ne rien ouvrir
+              // Les items avec sub-items (edit, audits, cvs, design)
+              // ne font rien sur onSelect - ils ouvrent leur sub-menu via onSubSelect
+            }}
+            onSubSelect={(parentKey, subKey) => {
+              // Sub-items : on route vers la bonne modale ou action selon parent+sub
+              if (parentKey === "edit") {
+                // edit_id, edit_exp, edit_edu, edit_sk
+                setModal(subKey);
+              } else if (parentKey === "audits") {
+                if (subKey === "score")      setShowScore(true);
+                else if (subKey === "pos")   { runPositioning && runPositioning(); }
+                else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
+                else if (subKey === "gap")   {
+                  if ((cv.experience || []).length < 2) {
+                    notify(T.gr_no_gaps_title || "Aucun trou detecte");
+                  } else {
+                    setShowGapRepair(true);
+                  }
+                }
+              } else if (parentKey === "cvs") {
+                if (subKey === "list")           setShowMultiCV(true);
+                else if (subKey === "versions")  setShowVersions(true);
+                else if (subKey === "compare")   {
+                  if (versions.length < 2) {
+                    notify(lang === "fr"
+                      ? "Il faut au moins 2 versions pour comparer."
+                      : "At least 2 versions needed to compare.");
+                  } else {
+                    setShowCompare(true);
+                  }
+                }
+                else if (subKey === "templates") setShowMultiCV(true); // templates inclus dans MultiCV
+              } else if (parentKey === "design") {
+                if (subKey === "custom")    setShowCustomize(true);
+                else if (subKey === "translate") setShowTranslate(true);
+              }
             }}
             lang={locale}
             onCoachOpen={() => openCoach()}
             onSettingsOpen={() => setShowSettings(true)}
           />
-          <div data-cvf="app" style={{
-            width:300, background:Paper,
-            borderRight:"0.5px solid "+Gray200,
-            display:"flex", flexDirection:"column",
-            overflow:"hidden", flexShrink:0,
-          }}>
-            <div style={{padding:"18px 20px", background:Paper,
-              borderBottom:"0.5px solid "+Gray200,
-              display:"flex", alignItems:"baseline", gap:14}}>
-              <NuviLogo size={44} inkColor={Ink} />
-              <div style={{
-                width:1, height:18, background:Gray200,
-                alignSelf:"center", flexShrink:0,
-              }} />
-              <div style={{
-                color:Ink, fontSize:13,
-                fontFamily:Serif, fontStyle:"italic",
-                fontWeight:400, opacity:0.72,
-                letterSpacing:"0.01em",
-                whiteSpace:"nowrap",
-              }}>{T.appSub}</div>
-            </div>
-            <div style={{
-              display:"flex",
-              borderBottom:"0.5px solid "+Gray200,
-              padding:"0 8px",
-            }}>
-              {[["start", T.ph_start],
-                ["target", T.ph_target],
-                ["finalize", T.ph_finalize]].map(([k, label]) => (
-                  <button key={k}
-                    style={tS(phase===k)}
-                    onClick={()=>setPhase(k)}>
-                    {label}
-                  </button>
-                ))}
-            </div>
-            <div style={{flex:1, overflowY:"auto", padding:"18px 18px 24px"}}>
-              {tab==="ai"     && AITabContent}
-              {tab==="target" && TargetHubContent}
-              {(tab==="edit" || tab==="design"
-                || tab==="score" || tab==="tools") && FinalizeContent}
-            </div>
-          </div>
+          {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
+              accessibles via NuviSidebar v2 + ses sub-items + AdjustModal */}
           <div style={{
             flex:1, overflow:"auto", padding:22,
             display:"flex", justifyContent:"center", alignItems:"flex-start",
