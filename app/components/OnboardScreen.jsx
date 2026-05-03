@@ -1,7 +1,8 @@
 "use client";
 
-// CV Factory — OnboardScreen
+// Nuvi - OnboardScreen
 // Extrait de page.jsx pour permettre le lazy loading.
+// [Nuvi rebrand] Couleurs alignees : terracotta (Coral #d97757) + violet/magenta gradient pour CTA primaires.
 
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
@@ -12,16 +13,19 @@ import {
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   raw, setRaw, imping, onImport, setTab, setAiMode }) {
 
-  // Style accent par mode (gold pour import simple, coral pour adapt)
-  const accent     = mode === "import-adapt" ? Coral     : Gold;
-  const accentSoft = mode === "import-adapt" ? CoralSoft : "rgba(201,169,110,.15)";
-  const accentGrad = mode === "import-adapt" ? GradCoral : GradGold;
+  // [Nuvi] Style accent par mode :
+  //  - mode "import" simple   : terracotta (Coral)
+  //  - mode "import-adapt"    : violet (gradient purple/magenta)
+  // Le bouton CTA primaire utilise systematiquement le gradient violet/magenta (signature Nuvi).
+  const accent     = mode === "import-adapt" ? Coral     : Coral;
+  const accentSoft = mode === "import-adapt" ? CoralSoft : CoralSoft;
+  const accentGrad = mode === "import-adapt" ? GradPurple : GradPurple;
 
   // === Ecran de choix initial ===
   if (!mode) {
     const cards = [
       {
-        key:"have", grad:GradGold,
+        key:"have", grad:GradCoral,  // [Nuvi] terracotta pour "j'ai deja un CV" (action principale)
         title:T.ob_card_have, desc:T.ob_card_have_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
@@ -32,7 +36,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         onClick:()=>setMode("import"),
       },
       {
-        key:"adapt", grad:GradCoral,
+        key:"adapt", grad:GradPurple,  // [Nuvi] violet pour "j'adapte a une offre" (IA)
         title:T.ob_card_adapt, desc:T.ob_card_adapt_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
@@ -44,7 +48,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         onClick:()=>setMode("import-adapt"),
       },
       {
-        key:"create", grad:GradPurple,
+        key:"create", grad:GradPurple,  // [Nuvi] violet pour "creation IA"
         title:T.ob_card_create, desc:T.ob_card_create_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
@@ -59,7 +63,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
       },
       {
         key:"blank", grad:"linear-gradient(135deg,#0a0a0a,#1a1a1f)",
-        iconColor:Gold,
+        iconColor:Coral,  // [Nuvi] icone terracotta sur fond noir (etait Gold)
         title:T.ob_card_blank, desc:T.ob_blank_desc,
         icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="2"
@@ -83,21 +87,21 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           minHeight:"100%",
           display:"flex", flexDirection:"column",
         }}>
-          {/* Brand */}
+          {/* Brand Nuvi (etait "CV Factory") */}
           <div style={{
             display:"flex", alignItems:"center", gap:10, marginBottom:48,
           }}>
             <div style={{
-              width:36, height:36, background:GradDark,
+              width:36, height:36, background:GradPurple,  // [Nuvi] gradient violet pour le mark
               borderRadius:10, display:"flex",
               alignItems:"center", justifyContent:"center",
-              color:Gold, fontFamily:Serif, fontWeight:600, fontSize:16,
+              color:"#fff", fontFamily:Serif, fontWeight:600, fontSize:16,
               letterSpacing:"-0.02em",
-            }}>CV</div>
+            }}>N</div>
             <div style={{
               fontFamily:Serif, fontWeight:500, fontSize:20,
               letterSpacing:"-0.01em", color:Ink,
-            }}>Factory</div>
+            }}>Nuvi</div>
           </div>
           {/* Hero editorial */}
           <h1 style={{
@@ -124,11 +128,11 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             maxWidth:"94%",
           }}>{T.hero_sub}</p>
 
-          {/* Eyebrow */}
+          {/* Eyebrow [Nuvi] : terracotta au lieu de GoldDeep */}
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:12,
+            color:Coral, marginBottom:12,
           }}>{T.ob_choose}</div>
 
           {/* Cartes CTA */}
@@ -305,7 +309,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           }}
         />
 
-        {/* Big upload card (paper, dashed accent) */}
+        {/* Big upload card (paper, dashed accent terracotta) */}
         <button
           onClick={() => document.getElementById('cv-file-upload').click()}
           style={{
@@ -357,11 +361,11 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           fontWeight:500,
         }}>{T.ob_or_paste}</div>
 
-        {/* Paste textarea */}
+        {/* Paste textarea label [Nuvi] : terracotta au lieu de GoldDeep */}
         <label style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:8, display:"block",
+          color:Coral, marginBottom:8, display:"block",
         }}>{T.ob_paste_label}</label>
         <textarea value={raw} onChange={e=>setRaw(e.target.value)}
           placeholder={T.ob_paste_ph}
@@ -392,14 +396,14 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           }}>{T.ob_no_key}</div>
         )}
 
-        {/* Submit button */}
+        {/* Submit button [Nuvi] : gradient violet/magenta (CTA primaire) */}
         <button onClick={onImport} disabled={imping||!raw.trim()||!apiKey} style={{
           ...B({
             padding:"15px 22px",
             borderRadius:RadiusPill,
             background:imping||!raw.trim()||!apiKey
               ? Gray200
-              : (mode==="import-adapt" ? GradCoral : GradGold),
+              : GradPurple,
             color:imping||!raw.trim()||!apiKey ? Gray600 : "#fff",
             fontWeight:600, fontSize:14,
             fontFamily:Sans,
@@ -407,6 +411,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             transition:"all 200ms ease-out",
             display:"inline-flex",
             alignItems:"center", justifyContent:"center", gap:8,
+            boxShadow: imping||!raw.trim()||!apiKey
+              ? "none"
+              : "0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
           {imping ? T.ob_parsing : (mode==="import-adapt" ? T.ob_continue_adapt : T.ob_parse)}
