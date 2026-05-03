@@ -171,7 +171,7 @@ export default function AdjustModal({
     }
     if (!apiKey) {
       notify && notify(lang === "fr"
-        ? "Clé API requise dans les Réglages."
+        ? "Cle API requise dans les Reglages."
         : "API key required in Settings.");
       return;
     }
@@ -183,47 +183,51 @@ export default function AdjustModal({
     setInstruction("");
     setChatInput("");
 
+    // Switch mode chat IMMEDIATEMENT pour que le user voie son msg
+    setMode("chat");
+
     try {
-      // Construire le prompt pour Nuvi
-      const sys = lang === "fr"
-        ? "Tu es Nuvi, recruteur senior. L'utilisateur te donne une instruction pour modifier son CV. Tu modifies UNIQUEMENT ce qui est demande, sans inventer de contenu. Reponds STRICTEMENT en JSON avec la structure CV complete modifiee. Pas de tirets cadratin (em dash) ni demi-cadratin (en dash). Format JSON brut, pas de markdown."
-        : "You are Nuvi, a senior recruiter. The user gives you an instruction to modify their CV. You modify ONLY what is requested, without inventing content. Reply STRICTLY in JSON with the complete modified CV structure. No em dashes or en dashes. Raw JSON format, no markdown.";
+      // Construire le prompt comme AdjustPanel original
+      // (signature aiCall(prompt, options) - prompt est un STRING)
+      const noDash = "Tu interdis tous les tirets cadratin (em dash) ou demi-cadratin (en dash). "
+        + "Pour separer ou ponctuer, utilise UNIQUEMENT virgule, parenthese, deux points "
+        + "ou tiret simple - (hyphen-minus U+002D).";
 
-      const usr = `CV actuel:\n${JSON.stringify(cv, null, 2)}\n\nInstruction: ${text}\n\nRetourne le CV modifie en JSON brut.`;
+      const prompt = "Expert CV. JSON recu + instruction. Tu es Nuvi, recruteur senior."
+        + " Reponds UNIQUEMENT JSON valide strict sans markdown.\n"
+        + "REGLES: preserve structure JSON exacte, IDs,"
+        + " jamais inventer experiences/diplomes,"
+        + " garde langue origine sauf traduction demandee."
+        + " " + noDash + "\n\n"
+        + "CV:\n" + JSON.stringify(cv, null, 2)
+        + "\n\nINSTRUCTION: \"" + text + "\""
+        + "\n\nRetourne UNIQUEMENT le JSON modifie.";
 
-      const response = await aiCall({
-        system: sys,
-        user: usr,
-        max_tokens: 4000,
-        apiKey,
-      });
+      const txt = await aiCall(prompt, { task_name: "adjust_modal" });
+      const newCv = parseJSON(txt);
 
-      const newCv = parseJSON(response);
       if (newCv && typeof newCv === "object") {
-        setCVFn(newCv);
+        // IMPORTANT : setCVFn attend une FONCTION, pas un objet
+        setCVFn(() => newCv);
 
-        // Ajoute la reponse de Nuvi a l'historique
         const replyText = lang === "fr"
-          ? "C'est fait. Modification appliquée."
+          ? "C'est fait. Modification appliquee."
           : "Done. Changes applied.";
         const nuviMsg = { role: "nuvi", text: replyText, ts: Date.now() };
         setHistory(prev => [...prev, nuviMsg]);
 
-        // Switch vers mode chat (si on etait en intro, on reste en chat apres)
-        setMode("chat");
-
-        notify && notify(lang === "fr" ? "CV ajusté" : "CV adjusted");
+        notify && notify(lang === "fr" ? "CV ajuste" : "CV adjusted");
       } else {
         const errMsg = lang === "fr"
-          ? "Désolé, la modification n'a pas pu être appliquée. Essaie de reformuler."
-          : "Sorry, the change couldn't be applied. Try rephrasing.";
+          ? "Desole, je n'ai pas pu appliquer la modification. Essaie de reformuler."
+          : "Sorry, I couldn't apply the change. Try rephrasing.";
         const errReply = { role: "nuvi", text: errMsg, ts: Date.now() };
         setHistory(prev => [...prev, errReply]);
       }
     } catch (e) {
       const errMsg = lang === "fr"
-        ? "Erreur. " + (e.message || "")
-        : "Error. " + (e.message || "");
+        ? "Erreur. " + (e?.message || "Reessaie dans un instant.")
+        : "Error. " + (e?.message || "Try again in a moment.");
       const errReply = { role: "nuvi", text: errMsg, ts: Date.now() };
       setHistory(prev => [...prev, errReply]);
     } finally {
@@ -421,25 +425,29 @@ export default function AdjustModal({
             {/* Sub-header */}
             <p style={{
               fontFamily: "'Fraunces', serif",
-              fontSize: 22,
+              fontSize: 20,
               fontWeight: 400,
-              lineHeight: 1.2,
+              lineHeight: 1.15,
               color: Ink,
               margin: "0 0 6px",
               letterSpacing: "-0.015em",
+              textWrap: "balance",
+              maxWidth: "80%",
             }}>
               {lang === "fr"
-                ? "Que veux-tu améliorer ?"
-                : "What do you want to improve?"}
+                ? "Que veux-tu ameliorer ?"
+                : "What to improve?"}
             </p>
             <p style={{
               fontSize: 13,
               color: InkMuted,
               lineHeight: 1.5,
               margin: "0 0 22px",
+              maxWidth: "85%",
+              textWrap: "balance",
             }}>
               {lang === "fr"
-                ? "Décris en une phrase, je m'occupe du reste."
+                ? "Decris en une phrase, je m'occupe du reste."
                 : "Describe in one sentence, I'll handle the rest."}
             </p>
 
