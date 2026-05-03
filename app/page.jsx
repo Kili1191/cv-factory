@@ -1,27 +1,48 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
-import GapRepairModal from "./components/GapRepairModal";
-import InterviewModal from "./components/InterviewModal";
-import VersionsModal from "./components/VersionsModal";
-import TruthModal from "./components/TruthModal";
-import PositioningModal from "./components/PositioningModal";
-import TranslateModal from "./components/TranslateModal";
-import AuditModal from "./components/AuditModal";
-import ApplicationPackModal from "./components/ApplicationPackModal";
+
+// === LAZY MODALS ===
+// Ces modals ne sont rendus que sur action utilisateur (showXxx === true).
+// Ils sont chargés à la volée la première fois qu'ils s'ouvrent, ce qui
+// allège significativement le First Paint. Les chunks sont mis en cache
+// par le navigateur pour les ouvertures suivantes.
+const GapRepairModal = lazy(() => import("./components/GapRepairModal"));
+const InterviewModal = lazy(() => import("./components/InterviewModal"));
+const VersionsModal = lazy(() => import("./components/VersionsModal"));
+const TruthModal = lazy(() => import("./components/TruthModal"));
+const PositioningModal = lazy(() => import("./components/PositioningModal"));
+const TranslateModal = lazy(() => import("./components/TranslateModal"));
+const AuditModal = lazy(() => import("./components/AuditModal"));
+const ApplicationPackModal = lazy(() => import("./components/ApplicationPackModal"));
+const LinkedInExportModal = lazy(() => import("./components/LinkedInExportModal"));
+const CVCompareModal = lazy(() => import("./components/CVCompareModal"));
+const ApplicationsTrackerModal = lazy(() => import("./components/ApplicationsTrackerModal"));
+const MultiCVStrategyModal = lazy(() => import("./components/MultiCVStrategyModal"));
+const TutorialOverlay = lazy(() => import("./components/TutorialOverlay"));
+const SettingsPanel = lazy(() => import("./components/SettingsPanel"));
+
+// CoachModal est lazy mais CoachFAB (bouton flottant toujours visible)
+// reste en eager loading pour qu'il s'affiche immédiatement.
+const CoachModal = lazy(() =>
+  import("./components/CoachModal").then(m => ({ default: m.default }))
+);
+import { CoachFAB } from "./components/CoachModal";
+
+// === LAZY UI COMPONENTS (extracted from page.jsx) ===
+// Composants conditionnels lourds extraits dans des fichiers séparés.
+// Chargés à la demande via React.lazy pour alléger le First Paint.
+const OnboardScreen = lazy(() => import("./components/OnboardScreen"));
+const TargetHub     = lazy(() => import("./components/TargetHub"));
+const MatchPanel    = lazy(() => import("./components/MatchPanel"));
+const ScorePanel    = lazy(() => import("./components/ScorePanel"));
+
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
 import { CVSidebar, CVAts } from "./components/CVLayouts";
-import CoachModal, { CoachFAB } from "./components/CoachModal";
-import LinkedInExportModal from "./components/LinkedInExportModal";
-import CVCompareModal from "./components/CVCompareModal";
-import ApplicationsTrackerModal from "./components/ApplicationsTrackerModal";
-import MultiCVStrategyModal from "./components/MultiCVStrategyModal";
-import TutorialOverlay from "./components/TutorialOverlay";
-import SettingsPanel from "./components/SettingsPanel";
 import {
   detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
@@ -1058,513 +1079,11 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
   );
 }
 
-function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
-  onResult, onApplied, initialResult }) {
-  const [offer, setOffer] = useState("");
-  const [load, setLoad]   = useState(false);
-  const [res, setRes]     = useState(initialResult || null);
-  const [ph, setPh]       = useState(initialResult ? "done" : "input");
-
-  const analyze = async () => {
-    if (!offer.trim()) { notify(T.off_no_offer); return; }
-    if (!apiKey) { notify(T.nk); return; }
-    setLoad(true);
-    setPh("loading");
-    const expT = cv.experience.map(e =>
-      e.title + " chez " + e.company
-      + " (" + e.period + "): "
-      + e.bullets.filter(b=>b).join("; ")
-    ).join(" | ");
-    const cvT = "Profil: " + cv.name + " - " + cv.title
-      + "\nAcrroche: " + cv.summary
-      + "\nExps: " + expT
-      + "\nSkills: " + cv.skills.filter(s=>s).join(", ")
-      + "\nLangues: " + cv.languages.filter(l=>l.lang)
-          .map(l=>l.lang+" "+l.level).join(", ");
-    const expJ = cv.experience.map((e,i) =>
-      JSON.stringify({
-        id:i+1, title:e.title, company:e.company,
-        period:e.period, location:e.location,
-        bullets:e.bullets.filter(b=>b),
-      })
-    ).join(",");
-    const eduJ = cv.education.map((e,i) =>
-      JSON.stringify({id:i+1, degree:e.degree, school:e.school, period:e.period})
-    ).join(",");
-    const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
-      +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
-      +"REGLES: ne pas inventer, adapter mots-cles offre. " + NO_DASH + "\n"
-      +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
-      +'JSON uniquement: {"match_score":75,"job_title":"","company":"",'
-      +'"key_requirements":["r1","r2","r3"],"keywords_matched":["k1","k2"],'
-      +'"keywords_to_add":["k1","k2"],'
-      +'"hidden_signals":["signal cache 1 que la plupart ne voient pas","signal 2"],'
-      +'"culture_decode":"Ce que dit l offre sur la culture reelle de l entreprise en 2 phrases",'
-      +'"seniority_decode":"Niveau reellement attendu vs ce qui est ecrit",'
-      +'"likely_interview_questions":["q1","q2","q3","q4","q5"],'
-      +'"cover_letter_hook":"accroche",'
-      +'"cv_optimized":{"name":"'+cv.name+'","title":"","email":"'+cv.email+'",'
-      +'"phone":"'+cv.phone+'","location":"'+cv.location+'","linkedin":"'+cv.linkedin+'",'
-      +'"summary":"","experience":['+expJ+'],"education":['+eduJ+'],'
-      +'"skills":["s1","s2","s3","s4","s5","s6","s7","s8"],'
-      +'"languages":'+JSON.stringify(cv.languages)+',"certifications":'+JSON.stringify(cv.certifications)+'}}';
-    try {
-      const txt = await aiCall(p);
-      const r = parseJSON(txt);
-      setRes(r);
-      setPh("done");
-      if (onResult) onResult(r);
-    } catch { notify(T.ea); setPh("input"); }
-    setLoad(false);
-  };
-
-  const apply = () => {
-    if (!res || !res.cv_optimized) return;
-    setCVFn(() => normCV(res.cv_optimized, cv));
-    notify("CV adapte applique!");
-    setPh("input");
-    setRes(null);
-    setOffer("");
-    if (onApplied) onApplied();
-  };
-
-  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
-
-  if (ph === "loading") {
-    return (
-      <div style={{textAlign:"center", padding:"36px 20px"}}>
-        <div style={{fontSize:28, marginBottom:10}}>{">"}</div>
-        <div style={{fontSize:14, fontWeight:700, color:Dark, marginBottom:6}}>
-          Analyse en cours...
-        </div>
-        <div style={{fontSize:12, color:"#888"}}>
-          L'IA adapte ton CV pour matcher parfaitement.
-        </div>
-      </div>
-    );
-  }
-
-  if (ph === "done" && res) {
-    return (
-      <div>
-        <div style={{
-          display:"flex", alignItems:"center", gap:14,
-          background:"#f8f6f1", borderRadius:11,
-          padding:"14px 18px", marginBottom:12,
-        }}>
-          <div style={{textAlign:"center", flexShrink:0}}>
-            <div style={{
-              fontSize:34, fontWeight:900,
-              color:sc(res.match_score), lineHeight:1,
-            }}>
-              {res.match_score}
-            </div>
-            <div style={{fontSize:9, color:"#888", fontWeight:600, letterSpacing:1}}>
-              Match
-            </div>
-          </div>
-          <div style={{flex:1}}>
-            <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:4}}>
-              {res.job_title}{res.company?" - "+res.company:""}
-            </div>
-            <div style={{width:"100%", height:5, borderRadius:3, background:"#eee"}}>
-              <div style={{
-                width:res.match_score+"%", height:"100%",
-                borderRadius:3, background:sc(res.match_score),
-              }}/>
-            </div>
-          </div>
-        </div>
-        {(res.key_requirements||[]).length > 0 && (
-          <div style={{
-            background:"#f0f4ff", borderRadius:9,
-            padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#4338ca", marginBottom:6}}>
-              Requirements cles
-            </div>
-            {(res.key_requirements||[]).map((r,i) => (
-              <div key={i} style={{fontSize:12, color:"#333", marginBottom:3}}>
-                {"* "}{r}
-              </div>
-            ))}
-          </div>
-        )}
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:10}}>
-          {(res.keywords_matched||[]).length > 0 && (
-            <div style={{background:"#f0fff4", borderRadius:9, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:"#16a34a", marginBottom:5}}>
-                Presents
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
-                {(res.keywords_matched||[]).map((k,i) => (
-                  <span key={i} style={{
-                    background:"#dcfce7", color:"#16a34a",
-                    borderRadius:3, padding:"2px 5px", fontSize:9,
-                  }}>{k}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {(res.keywords_to_add||[]).length > 0 && (
-            <div style={{background:"#fff9f0", borderRadius:9, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:Gold, marginBottom:5}}>
-                Ajoutes
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
-                {(res.keywords_to_add||[]).map((k,i) => (
-                  <span key={i} style={{
-                    background:"#fff3cd", color:"#92400e",
-                    borderRadius:3, padding:"2px 5px", fontSize:9,
-                  }}>{k}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        {res.cover_letter_hook && (
-          <div style={{
-            background:Gold+"15",
-            border:"1px solid "+Gold+"44",
-            borderRadius:9, padding:"10px 13px", marginBottom:12,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:Gold, marginBottom:5}}>
-              Accroche lettre de motivation
-            </div>
-            <div style={{fontSize:12, color:"#555", lineHeight:1.6, fontStyle:"italic"}}>
-              "{res.cover_letter_hook}"
-            </div>
-          </div>
-        )}
-        {res.hidden_signals && res.hidden_signals.length > 0 && (
-          <div style={{
-            background:"#fef3c7", border:"1px solid #fbbf24",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#92400e", marginBottom:6}}>
-              Signaux caches dans l'offre
-            </div>
-            {res.hidden_signals.map((s,i) => (
-              <div key={i} style={{fontSize:12, color:"#78350f", marginBottom:4, lineHeight:1.5}}>
-                {"> "}{s}
-              </div>
-            ))}
-          </div>
-        )}
-        {res.culture_decode && (
-          <div style={{
-            background:"#ede9fe", border:"1px solid #c4b5fd",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#5b21b6", marginBottom:5}}>
-              Culture entreprise (decodee)
-            </div>
-            <div style={{fontSize:12, color:"#4c1d95", lineHeight:1.5}}>
-              {res.culture_decode}
-            </div>
-          </div>
-        )}
-        {res.seniority_decode && (
-          <div style={{
-            background:"#f0fdf4", border:"1px solid #86efac",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#166534", marginBottom:5}}>
-              Niveau attendu (decode)
-            </div>
-            <div style={{fontSize:12, color:"#14532d", lineHeight:1.5}}>
-              {res.seniority_decode}
-            </div>
-          </div>
-        )}
-        {res.likely_interview_questions && res.likely_interview_questions.length > 0 && (
-          <div style={{
-            background:"#fee2e2", border:"1px solid #fca5a5",
-            borderRadius:9, padding:"10px 13px", marginBottom:12,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#991b1b", marginBottom:6}}>
-              Questions probables en entretien
-            </div>
-            {res.likely_interview_questions.map((q,i) => (
-              <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
-                {(i+1)+". "}{q}
-              </div>
-            ))}
-          </div>
-        )}
-        <button onClick={apply} style={{
-          ...B({
-            width:"100%", padding:13, borderRadius:11,
-            background:"linear-gradient(135deg,#7c3aed,"+Gold+")",
-            color:"#fff", fontWeight:800, fontSize:14, marginBottom:8,
-          })
-        }}>
-          Appliquer ce CV adapte
-        </button>
-        {onPackRequest && (
-          <button onClick={()=>onPackRequest(offer, res)} style={{
-            ...B({
-              width:"100%", padding:13, borderRadius:11,
-              background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-              color:"#fff", fontWeight:800, fontSize:14, marginBottom:8,
-              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
-            })
-          }}>
-            <span style={{fontSize:16}}>{">"}</span>
-            <span>Generer la candidature complete</span>
-          </button>
-        )}
-        <button onClick={()=>{setPh("input");setRes(null);}} style={{
-          ...B({
-            width:"100%", padding:10, borderRadius:9,
-            background:"#f0f0f0", color:"#666", fontWeight:600, fontSize:13,
-          })
-        }}>
-          Nouvelle offre
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <div>
-      <div style={{
-        background:Gold+"15", border:"1px solid "+Gold+"44",
-        borderRadius:9, padding:"11px 13px", marginBottom:14,
-      }}>
-        <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:3}}>
-          CV sur mesure pour une offre
-        </div>
-        <div style={{fontSize:12, color:"#666", lineHeight:1.6}}>
-          Colle l'offre - l'IA adapte ton CV existant sans rien inventer.
-        </div>
-      </div>
-      {!cv.name && !cv.summary && (
-        <div style={{
-          background:"#fff3cd", border:"1px solid #ffc107",
-          borderRadius:8, padding:"9px 12px", marginBottom:10,
-          fontSize:12, color:"#664d03",
-        }}>
-          Ton CV est vide - importe ou genere un CV d'abord.
-        </div>
-      )}
-      <label style={LBL}>Offre d'emploi</label>
-      <textarea value={offer} onChange={e=>setOffer(e.target.value)}
-        placeholder={"Colle l'offre d'emploi complete ici:\n- Intitule du poste\n- Missions\n- Profil recherche\n- Competences requises"}
-        rows={11}
-        style={{...IN({resize:"vertical", marginBottom:14, fontSize:12, lineHeight:1.7})}}/>
-      <button onClick={analyze}
-        disabled={load||!apiKey||!offer.trim()}
-        style={{
-          ...B({
-            width:"100%", padding:13, borderRadius:11,
-            background:load||!apiKey||!offer.trim()
-              ? "#ccc"
-              : "linear-gradient(135deg,#7c3aed,"+Gold+")",
-            color:"#fff", fontWeight:800, fontSize:14,
-          })
-        }}>
-        Adapter mon CV a cette offre
-      </button>
-      {!apiKey && (
-        <div style={{fontSize:11, color:"#888", textAlign:"center", marginTop:7}}>
-          Cle API requise dans Outils
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ScorePanel v17 : 2 onglets.
 //   - dashboard : Score Dashboard 8 axes (delegue a <ScoreDashboard>)
 //   - quick     : Score rapide local (calcul client instantane sur la structure)
 // Default = dashboard (la valeur premium).
-function ScorePanel({ cv, apiKey, notify, layout, T,
-  dashLoading, dashResult, onRunDashboard, onCtaAxis }) {
-  const [mode, setMode] = useState("dashboard");
-  const [quickRes, setQuickRes] = useState(null);
-
-  const computeQuick = () => {
-    const C=[]; const add=(cat,label,ok,tip,w=1)=>{C.push({cat,label,ok,tip,w});};
-    const sl=(cv.summary||"").trim().length;
-    add("Contact","Nom",!!(cv.name||"").trim(),"Nom requis");
-    add("Contact","Titre",!!(cv.title||"").trim(),"Titre requis");
-    add("Contact","Email",!!(cv.email||"").trim(),"Email requis");
-    add("Contact","Tel",!!(cv.phone||"").trim(),"Tel requis");
-    add("Contact","Location",!!(cv.location||"").trim(),"Ville requise");
-    add("Contact","LinkedIn",!!(cv.linkedin||"").trim(),"LinkedIn recommande");
-    add("Accroche","Presente",sl>0,"Accroche indispensable");
-    add("Accroche","Longueur ok",sl>100&&sl<600,"Vise 3 a 4 phrases");
-    add("Accroche","Chiffres",(cv.summary||"").split("").some(c=>c>="0"&&c<="9"),"Ajoute des chiffres");
-    const exps=(cv.experience||[]).filter(e=>e.title||e.company);
-    add("Experience","Presente",exps.length>=1,"Aucune experience");
-    add("Experience","Periodes",exps.length>0&&exps.every(e=>(e.period||"").trim()),"Periodes requises");
-    add("Experience","Bullets chiffres",exps.some(e=>(e.bullets||[]).some(b=>(b||"").split("").some(c=>c>="0"&&c<="9"))),"Ajoute des chiffres");
-    add("Experience","Volume",exps.reduce((s,e)=>s+(e.bullets||[]).filter(b=>(b||"").trim()).length,0)>=6,"Min 6 bullets");
-    const sk=(cv.skills||[]).filter(s=>(s||"").trim());
-    add("Competences","Min 5",sk.length>=5,"Vise 6 a 10");
-    add("Competences","Min 8",sk.length>=8,"ATS filtrent sur mots-cles");
-    add("Langues","Presente",(cv.languages||[]).filter(l=>(l.lang||"").trim()).length>=1,"Section vide");
-    add("Certifications","Presente",(cv.certifications||[]).filter(c=>(c||"").trim()).length>=1,"Valorise le profil");
-    add("Format ATS","ATS-Safe",layout==="ats","Passe en ATS-Safe",2);
-    const tot=C.filter(c=>c.ok).reduce((s,c)=>s+c.w,0);
-    const maxPts=C.reduce((s,c)=>s+c.w,0);
-    const score=Math.round((tot/maxPts)*100);
-    const bycat={};
-    C.forEach(c=>{
-      if(!bycat[c.cat])bycat[c.cat]={ok:0,tot:0,checks:[]};
-      bycat[c.cat].ok+=c.ok?c.w:0;bycat[c.cat].tot+=c.w;bycat[c.cat].checks.push(c);
-    });
-    setQuickRes({score,checks:C,bycat});
-  };
-
-  const sc = (s) => { if (s >= 80) return Green; if (s >= 65) return GoldDeep; if (s >= 50) return Coral; return "#dc2626"; };
-
-  return (
-    <div style={{fontFamily:Sans}}>
-      {/* Tabs pills */}
-      <div style={{display:"flex", gap:6, marginBottom:18}}>
-        <button onClick={()=>setMode("dashboard")} style={{
-          ...B({
-            flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background: mode==="dashboard" ? Ink : Paper,
-            color: mode==="dashboard" ? Cream : Ink,
-            border:"0.5px solid "+(mode==="dashboard" ? Ink : Gray200),
-            fontFamily:Sans, fontWeight:mode==="dashboard"?600:500, fontSize:12,
-            transition:"all 180ms ease-out",
-          })
-        }}>{T.sd_tab_dashboard}</button>
-        <button onClick={()=>setMode("quick")} style={{
-          ...B({
-            flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background: mode==="quick" ? Ink : Paper,
-            color: mode==="quick" ? Cream : Ink,
-            border:"0.5px solid "+(mode==="quick" ? Ink : Gray200),
-            fontFamily:Sans, fontWeight:mode==="quick"?600:500, fontSize:12,
-            transition:"all 180ms ease-out",
-          })
-        }}>{T.sd_tab_quick}</button>
-      </div>
-
-      {mode === "dashboard" && (
-        <ScoreDashboard
-          T={T}
-          cv={cv}
-          apiKey={apiKey}
-          loading={dashLoading}
-          result={dashResult}
-          onRun={onRunDashboard}
-          onCta={onCtaAxis}
-        />
-      )}
-
-      {mode === "quick" && (
-        <div>
-          <button onClick={computeQuick} style={{
-            ...B({
-              width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-              background: "linear-gradient(135deg,#0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)",
-              color:Cream,
-              fontFamily:Sans, fontWeight:600, fontSize:14,
-              marginBottom: 18,
-              transition:"all 200ms ease-out",
-              display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            })
-          }}>
-            {quickRes ? "Recalculer" : "Analyser mon CV maintenant"}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-            </svg>
-          </button>
-
-          {quickRes && (
-            <>
-              {/* Score global rapide */}
-              <div style={{
-                padding: "20px 22px",
-                background: scoreBg(quickRes.score),
-                borderRadius: RadiusMd, marginBottom: 18,
-                border:"0.5px solid "+Gray200,
-                boxShadow: ShadowSm,
-                display:"flex", alignItems:"center", gap:18,
-              }}>
-                <div style={{
-                  fontFamily: Serif, fontWeight: 300,
-                  fontSize: 56, lineHeight: 1,
-                  letterSpacing: "-0.04em",
-                  color: sc(quickRes.score), flexShrink:0,
-                }}>{quickRes.score}</div>
-                <div>
-                  <div style={{
-                    fontSize: 11, fontWeight: 600,
-                    letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: Gray600, fontFamily: Sans, marginBottom: 4,
-                  }}>SCORE</div>
-                  <div style={{
-                    fontFamily: Serif, fontSize: 14, fontWeight: 400,
-                    color: Ink, letterSpacing: "-0.01em",
-                  }}>{
-                    quickRes.score >= 80 ? "Excellent CV"
-                    : quickRes.score >= 65 ? "Bon CV, ameliorations possibles"
-                    : quickRes.score >= 50 ? "CV correct, plusieurs faiblesses"
-                    : "Plusieurs manques structurels"
-                  }</div>
-                </div>
-              </div>
-
-              {/* Detail par categorie */}
-              <div style={{
-                fontSize: 11, fontWeight: 600,
-                letterSpacing: "0.1em", textTransform: "uppercase",
-                color: GoldDeep, marginBottom: 10,
-                fontFamily: Sans,
-              }}>Detail</div>
-              <div style={{
-                background: Paper,
-                borderRadius: RadiusMd,
-                border: "0.5px solid "+Gray200,
-                boxShadow: ShadowSm,
-                padding: "8px 0",
-              }}>
-                {quickRes.checks.map((c, i) => (
-                  <div key={i} style={{
-                    padding: "6px 16px",
-                    display: "flex", alignItems: "flex-start", gap: 10,
-                    borderBottom: i < quickRes.checks.length - 1 ? "0.5px solid "+Gray100 : "none",
-                  }}>
-                    <span style={{
-                      fontSize: 13, fontWeight: 700,
-                      color: c.ok ? Green : Coral,
-                      lineHeight: 1.45,
-                      width: 14, flexShrink: 0,
-                    }}>{c.ok ? "v" : "x"}</span>
-                    <div style={{flex:1, minWidth:0}}>
-                      <span style={{
-                        fontSize: 12, color: Ink,
-                        fontWeight: c.ok ? 400 : 600,
-                        fontFamily: Sans,
-                        lineHeight: 1.45,
-                      }}>{c.cat}: {c.label}</span>
-                      {!c.ok && (
-                        <div style={{
-                          fontSize: 11, color: Gray600,
-                          marginTop: 2, fontFamily: Sans,
-                          lineHeight: 1.4,
-                        }}>{c.tip}</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // scoreBg pour le quick (helpers locaux)
 function scoreBg(s) {
@@ -1678,449 +1197,6 @@ function BottomNav({ active, onPhase, T }) {
 // OnboardScreen v17 : style editorial, fond cream-soft, hero Fraunces
 // 4 cartes paper-on-cream avec icones gradient, mode import-adapt en Coral
 // ============================================================
-function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
-  raw, setRaw, imping, onImport, setTab, setAiMode }) {
-
-  // Style accent par mode (gold pour import simple, coral pour adapt)
-  const accent     = mode === "import-adapt" ? Coral     : Gold;
-  const accentSoft = mode === "import-adapt" ? CoralSoft : "rgba(201,169,110,.15)";
-  const accentGrad = mode === "import-adapt" ? GradCoral : GradGold;
-
-  // === Ecran de choix initial ===
-  if (!mode) {
-    const cards = [
-      {
-        key:"have", grad:GradGold,
-        title:T.ob_card_have, desc:T.ob_card_have_desc,
-        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="M12 2v6"/><path d="m9 5 3-3 3 3"/>
-          <rect x="4" y="8" width="16" height="14" rx="2"/>
-        </svg>),
-        onClick:()=>setMode("import"),
-      },
-      {
-        key:"adapt", grad:GradCoral,
-        title:T.ob_card_adapt, desc:T.ob_card_adapt_desc,
-        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <circle cx="12" cy="12" r="6"/>
-          <circle cx="12" cy="12" r="2"/>
-        </svg>),
-        onClick:()=>setMode("import-adapt"),
-      },
-      {
-        key:"create", grad:GradPurple,
-        title:T.ob_card_create, desc:T.ob_card_create_desc,
-        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="m4.93 4.93 4.24 4.24"/>
-          <path d="m14.83 9.17 4.24-4.24"/>
-          <path d="m14.83 14.83 4.24 4.24"/>
-          <path d="m9.17 14.83-4.24 4.24"/>
-          <circle cx="12" cy="12" r="4"/>
-        </svg>),
-        onClick:()=>{ setMode("done"); setTab("ai"); setAiMode("generate"); },
-      },
-      {
-        key:"blank", grad:"linear-gradient(135deg,#0a0a0a,#1a1a1f)",
-        iconColor:Gold,
-        title:T.ob_card_blank, desc:T.ob_blank_desc,
-        icon:(<svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <path d="M14 2v6h6"/>
-        </svg>),
-        onClick:()=>setMode("done"),
-      },
-    ];
-    return (
-      <div style={{
-        position:"fixed", inset:0, zIndex:500,
-        background:CreamSoft,
-        overflowY:"auto",
-        fontFamily:Sans,
-      }}>
-        <div style={{
-          maxWidth:480, margin:"0 auto",
-          padding:"28px 24px 40px",
-          minHeight:"100%",
-          display:"flex", flexDirection:"column",
-        }}>
-          {/* Brand */}
-          <div style={{
-            display:"flex", alignItems:"center", gap:10, marginBottom:48,
-          }}>
-            <div style={{
-              width:36, height:36, background:GradDark,
-              borderRadius:10, display:"flex",
-              alignItems:"center", justifyContent:"center",
-              color:Gold, fontFamily:Serif, fontWeight:600, fontSize:16,
-              letterSpacing:"-0.02em",
-            }}>CV</div>
-            <div style={{
-              fontFamily:Serif, fontWeight:500, fontSize:20,
-              letterSpacing:"-0.01em", color:Ink,
-            }}>Factory</div>
-          </div>
-          {/* Hero editorial */}
-          <h1 style={{
-            fontFamily:Serif, fontWeight:300,
-            fontSize:42, lineHeight:1.05,
-            letterSpacing:"-0.025em",
-            color:Ink, margin:"0 0 18px",
-          }}>
-            {T.hero_h1_a}
-            {" "}
-            <em style={{
-              fontStyle:"italic", fontWeight:400,
-              background:GradPurple,
-              WebkitBackgroundClip:"text",
-              backgroundClip:"text",
-              color:"transparent",
-            }}>{T.hero_h1_em}</em>
-            {" "}
-            {T.hero_h1_b}
-          </h1>
-          <p style={{
-            fontSize:15, lineHeight:1.55,
-            color:Gray600, margin:"0 0 32px",
-            maxWidth:"94%",
-          }}>{T.hero_sub}</p>
-
-          {/* Eyebrow */}
-          <div style={{
-            fontSize:11, fontWeight:600,
-            letterSpacing:"0.12em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:12,
-          }}>{T.ob_choose}</div>
-
-          {/* Cartes CTA */}
-          <div style={{
-            display:"flex", flexDirection:"column", gap:12,
-          }}>
-            {cards.map(c => (
-              <button key={c.key} onClick={c.onClick} style={{
-                ...B({
-                  background:Paper,
-                  borderRadius:RadiusMd,
-                  padding:"18px 20px",
-                  display:"flex", alignItems:"center", gap:14,
-                  boxShadow:ShadowSm,
-                  border:"0.5px solid "+Gray200,
-                  textAlign:"left",
-                  transition:"all 200ms ease-out",
-                  width:"100%",
-                })
-              }}>
-                <div style={{
-                  width:48, height:48,
-                  borderRadius:14,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  background:c.grad,
-                  color:c.iconColor || "#fff",
-                  flexShrink:0,
-                }}>{c.icon}</div>
-                <div style={{flex:1, minWidth:0}}>
-                  <div style={{
-                    fontFamily:Serif, fontWeight:500, fontSize:16,
-                    letterSpacing:"-0.01em", color:Ink, marginBottom:2,
-                  }}>{c.title}</div>
-                  <div style={{
-                    fontSize:12, color:Gray600,
-                    lineHeight:1.4,
-                  }}>{c.desc}</div>
-                </div>
-                <span style={{color:Gray400, flexShrink:0}}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="currentColor" strokeWidth="2"
-                    strokeLinecap="round" strokeLinejoin="round">
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Locale pills */}
-          <div style={{
-            display:"flex", justifyContent:"center", gap:8,
-            padding:"32px 0 8px",
-          }}>
-            {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
-              <button key={lc} onClick={()=>setLocale(lc)} style={{
-                ...B({
-                  padding:"6px 14px", borderRadius:RadiusPill,
-                  fontSize:12, fontWeight:500,
-                  color:locale===lc ? Cream : Gray600,
-                  background:locale===lc ? Ink : Paper,
-                  border:"0.5px solid "+(locale===lc ? Ink : Gray200),
-                })
-              }}>{label}</button>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // === Ecran d'import (mode "import" ou "import-adapt") ===
-  return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:500,
-      background:CreamSoft,
-      overflowY:"auto",
-      fontFamily:Sans,
-    }}>
-      <div style={{
-        maxWidth:520, margin:"0 auto",
-        padding:"24px 24px 40px",
-        minHeight:"100%",
-        display:"flex", flexDirection:"column",
-      }}>
-        {/* Bouton retour */}
-        <button onClick={()=>setMode(null)} style={{
-          ...B({
-            background:"none", color:Gray600, fontSize:13,
-            fontFamily:Sans, fontWeight:500,
-            textAlign:"left", padding:"4px 0", marginBottom:14,
-            display:"inline-flex", alignItems:"center", gap:6,
-          })
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <path d="m15 18-6-6 6-6"/>
-          </svg>
-          {T.back}
-        </button>
-
-        {/* Steps bar editoriale */}
-        <div style={{
-          display:"flex", alignItems:"center", justifyContent:"center",
-          gap:8, marginBottom:22, fontSize:11,
-          fontWeight:600, letterSpacing:"0.04em",
-        }}>
-          <span style={{color:accent}}>1. {T.ob_step_import}</span>
-          <span style={{color:Gray400}}>{">"}</span>
-          <span style={{color:Gray600}}>
-            2. {mode==="import-adapt" ? T.ob_step_paste_offer : T.ob_step_boost}
-          </span>
-          <span style={{color:Gray400}}>{">"}</span>
-          <span style={{color:Gray600}}>
-            3. {mode==="import-adapt" ? T.ob_step_adapt : T.ob_step_download}
-          </span>
-        </div>
-
-        {/* Hero editorial */}
-        <h2 style={{
-          fontFamily:Serif, fontWeight:400,
-          fontSize:32, lineHeight:1.1,
-          letterSpacing:"-0.02em", color:Ink,
-          textAlign:"center", margin:"0 0 10px",
-        }}>{mode==="import-adapt" ? T.ob_import_first : T.ob_import_title}</h2>
-        <p style={{
-          fontSize:13, color:Gray600, lineHeight:1.6,
-          textAlign:"center", margin:"0 0 24px",
-        }}>
-          {mode==="import-adapt" ? T.ob_import_sub_adapt : T.ob_import_sub_boost}
-          {" "}{T.ob_import_format}
-        </p>
-
-        {/* Hidden file input */}
-        <input
-          type="file"
-          id="cv-file-upload"
-          accept=".pdf,.docx,.txt"
-          style={{display:"none"}}
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            try {
-              const ext = file.name.split('.').pop().toLowerCase();
-              if (ext === 'txt') {
-                const text = await file.text();
-                setRaw(text);
-              } else if (ext === 'pdf') {
-                const pdfjsLib = await import('pdfjs-dist/build/pdf');
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                  const page = await pdf.getPage(i);
-                  const textContent = await page.getTextContent();
-                  const pageText = textContent.items.map(item => item.str).join(' ');
-                  fullText += pageText + '\n\n';
-                }
-                setRaw(fullText.trim());
-              } else if (ext === 'docx') {
-                const mammoth = await import('mammoth/mammoth.browser');
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({arrayBuffer});
-                setRaw(result.value);
-              } else {
-                alert(T.ob_file_format_err);
-              }
-            } catch (err) {
-              alert(T.ob_file_read_err + ': ' + err.message);
-            }
-            e.target.value = '';
-          }}
-        />
-
-        {/* Big upload card (paper, dashed accent) */}
-        <button
-          onClick={() => document.getElementById('cv-file-upload').click()}
-          style={{
-            ...B({
-              padding:"26px 18px",
-              borderRadius:RadiusMd,
-              background:Paper,
-              border:"1.5px dashed "+accent,
-              color:accent,
-              fontWeight:600, fontSize:14,
-              display:"flex", flexDirection:"column",
-              alignItems:"center", gap:10,
-              fontFamily:Sans,
-              boxShadow:ShadowSm,
-              transition:"all 200ms ease-out",
-            })
-          }}
-        >
-          <div style={{
-            width:48, height:48, borderRadius:14,
-            background:accentGrad, color:"#fff",
-            display:"flex", alignItems:"center", justifyContent:"center",
-          }}>
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/>
-              <line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-          </div>
-          <div style={{
-            fontFamily:Serif, fontWeight:500, fontSize:16,
-            letterSpacing:"-0.01em", color:Ink,
-          }}>{T.ob_pick_file}</div>
-          <div style={{
-            fontSize:11, color:Gray600, fontWeight:400,
-          }}>{T.ob_pick_file_hint}</div>
-        </button>
-
-        {/* Separator */}
-        <div style={{
-          textAlign:"center",
-          color:Gray400,
-          fontSize:11,
-          letterSpacing:"0.08em",
-          textTransform:"uppercase",
-          margin:"18px 0 12px",
-          fontWeight:500,
-        }}>{T.ob_or_paste}</div>
-
-        {/* Paste textarea */}
-        <label style={{
-          fontSize:11, fontWeight:600,
-          letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:8, display:"block",
-        }}>{T.ob_paste_label}</label>
-        <textarea value={raw} onChange={e=>setRaw(e.target.value)}
-          placeholder={T.ob_paste_ph}
-          rows={8}
-          style={{
-            width:"100%",
-            padding:"14px 16px",
-            borderRadius:RadiusMd,
-            border:"0.5px solid "+Gray200,
-            background:Paper,
-            color:Ink, fontSize:13, lineHeight:1.6,
-            resize:"vertical",
-            fontFamily:Sans,
-            outline:"none",
-            boxShadow:ShadowSm,
-            boxSizing:"border-box",
-          }}/>
-
-        {/* API key warning */}
-        {!apiKey && (
-          <div style={{
-            background:CoralSoft,
-            border:"0.5px solid "+Coral,
-            borderRadius:RadiusSm,
-            padding:"10px 14px",
-            fontSize:12, color:Ink,
-            marginTop:12, lineHeight:1.5,
-          }}>{T.ob_no_key}</div>
-        )}
-
-        {/* Submit button */}
-        <button onClick={onImport} disabled={imping||!raw.trim()||!apiKey} style={{
-          ...B({
-            padding:"15px 22px",
-            borderRadius:RadiusPill,
-            background:imping||!raw.trim()||!apiKey
-              ? Gray200
-              : (mode==="import-adapt" ? GradCoral : GradGold),
-            color:imping||!raw.trim()||!apiKey ? Gray600 : "#fff",
-            fontWeight:600, fontSize:14,
-            fontFamily:Sans,
-            marginTop:14,
-            transition:"all 200ms ease-out",
-            display:"inline-flex",
-            alignItems:"center", justifyContent:"center", gap:8,
-          })
-        }}>
-          {imping ? T.ob_parsing : (mode==="import-adapt" ? T.ob_continue_adapt : T.ob_parse)}
-          {!imping && (
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-            </svg>
-          )}
-        </button>
-
-        {/* Continue without key (only when key missing) */}
-        {!apiKey && (
-          <button onClick={()=>setMode("done")} style={{
-            ...B({
-              padding:"10px 22px", borderRadius:RadiusPill,
-              background:"transparent",
-              color:Gray600, fontSize:12,
-              marginTop:8,
-            })
-          }}>{T.ob_continue}</button>
-        )}
-
-        {/* Locale pills */}
-        <div style={{
-          display:"flex", justifyContent:"center", gap:8,
-          padding:"24px 0 8px",
-        }}>
-          {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
-            <button key={lc} onClick={()=>setLocale(lc)} style={{
-              ...B({
-                padding:"6px 14px", borderRadius:RadiusPill,
-                fontSize:12, fontWeight:500,
-                color:locale===lc ? Cream : Gray600,
-                background:locale===lc ? Ink : Paper,
-                border:"0.5px solid "+(locale===lc ? Ink : Gray200),
-              })
-            }}>{label}</button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 
@@ -2140,395 +1216,6 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 // - Score card violet si offre deja analysee (gradient purple sur le chiffre)
 // - Grille 2x2 des 4 super-pouvoirs : Audit / Positioning / Truth / Pack
 // ============================================================
-function TargetHub({ T, cvIsEmpty, offerResult, locale,
-  onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack, onOpenInterview, onOpenMultiCV }) {
-
-  // Couleur du score (vert/jaune/orange/rouge)
-  const scoreColor = (s) => {
-    if (s >= 80) return Green;
-    if (s >= 65) return GoldDeep;
-    if (s >= 50) return Coral;
-    return "#dc2626";
-  };
-
-  // Cas vide : rien a cibler tant qu'on n'a pas de CV.
-  if (cvIsEmpty) {
-    return (
-      <div style={{fontFamily:Sans, padding:"8px 4px"}}>
-        <h1 style={{
-          fontFamily:Serif, fontWeight:400,
-          fontSize:28, lineHeight:1.1,
-          letterSpacing:"-0.02em", color:Ink,
-          margin:"0 0 18px",
-        }}>{T.ph_target}</h1>
-        <div style={{
-          background:Paper, borderRadius:RadiusLg,
-          padding:"24px 22px", border:"0.5px solid "+Gray200,
-          boxShadow:ShadowSm,
-        }}>
-          <div style={{
-            fontSize:11, fontWeight:600,
-            letterSpacing:"0.12em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:8,
-          }}>{T.hub_eyebrow}</div>
-          <p style={{
-            fontFamily:Serif, fontWeight:400,
-            fontSize:18, lineHeight:1.35,
-            letterSpacing:"-0.01em",
-            color:Ink, margin:0,
-          }}>{T.hub_empty}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Cartes "super-pouvoirs"
-  const powers = [
-    {
-      key:"audit", icon:(
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="m9 12 2 2 4-4"/>
-        </svg>
-      ),
-      iconBg:"rgba(201,169,110,.15)", iconColor:GoldDeep,
-      title:T.hub_audit, desc:T.hub_audit_desc, onClick:onOpenAudit,
-    },
-    {
-      key:"pos", icon:(
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="3"/>
-          <path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>
-        </svg>
-      ),
-      iconBg:PurpleSoft, iconColor:Purple,
-      title:T.hub_pos, desc:T.hub_pos_desc, onClick:onOpenPos,
-    },
-    {
-      key:"truth", icon:(
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 11V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h6"/>
-          <path d="M16 19h6"/><path d="M19 16v6"/>
-          <path d="M8 7h8"/><path d="M8 11h6"/>
-        </svg>
-      ),
-      iconBg:CoralSoft, iconColor:Coral,
-      title:T.hub_truth, desc:T.hub_truth_desc, onClick:onOpenTruth,
-    },
-    {
-      key:"pack", icon:(
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2"
-          strokeLinecap="round" strokeLinejoin="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <path d="M14 2v6h6"/>
-          <path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>
-        </svg>
-      ),
-      iconBg:GreenSoft, iconColor:Green,
-      title:T.hub_pack, desc:T.hub_pack_desc, onClick:onOpenPack,
-    },
-  ];
-
-  const hasOffer = !!(offerResult && typeof offerResult.match_score === "number");
-
-  return (
-    <div style={{fontFamily:Sans, padding:"8px 4px"}}>
-      {/* Header editorial */}
-      <h1 style={{
-        fontFamily:Serif, fontWeight:400,
-        fontSize:28, lineHeight:1.1,
-        letterSpacing:"-0.02em", color:Ink,
-        margin:"0 0 16px",
-      }}>{T.ph_target}</h1>
-
-      {/* Hero card Ink/Gold avec radial gradient */}
-      <div style={{
-        position:"relative", overflow:"hidden",
-        background:Ink, color:Cream,
-        borderRadius:RadiusLg,
-        padding:"24px 22px", marginBottom:14,
-      }}>
-        <div style={{
-          position:"absolute", inset:0,
-          background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(201,169,110,.4) 0%, transparent 60%)",
-          pointerEvents:"none",
-        }}/>
-        <div style={{
-          fontSize:11, fontWeight:600,
-          letterSpacing:"0.12em", textTransform:"uppercase",
-          color:Gold, marginBottom:10, position:"relative",
-        }}>{T.hub_eyebrow}</div>
-        <h2 style={{
-          fontFamily:Serif, fontWeight:400,
-          fontSize:26, lineHeight:1.15,
-          letterSpacing:"-0.02em",
-          margin:"0 0 14px", position:"relative",
-        }}>
-          {T.hub_title_a}
-          {" "}
-          <em style={{fontStyle:"italic", color:Gold}}>
-            {T.hub_title_em}
-          </em>
-          {", "}
-          {T.hub_title_b}
-        </h2>
-        <button onClick={onOpenOffer} style={{
-          ...B({
-            display:"inline-flex", alignItems:"center", gap:8,
-            background:Cream, color:Ink,
-            padding:"13px 22px", borderRadius:RadiusPill,
-            fontSize:14, fontWeight:600,
-            fontFamily:Sans,
-            position:"relative",
-            transition:"all 200ms ease-out",
-          })
-        }}>
-          {hasOffer ? T.hub_cta_change : T.hub_cta_paste}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2.5"
-            strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-          </svg>
-        </button>
-      </div>
-
-      {/* Score card si offre analysee */}
-      {hasOffer && (
-        <button onClick={onOpenOffer} style={{
-          ...B({
-            width:"100%", textAlign:"left",
-            background:Paper, borderRadius:RadiusLg,
-            padding:"22px 22px", marginBottom:14,
-            border:"0.5px solid "+Gray200,
-            boxShadow:ShadowSm,
-            fontFamily:Sans, color:Ink,
-            transition:"all 200ms ease-out",
-            display:"block", cursor:"pointer",
-          })
-        }}>
-          <div style={{display:"flex", alignItems:"center", gap:18}}>
-            <div style={{
-              fontFamily:Serif, fontWeight:300,
-              fontSize:56, lineHeight:1,
-              letterSpacing:"-0.04em",
-              background:GradPurple,
-              WebkitBackgroundClip:"text",
-              backgroundClip:"text",
-              color:"transparent",
-              flexShrink:0,
-            }}>{offerResult.match_score}</div>
-            <div style={{flex:1, minWidth:0}}>
-              <div style={{
-                fontSize:11, fontWeight:600,
-                letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Gray400, marginBottom:4,
-              }}>{T.hub_match_label}</div>
-              <div style={{
-                fontFamily:Serif, fontSize:15, fontWeight:500,
-                letterSpacing:"-0.01em",
-                color:Ink, marginBottom:8,
-                overflow:"hidden", textOverflow:"ellipsis",
-                whiteSpace:"nowrap",
-              }}>
-                {offerResult.job_title || ""}
-                {offerResult.company ? " - " + offerResult.company : ""}
-              </div>
-              <div style={{
-                width:"100%", height:6, background:Gray100,
-                borderRadius:RadiusPill, overflow:"hidden",
-              }}>
-                <div style={{
-                  height:"100%",
-                  width:Math.max(2, Math.min(100, offerResult.match_score)) + "%",
-                  background:GradPurple,
-                  borderRadius:RadiusPill,
-                }}/>
-              </div>
-            </div>
-          </div>
-          {/* Tags mots-cles a integrer */}
-          {(offerResult.keywords_to_add || []).length > 0 && (
-            <div style={{
-              display:"flex", flexWrap:"wrap", gap:6,
-              marginTop:14,
-            }}>
-              {(offerResult.keywords_to_add || []).slice(0, 6).map((k,i)=>(
-                <span key={i} style={{
-                  padding:"5px 11px", borderRadius:RadiusPill,
-                  fontSize:11, fontWeight:500,
-                  background:Ink, color:Gold,
-                  border:"0.5px solid "+Ink,
-                }}>+ {k}</span>
-              ))}
-            </div>
-          )}
-        </button>
-      )}
-
-      {/* Eyebrow grille */}
-      <div style={{
-        fontSize:11, fontWeight:600,
-        letterSpacing:"0.12em", textTransform:"uppercase",
-        color:GoldDeep, marginTop:18, marginBottom:10,
-      }}>{T.hub_subhead}</div>
-
-      {/* Grille 2x2 super-pouvoirs */}
-      <div style={{
-        display:"grid",
-        gridTemplateColumns:"1fr 1fr",
-        gap:12,
-      }}>
-        {powers.map(p => (
-          <button key={p.key} onClick={p.onClick} style={{
-            ...B({
-              background:Paper, borderRadius:RadiusMd,
-              padding:"18px 16px",
-              border:"0.5px solid "+Gray200,
-              transition:"all 200ms ease-out",
-              minHeight:130,
-              display:"flex", flexDirection:"column",
-              justifyContent:"space-between",
-              textAlign:"left", fontFamily:Sans,
-              boxShadow:ShadowSm,
-            })
-          }}>
-            <div>
-              <div style={{
-                width:36, height:36, borderRadius:11,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                background:p.iconBg, color:p.iconColor,
-                marginBottom:12,
-              }}>{p.icon}</div>
-              <div style={{
-                fontFamily:Serif, fontWeight:500,
-                fontSize:15, letterSpacing:"-0.01em",
-                color:Ink, marginBottom:4,
-              }}>{p.title}</div>
-              <div style={{
-                fontSize:11, color:Gray600, lineHeight:1.4,
-              }}>{p.desc}</div>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* 5e super-pouvoir : Preparer l'entretien (pleine largeur, accent fort) */}
-      {onOpenInterview && (
-        <button onClick={onOpenInterview} style={{
-          ...B({
-            display:"flex", alignItems:"center", gap:14,
-            width:"100%",
-            background:Ink, color:Cream,
-            borderRadius:RadiusMd,
-            padding:"16px 18px",
-            marginTop:12,
-            border:"0.5px solid "+Ink,
-            textAlign:"left", fontFamily:Sans,
-            position:"relative", overflow:"hidden",
-            transition:"all 200ms ease-out",
-          })
-        }}>
-          <div style={{
-            position:"absolute", inset:0,
-            background:"radial-gradient(ellipse 80% 100% at 0% 100%, rgba(91,61,245,.35) 0%, transparent 60%)",
-            pointerEvents:"none",
-          }}/>
-          <div style={{
-            width:40, height:40, borderRadius:11,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            background:"rgba(245,241,232,.15)", color:Cream,
-            flexShrink:0, position:"relative",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-            </svg>
-          </div>
-          <div style={{flex:1, minWidth:0, position:"relative"}}>
-            <div style={{
-              fontFamily:Serif, fontWeight:500,
-              fontSize:16, letterSpacing:"-0.01em",
-              color:Cream, marginBottom:3,
-            }}>{T.iv_btn || "Preparer l'entretien"}</div>
-            <div style={{
-              fontSize:11, color:Gold, lineHeight:1.4,
-            }}>{T.iv_btn_desc || "L'IA simule le recruteur typique de ton marche"}</div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke={Gold} strokeWidth="2.5"
-            strokeLinecap="round" strokeLinejoin="round"
-            style={{flexShrink:0, position:"relative"}}>
-            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-          </svg>
-        </button>
-      )}
-
-      {/* 6e super-pouvoir : Multi-CV strategie (pleine largeur, accent Gold) */}
-      {onOpenMultiCV && (
-        <button onClick={onOpenMultiCV} style={{
-          ...B({
-            display:"flex", alignItems:"center", gap:14,
-            width:"100%",
-            background:Paper, color:Ink,
-            borderRadius:RadiusMd,
-            padding:"16px 18px",
-            marginTop:10,
-            border:"0.5px solid "+Gold,
-            textAlign:"left", fontFamily:Sans,
-            position:"relative", overflow:"hidden",
-            boxShadow:ShadowSm,
-            transition:"all 200ms ease-out",
-          })
-        }}>
-          <div style={{
-            position:"absolute", inset:0,
-            background:"radial-gradient(ellipse 80% 100% at 100% 100%, rgba(201,169,110,.18) 0%, transparent 60%)",
-            pointerEvents:"none",
-          }}/>
-          <div style={{
-            width:40, height:40, borderRadius:11,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            background:CreamSoft, color:GoldDeep,
-            flexShrink:0, position:"relative",
-          }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <rect width="14" height="18" x="5" y="3" rx="2"/>
-              <line x1="9" y1="9" x2="15" y2="9"/>
-              <line x1="9" y1="13" x2="15" y2="13"/>
-              <line x1="9" y1="17" x2="13" y2="17"/>
-            </svg>
-          </div>
-          <div style={{flex:1, minWidth:0, position:"relative"}}>
-            <div style={{
-              fontFamily:Serif, fontWeight:500,
-              fontSize:16, letterSpacing:"-0.01em",
-              color:Ink, marginBottom:3,
-            }}>{T.mc_btn || "Quel CV envoyer ?"}</div>
-            <div style={{
-              fontSize:11, color:Gray600, lineHeight:1.4,
-            }}>{T.mc_btn_desc || "L'IA recommande la meilleure version"}</div>
-          </div>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke={GoldDeep} strokeWidth="2.5"
-            strokeLinecap="round" strokeLinejoin="round"
-            style={{flexShrink:0, position:"relative"}}>
-            <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
-          </svg>
-        </button>
-      )}
-    </div>
-  );
-}
 
 // ============================================================
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
@@ -2554,6 +1241,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         fontSize:13, color:Gray600, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.off_sub}</p>
+      <Suspense fallback={null}>
       <MatchPanel
         cv={cv}
         setCVFn={setCVFn}
@@ -2564,8 +1252,11 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         initialResult={initialResult}
         onResult={onResult}
         onApplied={onApplied}
+        aiCall={aiCall}
+        parseJSON={parseJSON}
+        normCV={normCV}
       />
-    </Sheet>
+      </Suspense>    </Sheet>
   );
 }
 
@@ -5786,17 +4477,23 @@ export default function App() {
           onPrefillConsumed={()=>setAdjPrefill("")}/>
       )}
       {aiMode==="match" && (
+        <Suspense fallback={null}>
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
           onPackRequest={requestPack}
           initialResult={offerResult}
           onResult={setOfferResult}
-          onApplied={()=>setOfferResult(null)}/>
+          onApplied={()=>setOfferResult(null)}
+          aiCall={aiCall}
+          parseJSON={parseJSON}
+          normCV={normCV}/>
+        </Suspense>
       )}
     </div>
   );
 
   // v17 : phase Cibler (le hub) + sheet d'offre quand on l'ouvre.
   const TargetHubContent = (
+    <Suspense fallback={null}>
     <TargetHub
       T={T} cvIsEmpty={cvIsEmpty}
       offerResult={offerResult} locale={locale}
@@ -5816,6 +4513,7 @@ export default function App() {
       onOpenInterview={()=>setShowInterview(true)}
       onOpenMultiCV={()=>setShowMultiCV(true)}
     />
+    </Suspense>
   );
 
   // ============================================================
@@ -6381,6 +5079,7 @@ export default function App() {
           title={T.fin_score_btn}
           onClose={()=>setShowScore(false)}
         >
+          <Suspense fallback={null}>
           <ScorePanel
             cv={cv} apiKey={apiKey} notify={notify}
             layout={layout} T={T}
@@ -6389,6 +5088,7 @@ export default function App() {
             onRunDashboard={runScoreDashboard}
             onCtaAxis={onCtaAxisDispatch}
           />
+          </Suspense>
         </Sheet>
       )}
       {showCustomize && (
@@ -6401,6 +5101,7 @@ export default function App() {
         />
       )}
       {showGapRepair && (
+        <Suspense fallback={null}>
         <GapRepairModal
           T={T} cv={cv}
           loading={false}
@@ -6422,8 +5123,10 @@ export default function App() {
           }}
           onClose={()=>setShowGapRepair(false)}
         />
+        </Suspense>
       )}
       {showInterview && (
+        <Suspense fallback={null}>
         <InterviewModal
           T={T} cv={cv} apiKey={apiKey}
           loading={interviewLoading}
@@ -6454,8 +5157,10 @@ export default function App() {
           packLoading={packPdfLoading}
           onRunPackPDF={runPackPDF}
         />
+        </Suspense>
       )}
       {showCoach && (
+        <Suspense fallback={null}>
         <CoachModal
           T={T} cv={cv} apiKey={apiKey}
           loading={coachLoading}
@@ -6465,8 +5170,10 @@ export default function App() {
           onAdopt={adoptCoachSuggestion}
           onClose={()=>setShowCoach(false)}
         />
+        </Suspense>
       )}
       {showLinkedIn && (
+        <Suspense fallback={null}>
         <LinkedInExportModal
           T={T} cv={cv} apiKey={apiKey}
           loading={linkedInLoading}
@@ -6475,8 +5182,10 @@ export default function App() {
           onCopy={copyToClipboard}
           onClose={()=>{ if (!linkedInLoading) { setShowLinkedIn(false); setLinkedInResult(null); }}}
         />
+        </Suspense>
       )}
       {showCompare && (
+        <Suspense fallback={null}>
         <CVCompareModal
           T={T} versions={versions} apiKey={apiKey}
           loading={compareLoading}
@@ -6486,8 +5195,10 @@ export default function App() {
           onRun={runCompare}
           onClose={()=>{ if (!compareLoading) { setShowCompare(false); setCompareResult(null); }}}
         />
+        </Suspense>
       )}
       {showApplications && (
+        <Suspense fallback={null}>
         <ApplicationsTrackerModal
           T={T} applications={applications}
           onAdd={addApplication}
@@ -6495,8 +5206,10 @@ export default function App() {
           onDelete={deleteApplication}
           onClose={()=>setShowApplications(false)}
         />
+        </Suspense>
       )}
       {showMultiCV && (
+        <Suspense fallback={null}>
         <MultiCVStrategyModal
           T={T} versions={versions} apiKey={apiKey}
           loading={multiCVLoading}
@@ -6512,15 +5225,19 @@ export default function App() {
           }}
           onClose={()=>{ if (!multiCVLoading) { setShowMultiCV(false); setMultiCVResult(null); }}}
         />
+        </Suspense>
       )}
       {showTutorial && (
+        <Suspense fallback={null}>
         <TutorialOverlay
           T={T}
           onClose={closeTutorial}
           onSkip={closeTutorial}
         />
+        </Suspense>
       )}
       {showSettings && (
+        <Suspense fallback={null}>
         <SettingsPanel
           T={T} locale={locale} setLocale={setLocale}
           darkMode={darkMode}
@@ -6528,8 +5245,10 @@ export default function App() {
           onRelaunchTutorial={relaunchTutorial}
           onClose={()=>setShowSettings(false)}
         />
+        </Suspense>
       )}
       {showAudit && (
+        <Suspense fallback={null}>
         <AuditModal 
           T={T}
           cv={cv}
@@ -6545,8 +5264,10 @@ export default function App() {
           onIntegrateKeywords={integrateKeywords}
           kwLoading={kwLoading}
         />
+        </Suspense>
       )}
       {showTranslate && (
+        <Suspense fallback={null}>
         <TranslateModal
           T={T}
           dir={trDir}
@@ -6557,8 +5278,10 @@ export default function App() {
           onRun={runTranslate}
           onClose={()=>{ if (!trLoading) setShowTranslate(false); }}
         />
+        </Suspense>
       )}
       {showPack && (
+        <Suspense fallback={null}>
         <ApplicationPackModal
           T={T}
           pack={packResult}
@@ -6572,8 +5295,10 @@ export default function App() {
             setPackCtx(null);
           }}
         />
+        </Suspense>
       )}
       {showPos && (
+        <Suspense fallback={null}>
         <PositioningModal
           T={T}
           result={posResult}
@@ -6585,8 +5310,10 @@ export default function App() {
             setPosResult(null);
           }}
         />
+        </Suspense>
       )}
       {showTruth && (
+        <Suspense fallback={null}>
         <TruthModal
           T={T}
           result={truthResult}
@@ -6606,8 +5333,10 @@ export default function App() {
             setTruthResult(null);
           }}
         />
+        </Suspense>
       )}
       {showVersions && (
+        <Suspense fallback={null}>
         <VersionsModal
           T={T}
           versions={versions}
@@ -6616,6 +5345,7 @@ export default function App() {
           onDelete={deleteVersion}
           onClose={()=>setShowVersions(false)}
         />
+        </Suspense>
       )}
       {bt && (
         <BulletTransformer
@@ -6632,10 +5362,12 @@ export default function App() {
   );
 
   const Onboard = cvIsEmpty && obMode!=="done" && (
+    <Suspense fallback={null}>
     <OnboardScreen T={T} locale={locale} setLocale={setLc}
       apiKey={apiKey} mode={obMode} setMode={setObMode}
       raw={obRaw} setRaw={setObRaw} imping={obImp}
       onImport={onImport} setTab={setTab} setAiMode={setAiMode}/>
+    </Suspense>
   );
 
   if (!hydrated) {
