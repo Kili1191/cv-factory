@@ -43,6 +43,8 @@ const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr:
 const NuviLogo      = dynamic(() => import("./components/NuviLogo"), { ssr: false });
 const NuviIntro     = dynamic(() => import("./components/NuviIntro"), { ssr: false });
 const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay"), { ssr: false });
+const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
+const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2513,6 +2515,8 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   // v17 chantier 14 : Settings panel
   const [showSettings, setShowSettings] = useState(false);
+  // NuviSidebar : section active (home, coach, target, pack, score, cvs, design, tracking)
+  const [navSection, setNavSection] = useState("home");
   // v17 chantier 15 : Auto-save indicator
   const [autoSaved, setAutoSaved] = useState(false);
   // v17 : Customize CV (couleurs + polices)
@@ -5557,6 +5561,13 @@ export default function App() {
           fontFamily:Sans,
           background:CreamSoft, overflow:"hidden",
         }}>
+          <NuviSidebar
+            active={navSection}
+            onSelect={setNavSection}
+            lang={locale}
+            onCoachOpen={() => openCoach()}
+            onSettingsOpen={() => setShowSettings(true)}
+          />
           <div data-cvf="app" style={{
             width:300, background:Paper,
             borderRight:"0.5px solid "+Gray200,
@@ -5720,8 +5731,20 @@ export default function App() {
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                position: "relative",
               }}
             >
+              <span style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: 60,
+                height: 60,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
+                pointerEvents: "none",
+              }} />
               <NuviCompanion size={52} mode="idle" cycleDuration={60} />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
@@ -6066,8 +6089,20 @@ export default function App() {
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                position: "relative",
               }}
             >
+              <span style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: mob ? 44 : 60,
+                height: mob ? 44 : 60,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
+                pointerEvents: "none",
+              }} />
               <NuviCompanion size={mob ? 36 : 52} mode="idle" cycleDuration={60} />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
