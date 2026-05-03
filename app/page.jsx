@@ -45,6 +45,7 @@ const NuviIntro     = dynamic(() => import("./components/NuviIntro"), { ssr: fal
 const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay"), { ssr: false });
 const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
+const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2567,13 +2568,10 @@ export default function App() {
     if (typeof savedCu === "number" && savedCu > 0) {
       setCoachUsageCount(savedCu);
     }
-    // Load intro seen flag : si jamais vu, declencher la bulle "Clique sur moi" apres 1.5s
-    const savedIntro = lsG("nv-intro-seen", false);
-    if (savedIntro !== true) {
-      setTimeout(() => {
-        setShowIntroBubble(true);
-      }, 1500);
-    }
+    // NuviIntro est desactive : NuviHome remplace l'introduction premiere visite.
+    // NuviIntro reste accessible via "Rejouer la presentation Nuvi" dans Settings (replayIntro callback).
+    // Le flag nv-intro-seen est mis a true par defaut pour eviter tout trigger.
+    lsS("nv-intro-seen", true);
     // Load applications tracker
     const savedAp = lsG(SK.AP, []);
     if (Array.isArray(savedAp) && savedAp.length) {
@@ -5484,12 +5482,39 @@ export default function App() {
     </>
   );
 
-  const Onboard = cvIsEmpty && obMode!=="done" && (
+  // NuviHome est le seul ecran d'arrivee : s'affiche quand CV vide et mode pas encore choisi
+  // (NuviIntro est desactive en faveur de NuviHome qui est plus court et premium)
+  const showNuviHome = cvIsEmpty && obMode === null;
+  const Onboard = cvIsEmpty && obMode !== "done" && obMode !== null && (
     <Suspense fallback={null}>
     <OnboardScreen T={T} locale={locale} setLocale={setLc}
       apiKey={apiKey} mode={obMode} setMode={setObMode}
       raw={obRaw} setRaw={setObRaw} imping={obImp}
       onImport={onImport} setTab={setTab} setAiMode={setAiMode}/>
+    </Suspense>
+  );
+
+  // Cinematique premium d'arrivee
+  const NuviHomeEl = showNuviHome && (
+    <Suspense fallback={null}>
+      <NuviHome
+        lang={locale}
+        mob={false}
+        userName={cv.name ? cv.name.split(" ")[0] : null}
+        onGenerate={() => {
+          // Mode generation : ouvre le panneau Demarrer en mode "generate"
+          setObMode("done");
+          setAiMode("generate");
+          setTab("ai");
+        }}
+        onImport={() => {
+          // Mode import : ouvre le flow OnboardScreen "import"
+          setObMode("import");
+        }}
+        onCoachOpen={() => {
+          openCoach();
+        }}
+      />
     </Suspense>
   );
 
@@ -5540,6 +5565,7 @@ export default function App() {
         )}
         {Modals}
         {Onboard}
+        {NuviHomeEl}
         {showIntro && (
           <NuviIntro
             lang={locale}
@@ -5839,6 +5865,26 @@ export default function App() {
       )}
       {Modals}
       {Onboard}
+      {showNuviHome && (
+        <Suspense fallback={null}>
+          <NuviHome
+            lang={locale}
+            mob={true}
+            userName={cv.name ? cv.name.split(" ")[0] : null}
+            onGenerate={() => {
+              setObMode("done");
+              setAiMode("generate");
+              setTab("ai");
+            }}
+            onImport={() => {
+              setObMode("import");
+            }}
+            onCoachOpen={() => {
+              openCoach();
+            }}
+          />
+        </Suspense>
+      )}
       {showIntro && (
         <NuviIntro
           lang={locale}
