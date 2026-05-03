@@ -25,8 +25,11 @@ import NuviCompanion from "./NuviCompanion";
 
 const TEXT = {
   fr: {
-    greeting: "Bonjour",
-    intro: "Je suis Nuvi. On va décrocher LE bon job, ensemble.",
+    greeting: "Salut",
+    nameLine: "C'est Nuvi.",
+    nameLineWithUser: "! C'est Nuvi.",
+    intro: "Je réécris ton CV, je l'adapte à chaque offre, je passe les filtres ATS, et je te coache jusqu'à l'entretien.",
+    outro: "Ton CV mérite mieux. Prêt(e) ?",
     question: "Par quoi commence-t-on ?",
     generate: "Générer un CV",
     generateSub: "Avec l'IA, en quelques minutes",
@@ -36,7 +39,10 @@ const TEXT = {
   },
   en: {
     greeting: "Hi",
-    intro: "I'm Nuvi. Together, we'll land THE right job.",
+    nameLine: "I'm Nuvi.",
+    nameLineWithUser: "! I'm Nuvi.",
+    intro: "I rewrite your CV, tailor it to every job, beat ATS filters, and coach you all the way to the interview.",
+    outro: "Your CV deserves better. Ready?",
     question: "Where shall we start?",
     generate: "Generate a CV",
     generateSub: "With AI, in just minutes",
@@ -106,28 +112,35 @@ export default function NuviHome({
   const Violet = "#5b3df5";
   const Magenta = "#b91c8c";
 
-  // Sequence cinematique (avec temps de lecture confortable)
-  // 0 -> 1.2s : compagnon arrive en spinning
-  // 1.2 -> 1.5s : bulle apparait
-  // 1.5 -> ~3.5s : streaming du texte (~70 chars * 28ms = 2s)
-  // 3.5 -> 6.5s : temps de lecture confortable (3s)
-  // 6.5 -> 7.3s : compagnon vole en bas-droite
-  // 7.3 -> 7.9s : cards apparaissent
-  // 7.9s+ : etat stable
+  // Sequence cinematique (texte plus riche : ~140 chars * 28ms ~= 4s de stream)
+  // 0    -> 1.2s  : compagnon arrive en spinning
+  // 1.2  -> 1.5s  : bulle apparait
+  // 1.5  -> ~5.5s : streaming des 3 phrases (greeting + intro + outro)
+  // 5.5  -> 9.5s  : temps de lecture confortable (4s, l'utilisateur peut digerer la liste de features)
+  // 9.5  -> 10.3s : compagnon vole en bas-droite
+  // 10.3 -> 10.9s : cards apparaissent
+  // 10.9s+        : etat stable
   useEffect(() => {
-    const t1 = setTimeout(() => setPhase(1), 1200);     // 1.2s : compagnon stable
-    const t2 = setTimeout(() => setPhase(2), 1500);     // +0.3s : stream demarre
-    const t3 = setTimeout(() => setPhase(3), 6500);     // +5s : compagnon vole (lecture confortable)
-    const t4 = setTimeout(() => setPhase(4), 7300);     // +0.8s : cards apparaissent
-    const t5 = setTimeout(() => setPhase(5), 7900);     // +0.6s : etat stable
+    const t1 = setTimeout(() => setPhase(1), 1200);
+    const t2 = setTimeout(() => setPhase(2), 1500);
+    const t3 = setTimeout(() => setPhase(3), 9500);     // +8s : lecture tranquille de la presentation riche
+    const t4 = setTimeout(() => setPhase(4), 10300);    // +0.8s : cards apparaissent
+    const t5 = setTimeout(() => setPhase(5), 10900);    // +0.6s : etat stable
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
-  // Stream de la phrase d'intro
+  // Stream de la phrase d'intro (greeting + nameLine + intro + outro)
   useEffect(() => {
     if (phase < 2) return;
     let i = 0;
-    const rawText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
+    // Construction du texte complet en 3 parties :
+    // 1. "Salut ! C'est Nuvi." (greeting + presentation)
+    // 2. "Je réécris ton CV..." (intro avec features)
+    // 3. "Ton CV mérite mieux. Prêt(e) ?" (outro engageant)
+    const greetingPart = userName
+      ? T.greeting + " " + userName + " " + T.nameLineWithUser
+      : T.greeting + " ! " + T.nameLine;
+    const rawText = greetingPart + "\n" + T.intro + "\n" + T.outro;
     const fullText = balanceText(rawText);
     setDisplayedText("");
     const tick = () => {
@@ -141,7 +154,10 @@ export default function NuviHome({
   // Skip animation : cliquer fait passer à l'état stable
   const skipAnimation = () => {
     setPhase(5);
-    const rawText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
+    const greetingPart = userName
+      ? T.greeting + " " + userName + " " + T.nameLineWithUser
+      : T.greeting + " ! " + T.nameLine;
+    const rawText = greetingPart + "\n" + T.intro + "\n" + T.outro;
     setDisplayedText(balanceText(rawText));
   };
 
@@ -301,10 +317,10 @@ export default function NuviHome({
         <div
           style={{
             position: "absolute",
-            top: mob ? 200 : 280,
+            top: mob ? 180 : 240,
             left: "50%",
             transform: "translateX(-50%)",
-            maxWidth: mob ? "92%" : 640,
+            maxWidth: mob ? "92%" : 720,
             width: mob ? "92%" : "auto",
             zIndex: 5,
             animation: "nuviBubbleSlideIn 500ms cubic-bezier(0.22, 1, 0.36, 1)",
@@ -324,18 +340,19 @@ export default function NuviHome({
             <div style={{
               color: Ink,
               fontFamily: "'DM Serif Display', serif",
-              fontSize: mob ? 22 : 28,
+              fontSize: mob ? 19 : 24,
               fontWeight: 400,
-              lineHeight: 1.35,
+              lineHeight: 1.45,
               letterSpacing: "-0.01em",
-              minHeight: mob ? 60 : 80,
+              minHeight: mob ? 140 : 180,
+              whiteSpace: "pre-line",
             }}>
               {displayedText}
               {phase >= 2 && phase < 3 && (
                 <span style={{
                   display: "inline-block",
                   width: 2,
-                  height: mob ? 22 : 26,
+                  height: mob ? 19 : 22,
                   background: Ink,
                   marginLeft: 3,
                   verticalAlign: "middle",
