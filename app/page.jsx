@@ -2614,6 +2614,8 @@ export default function App() {
   const loadingState = useMemo(() => {
     // Generation CV (le plus important - serie "generation")
     if (load) return { active: true, series: "generation" };
+    // Import CV au demarrage (parsing, le moment crucial UX)
+    if (obImp) return { active: true, series: "generation" };
     // Audit ATS
     if (auditLoading) return { active: true, series: "audit" };
     // Match offre / keywords
@@ -2628,7 +2630,7 @@ export default function App() {
       return { active: true, series: "generic" };
     }
     return { active: false, series: "generic" };
-  }, [load, auditLoading, kwLoading, interviewLoading, trLoading, packLoading,
+  }, [load, obImp, auditLoading, kwLoading, interviewLoading, trLoading, packLoading,
       posLoading, truthLoading, dashLoading, askRecruiterLoading, emailLoading,
       debriefLoading, cheatSheetLoading, packPdfLoading, linkedInLoading,
       compareLoading, multiCVLoading]);
