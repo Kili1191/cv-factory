@@ -63,15 +63,16 @@ const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9
 // Palette
 const Ink       = "#0a0a0a";   // noir profond, surface principale
 const InkSoft   = "#1a1a1f";   // noir bleute pour gradient
-const Cream     = "#f5f1e8";   // creme chaude, fond editorial
-const CreamSoft = "#faf7ef";   // creme clair, fond app
+const Cream     = "#faf8f3";   // [Nuvi] creme align, fond editorial
+const CreamSoft = "#f6f2e8";   // [Nuvi] creme soft pour fond app
 const Paper     = "#ffffff";   // cards
-const Gold      = "#c9a96e";   // gold luxe
-const GoldDeep  = "#a07840";   // gold profond pour text-on-cream
-const Purple    = "#5b3df5";   // violet electrique pour accents
+const Gold      = "#c9a96e";   // gold luxe (RESERVE au CV preview pour elegance)
+const GoldDeep  = "#a07840";   // gold profond (RESERVE au CV preview)
+const Purple    = "#5b3df5";   // [Nuvi] violet pour Coach, IA, generation
 const PurpleSoft= "#ede9fe";
-const Coral     = "#ff5a36";   // corail vif
-const CoralSoft = "#ffe8e1";
+const Magenta   = "#b91c8c";   // [Nuvi] magenta pour gradients CTA primaires
+const Coral     = "#d97757";   // [Nuvi] terracotta doux (etait #ff5a36 trop vif)
+const CoralSoft = "#fce7dd";   // [Nuvi] terracotta tres clair (cohérent)
 const Green     = "#16a34a";
 const GreenSoft = "#dcfce7";
 const Gray50    = "#fafaf9";
@@ -99,9 +100,9 @@ const ShadowLg   = "0 14px 40px rgba(10,10,10,.10), 0 0 0 0.5px rgba(10,10,10,.0
 
 // Gradients réservés aux moments forts
 const GradDark   = "linear-gradient(135deg, #0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)";
-const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";
-const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";
-const GradCoral  = "linear-gradient(135deg, #ff5a36 0%, #ffa800 100%)";
+const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";  // RESERVE au CV
+const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";  // [Nuvi] CTA primaire
+const GradCoral  = "linear-gradient(135deg, #d97757 0%, #c25c3d 100%)";  // [Nuvi] terracotta soft
 
 // Keyframes globales injectees une fois par branche (mobile/desktop/spinner).
 // cvfSpin existe deja en v16. cvfFadeIn et cvfSlideUp servent l'IOSSheet v17.
