@@ -32,14 +32,24 @@ export default function NuviLoadingOverlay({
       setShouldRender(true);
       setFadingOut(false);
     } else if (shouldRender) {
-      // Trigger fade out (raccourci a 250ms pour eviter le glitch
-      // ou on voit l'ancienne version de la page transparaitre pendant 600ms)
-      setFadingOut(true);
-      const timer = setTimeout(() => {
-        setShouldRender(false);
-        setFadingOut(false);
-      }, 250);
-      return () => clearTimeout(timer);
+      // [Fix glitch] Pour eviter le flash de l'ancien CV :
+      //   1. On attend 100ms (laisse React re-render le NOUVEAU CV derriere)
+      //   2. Puis on commence le fade-out (250ms)
+      // Total : 350ms apres que active passe a false, l'overlay est parti.
+      // L'utilisateur voit DIRECTEMENT le nouveau CV (jamais l'ancien).
+      const renderDelay = setTimeout(() => {
+        setFadingOut(true);
+        const fadeTimer = setTimeout(() => {
+          setShouldRender(false);
+          setFadingOut(false);
+        }, 250);
+        // store in closure pour cleanup
+        renderDelay._fadeTimer = fadeTimer;
+      }, 100);
+      return () => {
+        clearTimeout(renderDelay);
+        if (renderDelay._fadeTimer) clearTimeout(renderDelay._fadeTimer);
+      };
     }
   }, [active, shouldRender]);
 
