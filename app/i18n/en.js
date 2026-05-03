@@ -7,7 +7,7 @@
 // injecting T. references into values.
 
 const EN_T = {
-  appName:"CV Factory", appSub:"AI that boosts and tailors your CV",
+  appName:"Nuvi", appSub:"Make the shortlist.",
   tab_ai:"AI", tab_edit:"Edit", tab_design:"Design",
   tab_score:"Score", tab_tools:"Tools",
   tab_gen:"Generate", tab_adj:"Adjust", tab_match:"Match",
