@@ -5431,11 +5431,18 @@ export default function App() {
           }}>
             <div style={{padding:"18px 20px", background:Paper,
               borderBottom:"0.5px solid "+Gray200,
-              display:"flex", alignItems:"center", gap:10}}>
+              display:"flex", alignItems:"baseline", gap:14}}>
               <NuviLogo size={44} inkColor={Ink} />
               <div style={{
-                color:Gray400, fontSize:10, marginTop:0,
-                fontFamily:Sans,
+                width:1, height:18, background:Gray200,
+                alignSelf:"center", flexShrink:0,
+              }} />
+              <div style={{
+                color:Ink, fontSize:13,
+                fontFamily:Serif, fontStyle:"italic",
+                fontWeight:400, opacity:0.72,
+                letterSpacing:"0.01em",
+                whiteSpace:"nowrap",
               }}>{T.appSub}</div>
             </div>
             <div style={{
@@ -5579,9 +5586,16 @@ export default function App() {
           borderBottom:"0.5px solid "+Gray200,
           flexShrink:0,
         }}>
-          <div style={{display:"flex", alignItems:"center", gap:10}}>
-  <NuviLogo size={36} inkColor={Ink} />
-</div>
+          <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2}}>
+            <NuviLogo size={32} inkColor={Ink} />
+            <div style={{
+              color:Ink, fontSize:9.5,
+              fontFamily:Serif, fontStyle:"italic",
+              fontWeight:400, opacity:0.65,
+              letterSpacing:"0.02em",
+              marginLeft:1,
+            }}>{T.appSub}</div>
+          </div>
           <div style={{display:"flex", gap:6}}>
             <button onClick={()=>setZoomed(true)} style={{
               ...B({
