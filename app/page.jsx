@@ -26,13 +26,11 @@ const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyM
 const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 
-// CoachModal est dynamic mais CoachFAB (bouton flottant toujours visible)
-// reste en eager loading pour qu'il s'affiche immédiatement.
+// CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
 const CoachModal = dynamic(
   () => import("./components/CoachModal").then(m => ({ default: m.default })),
   { ssr: false }
 );
-import { CoachFAB } from "./components/CoachModal";
 
 // === LAZY UI COMPONENTS (extracted from page.jsx) ===
 // Composants conditionnels lourds extraits dans des fichiers séparés.
@@ -5576,17 +5574,78 @@ export default function App() {
             || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
         <BottomNav active={phase} onPhase={setPhase} T={T}/>
-        <CoachFAB T={T} onOpen={()=>setShowCoach(true)}
-          hidden={
-            cvIsEmpty
-            || showCoach || showAudit || showTranslate || showPack
-            || showPos || showTruth || showVersions
-            || showOffer || showScore || showGapRepair || showInterview
-            || showCustomize || !!modal
-            || showLinkedIn || showCompare || showApplications
-            || showMultiCV
-            || showTutorial || showSettings
-          }/>
+        {/* Bouton Coach unifié (mobile + desktop) avec texte, icône et animation pulse */}
+        {!(
+          cvIsEmpty
+          || showCoach || showAudit || showTranslate || showPack
+          || showPos || showTruth || showVersions
+          || showOffer || showScore || showGapRepair || showInterview
+          || showCustomize || !!modal
+          || showLinkedIn || showCompare || showApplications
+          || showMultiCV
+          || showTutorial || showSettings
+        ) && (
+          <button
+            onClick={() => setShowCoach(true)}
+            aria-label="Coach"
+            style={{
+              position: "fixed",
+              right: mob ? 16 : 24,
+              // Sur mobile, on remonte au-dessus de la BottomNav (~70px de haut)
+              bottom: mob ? 86 : 24,
+              zIndex: 90,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: mob ? "12px 18px 12px 14px" : "14px 22px 14px 18px",
+              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+              fontSize: mob ? 13 : 14,
+              fontWeight: 600,
+              letterSpacing: 0.2,
+              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
+              animation: "coachPulse 2.6s ease-in-out infinite",
+            }}
+            onMouseEnter={(e) => {
+              if (mob) return;
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              if (mob) return;
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                width: mob ? 24 : 28,
+                height: mob ? 24 : 28,
+                borderRadius: "50%",
+                background: "rgba(255, 255, 255, 0.18)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: mob ? 14 : 16,
+              }}
+            >
+              💬
+            </span>
+            <span>Coach</span>
+            <style>{`
+              @keyframes coachPulse {
+                0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
+                50% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.45), 0 2px 6px rgba(91, 61, 245, 0.3), 0 0 0 8px rgba(91, 61, 245, 0); }
+              }
+            `}</style>
+          </button>
+        )}
       </div>
     </>
   );
