@@ -53,7 +53,7 @@ import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
-const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&display=swap";
+const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
 
 // Palette
 const Ink       = "#0a0a0a";   // noir profond, surface principale
@@ -5432,7 +5432,7 @@ export default function App() {
             <div style={{padding:"18px 20px", background:Paper,
               borderBottom:"0.5px solid "+Gray200,
               display:"flex", alignItems:"center", gap:10}}>
-              <NuviLogo size={28} inkColor={Ink} />
+              <NuviLogo size={44} inkColor={Ink} />
               <div style={{
                 color:Gray400, fontSize:10, marginTop:0,
                 fontFamily:Sans,
@@ -5521,18 +5521,13 @@ export default function App() {
             <span
               aria-hidden="true"
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.18)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                overflow: "visible",
                 flexShrink: 0,
               }}
             >
-              <NuviCompanion size={44} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={52} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
@@ -5585,7 +5580,7 @@ export default function App() {
           flexShrink:0,
         }}>
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-  <NuviLogo size={26} inkColor={Ink} />
+  <NuviLogo size={36} inkColor={Ink} />
 </div>
           <div style={{display:"flex", gap:6}}>
             <button onClick={()=>setZoomed(true)} style={{
@@ -5684,18 +5679,13 @@ export default function App() {
             <span
               aria-hidden="true"
               style={{
-                width: mob ? 36 : 44,
-                height: mob ? 36 : 44,
-                borderRadius: "50%",
-                background: "rgba(255, 255, 255, 0.18)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                overflow: "visible",
                 flexShrink: 0,
               }}
             >
-              <NuviCompanion size={mob ? 36 : 44} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={mob ? 44 : 52} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
