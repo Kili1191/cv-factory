@@ -4,20 +4,46 @@ import NuviCompanion from "./NuviCompanion";
 
 /**
  * NuviIntro — Présentation initiale du compagnon Nuvi.
- *
- * Workflow :
- * 1. Apparait au centre, NuviCompanion vole vers l'écran (mode "appearing")
- * 2. Bulles de dialogue s'affichent en streaming auto
- * 3. Bouton "Suivant" pour accélérer + "Skip" pour passer
- * 4. À la fin : appelle onComplete()
- *
- * Props :
- *   - lang: "fr" | "en"
- *   - onComplete: callback appelé en fin de présentation
- *   - onSkip: callback appelé si l'utilisateur clique sur Skip
- *   - mob: boolean (mobile)
- *   - origin: { x, y } position de départ du compagnon (le bouton Coach)
+ * Version béton : streaming basé sur step uniquement (pas de currentLine en deps).
  */
+
+// Scripts STATIQUES - hors composant pour stabilité de référence
+const SCRIPTS = {
+  fr: [
+    { text: "Hello, je suis Nuvi.", emoji: "👋" },
+    { text: "Ton compagnon jusqu'au succes.", emoji: "" },
+    { text: "Plus jamais perdu dans une pile de CV ignores.", emoji: "" },
+    { text: "Mon job : faire en sorte que les recruteurs te voient. Vraiment.", emoji: "" },
+    { text: "Voici comment je t'accompagne :", emoji: "✨" },
+    { text: "Generation CV — je cree ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
+    { text: "Audit ATS — je verifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
+    { text: "Match offre — j'adapte ton CV a chaque candidature.", emoji: "🔍", isFeature: true },
+    { text: "Coach — pose-moi tes questions, je te guide a chaque etape.", emoji: "💬", isFeature: true },
+    { text: "Pack candidature — lettre de motivation, email, LinkedIn, tout est pret.", emoji: "✉️", isFeature: true },
+    { text: "Ensemble, on va decrocher LE bon job.", emoji: "" },
+    { text: "Pret(e) ? Allez, on y va.", emoji: "🚀" },
+  ],
+  en: [
+    { text: "Hi, I'm Nuvi.", emoji: "👋" },
+    { text: "Your companion all the way to success.", emoji: "" },
+    { text: "No more getting lost in a pile of ignored CVs.", emoji: "" },
+    { text: "My job: making sure recruiters actually see you.", emoji: "" },
+    { text: "Here's how I'll help you:", emoji: "✨" },
+    { text: "CV Generation — I create or import yours in seconds.", emoji: "📝", isFeature: true },
+    { text: "ATS Audit — I check you pass automated filters.", emoji: "🎯", isFeature: true },
+    { text: "Job Match — I tailor your CV for every application.", emoji: "🔍", isFeature: true },
+    { text: "Coach — ask me anything, I'll guide you through.", emoji: "💬", isFeature: true },
+    { text: "Application Pack — cover letter, email, LinkedIn, all ready.", emoji: "✉️", isFeature: true },
+    { text: "Together, we'll land THE right job.", emoji: "" },
+    { text: "Ready? Let's go.", emoji: "🚀" },
+  ],
+};
+
+const LABELS = {
+  fr: { next: "Suivant", finish: "C'est parti", skip: "Passer" },
+  en: { next: "Next", finish: "Let's go", skip: "Skip" },
+};
+
 export default function NuviIntro({
   lang = "fr",
   onComplete,
@@ -26,112 +52,121 @@ export default function NuviIntro({
   origin = null,
 }) {
   const [step, setStep] = useState(0);
-  const [displayedText, setDisplayedText] = useState("");
-  const [streaming, setStreaming] = useState(true);
   const [appearing, setAppearing] = useState(true);
-  const streamTimerRef = useRef(null);
-  const appearTimerRef = useRef(null);
+  const [displayedText, setDisplayedText] = useState("");
+  const [streaming, setStreaming] = useState(false);
 
-  // Script multilingue
-  const scripts = {
-    fr: [
-      { text: "Hello, je suis Nuvi.", emoji: "👋" },
-      { text: "Ton compagnon jusqu'au succes.", emoji: "" },
-      { text: "Plus jamais perdu dans une pile de CV ignores.", emoji: "" },
-      { text: "Mon job : faire en sorte que les recruteurs te voient. Vraiment.", emoji: "" },
-      { text: "Voici comment je t'accompagne :", emoji: "✨" },
-      { text: "Generation CV — je cree ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
-      { text: "Audit ATS — je verifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
-      { text: "Match offre — j'adapte ton CV a chaque candidature.", emoji: "🔍", isFeature: true },
-      { text: "Coach — pose-moi tes questions, je te guide a chaque etape.", emoji: "💬", isFeature: true },
-      { text: "Pack candidature — lettre de motivation, email, LinkedIn, tout est pret.", emoji: "✉️", isFeature: true },
-      { text: "Ensemble, on va decrocher LE bon job.", emoji: "" },
-      { text: "Pret(e) ? Allez, on y va.", emoji: "🚀" },
-    ],
-    en: [
-      { text: "Hi, I'm Nuvi.", emoji: "👋" },
-      { text: "Your companion all the way to success.", emoji: "" },
-      { text: "No more getting lost in a pile of ignored CVs.", emoji: "" },
-      { text: "My job: making sure recruiters actually see you.", emoji: "" },
-      { text: "Here's how I'll help you:", emoji: "✨" },
-      { text: "CV Generation — I create or import yours in seconds.", emoji: "📝", isFeature: true },
-      { text: "ATS Audit — I check you pass automated filters.", emoji: "🎯", isFeature: true },
-      { text: "Job Match — I tailor your CV for every application.", emoji: "🔍", isFeature: true },
-      { text: "Coach — ask me anything, I'll guide you through.", emoji: "💬", isFeature: true },
-      { text: "Application Pack — cover letter, email, LinkedIn, all ready.", emoji: "✉️", isFeature: true },
-      { text: "Together, we'll land THE right job.", emoji: "" },
-      { text: "Ready? Let's go.", emoji: "🚀" },
-    ],
-  };
+  // Refs pour éviter les race conditions
+  const stepRef = useRef(0);
+  const cancelStreamRef = useRef(null);
+  const cancelAdvanceRef = useRef(null);
 
-  const script = scripts[lang] || scripts.fr;
-  const currentLine = script[step];
+  const script = SCRIPTS[lang] || SCRIPTS.fr;
+  const L = LABELS[lang] || LABELS.fr;
+  const currentLine = script[step] || script[0];
   const isLastStep = step === script.length - 1;
 
-  // Animation d'apparition (le compagnon vole vers le centre)
+  // Sync step to ref
   useEffect(() => {
-    appearTimerRef.current = setTimeout(() => {
-      setAppearing(false);
-    }, 1200);
-    return () => clearTimeout(appearTimerRef.current);
-  }, []);
+    stepRef.current = step;
+  }, [step]);
 
-  // Streaming du texte (caractere par caractere)
-  useEffect(() => {
-    if (appearing) return;
-    if (!currentLine) return;
+  // ========== STREAMING TEXT ==========
+  // Démarre le streaming pour la step actuelle.
+  // Utilise une fonction stable pour éviter les re-runs en boucle.
+  const startStreaming = useCallback((stepIdx) => {
+    // Cancel any previous stream
+    if (cancelStreamRef.current) {
+      cancelStreamRef.current();
+      cancelStreamRef.current = null;
+    }
 
-    let cancelled = false;
+    const line = script[stepIdx];
+    if (!line) return;
+
+    const fullText = line.text;
     setDisplayedText("");
     setStreaming(true);
 
-    const fullText = currentLine.text;
     let i = 0;
+    let cancelled = false;
     const speed = 22;
 
-    // Cleanup any previous timer first
-    if (streamTimerRef.current) {
-      clearInterval(streamTimerRef.current);
-      streamTimerRef.current = null;
-    }
-
-    streamTimerRef.current = setInterval(() => {
+    const tick = () => {
       if (cancelled) return;
+      // Vérifie qu'on est toujours sur la bonne step
+      if (stepRef.current !== stepIdx) {
+        cancelled = true;
+        return;
+      }
       i++;
       setDisplayedText(fullText.slice(0, i));
       if (i >= fullText.length) {
-        if (streamTimerRef.current) {
-          clearInterval(streamTimerRef.current);
-          streamTimerRef.current = null;
-        }
+        cancelled = true;
         setStreaming(false);
+        return;
       }
-    }, speed);
+      setTimeout(tick, speed);
+    };
+    setTimeout(tick, speed);
 
-    return () => {
+    cancelStreamRef.current = () => {
       cancelled = true;
-      if (streamTimerRef.current) {
-        clearInterval(streamTimerRef.current);
-        streamTimerRef.current = null;
+    };
+  }, [script]);
+
+  // Effect: appearing animation
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setAppearing(false);
+    }, 1200);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Effect: trigger streaming when step changes OR when appearing ends
+  useEffect(() => {
+    if (appearing) return;
+    startStreaming(step);
+    return () => {
+      if (cancelStreamRef.current) {
+        cancelStreamRef.current();
+        cancelStreamRef.current = null;
       }
     };
-  }, [step, appearing, currentLine]);
+  }, [step, appearing, startStreaming]);
 
-  // Auto-advance apres affichage complet (sauf derniere etape)
+  // Effect: auto-advance after stream finishes (sauf derniere etape)
   useEffect(() => {
     if (streaming || appearing) return;
     if (isLastStep) return;
-    const delay = currentLine && currentLine.isFeature ? 2400 : 2000;
+
+    const line = script[step];
+    const delay = line && line.isFeature ? 2400 : 2000;
+
     const t = setTimeout(() => {
-      setStep(prev => prev + 1);
+      setStep(prev => Math.min(prev + 1, script.length - 1));
     }, delay);
+    cancelAdvanceRef.current = () => clearTimeout(t);
     return () => clearTimeout(t);
-  }, [streaming, appearing, isLastStep, step]);
+  }, [streaming, appearing, isLastStep, step, script]);
+
+  // Cleanup global on unmount
+  useEffect(() => {
+    return () => {
+      if (cancelStreamRef.current) cancelStreamRef.current();
+      if (cancelAdvanceRef.current) cancelAdvanceRef.current();
+    };
+  }, []);
 
   const handleNext = useCallback(() => {
     if (streaming) {
-      if (streamTimerRef.current) clearInterval(streamTimerRef.current);
-      setDisplayedText(currentLine.text);
+      // Skip streaming → finir le texte immédiatement
+      if (cancelStreamRef.current) {
+        cancelStreamRef.current();
+        cancelStreamRef.current = null;
+      }
+      const line = script[stepRef.current];
+      if (line) setDisplayedText(line.text);
       setStreaming(false);
       return;
     }
@@ -139,30 +174,23 @@ export default function NuviIntro({
       onComplete && onComplete();
       return;
     }
-    setStep(prev => prev + 1);
-  }, [streaming, isLastStep, currentLine, onComplete]);
+    setStep(prev => Math.min(prev + 1, script.length - 1));
+  }, [streaming, isLastStep, script, onComplete]);
 
   const handleSkip = useCallback(() => {
-    if (streamTimerRef.current) clearInterval(streamTimerRef.current);
-    if (appearTimerRef.current) clearTimeout(appearTimerRef.current);
+    if (cancelStreamRef.current) cancelStreamRef.current();
+    if (cancelAdvanceRef.current) cancelAdvanceRef.current();
     onSkip && onSkip();
   }, [onSkip]);
 
-  const labels = {
-    fr: { next: "Suivant", finish: "C'est parti", skip: "Passer" },
-    en: { next: "Next", finish: "Let's go", skip: "Skip" },
-  };
-  const L = labels[lang] || labels.fr;
-
-  // Couleurs Nuvi (terracotta/cream)
+  // Couleurs Nuvi
   const Ink = "#0f0f12";
   const Cream = "#faf8f3";
   const Coral = "#d97757";
 
-  // Taille du compagnon
   const companionSize = mob ? 80 : 110;
 
-  // Position de depart du compagnon (origine = bouton Coach)
+  // Position de depart du compagnon
   const winW = typeof window !== "undefined" ? window.innerWidth : 0;
   const winH = typeof window !== "undefined" ? window.innerHeight : 0;
   const startX = origin ? origin.x : (winW - 80);
@@ -189,7 +217,6 @@ export default function NuviIntro({
         animation: "nuviIntroFadeIn 400ms ease-out",
       }}
     >
-      {/* Skip button (top right) */}
       <button
         onClick={handleSkip}
         style={{
@@ -212,7 +239,6 @@ export default function NuviIntro({
         {L.skip}
       </button>
 
-      {/* Companion + bubble container */}
       <div style={{
         display: "flex",
         flexDirection: "column",
@@ -221,7 +247,7 @@ export default function NuviIntro({
         maxWidth: 600,
         width: "100%",
       }}>
-        {/* Companion */}
+        {/* Compagnon */}
         <div
           style={{
             width: companionSize,
@@ -240,8 +266,8 @@ export default function NuviIntro({
           />
         </div>
 
-        {/* Speech bubble */}
-        {!appearing && currentLine && (
+        {/* Bulle */}
+        {!appearing && (
           <div
             key={step}
             style={{
@@ -257,7 +283,6 @@ export default function NuviIntro({
               border: currentLine.isFeature ? "2px solid " + Coral : "none",
             }}
           >
-            {/* Tail pointing up */}
             <div style={{
               position: "absolute",
               top: -10,
@@ -301,7 +326,7 @@ export default function NuviIntro({
           </div>
         )}
 
-        {/* Progress dots + Next button */}
+        {/* Dots + Next button */}
         {!appearing && (
           <div style={{
             display: "flex",
@@ -358,10 +383,6 @@ export default function NuviIntro({
         @keyframes nuviCursorBlink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
-        }
-        @keyframes nuviIdleFloat {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-6px); }
         }
       `}</style>
     </div>
