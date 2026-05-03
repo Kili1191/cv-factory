@@ -728,6 +728,7 @@ const FR_T = {
   set_dark_desc:"L'interface en sombre. Le CV reste clair pour l'export.",
   set_kbd:"Raccourcis clavier",
   set_tutorial:"Relancer le tutoriel",
+  set_intro:"Rejouer la presentation Nuvi",
   set_kbd_save:"Exporter PDF",
   set_kbd_coach:"Ouvrir le coach",
   set_kbd_settings:"Ouvrir reglages",
