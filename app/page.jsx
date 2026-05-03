@@ -39,6 +39,7 @@ const OnboardScreen = dynamic(() => import("./components/OnboardScreen"), { ssr:
 const TargetHub     = dynamic(() => import("./components/TargetHub"), { ssr: false });
 const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: false });
 const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: false });
+const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -5539,10 +5540,10 @@ export default function App() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 16,
+                overflow: "hidden",
               }}
             >
-              💬
+              <NuviCompanion size={28} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
@@ -5701,10 +5702,10 @@ export default function App() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: mob ? 14 : 16,
+                overflow: "hidden",
               }}
             >
-              💬
+              <NuviCompanion size={mob ? 24 : 28} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
