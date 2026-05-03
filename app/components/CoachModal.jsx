@@ -1,88 +1,161 @@
 "use client";
 
-// CV Factory v17 - CoachModal (conversational AI assistant)
+// Nuvi v2 - CoachModal (conversational AI assistant)
 //
-// Mode coaching conversationnel : l'IA dialogue avec l'utilisateur pour
+// Mode coaching conversationnel : Nuvi dialogue avec l'utilisateur pour
 // l'aider a faire briller son CV.
 //
 // Workflow :
 //   1. Welcome screen avec 5 parcours guides + 1 question libre
-//   2. Une fois le parcours selectionne, l'IA pose la 1ere question
-//   3. L'utilisateur repond, l'IA reformule + propose une adoption directe au CV
+//   2. Une fois le parcours selectionne, Nuvi pose la 1ere question
+//   3. L'utilisateur repond, Nuvi reformule + propose une adoption directe au CV
 //   4. Conversation libre apres ca
 //
 // Persistance : historique stocke en localStorage (cap 50 derniers messages).
-// Aucun stockage cote serveur, donc 0 impact sur les couts de l'app.
 //
-// Props :
-//   T              : i18n
-//   cv             : CV
-//   apiKey         : string
-//   loading        : bool (true pendant l'appel IA)
-//   messages       : tableau [{role: "user"|"assistant", content, ts, adopt: {kind, value}}]
-//   onSend(text)   : envoie un message utilisateur (handler page.jsx)
-//   onClear()      : efface la conversation
-//   onAdopt(kind, value) : applique une suggestion au CV (kind = "summary"/"title"/"bullet")
-//   onClose()
-//
-// Format du message assistant avec adoption :
-//   {
-//     role: "assistant",
-//     content: "Voici une accroche refondue : 'Director...' ",
-//     adopt: { kind: "summary", value: "Director..." }   // optionnel
-//   }
+// [Nuvi v2 redesign] :
+//   - Emojis remplaces par SVG line-style 1.6px (coherent NuviSidebar v2)
+//   - Mix de couleurs : violet pour actions IA, terracotta pour narratif
+//   - Icones dans containers tinted (couleur+opacite 10%)
+//   - Hero serif Fraunces avec gradient violet->magenta
+//   - Bouton close avec icone SVG (plus de "x" texte)
+//   - Strings actualisees pour matcher le ton Nuvi compagnon
 
 import { useState, useEffect, useRef } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
-  Gray100, Gray200, Gray400, Gray600,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Gold, GoldDeep,
+  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft, Magenta,
+  Hairline, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradPurple, B,
 } from "./tokens";
 
+// SVG icons line-style 1.6px stroke (style coherent NuviSidebar v2)
+// Chaque icon est defini comme JSX inline pour eviter les fichiers separes
+const Icons = {
+  // Decrire experience : icone "edit/pen"
+  describe: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+    </svg>
+  ),
+  // Faire briller mon CV : icone "sparkle/star"
+  shine: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
+    </svg>
+  ),
+  // Gerer un trou : icone "ligne brisee" (signal-curve)
+  gap: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 12h4l3-9 4 18 3-9h4"/>
+    </svg>
+  ),
+  // Presenter une transition : icone "fleches bidirectionnelles"
+  transition: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="17 1 21 5 17 9"/>
+      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+      <polyline points="7 23 3 19 7 15"/>
+      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+    </svg>
+  ),
+  // Construire pitch personnel : icone "cible concentrique"
+  pitch: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="9"/>
+      <circle cx="12" cy="12" r="5"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    </svg>
+  ),
+  // Question libre : icone "bulle de chat avec points"
+  free: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+};
+
 // 5 parcours guides + 1 question libre.
+// [Nuvi v2] : icon SVG au lieu d'emoji + couleur d'accent semantique
+//   - violet (Purple) pour actions IA (Decrire, Briller, Pitch)
+//   - terracotta (Coral) pour actions narratives (Trou, Transition, Question libre)
 function getPaths(T) {
   return [
     {
-      key:"describe", emoji:"\u270D\uFE0F",
+      key:"describe",
+      icon:Icons.describe,
+      accent:Purple,  // [Nuvi v2] action IA = violet
       title:T.co_path_describe, desc:T.co_path_describe_desc,
-      // Premier message envoye par l'utilisateur quand il choisit ce parcours
       starter:"J'aimerais bien decrire mieux une de mes experiences. Aide-moi.",
     },
     {
-      key:"shine", emoji:"\u2728",
+      key:"shine",
+      icon:Icons.shine,
+      accent:Purple,  // [Nuvi v2] action IA = violet
       title:T.co_path_shine, desc:T.co_path_shine_desc,
       starter:"Mon CV manque de relief. Aide-moi a identifier ce qui peut etre ameliore et a le transformer.",
     },
     {
-      key:"gap", emoji:"\u23F8\uFE0F",
+      key:"gap",
+      icon:Icons.gap,
+      accent:Coral,  // [Nuvi v2] narratif = terracotta
       title:T.co_path_gap, desc:T.co_path_gap_desc,
       starter:"J'ai un trou ou une periode floue dans mon parcours. Aide-moi a la presenter en force.",
     },
     {
-      key:"transition", emoji:"\u2194\uFE0F",
+      key:"transition",
+      icon:Icons.transition,
+      accent:Coral,  // [Nuvi v2] narratif = terracotta
       title:T.co_path_transition, desc:T.co_path_transition_desc,
       starter:"Je fais une transition (secteur, role). Aide-moi a la justifier de maniere convaincante.",
     },
     {
-      key:"pitch", emoji:"\uD83C\uDFAF",
+      key:"pitch",
+      icon:Icons.pitch,
+      accent:Purple,  // [Nuvi v2] action IA = violet
       title:T.co_path_pitch, desc:T.co_path_pitch_desc,
       starter:"Aide-moi a construire mon pitch personnel de 60 secondes.",
     },
     {
-      key:"free", emoji:"\uD83D\uDCAC",
+      key:"free",
+      icon:Icons.free,
+      accent:Coral,  // [Nuvi v2] narratif/libre = terracotta
       title:T.co_path_free, desc:T.co_path_free_desc,
-      starter:null,  // pas de starter pour question libre, l'utilisateur tape directement
+      starter:null,
     },
   ];
+}
+
+// Convertit une couleur hex en rgba avec opacite donnee
+// (utilise pour les backgrounds tinted des icones)
+function withOpacity(hex, opacity) {
+  if (!hex || hex[0] !== "#") return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
 // Bulle de message individuelle.
 function Bubble({ T, msg, onAdopt }) {
   const isUser = msg.role === "user";
 
-  // Style pour message utilisateur : aligne a droite, fond Ink/Cream
+  // Style pour message utilisateur : aligne a droite
+  // [Nuvi v2] : background violet (Purple) au lieu de Ink pour matcher le branding
   if (isUser) {
     return (
       <div style={{
@@ -91,7 +164,7 @@ function Bubble({ T, msg, onAdopt }) {
         <div style={{
           maxWidth:"80%",
           padding:"10px 14px", borderRadius:"18px 18px 4px 18px",
-          background:Ink, color:Cream,
+          background:Purple, color:"#fff",
           fontSize:13, lineHeight:1.5, fontFamily:Sans,
           whiteSpace:"pre-wrap",
         }}>{msg.content}</div>
@@ -99,21 +172,30 @@ function Bubble({ T, msg, onAdopt }) {
     );
   }
 
-  // Style pour message assistant : aligne a gauche, fond Paper/Ink
+  // Style pour message Nuvi : aligne a gauche, fond Paper/Ink
+  // [Nuvi v2] : avatar violet/magenta gradient devant la bulle
   return (
     <div style={{
       display:"flex", justifyContent:"flex-start", marginBottom:12,
+      gap:8, alignItems:"flex-start",
     }}>
+      {/* Avatar Nuvi (gradient violet/magenta) */}
+      <div style={{
+        width:24, height:24, flexShrink:0,
+        borderRadius:"50%",
+        background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+        marginTop:4,
+      }}/>
       <div style={{maxWidth:"85%"}}>
         <div style={{
-          padding:"12px 16px", borderRadius:"18px 18px 18px 4px",
+          padding:"12px 16px", borderRadius:"4px 18px 18px 18px",
           background:Paper, color:Ink,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
           fontSize:13, lineHeight:1.55, fontFamily:Sans,
           whiteSpace:"pre-wrap",
         }}>{msg.content}</div>
 
-        {/* Bouton d'adoption si l'IA a propose une reformulation */}
+        {/* Bouton d'adoption si Nuvi a propose une reformulation */}
         {msg.adopt && msg.adopt.kind && msg.adopt.value && onAdopt && (
           <button
             onClick={()=>onAdopt(msg.adopt.kind, msg.adopt.value)}
@@ -125,6 +207,7 @@ function Bubble({ T, msg, onAdopt }) {
                 fontSize:11, fontWeight:600, fontFamily:Sans,
                 display:"inline-flex", alignItems:"center", gap:5,
                 transition:"all 180ms ease-out",
+                boxShadow:"0 2px 8px rgba(91, 61, 245, 0.25)",
               })
             }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -226,10 +309,10 @@ export default function CoachModal({
           margin:"10px auto 6px", flexShrink:0,
         }}/>
 
-        {/* Header */}
+        {/* Header [Nuvi v2] : eyebrow violet + hero gradient + close icon */}
         <div style={{
           padding:"6px 24px 14px",
-          borderBottom:"0.5px solid "+Gray200, flexShrink:0,
+          borderBottom:"0.5px solid "+Hairline, flexShrink:0,
           display:"flex", alignItems:"flex-start",
           justifyContent:"space-between", gap:12,
         }}>
@@ -240,12 +323,16 @@ export default function CoachModal({
               color:Purple, marginBottom:4,
             }}>{T.co_eyebrow}</div>
             <div style={{
-              fontFamily:Serif, fontWeight:400, fontSize:22,
+              fontFamily:Serif, fontWeight:400, fontSize:24,
               letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
             }}>
               {T.co_title_a}
               {" "}<em style={{
-                fontStyle:"italic", color:Purple,
+                fontStyle:"italic",
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                WebkitBackgroundClip:"text",
+                backgroundClip:"text",
+                color:"transparent",
               }}>{T.co_title_em}</em>
               {" "}{T.co_title_b}
             </div>
@@ -262,16 +349,17 @@ export default function CoachModal({
               title={T.co_clear}
               style={{
                 ...B({
-                  background:Paper, borderRadius:RadiusPill,
+                  background:Paper, borderRadius:"50%",
                   width:32, height:32, color:Gray600,
-                  border:"0.5px solid "+Gray200,
+                  border:"0.5px solid "+Hairline,
                   display:"flex", alignItems:"center", justifyContent:"center",
                   flexShrink:0,
                   opacity: loading ? 0.4 : 1,
+                  transition:"all 150ms ease",
                 })
               }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" strokeWidth="2"
+                stroke="currentColor" strokeWidth="1.8"
                 strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 6h18"/>
                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>
@@ -280,16 +368,25 @@ export default function CoachModal({
             </button>
           )}
 
+          {/* Close button [Nuvi v2] : icone SVG au lieu de "x" texte */}
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
-              background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:Gray600,
-              border:"0.5px solid "+Gray200,
+              background:Paper, borderRadius:"50%",
+              width:32, height:32, color:Gray600,
+              border:"0.5px solid "+Hairline,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,
               opacity: loading ? 0.4 : 1,
+              transition:"all 150ms ease",
             })
-          }}>x</button>
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="1.8"
+              strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
         {/* Body : welcome OU messages */}
@@ -303,17 +400,24 @@ export default function CoachModal({
             <div style={{
               padding:"24px 18px",
               background:CreamSoft, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200,
+              border:"0.5px solid "+Hairline,
               textAlign:"center", color:Gray600,
               fontSize:13, fontFamily:Sans,
             }}>{T.co_no_cv}</div>
           )}
 
-          {/* Etat 2 : welcome screen avec parcours */}
+          {/* Etat 2 [Nuvi v2] : welcome screen avec parcours redesignes */}
           {!cvIsEmpty && !hasMessages && (
             <>
+              {/* [Nuvi v2] Eyebrow terracotta pour signaler la section */}
               <div style={{
-                fontFamily:Serif, fontSize:20, fontWeight:500,
+                fontSize:10, fontWeight:600,
+                letterSpacing:"0.12em", textTransform:"uppercase",
+                color:Coral, marginBottom:10,
+              }}>{T.co_paths_eyebrow || "Parcours guides"}</div>
+
+              <div style={{
+                fontFamily:Serif, fontSize:20, fontWeight:400,
                 letterSpacing:"-0.01em",
                 color:Ink, marginBottom:6,
               }}>{T.co_welcome_title}</div>
@@ -325,23 +429,35 @@ export default function CoachModal({
                 <button
                   key={path.key}
                   onClick={()=>onPickPath(path)}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = path.accent;
+                    e.currentTarget.style.transform = "translateY(-1px)";
+                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,.06), 0 0 0 0.5px rgba(0,0,0,.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = Hairline;
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = ShadowSm;
+                  }}
                   style={{
                     ...B({
                       width:"100%", textAlign:"left",
-                      padding:"14px 16px", marginBottom:10, borderRadius:RadiusMd,
+                      padding:"14px 16px", marginBottom:8, borderRadius:12,
                       background:Paper, color:Ink,
-                      border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+                      border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
                       display:"flex", alignItems:"center", gap:14,
                       fontFamily:Sans,
                       transition:"all 180ms ease-out",
                     })
                   }}>
+                  {/* [Nuvi v2] Container icone tinted (accent + 10% opacite) */}
                   <div style={{
-                    width:40, height:40, borderRadius:11,
+                    width:38, height:38, borderRadius:10,
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    background:PurpleSoft,
-                    fontSize:20, flexShrink:0,
-                  }}>{path.emoji}</div>
+                    background:withOpacity(path.accent, 0.1),
+                    color:path.accent,
+                    flexShrink:0,
+                  }}>{path.icon}</div>
                   <div style={{flex:1, minWidth:0}}>
                     <div style={{
                       fontFamily:Serif, fontWeight:500, fontSize:15,
@@ -351,11 +467,12 @@ export default function CoachModal({
                       fontSize:11, color:Gray600, lineHeight:1.4,
                     }}>{path.desc}</div>
                   </div>
+                  {/* [Nuvi v2] Chevron simple gris (au lieu de fleche violet) */}
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke={Purple} strokeWidth="2.5"
+                    stroke={Gray400} strokeWidth="1.8"
                     strokeLinecap="round" strokeLinejoin="round"
                     style={{flexShrink:0}}>
-                    <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+                    <path d="m9 18 6-6-6-6"/>
                   </svg>
                 </button>
               ))}
@@ -369,15 +486,22 @@ export default function CoachModal({
                 <Bubble key={i} T={T} msg={msg} onAdopt={onAdopt}/>
               ))}
 
-              {/* Loading bubble (l'IA reflechit) */}
+              {/* Loading bubble (Nuvi reflechit) */}
               {loading && (
                 <div style={{
                   display:"flex", justifyContent:"flex-start", marginBottom:12,
+                  gap:8, alignItems:"flex-start",
                 }}>
                   <div style={{
-                    padding:"12px 16px", borderRadius:"18px 18px 18px 4px",
+                    width:24, height:24, flexShrink:0,
+                    borderRadius:"50%",
+                    background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                    marginTop:4,
+                  }}/>
+                  <div style={{
+                    padding:"12px 16px", borderRadius:"4px 18px 18px 18px",
                     background:Paper, color:Gray600,
-                    border:"0.5px solid "+Gray200,
+                    border:"0.5px solid "+Hairline,
                     fontSize:13, fontFamily:Sans,
                     display:"flex", alignItems:"center", gap:8,
                   }}>
@@ -399,8 +523,6 @@ export default function CoachModal({
 
               <style>{`
                 @keyframes cvfPulse1 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
-                @keyframes cvfPulse2 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
-                @keyframes cvfPulse3 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
                 @keyframes cvfPulse2 {
                   0%, 30%, 70%, 100% { opacity:.3; }
                   50% { opacity:1; }
@@ -414,11 +536,11 @@ export default function CoachModal({
           )}
         </div>
 
-        {/* Input zone */}
+        {/* Input zone [Nuvi v2] : style coherent AdjustModal */}
         {!cvIsEmpty && (
           <div style={{
             padding:"12px 24px 18px",
-            borderTop:"0.5px solid "+Gray200,
+            borderTop:"0.5px solid "+Hairline,
             flexShrink:0,
             background:CreamSoft,
           }}>
@@ -440,9 +562,9 @@ export default function CoachModal({
                 disabled={loading}
                 style={{
                   flex:1,
-                  padding:"11px 14px",
-                  borderRadius:RadiusMd,
-                  border:"0.5px solid "+Gray200,
+                  padding:"11px 16px",
+                  borderRadius:RadiusPill,
+                  border:"0.5px solid "+Hairline,
                   background:Paper,
                   color:Ink, fontSize:13,
                   fontFamily:Sans,
@@ -451,7 +573,10 @@ export default function CoachModal({
                   maxHeight:120,
                   boxSizing:"border-box",
                   opacity: loading ? 0.5 : 1,
+                  transition:"border-color 150ms ease",
                 }}
+                onFocus={(e) => { e.currentTarget.style.borderColor = Purple; }}
+                onBlur={(e) => { e.currentTarget.style.borderColor = Hairline; }}
               />
               <button
                 onClick={submit}
@@ -466,12 +591,17 @@ export default function CoachModal({
                     display:"flex", alignItems:"center", justifyContent:"center",
                     flexShrink:0,
                     transition:"all 180ms ease-out",
+                    boxShadow: (loading || !input.trim() || !apiKey)
+                      ? "none"
+                      : "0 2px 8px rgba(91, 61, 245, 0.3)",
                   })
                 }}>
+                {/* [Nuvi v2] Icone fleche-up au lieu de paper-plane */}
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="2.5"
                   strokeLinecap="round" strokeLinejoin="round">
-                  <path d="m22 2-7 20-4-9-9-4z"/>
+                  <path d="M12 19V5"/>
+                  <path d="m5 12 7-7 7 7"/>
                 </svg>
               </button>
             </div>
