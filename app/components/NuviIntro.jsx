@@ -1,8 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import dynamic from "next/dynamic";
-
-const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
+import NuviCompanion from "./NuviCompanion";
 
 /**
  * NuviIntro — Présentation initiale du compagnon Nuvi.
@@ -20,7 +18,13 @@ const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
  *   - mob: boolean (mobile)
  *   - origin: { x, y } position de départ du compagnon (le bouton Coach)
  */
-export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false, origin = null }) {
+export default function NuviIntro({
+  lang = "fr",
+  onComplete,
+  onSkip,
+  mob = false,
+  origin = null,
+}) {
   const [step, setStep] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
   const [streaming, setStreaming] = useState(true);
@@ -32,17 +36,17 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
   const scripts = {
     fr: [
       { text: "Hello, je suis Nuvi.", emoji: "👋" },
-      { text: "Ton compagnon jusqu'au succès.", emoji: "" },
-      { text: "Plus jamais perdu dans une pile de CVs ignorés.", emoji: "" },
+      { text: "Ton compagnon jusqu'au succes.", emoji: "" },
+      { text: "Plus jamais perdu dans une pile de CV ignores.", emoji: "" },
       { text: "Mon job : faire en sorte que les recruteurs te voient. Vraiment.", emoji: "" },
       { text: "Voici comment je t'accompagne :", emoji: "✨" },
-      { text: "Génération CV — je crée ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
-      { text: "Audit ATS — je vérifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
-      { text: "Match offre — j'adapte ton CV à chaque candidature.", emoji: "🔍", isFeature: true },
-      { text: "Coach — pose-moi tes questions, je te guide à chaque étape.", emoji: "💬", isFeature: true },
-      { text: "Pack candidature — lettre de motivation, email, LinkedIn, tout est prêt.", emoji: "✉️", isFeature: true },
-      { text: "Ensemble, on va décrocher LE bon job.", emoji: "" },
-      { text: "Prêt(e) ? Allez, on y va.", emoji: "🚀" },
+      { text: "Generation CV — je cree ou j'importe le tien, en quelques secondes.", emoji: "📝", isFeature: true },
+      { text: "Audit ATS — je verifie que tu passes les filtres automatiques.", emoji: "🎯", isFeature: true },
+      { text: "Match offre — j'adapte ton CV a chaque candidature.", emoji: "🔍", isFeature: true },
+      { text: "Coach — pose-moi tes questions, je te guide a chaque etape.", emoji: "💬", isFeature: true },
+      { text: "Pack candidature — lettre de motivation, email, LinkedIn, tout est pret.", emoji: "✉️", isFeature: true },
+      { text: "Ensemble, on va decrocher LE bon job.", emoji: "" },
+      { text: "Pret(e) ? Allez, on y va.", emoji: "🚀" },
     ],
     en: [
       { text: "Hi, I'm Nuvi.", emoji: "👋" },
@@ -72,46 +76,60 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
     return () => clearTimeout(appearTimerRef.current);
   }, []);
 
-  // Streaming du texte (caractère par caractère)
+  // Streaming du texte (caractere par caractere)
   useEffect(() => {
     if (appearing) return;
     if (!currentLine) return;
 
+    let cancelled = false;
     setDisplayedText("");
     setStreaming(true);
 
     const fullText = currentLine.text;
     let i = 0;
-    const speed = 22; // ms par caractère
+    const speed = 22;
+
+    // Cleanup any previous timer first
+    if (streamTimerRef.current) {
+      clearInterval(streamTimerRef.current);
+      streamTimerRef.current = null;
+    }
 
     streamTimerRef.current = setInterval(() => {
+      if (cancelled) return;
       i++;
       setDisplayedText(fullText.slice(0, i));
       if (i >= fullText.length) {
-        clearInterval(streamTimerRef.current);
+        if (streamTimerRef.current) {
+          clearInterval(streamTimerRef.current);
+          streamTimerRef.current = null;
+        }
         setStreaming(false);
       }
     }, speed);
 
     return () => {
-      if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+      cancelled = true;
+      if (streamTimerRef.current) {
+        clearInterval(streamTimerRef.current);
+        streamTimerRef.current = null;
+      }
     };
-  }, [step, currentLine, appearing]);
+  }, [step, appearing, currentLine]);
 
-  // Auto-advance après affichage complet (sauf dernière étape)
+  // Auto-advance apres affichage complet (sauf derniere etape)
   useEffect(() => {
     if (streaming || appearing) return;
     if (isLastStep) return;
-    const delay = currentLine.isFeature ? 2400 : 2000;
+    const delay = currentLine && currentLine.isFeature ? 2400 : 2000;
     const t = setTimeout(() => {
       setStep(prev => prev + 1);
     }, delay);
     return () => clearTimeout(t);
-  }, [streaming, appearing, isLastStep, currentLine]);
+  }, [streaming, appearing, isLastStep, step]);
 
   const handleNext = useCallback(() => {
     if (streaming) {
-      // Si en streaming → finir l'affichage immédiatement
       if (streamTimerRef.current) clearInterval(streamTimerRef.current);
       setDisplayedText(currentLine.text);
       setStreaming(false);
@@ -126,6 +144,7 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
 
   const handleSkip = useCallback(() => {
     if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+    if (appearTimerRef.current) clearTimeout(appearTimerRef.current);
     onSkip && onSkip();
   }, [onSkip]);
 
@@ -135,17 +154,21 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
   };
   const L = labels[lang] || labels.fr;
 
-  // Position de départ du compagnon (origine = bouton Coach)
-  const startX = origin ? origin.x : (typeof window !== "undefined" ? window.innerWidth - 80 : 0);
-  const startY = origin ? origin.y : (typeof window !== "undefined" ? window.innerHeight - 80 : 0);
-
-  // Couleurs
+  // Couleurs Nuvi (terracotta/cream)
   const Ink = "#0f0f12";
   const Cream = "#faf8f3";
-  const Gold = "#b8860b";
+  const Coral = "#d97757";
 
-  // Taille du compagnon dans la présentation
-  const companionSize = mob ? 88 : 120;
+  // Taille du compagnon
+  const companionSize = mob ? 80 : 110;
+
+  // Position de depart du compagnon (origine = bouton Coach)
+  const winW = typeof window !== "undefined" ? window.innerWidth : 0;
+  const winH = typeof window !== "undefined" ? window.innerHeight : 0;
+  const startX = origin ? origin.x : (winW - 80);
+  const startY = origin ? origin.y : (winH - 80);
+  const offsetX = appearing ? (startX - winW / 2) : 0;
+  const offsetY = appearing ? (startY - winH / 2 + 80) : 0;
 
   return (
     <div
@@ -154,15 +177,15 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
       style={{
         position: "fixed",
         inset: 0,
-        zIndex: 2000,
-        background: "rgba(15, 15, 18, 0.78)",
+        zIndex: 5000,
+        background: "rgba(15, 15, 18, 0.85)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: mob ? "20px" : "40px",
+        padding: mob ? "16px" : "40px",
         animation: "nuviIntroFadeIn 400ms ease-out",
       }}
     >
@@ -171,27 +194,19 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
         onClick={handleSkip}
         style={{
           position: "absolute",
-          top: mob ? 16 : 24,
-          right: mob ? 16 : 24,
-          background: "rgba(255,255,255,0.1)",
+          top: mob ? 14 : 24,
+          right: mob ? 14 : 24,
+          background: "rgba(255,255,255,0.12)",
           color: Cream,
-          border: "1px solid rgba(255,255,255,0.2)",
+          border: "1px solid rgba(255,255,255,0.22)",
           borderRadius: 999,
           padding: mob ? "6px 14px" : "8px 18px",
           fontSize: mob ? 12 : 13,
           fontFamily: "'Inter', sans-serif",
           fontWeight: 500,
           cursor: "pointer",
-          backdropFilter: "blur(10px)",
           transition: "all 200ms ease",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.18)";
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.35)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-          e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
+          zIndex: 10,
         }}
       >
         {L.skip}
@@ -202,7 +217,7 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: mob ? 24 : 32,
+        gap: mob ? 18 : 28,
         maxWidth: 600,
         width: "100%",
       }}>
@@ -211,9 +226,7 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
           style={{
             width: companionSize,
             height: companionSize,
-            transform: appearing
-              ? `translate(${startX - (typeof window !== "undefined" ? window.innerWidth/2 : 0)}px, ${startY - (typeof window !== "undefined" ? window.innerHeight/2 : 0)}px) scale(0.4)`
-              : "translate(0, 0) scale(1)",
+            transform: "translate(" + offsetX + "px, " + offsetY + "px) scale(" + (appearing ? 0.5 : 1) + ")",
             transition: "transform 1100ms cubic-bezier(0.34, 1.5, 0.64, 1)",
             display: "flex",
             alignItems: "center",
@@ -234,36 +247,36 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
             style={{
               background: Cream,
               borderRadius: 18,
-              padding: mob ? "20px 22px" : "24px 28px",
+              padding: mob ? "20px 22px" : "24px 32px",
               maxWidth: mob ? "100%" : 540,
               width: "100%",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.3), 0 4px 12px rgba(0,0,0,0.15)",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.18)",
               fontFamily: "'Inter', sans-serif",
               animation: "nuviBubbleIn 350ms cubic-bezier(0.22, 1, 0.36, 1)",
               position: "relative",
-              border: currentLine.isFeature ? `2px solid ${Gold}` : "none",
+              border: currentLine.isFeature ? "2px solid " + Coral : "none",
             }}
           >
-            {/* Tail pointing up to companion */}
+            {/* Tail pointing up */}
             <div style={{
               position: "absolute",
               top: -10,
               left: "50%",
               transform: "translateX(-50%) rotate(45deg)",
-              width: 20,
-              height: 20,
+              width: 18,
+              height: 18,
               background: Cream,
               borderTopLeftRadius: 4,
-              borderLeft: currentLine.isFeature ? `2px solid ${Gold}` : "none",
-              borderTop: currentLine.isFeature ? `2px solid ${Gold}` : "none",
+              borderLeft: currentLine.isFeature ? "2px solid " + Coral : "none",
+              borderTop: currentLine.isFeature ? "2px solid " + Coral : "none",
             }} />
 
             <div style={{
               color: Ink,
-              fontSize: mob ? 16 : 19,
-              lineHeight: 1.45,
+              fontSize: mob ? 15 : 18,
+              lineHeight: 1.5,
               fontWeight: 500,
-              minHeight: mob ? 48 : 56,
+              minHeight: mob ? 44 : 54,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -271,13 +284,13 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
               gap: 8,
               flexWrap: "wrap",
             }}>
-              {currentLine.emoji && <span style={{ fontSize: mob ? 22 : 26 }}>{currentLine.emoji}</span>}
+              {currentLine.emoji && <span style={{ fontSize: mob ? 22 : 26, flexShrink: 0 }}>{currentLine.emoji}</span>}
               <span>{displayedText}</span>
               {streaming && (
                 <span style={{
                   display: "inline-block",
                   width: 2,
-                  height: mob ? 18 : 22,
+                  height: mob ? 16 : 20,
                   background: Ink,
                   marginLeft: 2,
                   animation: "nuviCursorBlink 700ms infinite",
@@ -294,10 +307,9 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 16,
+            gap: 14,
             width: "100%",
           }}>
-            {/* Progress dots */}
             <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
               {script.map((_, i) => (
                 <div key={i} style={{
@@ -310,7 +322,6 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
               ))}
             </div>
 
-            {/* Next/Finish button */}
             <button
               onClick={handleNext}
               style={{
@@ -326,23 +337,15 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
                 letterSpacing: 0.3,
                 boxShadow: "0 8px 24px rgba(91, 61, 245, 0.4), 0 2px 8px rgba(91, 61, 245, 0.3)",
                 transition: "all 200ms ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = "translateY(-2px) scale(1.04)";
-                e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.5)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = "";
-                e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.4), 0 2px 8px rgba(91, 61, 245, 0.3)";
+                minWidth: mob ? 160 : 200,
               }}
             >
-              {isLastStep ? L.finish : (streaming ? "→" : L.next)}
+              {isLastStep ? L.finish : (streaming ? "→" : L.next + " →")}
             </button>
           </div>
         )}
       </div>
 
-      {/* Inline animations */}
       <style>{`
         @keyframes nuviIntroFadeIn {
           from { opacity: 0; }
@@ -355,6 +358,10 @@ export default function NuviIntro({ lang = "fr", onComplete, onSkip, mob = false
         @keyframes nuviCursorBlink {
           0%, 50% { opacity: 1; }
           51%, 100% { opacity: 0; }
+        }
+        @keyframes nuviIdleFloat {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
       `}</style>
     </div>
