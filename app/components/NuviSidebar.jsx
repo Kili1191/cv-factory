@@ -350,8 +350,11 @@ export default function NuviSidebar({
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => {
+          // [Fix bug] On ferme JUSTE le expand de la sidebar.
+          // On NE FERME PAS le panel flottant ici - c'est le panel lui-meme
+          // qui gere sa fermeture via son onMouseLeave.
+          // Sinon : aller du parent vers le panel ferme le menu en cours de route.
           setExpanded(false);
-          handleItemMouseLeave();
         }}
         style={{
           width: expanded ? 240 : 56,
