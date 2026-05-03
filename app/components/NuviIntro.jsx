@@ -258,13 +258,29 @@ export default function NuviIntro({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            position: "relative",
           }}
         >
-          <NuviCompanion
-            size={companionSize}
-            mode={appearing ? "appearing" : "speaking"}
-            cycleDuration={4}
-          />
+          {/* Halo subtil derriere l'oeil pour le contraste (pas large) */}
+          <div style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: companionSize * 1.3,
+            height: companionSize * 1.3,
+            borderRadius: "50%",
+            background: "radial-gradient(circle, rgba(217, 119, 87, 0.35) 0%, rgba(217, 119, 87, 0.15) 40%, rgba(217, 119, 87, 0) 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }} />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <NuviCompanion
+              size={companionSize}
+              mode={appearing ? "appearing" : "speaking"}
+              cycleDuration={4}
+            />
+          </div>
         </div>
 
         {/* Bulle */}
