@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import NuviCompanion from "./NuviCompanion";
 
 /**
- * NuviHome — Écran d'accueil minimaliste premium
+ * NuviHome : Écran d'accueil minimaliste premium
  *
  * Cinématique :
  *   1. NuviCompanion arrive en tournant (spin) + scale 0→1 (excited)
@@ -53,7 +53,7 @@ const TEXT = {
 };
 
 /**
- * balanceText — typographie professionnelle
+ * balanceText : typographie professionnelle
  *
  * Règles appliquées :
  *   1. Espace insecable avant ponctuation francaise (? ! : ; »)
