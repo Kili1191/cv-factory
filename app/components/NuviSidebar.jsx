@@ -39,6 +39,21 @@ export default function NuviSidebar({
   const InkMuted = "#5a5a62";
   const Hairline = "#e8e3d6";
   const Coral = "#d97757";
+  const Violet = "#5b3df5";
+  const Magenta = "#b91c8c";
+
+  // Couleur d'accent par item (active state)
+  const itemColors = {
+    home: Coral,
+    coach: Violet,
+    target: Coral,
+    pack: Violet,
+    score: Coral,
+    cvs: Coral,
+    design: Violet,
+    tracking: Coral,
+    settings: InkMuted,
+  };
 
   // Labels FR/EN
   const labels = {
@@ -152,8 +167,8 @@ export default function NuviSidebar({
     onSelect(key);
   };
 
-  // Item style
-  const itemStyle = (isActive) => ({
+  // Item style avec couleur d'accent
+  const itemStyle = (isActive, accentColor) => ({
     display: "flex",
     alignItems: "center",
     gap: 14,
@@ -161,8 +176,8 @@ export default function NuviSidebar({
     margin: "2px 8px",
     borderRadius: 10,
     cursor: "pointer",
-    background: isActive ? CreamSoft : "transparent",
-    color: isActive ? Ink : InkMuted,
+    background: isActive ? accentColor + "15" : "transparent", // tint subtil 15% opacity
+    color: isActive ? accentColor : InkMuted,
     transition: "all 180ms cubic-bezier(0.22, 1, 0.36, 1)",
     fontFamily: "'Inter', -apple-system, sans-serif",
     fontSize: 13,
@@ -194,6 +209,7 @@ export default function NuviSidebar({
         {topItems.map((item) => {
           const isActive = active === item.key;
           const hasNotif = hasNotification[item.key];
+          const accentColor = itemColors[item.key] || Coral;
           return (
             <div
               key={item.key}
@@ -207,12 +223,18 @@ export default function NuviSidebar({
                 }
               }}
               onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = CreamSoft;
+                if (!isActive) {
+                  e.currentTarget.style.background = accentColor + "0a";
+                  e.currentTarget.style.color = accentColor;
+                }
               }}
               onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = "transparent";
+                if (!isActive) {
+                  e.currentTarget.style.background = "transparent";
+                  e.currentTarget.style.color = InkMuted;
+                }
               }}
-              style={itemStyle(isActive)}
+              style={itemStyle(isActive, accentColor)}
               aria-label={item.label}
               aria-current={isActive ? "page" : undefined}
             >
@@ -224,6 +246,7 @@ export default function NuviSidebar({
                 height: 20,
                 flexShrink: 0,
                 position: "relative",
+                color: "inherit",
               }}>
                 {Icons[item.key]}
                 {hasNotif && (
@@ -264,12 +287,14 @@ export default function NuviSidebar({
             }
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = CreamSoft;
+            e.currentTarget.style.background = InkMuted + "0a";
+            e.currentTarget.style.color = Ink;
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = InkMuted;
           }}
-          style={itemStyle(false)}
+          style={itemStyle(false, InkMuted)}
           aria-label={L.settings}
         >
           <span style={{
@@ -279,6 +304,7 @@ export default function NuviSidebar({
             width: 20,
             height: 20,
             flexShrink: 0,
+            color: "inherit",
           }}>
             {Icons.settings}
           </span>
