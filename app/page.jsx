@@ -40,6 +40,7 @@ const TargetHub     = dynamic(() => import("./components/TargetHub"), { ssr: fal
 const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: false });
 const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr: false });
+const NuviLogo      = dynamic(() => import("./components/NuviLogo"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -48,7 +49,6 @@ import {
   detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
 } from "./components/dateUtils";
-import Logo from "./components/Logo";
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { FR_T, EN_T } from "./i18n";
@@ -5432,23 +5432,11 @@ export default function App() {
             <div style={{padding:"18px 20px", background:Paper,
               borderBottom:"0.5px solid "+Gray200,
               display:"flex", alignItems:"center", gap:10}}>
+              <NuviLogo size={28} inkColor={Ink} />
               <div style={{
-                width:30, height:30, background:GradDark,
-                borderRadius:9, display:"flex",
-                alignItems:"center", justifyContent:"center",
-                color:Gold, fontFamily:Serif, fontWeight:600, fontSize:14,
-                letterSpacing:"-0.02em",
-              }}>CV</div>
-              <div>
-                <div style={{
-                  fontFamily:Serif, fontWeight:500, fontSize:17,
-                  letterSpacing:"-0.01em", color:Ink, lineHeight:1,
-                }}>Factory</div>
-                <div style={{
-                  color:Gray400, fontSize:10, marginTop:3,
-                  fontFamily:Sans,
-                }}>{T.appSub}</div>
-              </div>
+                color:Gray400, fontSize:10, marginTop:0,
+                fontFamily:Sans,
+              }}>{T.appSub}</div>
             </div>
             <div style={{
               display:"flex",
@@ -5506,15 +5494,15 @@ export default function App() {
               zIndex: 90,
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              padding: "14px 22px 14px 18px",
+              gap: 12,
+              padding: "10px 24px 10px 12px",
               background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
               color: "#fff",
               border: "none",
               borderRadius: 999,
               cursor: "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              fontSize: 14,
+              fontSize: 15,
               fontWeight: 600,
               letterSpacing: 0.2,
               boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
@@ -5533,17 +5521,18 @@ export default function App() {
             <span
               aria-hidden="true"
               style={{
-                width: 28,
-                height: 28,
+                width: 44,
+                height: 44,
                 borderRadius: "50%",
                 background: "rgba(255, 255, 255, 0.18)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                overflow: "hidden",
+                overflow: "visible",
+                flexShrink: 0,
               }}
             >
-              <NuviCompanion size={28} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={44} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
@@ -5596,7 +5585,7 @@ export default function App() {
           flexShrink:0,
         }}>
           <div style={{display:"flex", alignItems:"center", gap:10}}>
-  <Logo size={28} factoryFontSize={16} inkColor={Ink} serifFamily={Serif} sansFamily={Sans} />
+  <NuviLogo size={26} inkColor={Ink} />
 </div>
           <div style={{display:"flex", gap:6}}>
             <button onClick={()=>setZoomed(true)} style={{
@@ -5666,15 +5655,15 @@ export default function App() {
               zIndex: 90,
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              padding: mob ? "12px 18px 12px 14px" : "14px 22px 14px 18px",
+              gap: 12,
+              padding: mob ? "8px 18px 8px 10px" : "10px 24px 10px 12px",
               background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
               color: "#fff",
               border: "none",
               borderRadius: 999,
               cursor: "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              fontSize: mob ? 13 : 14,
+              fontSize: mob ? 14 : 15,
               fontWeight: 600,
               letterSpacing: 0.2,
               boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
@@ -5695,17 +5684,18 @@ export default function App() {
             <span
               aria-hidden="true"
               style={{
-                width: mob ? 24 : 28,
-                height: mob ? 24 : 28,
+                width: mob ? 36 : 44,
+                height: mob ? 36 : 44,
                 borderRadius: "50%",
                 background: "rgba(255, 255, 255, 0.18)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                overflow: "hidden",
+                overflow: "visible",
+                flexShrink: 0,
               }}
             >
-              <NuviCompanion size={mob ? 24 : 28} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={mob ? 36 : 44} mode="idle" cycleDuration={60} />
             </span>
             <span>Coach</span>
             <style>{`
