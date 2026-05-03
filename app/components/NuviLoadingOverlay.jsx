@@ -4,7 +4,7 @@ import NuviCompanion from "./NuviCompanion";
 import NuviLoadingMessages from "./NuviLoadingMessages";
 
 /**
- * NuviLoadingOverlay — Plein écran de chargement premium.
+ * NuviLoadingOverlay : Plein écran de chargement premium.
  *
  * Affiche NuviCompanion (mode loading) + NuviLoadingMessages (copy psychologique)
  * au-dessus de tout pendant qu'une opération asynchrone se déroule.
@@ -103,7 +103,7 @@ export default function NuviLoadingOverlay({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          filter: "drop-shadow(0 12px 40px rgba(217, 119, 87, 0.35))",
+          filter: "drop-shadow(0 8px 24px rgba(15, 15, 18, 0.12))",
         }}>
           <NuviCompanion
             size={companionSize}
