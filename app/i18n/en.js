@@ -730,6 +730,7 @@ const EN_T = {
   set_dark_desc:"Interface in dark. The CV stays light for export.",
   set_kbd:"Keyboard shortcuts",
   set_tutorial:"Re-launch tutorial",
+  set_intro:"Replay Nuvi presentation",
   set_kbd_save:"Export PDF",
   set_kbd_coach:"Open coach",
   set_kbd_settings:"Open settings",
