@@ -261,16 +261,16 @@ export default function NuviIntro({
             position: "relative",
           }}
         >
-          {/* Halo subtil derriere l'oeil pour le contraste (pas large) */}
+          {/* Halo subtil derriere l'oeil pour le contraste (pas large, couleur claire) */}
           <div style={{
             position: "absolute",
             top: "50%",
             left: "50%",
             transform: "translate(-50%, -50%)",
-            width: companionSize * 1.3,
-            height: companionSize * 1.3,
+            width: companionSize * 1.1,
+            height: companionSize * 1.1,
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(217, 119, 87, 0.35) 0%, rgba(217, 119, 87, 0.15) 40%, rgba(217, 119, 87, 0) 70%)",
+            background: "radial-gradient(circle, rgba(250, 248, 243, 0.25) 0%, rgba(250, 248, 243, 0.08) 50%, rgba(250, 248, 243, 0) 75%)",
             pointerEvents: "none",
             zIndex: 0,
           }} />
