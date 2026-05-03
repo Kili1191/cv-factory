@@ -46,6 +46,34 @@ const TEXT = {
   },
 };
 
+/**
+ * balanceText — typographie professionnelle
+ *
+ * Règles appliquées :
+ *   1. Espace insecable avant ponctuation francaise (? ! : ; »)
+ *   2. Espace insecable entre les 2 derniers mots (evite la veuve typographique)
+ *   3. Espace insecable apres apostrophe + 1-2 lettres (l', d', n', s', t', etc.)
+ *   4. Espace insecable entre nombres et leurs unites
+ *
+ * Utilise \u00A0 (U+00A0 NO-BREAK SPACE)
+ */
+function balanceText(text) {
+  if (!text || typeof text !== "string") return text;
+  let t = text;
+  // 1. Espace insecable avant ponctuation francaise (FR uniquement)
+  t = t.replace(/ ([?!:;»])/g, "\u00A0$1");
+  // 2. Espace insecable apres «
+  t = t.replace(/« /g, "«\u00A0");
+  // 3. Eviter la veuve : insecable entre les 2 derniers mots
+  // (ex: "Je suis Nuvi" -> "Je suis\u00A0Nuvi" => le dernier mot reste avec le precedent)
+  const words = t.split(" ");
+  if (words.length >= 2) {
+    const lastTwo = words.slice(-2).join("\u00A0");
+    t = words.slice(0, -2).concat([lastTwo]).join(" ");
+  }
+  return t;
+}
+
 export default function NuviHome({
   lang = "fr",
   mob = false,
@@ -78,18 +106,20 @@ export default function NuviHome({
   const Violet = "#5b3df5";
   const Magenta = "#b91c8c";
 
-  // Sequence cinematique (resserree pour ne pas overwhelmer)
+  // Sequence cinematique (avec temps de lecture confortable)
   // 0 -> 1.2s : compagnon arrive en spinning
   // 1.2 -> 1.5s : bulle apparait
-  // 1.5 -> 4s : streaming du texte "Bonjour. Je suis Nuvi..."
-  // 4 -> 4.8s : compagnon vole en bas-droite (devient Coach button)
-  // 4.8s+ : cards apparaissent + etat stable
+  // 1.5 -> ~3.5s : streaming du texte (~70 chars * 28ms = 2s)
+  // 3.5 -> 6.5s : temps de lecture confortable (3s)
+  // 6.5 -> 7.3s : compagnon vole en bas-droite
+  // 7.3 -> 7.9s : cards apparaissent
+  // 7.9s+ : etat stable
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 1200);     // 1.2s : compagnon stable
     const t2 = setTimeout(() => setPhase(2), 1500);     // +0.3s : stream demarre
-    const t3 = setTimeout(() => setPhase(3), 4000);     // +2.5s : compagnon vole
-    const t4 = setTimeout(() => setPhase(4), 4800);     // +0.8s : cards apparaissent
-    const t5 = setTimeout(() => setPhase(5), 5400);     // +0.6s : etat stable
+    const t3 = setTimeout(() => setPhase(3), 6500);     // +5s : compagnon vole (lecture confortable)
+    const t4 = setTimeout(() => setPhase(4), 7300);     // +0.8s : cards apparaissent
+    const t5 = setTimeout(() => setPhase(5), 7900);     // +0.6s : etat stable
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
@@ -97,7 +127,8 @@ export default function NuviHome({
   useEffect(() => {
     if (phase < 2) return;
     let i = 0;
-    const fullText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
+    const rawText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
+    const fullText = balanceText(rawText);
     setDisplayedText("");
     const tick = () => {
       i++;
@@ -110,8 +141,8 @@ export default function NuviHome({
   // Skip animation : cliquer fait passer à l'état stable
   const skipAnimation = () => {
     setPhase(5);
-    const fullText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
-    setDisplayedText(fullText);
+    const rawText = (userName ? T.greeting + " " + userName + ". " : T.greeting + ". ") + T.intro;
+    setDisplayedText(balanceText(rawText));
   };
 
   // Tailles
@@ -341,7 +372,7 @@ export default function NuviHome({
             letterSpacing: "-0.02em",
             lineHeight: 1.2,
           }}>
-            {T.question}
+            {balanceText(T.question)}
           </div>
 
           {/* Cards container */}
@@ -419,7 +450,7 @@ export default function NuviHome({
                 fontSize: mob ? 13 : 14,
                 fontWeight: 400,
               }}>
-                {T.generateSub}
+                {balanceText(T.generateSub)}
               </div>
             </button>
 
@@ -491,7 +522,7 @@ export default function NuviHome({
                 fontSize: mob ? 13 : 14,
                 fontWeight: 400,
               }}>
-                {T.importSub}
+                {balanceText(T.importSub)}
               </div>
             </button>
           </div>
