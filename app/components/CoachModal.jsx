@@ -358,7 +358,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
       {/* [Nuvi v3] Avatar = NuviCompanion (oeil anime) en mode speaking.
           C'est le visage du compagnon dans le chat. */}
       <div style={{
-        width: 32, height: 32, flexShrink: 0,
+        width: 48, height: 48, flexShrink: 0,
         marginTop: 2,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
@@ -644,11 +644,11 @@ export default function CoachModal({
               {/* [Nuvi v3] Avatar loading = NuviCompanion en mode loading
                   (3D spin synchronise avec saccades de pupille) */}
               <div style={{
-                width: 32, height: 32, flexShrink: 0,
+                width: 48, height: 48, flexShrink: 0,
                 marginTop: 2,
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <NuviCompanion size={32} mode="loading" />
+                <NuviCompanion size={48} mode="loading" />
               </div>
               <div style={{
                 padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
