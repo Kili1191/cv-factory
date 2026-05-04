@@ -1,8 +1,9 @@
+import './globals.css';
+
 export const metadata = {
   title: "CV Factory",
   description: "Editeur de CV Premium IA",
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
