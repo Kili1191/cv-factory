@@ -38,6 +38,10 @@ import {
 // [Nuvi v3] NuviLogo en dynamic pour eviter mismatch hydratation
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 
+// [Nuvi v3] NuviCompanion : oeil anime du compagnon, utilise comme avatar
+// devant chaque message du coach (mode "speaking" quand il parle, "idle" sinon).
+const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
+
 // SVG icons line-style 1.6px stroke
 const Icons = {
   audit: (
@@ -351,12 +355,15 @@ function Bubble({ T, msg, onAdopt, onAction }) {
       display: "flex", justifyContent: "flex-start", marginBottom: 12,
       gap: 10, alignItems: "flex-start",
     }}>
+      {/* [Nuvi v3] Avatar = NuviCompanion (oeil anime) en mode speaking.
+          C'est le visage du compagnon dans le chat. */}
       <div style={{
-        width: 28, height: 28, flexShrink: 0,
-        borderRadius: "50%",
-        background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+        width: 32, height: 32, flexShrink: 0,
         marginTop: 2,
-      }} />
+        display: "flex", alignItems: "center", justifyContent: "center",
+      }}>
+        <NuviCompanion size={32} mode="speaking" />
+      </div>
       <div style={{ maxWidth: "85%" }}>
         <div style={{
           padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
@@ -634,12 +641,15 @@ export default function CoachModal({
               display: "flex", justifyContent: "flex-start", marginBottom: 12,
               gap: 10, alignItems: "flex-start",
             }}>
+              {/* [Nuvi v3] Avatar loading = NuviCompanion en mode loading
+                  (3D spin synchronise avec saccades de pupille) */}
               <div style={{
-                width: 28, height: 28, flexShrink: 0,
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                width: 32, height: 32, flexShrink: 0,
                 marginTop: 2,
-              }} />
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <NuviCompanion size={32} mode="loading" />
+              </div>
               <div style={{
                 padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
                 background: Paper, color: InkMuted,
