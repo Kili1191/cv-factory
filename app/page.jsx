@@ -4247,7 +4247,12 @@ export default function App() {
       lsS(SK.DK, next);
       return next;
     });
-  }, []);
+  }, []); // Applique le theme dark/light sur <html> (active les CSS variables dark).
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    }
+  }, [darkMode]);
 
   // Sync class on body for dark mode CSS.
   useEffect(() => {
