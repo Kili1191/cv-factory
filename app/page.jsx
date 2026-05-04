@@ -2329,7 +2329,13 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
         <>
           {T.cust_title_a}{" "}
           <em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+            backgroundClip:"text",
+            paddingRight:"0.15em",
+            display:"inline-block",
           }}>{T.cust_title_em}</em>
           {T.cust_title_b}
         </>
