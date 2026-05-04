@@ -31,7 +31,7 @@ import React from 'react';
  */
 export default function NuviLogo({
   size = 32,
-  inkColor = '#1a1a1a',
+  inkColor = 'var(--nuvi-ink)',
   dotColor = '#6d3fc4',
   fontFamily = "'DM Serif Display', Georgia, serif",
   animated = true,
