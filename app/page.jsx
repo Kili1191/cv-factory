@@ -5570,17 +5570,44 @@ export default function App() {
     return (
       <div suppressHydrationWarning style={{
         minHeight:"100vh",
-        background:CreamSoft,
-        display:"flex", alignItems:"center", justifyContent:"center",
+        background:"linear-gradient(135deg, #faf8f3 0%, #f0ebe0 100%)",
+        display:"flex", flexDirection:"column",
+        alignItems:"center", justifyContent:"center",
         fontFamily:Sans,
+        gap: 20,
       }}>
+        {/* [Nuvi v3] Boot screen Nuvi-branded.
+            Volontairement statique (pas de NuviCompanion qui est ssr:false)
+            pour eviter mismatch SSR/client.
+            suppressHydrationWarning sur le conteneur evite les warnings React. */}
+
+        {/* Cercle gradient subtle (loading visuel light, pas d'animation lourde) */}
         <div style={{
-          width:48, height:48,
-          border:"3px solid "+Gold+"33", borderTopColor:Gold,
-          borderRadius:"50%",
-          animation:"cvfSpin 1s linear infinite",
-        }}/>
-        <style>{KEYFRAMES_V17}</style>
+          width: 56, height: 56,
+          borderRadius: "50%",
+          background: "linear-gradient(135deg, #5b3df5, #b91c8c)",
+          opacity: 0.85,
+          animation: "nuviBootPulse 1.6s ease-in-out infinite",
+        }} />
+
+        <div style={{
+          fontFamily: Serif,
+          fontSize: 17,
+          fontWeight: 400,
+          color: "#5a5a62",
+          letterSpacing: "-0.01em",
+          opacity: 0.75,
+        }}>
+          Nuvi
+        </div>
+
+        <style>{`
+          @keyframes nuviBootPulse {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.08); opacity: 1; }
+          }
+          ${KEYFRAMES_V17}
+        `}</style>
       </div>
     );
   }
