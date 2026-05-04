@@ -706,7 +706,7 @@ function Sheet({ title, eyebrow, onClose, children }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.12em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:4,
+                color:Coral, marginBottom:4,
               }}>{eyebrow}</div>
             )}
             <div style={{
@@ -760,7 +760,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const eyV17 = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.1em", textTransform:"uppercase",
-    color:GoldDeep, marginBottom:8, marginTop:14,
+    color:Coral, marginBottom:8, marginTop:14,
     display:"block",
   };
 
@@ -840,7 +840,9 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           <button onClick={onSwitchToAdjust} style={{
             ...B({
               padding:"10px 18px", borderRadius:RadiusPill,
-              background:Ink, color:Cream,
+              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+              color:"#fff",
+              border:"none",
               fontSize:12, fontWeight:600,
               fontFamily:Sans,
               display:"inline-flex", alignItems:"center", gap:6,
@@ -894,8 +896,9 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
       <button onClick={go} disabled={loading||!apiKey} style={{
         ...B({
           width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-          background:loading||!apiKey ? Gray200 : GradDark,
-          color:loading||!apiKey ? Gray600 : Cream,
+          background:loading||!apiKey ? Gray200 : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:loading||!apiKey ? Gray600 : "#fff",
+          border:"none",
           fontWeight:600, fontSize:14, fontFamily:Sans,
           marginTop:22,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
@@ -1000,9 +1003,9 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       <button onClick={()=>setImpOpen(p=>!p)} style={{
         ...B({
           width:"100%", padding:"10px 13px", borderRadius:9,
-          border:"2px dashed "+Gold,
-          background:impOpen?"#fff9f0":"#fff",
-          color:Gold, fontWeight:700, fontSize:13,
+          border:"2px dashed "+Purple,
+          background:impOpen?PurpleSoft:"#fff",
+          color:Purple, fontWeight:700, fontSize:13,
           marginBottom:impOpen?0:14,
           display:"flex", alignItems:"center", justifyContent:"space-between",
         })
@@ -1012,8 +1015,8 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       </button>
       {impOpen && (
         <div style={{
-          background:"#fff9f0",
-          border:"1px solid "+Gold+"44",
+          background:PurpleSoft,
+          border:"1px solid "+Purple+"44",
           borderRadius:"0 0 9px 9px",
           padding:"12px 13px 14px", marginBottom:14,
         }}>
@@ -1028,7 +1031,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
                   flex:1, padding:"10px", borderRadius:8,
                   background:imping||!raw.trim()||!apiKey
                     ? "#ccc"
-                    : "linear-gradient(135deg,"+Dark+","+Gold+")",
+                    : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
                   color:"#fff", fontWeight:700, fontSize:13,
                 })
               }}>
@@ -1051,7 +1054,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
           width:"100%", padding:13, borderRadius:11,
           background:load||!inst.trim()||!apiKey
             ? "#ccc"
-            : "linear-gradient(135deg,"+Dark+","+Gold+")",
+            : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
           color:"#fff", fontWeight:800, fontSize:14, marginBottom:7,
         })
       }}>
@@ -1293,8 +1296,8 @@ function ColorSwatch({ color, name, active, onClick, size=44 }) {
 function WCAGBadge({ ratio, level, T }) {
   if (!ratio || ratio === 0) return null;
   const isFail = level === "FAIL";
-  const color = isFail ? Coral : (level === "AAA" ? Green : GoldDeep);
-  const bg    = isFail ? CoralSoft : (level === "AAA" ? GreenSoft : "rgba(201,169,110,.15)");
+  const color = isFail ? Coral : (level === "AAA" ? Green : Purple);
+  const bg    = isFail ? CoralSoft : (level === "AAA" ? GreenSoft : PurpleSoft);
   return (
     <span style={{
       display:"inline-flex", alignItems:"center", gap:6,
@@ -1330,7 +1333,7 @@ function ColorPickerBlock({
         <span style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, fontFamily:Sans,
+          color:Coral, fontFamily:Sans,
         }}>{label}</span>
         {contrastWith && level && (
           <WCAGBadge ratio={ratio} level={level} T={T}/>
@@ -1538,7 +1541,7 @@ function FontSection({ T, label, fonts, value, onPick, sample, isBody }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.1em", textTransform:"uppercase",
-        color:GoldDeep, marginBottom:10,
+        color:Coral, marginBottom:10,
         fontFamily:Sans,
       }}>{label}</div>
       <div style={{
@@ -1607,7 +1610,7 @@ function FontUrlInput({ T, onApply }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.1em", textTransform:"uppercase",
-        color:GoldDeep, marginBottom:10,
+        color:Coral, marginBottom:10,
         fontFamily:Sans,
       }}>{T.cust_font_url_label}</div>
       <input
@@ -1638,8 +1641,9 @@ function FontUrlInput({ T, onApply }) {
         <button onClick={validate} disabled={loading || !url.trim()} style={{
           ...B({
             width:"100%", padding:"11px 18px", borderRadius:RadiusPill,
-            background:loading || !url.trim() ? Gray200 : Ink,
-            color:loading || !url.trim() ? Gray600 : Cream,
+            background:loading || !url.trim() ? Gray200 : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:loading || !url.trim() ? Gray600 : "#fff",
+            border:"none",
             fontSize:13, fontWeight:600, fontFamily:Sans,
             transition:"all 200ms ease-out",
           })
@@ -1675,7 +1679,9 @@ function FontUrlInput({ T, onApply }) {
             <button onClick={()=>apply("header")} style={{
               ...B({
                 flex:1, padding:"11px 14px", borderRadius:RadiusPill,
-                background:Ink, color:Cream,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff",
+                border:"none",
                 fontSize:12, fontWeight:600, fontFamily:Sans,
                 transition:"all 200ms ease-out",
               })
@@ -1683,7 +1689,9 @@ function FontUrlInput({ T, onApply }) {
             <button onClick={()=>apply("body")} style={{
               ...B({
                 flex:1, padding:"11px 14px", borderRadius:RadiusPill,
-                background:Ink, color:Cream,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff",
+                border:"none",
                 fontSize:12, fontWeight:600, fontFamily:Sans,
                 transition:"all 200ms ease-out",
               })
@@ -2017,12 +2025,12 @@ function SuggestionCombo({ T, combo, onAdopt }) {
             background: combo.contrast >= 7
               ? GreenSoft
               : combo.contrast >= 4.5
-                ? "#fff3d9"
+                ? PurpleSoft
                 : CoralSoft,
             color: combo.contrast >= 7
               ? Green
               : combo.contrast >= 4.5
-                ? GoldDeep
+                ? Purple
                 : Coral,
             fontSize:9, fontWeight:700, fontFamily:Sans,
             letterSpacing:"0.06em", textTransform:"uppercase",
@@ -2030,7 +2038,7 @@ function SuggestionCombo({ T, combo, onAdopt }) {
             border:"0.5px solid "+(combo.contrast >= 7
               ? Green
               : combo.contrast >= 4.5
-                ? GoldDeep
+                ? Purple
                 : Coral),
           }}>
             <span>
@@ -2095,7 +2103,7 @@ function SuggestionCombo({ T, combo, onAdopt }) {
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:6,
+            color:Coral, marginBottom:6,
           }}>{combo.target}</div>
         )}
         {combo.why && (
@@ -2123,7 +2131,9 @@ function SuggestionCombo({ T, combo, onAdopt }) {
         })} style={{
           ...B({
             width:"100%", padding:"11px 16px", borderRadius:RadiusPill,
-            background:Ink, color:Cream,
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:"#fff",
+            border:"none",
             fontSize:12, fontWeight:600, fontFamily:Sans,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             transition:"all 200ms ease-out",
@@ -4646,7 +4656,7 @@ export default function App() {
   const finEyebrow = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.12em", textTransform:"uppercase",
-    color:GoldDeep, marginTop:24, marginBottom:10,
+    color:Coral, marginTop:24, marginBottom:10,
     display:"block",
   };
   const finRow = {
