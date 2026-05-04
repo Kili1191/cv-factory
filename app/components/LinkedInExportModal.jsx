@@ -1,40 +1,19 @@
 "use client";
 
-// CV Factory v17 - LinkedInExportModal
+// Nuvi v3 - LinkedInExportModal (refondu palette Nuvi).
 //
-// Genere un profil LinkedIn complet (headline + about + experiences reformates)
-// a partir du CV. Format LinkedIn = informel, premiere personne, mots-cles ATS.
-//
-// Shape attendue de result :
-//   {
-//     headline: "Senior Product Manager | B2B SaaS | Building...",
-//     about: "I help...",
-//     experiences: [
-//       { role: "...", company: "...", description: "..." }
-//     ]
-//   }
-//
-// Props :
-//   T            : i18n
-//   cv           : CV
-//   apiKey       : string
-//   loading      : bool
-//   result       : { headline, about, experiences } | null
-//   onRun()      : lance la generation
-//   onCopy(text) : copy-to-clipboard handler
-//   onClose()
+// Genere un profil LinkedIn complet a partir du CV.
 
 import { useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradGold, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
-// Sous-composant : zone copiable (header + content + bouton copier).
+// Sous-composant : zone copiable.
 function CopySection({ T, title, hint, content, onCopy }) {
   if (!content) return null;
   return (
@@ -47,11 +26,11 @@ function CopySection({ T, title, hint, content, onCopy }) {
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:GoldDeep, fontFamily:Sans,
+            color:Coral, fontFamily:Sans,
           }}>{title}</div>
           {hint && (
             <div style={{
-              fontSize:10, color:Gray600, fontStyle:"italic",
+              fontSize:10, color:InkMuted, fontStyle:"italic",
               marginTop:2, fontFamily:Sans,
             }}>{hint}</div>
           )}
@@ -59,8 +38,8 @@ function CopySection({ T, title, hint, content, onCopy }) {
         <button onClick={()=>onCopy && onCopy(content)} style={{
           ...B({
             padding:"6px 12px", borderRadius:RadiusPill,
-            background:Paper, color:Gray600,
-            border:"0.5px solid "+Gray200,
+            background:Paper, color:InkMuted,
+            border:"0.5px solid "+Hairline,
             fontSize:11, fontWeight:500,
             fontFamily:Sans,
             display:"inline-flex", alignItems:"center", gap:4,
@@ -78,7 +57,7 @@ function CopySection({ T, title, hint, content, onCopy }) {
       </div>
       <div style={{
         background:CreamSoft,
-        border:"0.5px solid "+Gold,
+        border:"0.5px solid "+Hairline,
         borderRadius:RadiusSm,
         padding:"14px 16px",
         fontSize:13, color:Ink, lineHeight:1.7,
@@ -128,7 +107,11 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
         <>
           {T.li_title_a}
           {" "}<em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
           }}>{T.li_title_em}</em>
           {" "}{T.li_title_b}
         </>
@@ -136,7 +119,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.li_sub}</p>
 
@@ -145,22 +128,26 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
         <div style={{
           padding:"24px 18px",
           background:CreamSoft, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
-          textAlign:"center", color:Gray600,
+          border:"0.5px solid "+Hairline,
+          textAlign:"center", color:InkMuted,
           fontSize:13, fontFamily:Sans,
         }}>{T.li_no_cv}</div>
       )}
 
-      {/* Etat 2 : CV charge mais pas encore genere */}
+      {/* Etat 2 : CV charge mais pas encore genere - gradient violet→magenta */}
       {!cvIsEmpty && !loading && !result && (
         <button onClick={onRun} disabled={!apiKey} style={{
           ...B({
             width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-            background: apiKey ? GradGold : Gray200,
-            color: apiKey ? "#fff" : Gray600,
+            background: apiKey
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : Hairline,
+            color: apiKey ? "#fff" : InkMuted,
             fontFamily:Sans, fontWeight:600, fontSize:14,
+            border:"none",
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             transition:"all 200ms ease-out",
+            boxShadow: apiKey ? "0 4px 16px rgba(91, 61, 245, 0.25)" : "none",
           })
         }}>
           {T.li_run}
@@ -177,11 +164,11 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
         <div style={{
           padding:"40px 20px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
         }}>
           <div style={{
             width:42, height:42, margin:"0 auto 14px",
-            border:"3px solid "+Gray200, borderTopColor:Gold,
+            border:"3px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -190,7 +177,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.li_loading}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:6,
+            fontSize:12, color:InkMuted, marginTop:6,
           }}>{T.li_loading_sub}</div>
         </div>
       )}
@@ -198,17 +185,20 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
       {/* Etat 4 : resultat */}
       {!loading && result && (
         <>
-          {/* Bouton Tout copier en haut */}
+          {/* Bouton Tout copier en haut - gradient violet→magenta */}
           <button
             onClick={()=>onCopy && onCopy(buildAllText())}
             style={{
               ...B({
                 width:"100%", padding:"11px 18px", borderRadius:RadiusPill,
-                background:Ink, color:Cream,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff",
                 fontFamily:Sans, fontWeight:600, fontSize:13,
+                border:"none",
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
                 marginBottom:18,
                 transition:"all 200ms ease-out",
+                boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
               })
             }}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -242,7 +232,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:10,
+                color:Coral, marginBottom:10,
                 fontFamily:Sans,
               }}>{T.li_section_experiences}</div>
 
@@ -250,7 +240,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
                 <div key={i} style={{
                   padding:"14px 16px",
                   background:Paper,
-                  border:"0.5px solid "+Gray200,
+                  border:"0.5px solid "+Hairline,
                   borderRadius:RadiusMd,
                   boxShadow:ShadowSm,
                   marginBottom:10, fontFamily:Sans,
@@ -266,7 +256,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
                       }}>{e.role || "?"}</div>
                       {e.company && (
                         <div style={{
-                          fontSize:11, color:Gray600, marginTop:2,
+                          fontSize:11, color:InkMuted, marginTop:2,
                         }}>{e.company}</div>
                       )}
                     </div>
@@ -280,8 +270,8 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
                       style={{
                         ...B({
                           padding:"5px 11px", borderRadius:RadiusPill,
-                          background:CreamSoft, color:GoldDeep,
-                          border:"0.5px solid "+Gold,
+                          background:CoralSoft, color:Coral,
+                          border:"0.5px solid "+Coral,
                           fontSize:10, fontWeight:600, fontFamily:Sans,
                           flexShrink:0,
                         })
@@ -301,12 +291,12 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
             </div>
           )}
 
-          {/* Bouton regenerer */}
+          {/* Bouton regenerer - secondary */}
           <button onClick={onRun} style={{
             ...B({
               width:"100%", padding:"11px 16px", borderRadius:RadiusPill,
-              background:Paper, color:Gray600,
-              border:"0.5px solid "+Gray200,
+              background:Paper, color:InkMuted,
+              border:"0.5px solid "+Hairline,
               fontFamily:Sans, fontWeight:500, fontSize:12,
             })
           }}>{T.li_run}</button>

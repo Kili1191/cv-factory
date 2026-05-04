@@ -1,41 +1,15 @@
 "use client";
 
-// CV Factory v17 - CVCompareModal
+// Nuvi v3 - CVCompareModal (refondu palette Nuvi).
 //
-// Compare 2 versions du CV (de la liste 'versions' sauvegardees) avec
-// analyse IA des differences + verdict "quelle version est meilleure".
-//
-// Shape attendue de result :
-//   {
-//     summary: "Texte resume general",
-//     diffs: [
-//       { field: "title|summary|experience|skills...", type: "changed|added|removed",
-//         old: "...", new: "..." }
-//     ],
-//     verdict: "Texte de verdict comparatif",
-//     winner: "A"|"B"|"tie"
-//   }
-//
-// Props :
-//   T          : i18n
-//   versions   : [{ id, name, cv, created }]
-//   apiKey     : string
-//   loading    : bool
-//   result     : ComparisonResult | null
-//   pickA      : id | null
-//   setPickA(id)
-//   pickB      : id | null
-//   setPickB(id)
-//   onRun()
-//   onClose()
+// Compare 2 versions du CV avec analyse IA.
 
 import { useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
@@ -46,7 +20,7 @@ function typeBadge(type) {
     return { fg:"#fff", bg:Green };
   if (c === "removed")
     return { fg:"#fff", bg:Coral };
-  return { fg:"#fff", bg:GoldDeep };  // changed
+  return { fg:"#fff", bg:Purple };  // changed
 }
 
 export default function CVCompareModal({
@@ -78,7 +52,11 @@ export default function CVCompareModal({
         <>
           {T.cmp_title_a}
           {" "}<em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
           }}>{T.cmp_title_em}</em>
           {" "}{T.cmp_title_b}
         </>
@@ -86,7 +64,7 @@ export default function CVCompareModal({
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.cmp_sub}</p>
 
@@ -95,8 +73,8 @@ export default function CVCompareModal({
         <div style={{
           padding:"24px 18px",
           background:CreamSoft, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
-          textAlign:"center", color:Gray600,
+          border:"0.5px solid "+Hairline,
+          textAlign:"center", color:InkMuted,
           fontSize:13, fontFamily:Sans,
         }}>{T.cmp_no_versions}</div>
       )}
@@ -108,7 +86,7 @@ export default function CVCompareModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:8,
+              color:Coral, marginBottom:8,
               fontFamily:Sans,
             }}>{T.cmp_pick_a}</label>
             <select
@@ -116,7 +94,7 @@ export default function CVCompareModal({
               onChange={e=>setPickA(e.target.value || null)}
               style={{
                 width:"100%", padding:"12px 14px", borderRadius:RadiusSm,
-                border:"1.5px solid "+Gray200, fontSize:14, color:Ink,
+                border:"1.5px solid "+Hairline, fontSize:14, color:Ink,
                 background:Paper, fontFamily:Sans,
                 outline:"none", cursor:"pointer",
                 boxSizing:"border-box",
@@ -132,7 +110,7 @@ export default function CVCompareModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:8,
+              color:Coral, marginBottom:8,
               fontFamily:Sans,
             }}>{T.cmp_pick_b}</label>
             <select
@@ -140,7 +118,7 @@ export default function CVCompareModal({
               onChange={e=>setPickB(e.target.value || null)}
               style={{
                 width:"100%", padding:"12px 14px", borderRadius:RadiusSm,
-                border:"1.5px solid "+Gray200, fontSize:14, color:Ink,
+                border:"1.5px solid "+Hairline, fontSize:14, color:Ink,
                 background:Paper, fontFamily:Sans,
                 outline:"none", cursor:"pointer",
                 boxSizing:"border-box",
@@ -157,11 +135,15 @@ export default function CVCompareModal({
           <button onClick={onRun} disabled={!canRun} style={{
             ...B({
               width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-              background: canRun ? GradPurple : Gray200,
-              color: canRun ? "#fff" : Gray600,
+              background: canRun
+                ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+                : Hairline,
+              color: canRun ? "#fff" : InkMuted,
               fontFamily:Sans, fontWeight:600, fontSize:14,
+              border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
               transition:"all 200ms ease-out",
+              boxShadow: canRun ? "0 4px 16px rgba(91, 61, 245, 0.25)" : "none",
             })
           }}>
             {T.cmp_run}
@@ -179,11 +161,11 @@ export default function CVCompareModal({
         <div style={{
           padding:"40px 20px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
         }}>
           <div style={{
             width:42, height:42, margin:"0 auto 14px",
-            border:"3px solid "+Gray200, borderTopColor:Purple,
+            border:"3px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -192,7 +174,7 @@ export default function CVCompareModal({
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.cmp_loading}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:6,
+            fontSize:12, color:InkMuted, marginTop:6,
           }}>{T.cmp_loading_sub}</div>
         </div>
       )}
@@ -200,29 +182,24 @@ export default function CVCompareModal({
       {/* Etat 4 : result */}
       {!loading && result && (
         <>
-          {/* Verdict winner en haut */}
+          {/* Verdict winner en haut - hero gradient violet→magenta */}
           {result.winner && (
             <div style={{
               padding:"16px 20px",
-              background: result.winner === "tie" ? CreamSoft : Ink,
-              color: result.winner === "tie" ? Ink : Cream,
+              background: result.winner === "tie"
+                ? CreamSoft
+                : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+              color: result.winner === "tie" ? Ink : "#fff",
               borderRadius:RadiusMd, marginBottom:16,
               position:"relative", overflow:"hidden",
               fontFamily:Sans,
             }}>
-              {result.winner !== "tie" && (
-                <div style={{
-                  position:"absolute", inset:0,
-                  background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(91,61,245,.4) 0%, transparent 60%)",
-                  pointerEvents:"none",
-                }}/>
-              )}
               <div style={{position:"relative"}}>
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  color: result.winner === "tie" ? GoldDeep : Gold,
-                  marginBottom:4,
+                  color: result.winner === "tie" ? Coral : "#fff",
+                  marginBottom:4, opacity: result.winner === "tie" ? 1 : 0.85,
                 }}>{T.cmp_section_better}</div>
                 <div style={{
                   fontFamily:Serif, fontSize:18, fontWeight:500,
@@ -232,18 +209,18 @@ export default function CVCompareModal({
             </div>
           )}
 
-          {/* Resume */}
+          {/* Resume - eyebrow Coral */}
           {result.summary && (
             <div style={{marginBottom:16}}>
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:8, fontFamily:Sans,
+                color:Coral, marginBottom:8, fontFamily:Sans,
               }}>{T.cmp_section_summary}</div>
               <div style={{
                 padding:"12px 16px",
                 background:Paper, borderRadius:RadiusMd,
-                border:"0.5px solid "+Gray200,
+                border:"0.5px solid "+Hairline,
                 fontSize:13, color:Ink, lineHeight:1.6,
                 fontFamily:Sans,
               }}>{result.summary}</div>
@@ -256,7 +233,7 @@ export default function CVCompareModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:10, fontFamily:Sans,
+                color:Coral, marginBottom:10, fontFamily:Sans,
               }}>{T.cmp_section_diffs}</div>
               {result.diffs.map((d, i) => {
                 const badge = typeBadge(d.type);
@@ -267,7 +244,7 @@ export default function CVCompareModal({
                   <div key={i} style={{
                     padding:"12px 14px",
                     background:Paper,
-                    border:"0.5px solid "+Gray200,
+                    border:"0.5px solid "+Hairline,
                     borderRadius:RadiusMd,
                     marginBottom:8, fontFamily:Sans,
                   }}>
@@ -282,8 +259,8 @@ export default function CVCompareModal({
                         letterSpacing:"0.06em", textTransform:"uppercase",
                       }}>{labelType}</span>
                       <span style={{
-                        fontSize:10, color:Gray600,
-                        background:Gray100, padding:"3px 8px", borderRadius:RadiusPill,
+                        fontSize:10, color:InkMuted,
+                        background:Hairline, padding:"3px 8px", borderRadius:RadiusPill,
                         fontFamily:"ui-monospace, monospace",
                       }}>{d.field || "?"}</span>
                     </div>
@@ -308,18 +285,18 @@ export default function CVCompareModal({
             </div>
           )}
 
-          {/* Verdict IA */}
+          {/* Verdict IA - terracotta */}
           {result.verdict && (
             <div style={{marginBottom:16}}>
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:8, fontFamily:Sans,
+                color:Coral, marginBottom:8, fontFamily:Sans,
               }}>{T.cmp_section_verdict}</div>
               <div style={{
                 padding:"14px 16px",
-                background:CreamSoft, borderRadius:RadiusMd,
-                border:"0.5px solid "+Gold,
+                background:CoralSoft, borderRadius:RadiusMd,
+                border:"0.5px solid "+Coral,
                 fontFamily:Serif, fontStyle:"italic",
                 fontSize:13, color:Ink, lineHeight:1.6,
                 letterSpacing:"-0.005em",

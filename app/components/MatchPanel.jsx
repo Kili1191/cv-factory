@@ -1,15 +1,18 @@
 "use client";
 
-// CV Factory — MatchPanel
-// Extrait de page.jsx pour permettre le lazy loading.
+// Nuvi v3 - MatchPanel (refondu palette Nuvi).
+//
+// Adapte le CV a une offre d'emploi.
 
 import { useState } from "react";
-import ScoreDashboard from "./ScoreDashboard";
 import {
-  Dark, Gold, B, IN, LBL, NO_DASH,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
+  Sans, Serif, RadiusMd, RadiusPill, ShadowSm,
+  B, IN, LBL, NO_DASH,
 } from "./sharedTokens";
 
-function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
+function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult,
   aiCall, parseJSON, normCV }) {
   const [offer, setOffer] = useState("");
@@ -80,17 +83,22 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
     if (onApplied) onApplied();
   };
 
-  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return "#ca8a04"; if (s >= 50) return "#ea580c"; return "#dc2626"; };
+  const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return Purple; if (s >= 50) return Coral; return "#dc2626"; };
 
   if (ph === "loading") {
     return (
-      <div style={{textAlign:"center", padding:"36px 20px"}}>
-        <div style={{fontSize:28, marginBottom:10}}>{">"}</div>
-        <div style={{fontSize:14, fontWeight:700, color:Dark, marginBottom:6}}>
+      <div style={{textAlign:"center", padding:"36px 20px", fontFamily:Sans}}>
+        <div style={{
+          width:42, height:42, margin:"0 auto 14px",
+          border:"3px solid "+Hairline, borderTopColor:Purple,
+          borderRadius:"50%",
+          animation:"cvfSpin 1s linear infinite",
+        }}/>
+        <div style={{fontFamily:Serif, fontSize:16, fontWeight:500, color:Ink, marginBottom:6, letterSpacing:"-0.01em"}}>
           Analyse en cours...
         </div>
-        <div style={{fontSize:12, color:"#888"}}>
-          L'IA adapte ton CV pour matcher parfaitement.
+        <div style={{fontSize:12, color:InkMuted}}>
+          Nuvi adapte ton CV pour matcher parfaitement.
         </div>
       </div>
     );
@@ -98,28 +106,30 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
 
   if (ph === "done" && res) {
     return (
-      <div>
+      <div style={{fontFamily:Sans}}>
+        {/* Score Match - hero card */}
         <div style={{
           display:"flex", alignItems:"center", gap:14,
-          background:"#f8f6f1", borderRadius:11,
+          background:CreamSoft, borderRadius:RadiusMd,
           padding:"14px 18px", marginBottom:12,
+          border:"0.5px solid "+Hairline,
         }}>
           <div style={{textAlign:"center", flexShrink:0}}>
             <div style={{
-              fontSize:34, fontWeight:900,
-              color:sc(res.match_score), lineHeight:1,
+              fontFamily:Serif, fontSize:34, fontWeight:500,
+              color:sc(res.match_score), lineHeight:1, letterSpacing:"-0.02em",
             }}>
               {res.match_score}
             </div>
-            <div style={{fontSize:9, color:"#888", fontWeight:600, letterSpacing:1}}>
+            <div style={{fontSize:9, color:InkMuted, fontWeight:600, letterSpacing:1, marginTop:2}}>
               Match
             </div>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:4}}>
+            <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:6, fontFamily:Sans}}>
               {res.job_title}{res.company?" - "+res.company:""}
             </div>
-            <div style={{width:"100%", height:5, borderRadius:3, background:"#eee"}}>
+            <div style={{width:"100%", height:5, borderRadius:3, background:Hairline}}>
               <div style={{
                 width:res.match_score+"%", height:"100%",
                 borderRadius:3, background:sc(res.match_score),
@@ -127,31 +137,36 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
             </div>
           </div>
         </div>
+
+        {/* Requirements */}
         {(res.key_requirements||[]).length > 0 && (
           <div style={{
-            background:"#f0f4ff", borderRadius:9,
+            background:PurpleSoft, borderRadius:RadiusMd,
             padding:"10px 13px", marginBottom:10,
+            border:"0.5px solid "+Purple,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#4338ca", marginBottom:6}}>
+            <div style={{fontSize:10, fontWeight:700, color:Purple, marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase"}}>
               Requirements cles
             </div>
             {(res.key_requirements||[]).map((r,i) => (
-              <div key={i} style={{fontSize:12, color:"#333", marginBottom:3}}>
+              <div key={i} style={{fontSize:12, color:Ink, marginBottom:3}}>
                 {"* "}{r}
               </div>
             ))}
           </div>
         )}
+
+        {/* Keywords matched / to add */}
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:10}}>
           {(res.keywords_matched||[]).length > 0 && (
-            <div style={{background:"#f0fff4", borderRadius:9, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:"#16a34a", marginBottom:5}}>
+            <div style={{background:GreenSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
+              <div style={{fontSize:9, fontWeight:700, color:Green, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
                 Presents
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
                 {(res.keywords_matched||[]).map((k,i) => (
                   <span key={i} style={{
-                    background:"#dcfce7", color:"#16a34a",
+                    background:"#dcfce7", color:Green,
                     borderRadius:3, padding:"2px 5px", fontSize:9,
                   }}>{k}</span>
                 ))}
@@ -159,14 +174,14 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
             </div>
           )}
           {(res.keywords_to_add||[]).length > 0 && (
-            <div style={{background:"#fff9f0", borderRadius:9, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:Gold, marginBottom:5}}>
+            <div style={{background:CoralSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
+              <div style={{fontSize:9, fontWeight:700, color:Coral, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
                 Ajoutes
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
                 {(res.keywords_to_add||[]).map((k,i) => (
                   <span key={i} style={{
-                    background:"#fff3cd", color:"#92400e",
+                    background:"#fef3c7", color:"#92400e",
                     borderRadius:3, padding:"2px 5px", fontSize:9,
                   }}>{k}</span>
                 ))}
@@ -174,67 +189,77 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
             </div>
           )}
         </div>
+
+        {/* Cover letter hook - terracotta */}
         {res.cover_letter_hook && (
           <div style={{
-            background:Gold+"15",
-            border:"1px solid "+Gold+"44",
-            borderRadius:9, padding:"10px 13px", marginBottom:12,
+            background:CoralSoft,
+            border:"0.5px solid "+Coral,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Gold, marginBottom:5}}>
+            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:5, letterSpacing:"0.06em", textTransform:"uppercase"}}>
               Accroche lettre de motivation
             </div>
-            <div style={{fontSize:12, color:"#555", lineHeight:1.6, fontStyle:"italic"}}>
+            <div style={{fontSize:12, color:Ink, lineHeight:1.6, fontStyle:"italic", fontFamily:Serif}}>
               "{res.cover_letter_hook}"
             </div>
           </div>
         )}
+
+        {/* Hidden signals */}
         {res.hidden_signals && res.hidden_signals.length > 0 && (
           <div style={{
-            background:"#fef3c7", border:"1px solid #fbbf24",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
+            background:CoralSoft, border:"0.5px solid "+Coral,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#92400e", marginBottom:6}}>
+            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Signaux caches dans l'offre
             </div>
             {res.hidden_signals.map((s,i) => (
-              <div key={i} style={{fontSize:12, color:"#78350f", marginBottom:4, lineHeight:1.5}}>
+              <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
                 {"> "}{s}
               </div>
             ))}
           </div>
         )}
+
+        {/* Culture decode */}
         {res.culture_decode && (
           <div style={{
-            background:"#ede9fe", border:"1px solid #c4b5fd",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
+            background:PurpleSoft, border:"0.5px solid "+Purple,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#5b21b6", marginBottom:5}}>
+            <div style={{fontSize:10, fontWeight:700, color:Purple, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Culture entreprise (decodee)
             </div>
-            <div style={{fontSize:12, color:"#4c1d95", lineHeight:1.5}}>
+            <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
               {res.culture_decode}
             </div>
           </div>
         )}
+
+        {/* Seniority decode */}
         {res.seniority_decode && (
           <div style={{
-            background:"#f0fdf4", border:"1px solid #86efac",
-            borderRadius:9, padding:"10px 13px", marginBottom:10,
+            background:GreenSoft, border:"0.5px solid "+Green,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#166534", marginBottom:5}}>
+            <div style={{fontSize:10, fontWeight:700, color:Green, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Niveau attendu (decode)
             </div>
-            <div style={{fontSize:12, color:"#14532d", lineHeight:1.5}}>
+            <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
               {res.seniority_decode}
             </div>
           </div>
         )}
+
+        {/* Interview questions */}
         {res.likely_interview_questions && res.likely_interview_questions.length > 0 && (
           <div style={{
-            background:"#fee2e2", border:"1px solid #fca5a5",
-            borderRadius:9, padding:"10px 13px", marginBottom:12,
+            background:CoralSoft, border:"0.5px solid "+Coral,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:"#991b1b", marginBottom:6}}>
+            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Questions probables en entretien
             </div>
             {res.likely_interview_questions.map((q,i) => (
@@ -244,32 +269,47 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
             ))}
           </div>
         )}
+
+        {/* Apply button - gradient violet→magenta */}
         <button onClick={apply} style={{
           ...B({
-            width:"100%", padding:13, borderRadius:11,
-            background:"linear-gradient(135deg,#7c3aed,"+Gold+")",
-            color:"#fff", fontWeight:800, fontSize:14, marginBottom:8,
+            width:"100%", padding:13, borderRadius:RadiusPill,
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:"#fff", fontWeight:600, fontSize:14, marginBottom:8,
+            border:"none", fontFamily:Sans,
+            boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
           Appliquer ce CV adapte
         </button>
+
+        {/* Pack button - secondary CTA */}
         {onPackRequest && (
           <button onClick={()=>onPackRequest(offer, res)} style={{
             ...B({
-              width:"100%", padding:13, borderRadius:11,
-              background:"linear-gradient(135deg,"+Dark+","+Gold+")",
-              color:"#fff", fontWeight:800, fontSize:14, marginBottom:8,
+              width:"100%", padding:13, borderRadius:RadiusPill,
+              background:Paper, color:Purple,
+              border:"0.5px solid "+Purple,
+              fontWeight:600, fontSize:14, marginBottom:8,
+              fontFamily:Sans,
               display:"flex", alignItems:"center", justifyContent:"center", gap:8,
             })
           }}>
-            <span style={{fontSize:16}}>{">"}</span>
             <span>Generer la candidature complete</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
+            </svg>
           </button>
         )}
+
+        {/* New offer */}
         <button onClick={()=>{setPh("input");setRes(null);}} style={{
           ...B({
-            width:"100%", padding:10, borderRadius:9,
-            background:"#f0f0f0", color:"#666", fontWeight:600, fontSize:13,
+            width:"100%", padding:10, borderRadius:RadiusPill,
+            background:Hairline, color:InkMuted, fontWeight:600, fontSize:13,
+            border:"none", fontFamily:Sans,
           })
         }}>
           Nouvelle offre
@@ -279,25 +319,28 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
   }
 
   return (
-    <div>
+    <div style={{fontFamily:Sans}}>
+      {/* Intro card - terracotta */}
       <div style={{
-        background:Gold+"15", border:"1px solid "+Gold+"44",
-        borderRadius:9, padding:"11px 13px", marginBottom:14,
+        background:CoralSoft,
+        border:"0.5px solid "+Coral,
+        borderRadius:RadiusMd, padding:"11px 13px", marginBottom:14,
       }}>
-        <div style={{fontSize:13, fontWeight:700, color:Dark, marginBottom:3}}>
+        <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:3, fontFamily:Serif}}>
           CV sur mesure pour une offre
         </div>
-        <div style={{fontSize:12, color:"#666", lineHeight:1.6}}>
-          Colle l'offre - l'IA adapte ton CV existant sans rien inventer.
+        <div style={{fontSize:12, color:InkMuted, lineHeight:1.6}}>
+          Colle l'offre, Nuvi adapte ton CV existant sans rien inventer.
         </div>
       </div>
+
       {!cv.name && !cv.summary && (
         <div style={{
-          background:"#fff3cd", border:"1px solid #ffc107",
-          borderRadius:8, padding:"9px 12px", marginBottom:10,
-          fontSize:12, color:"#664d03",
+          background:CoralSoft, border:"0.5px solid "+Coral,
+          borderRadius:RadiusMd, padding:"9px 12px", marginBottom:10,
+          fontSize:12, color:"#7f1d1d",
         }}>
-          Ton CV est vide - importe ou genere un CV d'abord.
+          Ton CV est vide, importe ou genere un CV d'abord.
         </div>
       )}
       <label style={LBL}>Offre d'emploi</label>
@@ -309,17 +352,20 @@ function MatchPanel({  cv, setCVFn, notify, apiKey, T, onPackRequest,
         disabled={load||!apiKey||!offer.trim()}
         style={{
           ...B({
-            width:"100%", padding:13, borderRadius:11,
-            background:load||!apiKey||!offer.trim()
-              ? "#ccc"
-              : "linear-gradient(135deg,#7c3aed,"+Gold+")",
-            color:"#fff", fontWeight:800, fontSize:14,
+            width:"100%", padding:13, borderRadius:RadiusPill,
+            background: load||!apiKey||!offer.trim()
+              ? Hairline
+              : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color: load||!apiKey||!offer.trim() ? InkMuted : "#fff",
+            fontWeight:600, fontSize:14,
+            border:"none", fontFamily:Sans,
+            boxShadow: load||!apiKey||!offer.trim() ? "none" : "0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
         Adapter mon CV a cette offre
       </button>
       {!apiKey && (
-        <div style={{fontSize:11, color:"#888", textAlign:"center", marginTop:7}}>
+        <div style={{fontSize:11, color:InkMuted, textAlign:"center", marginTop:7}}>
           Cle API requise dans Outils
         </div>
       )}

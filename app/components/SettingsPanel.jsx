@@ -1,22 +1,13 @@
 "use client";
 
-// CV Factory v17 - SettingsPanel
+// Nuvi v3 - SettingsPanel (refondu palette Nuvi).
 //
 // Panneau de reglages : lang, dark mode, relance tutoriel, raccourcis clavier.
-//
-// Props :
-//   T               : i18n
-//   locale          : "fr"|"en"
-//   setLocale(l)
-//   darkMode        : bool
-//   onToggleDark()
-//   onRelaunchTutorial()
-//   onClose()
 
 import { useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradPurple, B,
@@ -29,7 +20,7 @@ function KbdRow({ keys, label }) {
     <div style={{
       display:"flex", justifyContent:"space-between", alignItems:"center",
       padding:"10px 0",
-      borderBottom:"0.5px solid "+Gray100,
+      borderBottom:"0.5px solid "+Hairline,
     }}>
       <span style={{
         fontSize:13, color:Ink, fontFamily:Sans,
@@ -38,8 +29,8 @@ function KbdRow({ keys, label }) {
         {keys.map((k, i) => (
           <span key={i} style={{
             padding:"3px 9px", borderRadius:6,
-            background:CreamSoft, color:GoldDeep,
-            border:"0.5px solid "+Gray200,
+            background:CreamSoft, color:Coral,
+            border:"0.5px solid "+Hairline,
             fontSize:11, fontWeight:600,
             fontFamily:"ui-monospace, monospace",
             minWidth:24, textAlign:"center",
@@ -75,20 +66,22 @@ export default function SettingsPanel({
       title={T.set_title}
       onClose={onClose}
     >
-      {/* Lang switcher */}
+      {/* Lang switcher - selected = gradient violet→magenta */}
       <div style={{marginBottom:18}}>
         <label style={{
           display:"block", fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:8, fontFamily:Sans,
+          color:Coral, marginBottom:8, fontFamily:Sans,
         }}>{T.set_lang}</label>
         <div style={{display:"flex", gap:8}}>
           <button onClick={()=>setLocale("fr")} style={{
             ...B({
               flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-              background: locale === "fr" ? Ink : Paper,
-              color: locale === "fr" ? Cream : Ink,
-              border: "0.5px solid "+(locale === "fr" ? Ink : Gray200),
+              background: locale === "fr"
+                ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+                : Paper,
+              color: locale === "fr" ? "#fff" : Ink,
+              border: "0.5px solid "+(locale === "fr" ? "transparent" : Hairline),
               fontSize:13, fontWeight:500, fontFamily:Sans,
               transition:"all 180ms ease-out",
             })
@@ -96,9 +89,11 @@ export default function SettingsPanel({
           <button onClick={()=>setLocale("en")} style={{
             ...B({
               flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-              background: locale === "en" ? Ink : Paper,
-              color: locale === "en" ? Cream : Ink,
-              border: "0.5px solid "+(locale === "en" ? Ink : Gray200),
+              background: locale === "en"
+                ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+                : Paper,
+              color: locale === "en" ? "#fff" : Ink,
+              border: "0.5px solid "+(locale === "en" ? "transparent" : Hairline),
               fontSize:13, fontWeight:500, fontFamily:Sans,
               transition:"all 180ms ease-out",
             })
@@ -114,7 +109,7 @@ export default function SettingsPanel({
             display:"flex", alignItems:"center", gap:14,
             padding:"14px 16px",
             background:Paper,
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
             borderRadius:RadiusMd,
             boxShadow:ShadowSm,
             textAlign:"left", fontFamily:Sans,
@@ -126,7 +121,7 @@ export default function SettingsPanel({
             width:36, height:36, borderRadius:10,
             display:"flex", alignItems:"center", justifyContent:"center",
             background: darkMode ? Ink : CreamSoft,
-            color: darkMode ? Gold : GoldDeep,
+            color: darkMode ? "#fff" : Coral,
             flexShrink:0,
             transition:"all 220ms ease-out",
           }}>
@@ -146,14 +141,16 @@ export default function SettingsPanel({
               fontSize:13, fontWeight:600, color:Ink, marginBottom:2,
             }}>{T.set_dark}</div>
             <div style={{
-              fontSize:11, color:Gray600, lineHeight:1.4,
+              fontSize:11, color:InkMuted, lineHeight:1.4,
             }}>{T.set_dark_desc}</div>
           </div>
 
-          {/* Toggle pill */}
+          {/* Toggle pill - gradient violet→magenta quand actif */}
           <div style={{
             width:42, height:24, borderRadius:12,
-            background: darkMode ? Ink : Gray200,
+            background: darkMode
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : Hairline,
             position:"relative",
             flexShrink:0,
             transition:"all 220ms ease-out",
@@ -178,7 +175,7 @@ export default function SettingsPanel({
             display:"flex", alignItems:"center", gap:14,
             padding:"14px 16px",
             background:Paper,
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
             borderRadius:RadiusMd,
             boxShadow:ShadowSm,
             textAlign:"left", fontFamily:Sans,
@@ -212,17 +209,17 @@ export default function SettingsPanel({
         </button>
       </div>
 
-      {/* Raccourcis clavier */}
+      {/* Raccourcis clavier - eyebrow Coral */}
       <div style={{marginBottom:18}}>
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:10, fontFamily:Sans,
+          color:Coral, marginBottom:10, fontFamily:Sans,
         }}>{T.set_kbd}</div>
         <div style={{
           padding:"4px 14px",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
+          border:"0.5px solid "+Hairline,
         }}>
           <KbdRow keys={[cmdKey, "S"]} label={T.set_kbd_save}/>
           <KbdRow keys={[cmdKey, "K"]} label={T.set_kbd_coach}/>

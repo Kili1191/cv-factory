@@ -1,33 +1,16 @@
 "use client";
 
-// CV Factory v17 - ApplicationPackModal (extracted + modernized v17).
+// Nuvi v3 - ApplicationPackModal (refondu palette Nuvi).
 //
-// Modal qui presente le pack candidature complet genere par l'IA :
-// - Lettre de motivation
-// - Message LinkedIn au recruteur
-// - Email de candidature (subject + body)
-// - Pitch d'entretien ("Tell me about yourself" - 60 secondes)
-// - Reponses STAR aux questions probables
-//
-// 5 onglets internes (cover / linkedin / email / pitch / star) + Section helper
-// pour rendre une zone de texte avec bouton Copier.
-//
-// Props :
-//   T          : i18n
-//   pack       : { cover_letter, linkedin_message, application_email: {subject, body},
-//                  interview_pitch, star_answers: [{question, situation, task, action, result}] }
-//   loading    : bool
-//   msgIdx     : index pour cycling des loadingMsgs
-//   onClose()
-//   onCopy(s)  : copy-to-clipboard (handler page.jsx)
+// Modal qui presente le pack candidature complet : lettre, LinkedIn, email,
+// pitch, STAR.
 
 import { useState, useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradGold, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
@@ -42,14 +25,14 @@ function Section({ T, title, content, onCopy, small }) {
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep,
+          color:Coral,
           fontFamily:Sans,
         }}>{title}</div>
         <button onClick={()=>onCopy && onCopy(content)} style={{
           ...B({
             padding:"6px 12px", borderRadius:RadiusPill,
-            background:Paper, color:Gray600,
-            border:"0.5px solid "+Gray200,
+            background:Paper, color:InkMuted,
+            border:"0.5px solid "+Hairline,
             fontSize:11, fontWeight:500,
             fontFamily:Sans,
             display:"inline-flex", alignItems:"center", gap:4,
@@ -67,7 +50,7 @@ function Section({ T, title, content, onCopy, small }) {
       </div>
       <div style={{
         background:CreamSoft,
-        border:"0.5px solid "+Gold,
+        border:"0.5px solid "+Hairline,
         borderRadius:RadiusSm,
         padding:"14px 16px",
         fontSize: small ? 12 : 13,
@@ -82,7 +65,6 @@ function Section({ T, title, content, onCopy, small }) {
 export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose, onCopy }) {
   const [activeTab, setActiveTab] = useState("cover");
 
-  // Esc to close
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
     if (typeof window !== "undefined") {
@@ -107,7 +89,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.pk_sub}</p>
 
@@ -116,11 +98,11 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
         <div style={{
           padding:"40px 20px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
         }}>
           <div style={{
             width:42, height:42, margin:"0 auto 14px",
-            border:"3px solid "+Gray200, borderTopColor:Gold,
+            border:"3px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -130,16 +112,16 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             animation:"cvfFadeIn 600ms ease-out",
           }}>{loadingMsgs[msgIdx % loadingMsgs.length]}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:6,
+            fontSize:12, color:InkMuted, marginTop:6,
           }}>{T.pk_loading_sub}</div>
           <div style={{
-            marginTop:18, height:3, background:Gray200,
+            marginTop:18, height:3, background:Hairline,
             borderRadius:RadiusPill, overflow:"hidden", width:200,
             margin:"18px auto 0", position:"relative",
           }}>
             <div style={{
               position:"absolute", top:0, height:"100%",
-              background:Gold,
+              background:`linear-gradient(90deg, ${Purple}, ${Magenta})`,
               animation:"cvfPkSlide 2s ease-in-out infinite",
               width:"40%",
             }}/>
@@ -156,10 +138,10 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
       {/* Pack pret */}
       {!loading && pack && (
         <>
-          {/* Tabs */}
+          {/* Tabs - active = border-bottom Purple */}
           <div style={{
             display:"flex", gap:6, marginBottom:18,
-            borderBottom:"0.5px solid "+Gray200,
+            borderBottom:"0.5px solid "+Hairline,
             overflowX:"auto",
             paddingBottom:0,
           }}>
@@ -168,12 +150,12 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                 ...B({
                   padding:"10px 14px", borderRadius:0,
                   background:"transparent",
-                  color: activeTab === k ? Ink : Gray600,
+                  color: activeTab === k ? Ink : InkMuted,
                   fontFamily:Sans,
                   fontWeight: activeTab === k ? 600 : 500,
                   fontSize:12, letterSpacing:"0.02em",
                   borderBottom: activeTab === k
-                    ? "2.5px solid "+Gold
+                    ? "2.5px solid "+Purple
                     : "2.5px solid transparent",
                   whiteSpace:"nowrap", flexShrink:0,
                   transition:"all 180ms ease-out",
@@ -226,7 +208,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           {activeTab === "pitch" && pack.interview_pitch && (
             <>
               <div style={{
-                fontSize:11, color:Gray600, marginBottom:12,
+                fontSize:11, color:InkMuted, marginBottom:12,
                 fontStyle:"italic", fontFamily:Sans,
               }}>{T.pk_pitch_hint}</div>
               <Section T={T}
@@ -241,7 +223,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           {activeTab === "star" && pack.star_answers && pack.star_answers.length > 0 && (
             <>
               <div style={{
-                fontSize:11, color:Gray600, marginBottom:14,
+                fontSize:11, color:InkMuted, marginBottom:14,
                 fontStyle:"italic", fontFamily:Sans,
               }}>{T.pk_star_hint}</div>
 
@@ -249,21 +231,21 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                 <div key={i} style={{
                   marginBottom:20, paddingBottom:16,
                   borderBottom: i < pack.star_answers.length - 1
-                    ? "0.5px solid "+Gray200
+                    ? "0.5px solid "+Hairline
                     : "none",
                 }}>
-                  {/* Question */}
+                  {/* Question - terracotta */}
                   <div style={{
                     padding:"10px 14px",
-                    background:"#fef3c7",
-                    border:"0.5px solid #fbbf24",
+                    background:CoralSoft,
+                    border:"0.5px solid "+Coral,
                     borderRadius:RadiusSm,
                     marginBottom:12,
                   }}>
                     <div style={{
                       fontSize:10, fontWeight:600,
                       letterSpacing:"0.1em", textTransform:"uppercase",
-                      color:GoldDeep, marginBottom:4,
+                      color:Coral, marginBottom:4,
                       fontFamily:Sans,
                     }}>Q{i+1}</div>
                     <div style={{
@@ -272,7 +254,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                     }}>{qa.question}</div>
                   </div>
 
-                  {/* STAR sections */}
+                  {/* STAR sections - bullet violet */}
                   {[
                     ["situation", T.pk_star_situation],
                     ["task",      T.pk_star_task],
@@ -283,13 +265,13 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                       <div style={{
                         fontSize:10, fontWeight:600,
                         letterSpacing:"0.12em", textTransform:"uppercase",
-                        color:Gold, marginBottom:4,
+                        color:Purple, marginBottom:4,
                         fontFamily:Sans,
                       }}>{label}</div>
                       <div style={{
                         fontSize:12, color:Ink, lineHeight:1.6,
                         paddingLeft:12,
-                        borderLeft:"2px solid "+Gold,
+                        borderLeft:"2px solid "+Purple,
                         fontFamily:Sans,
                       }}>{qa[k]}</div>
                     </div>
@@ -307,8 +289,8 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                     style={{
                       ...B({
                         marginTop:8, padding:"7px 12px", borderRadius:RadiusPill,
-                        background:Paper, color:Gray600,
-                        border:"0.5px solid "+Gray200,
+                        background:Paper, color:InkMuted,
+                        border:"0.5px solid "+Hairline,
                         fontSize:11, fontWeight:500,
                         fontFamily:Sans,
                         display:"inline-flex", alignItems:"center", gap:4,

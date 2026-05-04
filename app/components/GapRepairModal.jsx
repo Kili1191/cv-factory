@@ -1,39 +1,19 @@
 "use client";
 
-// CV Factory v17 - GapRepairModal
+// Nuvi v3 - GapRepairModal (refondu palette Nuvi).
 //
-// Detect gaps in CV chronology (>= 1 month) and propose 4 strategies to make them
-// DISAPPEAR (not justify them). Pivot strategique : on ne veut pas avoir a se justifier,
-// on veut que les trous n'existent plus visuellement.
-//
-// 4 strategies :
-//   1. Years only format (deterministic, pas d'IA) : reformatte tous les MM/YYYY en YYYY
-//   2. Legitimate stretch : etend une experience (avec disclaimer)
-//   3. Group experiences : fusionne plusieurs missions courtes en une ligne
-//   4. Functional format : conseil pour passer en CV par competences
-//
-// Props :
-//   T            : i18n
-//   cv           : CV
-//   loading      : bool (loading IA pour les strategies advanced)
-//   gaps         : [{gap, beforeExp, afterExp, beforeIdx, afterIdx}]
-//   yearStrategy : { applicable, allDisappear, beforeGaps, afterGaps }
-//   groupOps     : [{indices, startYear, endYear, count}]
-//   unparsableCount : nombre d'experiences avec dates non parsables
-//   onApplyYearOnly()                         : applique stratégie 1
-//   onApplyExtend(beforeIdx, newEndDate)      : applique stratégie 2
-//   onApplyGroup(indices, label)              : applique stratégie 3
-//   onClose()
+// Detect gaps in CV chronology + propose 4 strategies pour les faire DISPARAITRE.
 
 import { useState, useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft,
-  Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
+  Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, KEYFRAMES_V17, B,
+  KEYFRAMES_V17, B,
 } from "./tokens";
 
-// Format a parsed date for display ("01/2020", "2020", "present").
+// Format a parsed date for display.
 function fmt(d, T) {
   if (!d) return "?";
   if (d.present) return T.gr_gap_present || "present";
@@ -41,7 +21,7 @@ function fmt(d, T) {
   return String(d.month).padStart(2, "0") + "/" + d.year;
 }
 
-// Format months count : "5 mois", "1 an", "2 ans".
+// Format months count.
 function fmtMonths(n, T) {
   if (n < 12) return n + " " + (T.gr_gap_months || "mois");
   if (n < 24) return "1 " + (T.gr_gap_year || "an");
@@ -54,7 +34,7 @@ function GapCard({ gap, T }) {
     <div style={{
       padding:"14px 16px",
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+      border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
       marginBottom:10, fontFamily:Sans,
     }}>
       <div style={{
@@ -78,7 +58,7 @@ function GapCard({ gap, T }) {
         {" "}<em style={{fontStyle:"italic"}}>{fmt(gap.gap.end, T)}</em>
       </div>
       <div style={{
-        fontSize:11, color:Gray600, lineHeight:1.5,
+        fontSize:11, color:InkMuted, lineHeight:1.5,
       }}>
         {gap.beforeExp.title || gap.beforeExp.company || "?"}
         {" -> "}
@@ -97,7 +77,7 @@ function StrategyCard({
     <div style={{
       padding:"16px 18px",
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+      border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
       marginBottom:12, fontFamily:Sans,
     }}>
       <div style={{
@@ -111,13 +91,13 @@ function StrategyCard({
         marginBottom:6,
       }}>{title}</div>
       <div style={{
-        fontSize:12, color:Gray600, lineHeight:1.5,
+        fontSize:12, color:InkMuted, lineHeight:1.5,
         marginBottom:10,
       }}>{sub}</div>
       {warn && (
         <div style={{
           padding:"8px 12px",
-          background:CoralSoft, color:"#991b1b",
+          background:CoralSoft, color:"#7f1d1d",
           borderRadius:RadiusSm,
           fontSize:11, lineHeight:1.5,
           marginBottom:10,
@@ -126,11 +106,15 @@ function StrategyCard({
       <button onClick={onApply} disabled={btnDisabled} style={{
         ...B({
           width:"100%", padding:"11px 16px", borderRadius:RadiusPill,
-          background: btnDisabled ? Gray100 : Ink,
-          color: btnDisabled ? Gray400 : Cream,
+          background: btnDisabled
+            ? Hairline
+            : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color: btnDisabled ? InkMuted : "#fff",
           fontFamily:Sans, fontWeight:600, fontSize:12,
+          border:"none",
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           transition:"all 200ms ease-out",
+          boxShadow: btnDisabled ? "none" : "0 2px 8px rgba(91, 61, 245, 0.2)",
         })
       }}>
         {btnLabel}
@@ -171,9 +155,6 @@ export default function GapRepairModal({
   const hasMostlyUnparsable = unparsableCount > 0
     && (cv && cv.experience && unparsableCount >= cv.experience.length / 2);
 
-  // For "extend" strategy: applicable if there's at least 1 gap we could close
-  // by extending the previous experience to the next start date.
-  // The button is per-gap in our UI: we pick the first gap that allows it.
   const firstGapForExtend = (gaps && gaps.length > 0) ? gaps[0] : null;
 
   return (
@@ -184,7 +165,7 @@ export default function GapRepairModal({
     }}>
       <div style={{
         position:"absolute", inset:0,
-        background:"rgba(10,10,10,.55)",
+        background:"rgba(15, 15, 18,.55)",
         backdropFilter:"blur(8px)",
         WebkitBackdropFilter:"blur(8px)",
         animation:"cvfFadeIn 200ms ease-out",
@@ -199,14 +180,14 @@ export default function GapRepairModal({
       }}>
         {/* iOS handle */}
         <div style={{
-          width:40, height:4, background:Gray200,
+          width:40, height:4, background:Hairline,
           borderRadius:RadiusPill,
           margin:"10px auto 6px", flexShrink:0,
         }}/>
         {/* Header editorial */}
         <div style={{
           padding:"6px 24px 14px",
-          borderBottom:"0.5px solid "+Gray200, flexShrink:0,
+          borderBottom:"0.5px solid "+Hairline, flexShrink:0,
           display:"flex", alignItems:"flex-start",
           justifyContent:"space-between", gap:12,
         }}>
@@ -214,7 +195,7 @@ export default function GapRepairModal({
             <div style={{
               fontSize:11, fontWeight:600,
               letterSpacing:"0.12em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:4,
+              color:Coral, marginBottom:4,
             }}>{T.gr_eyebrow}</div>
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -222,25 +203,37 @@ export default function GapRepairModal({
             }}>
               {T.gr_title_a}
               {" "}<em style={{
-                fontStyle:"italic", color:Coral,
+                fontStyle:"italic",
+                background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
               }}>{T.gr_title_em}</em>
               {" "}{T.gr_title_b}
             </div>
             <div style={{
-              fontSize:12, color:Gray600, marginTop:4,
+              fontSize:12, color:InkMuted, marginTop:4,
               lineHeight:1.5,
             }}>{T.gr_sub}</div>
           </div>
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
-              background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:Gray600,
-              border:"0.5px solid "+Gray200,
+              background:Paper, borderRadius:"50%",
+              width:32, height:32, color:InkMuted,
+              border:"0.5px solid "+Hairline,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,
               opacity: loading ? 0.4 : 1,
+              cursor: loading ? "not-allowed" : "pointer",
             })
-          }}>x</button>
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
         </div>
 
         <div style={{
@@ -254,11 +247,11 @@ export default function GapRepairModal({
             <div style={{
               padding:"40px 20px", textAlign:"center",
               background:Paper, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+              border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
             }}>
               <div style={{
                 width:42, height:42, margin:"0 auto 14px",
-                border:"3px solid "+Gray200, borderTopColor:Coral,
+                border:"3px solid "+Hairline, borderTopColor:Purple,
                 borderRadius:"50%",
                 animation:"cvfSpin 1s linear infinite",
               }}/>
@@ -267,7 +260,7 @@ export default function GapRepairModal({
                 color:Ink, letterSpacing:"-0.01em",
               }}>{T.gr_running}</div>
               <div style={{
-                fontSize:12, color:Gray600, marginTop:6,
+                fontSize:12, color:InkMuted, marginTop:6,
               }}>{T.gr_running_sub}</div>
             </div>
           )}
@@ -285,7 +278,7 @@ export default function GapRepairModal({
                 color:Ink, letterSpacing:"-0.01em", marginBottom:6,
               }}>{T.gr_unparsable}</div>
               <div style={{
-                fontSize:12, color:Gray600, lineHeight:1.5,
+                fontSize:12, color:InkMuted, lineHeight:1.5,
               }}>{T.gr_unparsable_sub}</div>
             </div>
           )}
@@ -303,7 +296,7 @@ export default function GapRepairModal({
                 color:Ink, letterSpacing:"-0.01em", marginBottom:6,
               }}>{T.gr_no_gaps_title}</div>
               <div style={{
-                fontSize:13, color:Gray600, lineHeight:1.5,
+                fontSize:13, color:InkMuted, lineHeight:1.5,
               }}>{T.gr_no_gaps_sub}</div>
             </div>
           )}
@@ -311,22 +304,20 @@ export default function GapRepairModal({
           {/* Gaps detected: list + strategies */}
           {!loading && !hasMostlyUnparsable && !noGaps && (
             <>
-              {/* Detected gaps section */}
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:10,
+                color:Coral, marginBottom:10,
               }}>{T.gr_section_results}</div>
 
               {gaps.map((g, i) => (
                 <GapCard key={i} gap={g} T={T}/>
               ))}
 
-              {/* Strategies section */}
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginTop:24, marginBottom:10,
+                color:Coral, marginTop:24, marginBottom:10,
               }}>{T.gr_section_strategies}</div>
 
               {/* Strategy 1 : year-only format */}
@@ -342,13 +333,13 @@ export default function GapRepairModal({
                   sub={T.gr_strat_year_sub}
                   warn={T.gr_strat_year_warn}
                   btnLabel={T.gr_strat_year_btn}
-                  accent={yearStrategy.allDisappear ? Green : GoldDeep}
-                  accentBg={yearStrategy.allDisappear ? GreenSoft : "rgba(201,169,110,.15)"}
+                  accent={yearStrategy.allDisappear ? Green : Coral}
+                  accentBg={yearStrategy.allDisappear ? GreenSoft : CoralSoft}
                   onApply={onApplyYearOnly}
                 />
               )}
 
-              {/* Strategy 2 : legitimate extend (one card per first gap) */}
+              {/* Strategy 2 : legitimate extend */}
               {firstGapForExtend && onApplyExtend && (
                 <StrategyCard
                   T={T}
@@ -363,13 +354,13 @@ export default function GapRepairModal({
                   sub={T.gr_strat_extend_sub}
                   warn={T.gr_strat_extend_warn}
                   btnLabel={T.gr_strat_extend_btn}
-                  accent={GoldDeep}
-                  accentBg={"rgba(201,169,110,.15)"}
+                  accent={Coral}
+                  accentBg={CoralSoft}
                   onApply={()=>onApplyExtend(firstGapForExtend)}
                 />
               )}
 
-              {/* Strategy 3 : group experiences (if applicable) */}
+              {/* Strategy 3 : group experiences */}
               {groupOps && groupOps.length > 0 && groupOps.map((op, i) => (
                 <StrategyCard
                   key={"grp"+i}
@@ -385,24 +376,24 @@ export default function GapRepairModal({
                 />
               ))}
 
-              {/* Strategy 4 : functional format (info only, no apply) */}
+              {/* Strategy 4 : functional format (info only) */}
               <div style={{
                 padding:"14px 16px",
                 background:CreamSoft, borderRadius:RadiusMd,
-                border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+                border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
                 marginBottom:12, fontFamily:Sans,
               }}>
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  color:Gray600, marginBottom:6,
+                  color:InkMuted, marginBottom:6,
                 }}>{T.gr_strat_functional}</div>
                 <div style={{
                   fontFamily:Serif, fontSize:14, fontWeight:500,
                   color:Ink, marginBottom:6,
                 }}>{T.gr_strat_functional_sub}</div>
                 <div style={{
-                  fontSize:11, color:Gray600, lineHeight:1.5,
+                  fontSize:11, color:InkMuted, lineHeight:1.5,
                   fontStyle:"italic",
                 }}>{T.gr_strat_functional_help}</div>
               </div>
@@ -414,7 +405,7 @@ export default function GapRepairModal({
                 <div style={{
                   padding:"18px 18px",
                   background:Paper, borderRadius:RadiusMd,
-                  border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+                  border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
                   textAlign:"center",
                 }}>
                   <div style={{
@@ -422,7 +413,7 @@ export default function GapRepairModal({
                     color:Ink, marginBottom:4,
                   }}>{T.gr_no_strategies}</div>
                   <div style={{
-                    fontSize:12, color:Gray600, lineHeight:1.5,
+                    fontSize:12, color:InkMuted, lineHeight:1.5,
                   }}>{T.gr_no_strategies_sub}</div>
                 </div>
               )}

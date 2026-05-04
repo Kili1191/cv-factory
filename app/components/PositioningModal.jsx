@@ -1,24 +1,16 @@
 "use client";
 
-// CV Factory v17 - PositioningModal (extracted + modernized v17).
+// Nuvi v3 - PositioningModal (refondu palette Nuvi).
 //
 // Affiche le resultat de l'analyse de positionnement carriere :
 // 3 angles strategiques avec titre, accroche, points cles, cible, salaire.
-//
-// Props :
-//   T          : i18n
-//   result     : { angles: [{title, salary_range, credibility, key_points, target_employers, new_summary}] } | null
-//   loading    : bool
-//   onAdopt(a) : applique l'angle (titre + summary) au CV
-//   onClose()
 
 import { useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradGold, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
@@ -39,7 +31,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.pm_sub}</p>
 
@@ -48,11 +40,11 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
         <div style={{
           padding:"40px 20px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
         }}>
           <div style={{
             width:42, height:42, margin:"0 auto 14px",
-            border:"3px solid "+Gray200, borderTopColor:Purple,
+            border:"3px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -61,7 +53,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.pm_loading}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:6,
+            fontSize:12, color:InkMuted, marginTop:6,
           }}>{T.pm_loading_sub}</div>
         </div>
       )}
@@ -71,7 +63,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
         <div key={i} style={{
           padding:"18px 20px",
           background: i === 0 ? CreamSoft : Paper,
-          border:"0.5px solid "+(i === 0 ? Gold : Gray200),
+          border:"0.5px solid "+(i === 0 ? Purple : Hairline),
           borderRadius:RadiusMd,
           boxShadow:ShadowSm,
           marginBottom:14,
@@ -84,7 +76,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
           }}>
             <span style={{
               fontSize:10, fontWeight:600, color:"#fff",
-              background:GoldDeep,
+              background:Coral,
               padding:"4px 10px", borderRadius:RadiusPill,
               letterSpacing:"0.06em", textTransform:"uppercase",
               fontFamily:Sans,
@@ -111,29 +103,29 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
           {/* Credibility */}
           {a.credibility && (
             <div style={{
-              fontSize:13, color:Gray600, lineHeight:1.55,
+              fontSize:13, color:InkMuted, lineHeight:1.55,
               marginBottom:14,
             }}>{a.credibility}</div>
           )}
 
-          {/* Points cles */}
+          {/* Points cles - eyebrow Coral, plus + violet */}
           {a.key_points && a.key_points.length > 0 && (
             <div style={{marginBottom:14}}>
               <div style={{
                 fontSize:10, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:6,
+                color:Coral, marginBottom:6,
                 fontFamily:Sans,
               }}>{T.pm_highlight}</div>
               {a.key_points.map((p, j) => (
                 <div key={j} style={{
                   fontSize:13, color:Ink, lineHeight:1.55,
-                  marginBottom:4, paddingLeft:10,
+                  marginBottom:4, paddingLeft:14,
                   position:"relative",
                 }}>
                   <span style={{
                     position:"absolute", left:0, top:0,
-                    color:Gold, fontWeight:600,
+                    color:Purple, fontWeight:600,
                   }}>+</span>
                   {p}
                 </div>
@@ -145,9 +137,9 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
           {a.target_employers && (
             <div style={{
               padding:"10px 14px",
-              background:Gray100,
+              background:Hairline,
               borderRadius:RadiusSm,
-              fontSize:12, color:Gray600, lineHeight:1.55,
+              fontSize:12, color:InkMuted, lineHeight:1.55,
               marginBottom:12,
             }}>
               <span style={{fontWeight:600, color:Ink}}>{T.pm_target}:</span>
@@ -159,27 +151,30 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
           {a.new_summary && (
             <div style={{
               padding:"12px 14px",
-              background:"#fff8eb",
-              border:"0.5px solid "+Gold,
+              background:CoralSoft,
+              border:"0.5px solid "+Coral,
               borderRadius:RadiusSm,
               marginBottom:12,
             }}>
               <div style={{
                 fontFamily:Serif, fontStyle:"italic",
-                fontSize:13, color:"#664d00", lineHeight:1.55,
+                fontSize:13, color:"#7f1d1d", lineHeight:1.55,
                 letterSpacing:"-0.005em",
               }}>"{a.new_summary}"</div>
             </div>
           )}
 
-          {/* Adopter */}
+          {/* Adopter - gradient violet→magenta */}
           <button onClick={()=>onAdopt(a)} style={{
             ...B({
               width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
-              background:GradGold, color:"#fff",
+              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+              color:"#fff",
               fontFamily:Sans, fontWeight:600, fontSize:13,
+              border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
               transition:"all 200ms ease-out",
+              boxShadow:"0 2px 8px rgba(91, 61, 245, 0.2)",
             })
           }}>
             {T.pm_adopt}

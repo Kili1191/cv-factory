@@ -1,26 +1,28 @@
 "use client";
 
-// CV Factory — TargetHub
-// Extrait de page.jsx pour permettre le lazy loading.
+// Nuvi v3 - TargetHub (refondu palette Nuvi).
+//
+// Hub des super-pouvoirs pour adapter le CV a une offre.
 
 import {
-  Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradPurple, Gray100,
-  Gray200, Gray400, Gray600, Green, GreenSoft, Ink, Paper, Purple,
-  PurpleSoft, RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B,
+  Coral, CoralSoft, Cream, CreamSoft, Hairline, Ink, InkMuted,
+  Gray100, Gray200, Gray400, Gray600,
+  Green, GreenSoft, Magenta, Paper, Purple, PurpleSoft,
+  RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B,
 } from "./sharedTokens";
 
 function TargetHub({ T, cvIsEmpty, offerResult, locale,
   onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack, onOpenInterview, onOpenMultiCV }) {
 
-  // Couleur du score (vert/jaune/orange/rouge)
+  // Couleur du score.
   const scoreColor = (s) => {
     if (s >= 80) return Green;
-    if (s >= 65) return GoldDeep;
+    if (s >= 65) return Purple;
     if (s >= 50) return Coral;
     return "#dc2626";
   };
 
-  // Cas vide : rien a cibler tant qu'on n'a pas de CV.
+  // Cas vide.
   if (cvIsEmpty) {
     return (
       <div style={{fontFamily:Sans, padding:"8px 4px"}}>
@@ -32,13 +34,13 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         }}>{T.ph_target}</h1>
         <div style={{
           background:Paper, borderRadius:RadiusLg,
-          padding:"24px 22px", border:"0.5px solid "+Gray200,
+          padding:"24px 22px", border:"0.5px solid "+Hairline,
           boxShadow:ShadowSm,
         }}>
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:8,
+            color:Coral, marginBottom:8,
           }}>{T.hub_eyebrow}</div>
           <p style={{
             fontFamily:Serif, fontWeight:400,
@@ -62,7 +64,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           <path d="m9 12 2 2 4-4"/>
         </svg>
       ),
-      iconBg:"rgba(201,169,110,.15)", iconColor:GoldDeep,
+      iconBg:CoralSoft, iconColor:Coral,
       title:T.hub_audit, desc:T.hub_audit_desc, onClick:onOpenAudit,
     },
     {
@@ -117,22 +119,18 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         margin:"0 0 16px",
       }}>{T.ph_target}</h1>
 
-      {/* Hero card Ink/Gold avec radial gradient */}
+      {/* Hero card - gradient violet→magenta */}
       <div style={{
         position:"relative", overflow:"hidden",
-        background:Ink, color:Cream,
+        background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+        color:"#fff",
         borderRadius:RadiusLg,
         padding:"24px 22px", marginBottom:14,
       }}>
         <div style={{
-          position:"absolute", inset:0,
-          background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(201,169,110,.4) 0%, transparent 60%)",
-          pointerEvents:"none",
-        }}/>
-        <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.12em", textTransform:"uppercase",
-          color:Gold, marginBottom:10, position:"relative",
+          color:"rgba(255,255,255,0.85)", marginBottom:10, position:"relative",
         }}>{T.hub_eyebrow}</div>
         <h2 style={{
           fontFamily:Serif, fontWeight:400,
@@ -142,7 +140,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         }}>
           {T.hub_title_a}
           {" "}
-          <em style={{fontStyle:"italic", color:Gold}}>
+          <em style={{fontStyle:"italic", color:"#fff", textDecoration:"underline", textUnderlineOffset:4, textDecorationColor:"rgba(255,255,255,0.5)"}}>
             {T.hub_title_em}
           </em>
           {", "}
@@ -151,12 +149,13 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         <button onClick={onOpenOffer} style={{
           ...B({
             display:"inline-flex", alignItems:"center", gap:8,
-            background:Cream, color:Ink,
+            background:"#fff", color:Purple,
             padding:"13px 22px", borderRadius:RadiusPill,
             fontSize:14, fontWeight:600,
-            fontFamily:Sans,
+            fontFamily:Sans, border:"none",
             position:"relative",
             transition:"all 200ms ease-out",
+            boxShadow:"0 4px 12px rgba(0,0,0,0.15)",
           })
         }}>
           {hasOffer ? T.hub_cta_change : T.hub_cta_paste}
@@ -175,7 +174,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             width:"100%", textAlign:"left",
             background:Paper, borderRadius:RadiusLg,
             padding:"22px 22px", marginBottom:14,
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
             boxShadow:ShadowSm,
             fontFamily:Sans, color:Ink,
             transition:"all 200ms ease-out",
@@ -187,7 +186,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               fontFamily:Serif, fontWeight:300,
               fontSize:56, lineHeight:1,
               letterSpacing:"-0.04em",
-              background:GradPurple,
+              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
               WebkitBackgroundClip:"text",
               backgroundClip:"text",
               color:"transparent",
@@ -197,7 +196,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Gray400, marginBottom:4,
+                color:InkMuted, marginBottom:4,
               }}>{T.hub_match_label}</div>
               <div style={{
                 fontFamily:Serif, fontSize:15, fontWeight:500,
@@ -210,19 +209,19 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
                 {offerResult.company ? " - " + offerResult.company : ""}
               </div>
               <div style={{
-                width:"100%", height:6, background:Gray100,
+                width:"100%", height:6, background:Hairline,
                 borderRadius:RadiusPill, overflow:"hidden",
               }}>
                 <div style={{
                   height:"100%",
                   width:Math.max(2, Math.min(100, offerResult.match_score)) + "%",
-                  background:GradPurple,
+                  background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
                   borderRadius:RadiusPill,
                 }}/>
               </div>
             </div>
           </div>
-          {/* Tags mots-cles a integrer */}
+          {/* Tags mots-cles a integrer - terracotta */}
           {(offerResult.keywords_to_add || []).length > 0 && (
             <div style={{
               display:"flex", flexWrap:"wrap", gap:6,
@@ -232,8 +231,8 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
                 <span key={i} style={{
                   padding:"5px 11px", borderRadius:RadiusPill,
                   fontSize:11, fontWeight:500,
-                  background:Ink, color:Gold,
-                  border:"0.5px solid "+Ink,
+                  background:CoralSoft, color:Coral,
+                  border:"0.5px solid "+Coral,
                 }}>+ {k}</span>
               ))}
             </div>
@@ -245,7 +244,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:GoldDeep, marginTop:18, marginBottom:10,
+        color:Coral, marginTop:18, marginBottom:10,
       }}>{T.hub_subhead}</div>
 
       {/* Grille 2x2 super-pouvoirs */}
@@ -259,7 +258,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             ...B({
               background:Paper, borderRadius:RadiusMd,
               padding:"18px 16px",
-              border:"0.5px solid "+Gray200,
+              border:"0.5px solid "+Hairline,
               transition:"all 200ms ease-out",
               minHeight:130,
               display:"flex", flexDirection:"column",
@@ -281,38 +280,35 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
                 color:Ink, marginBottom:4,
               }}>{p.title}</div>
               <div style={{
-                fontSize:11, color:Gray600, lineHeight:1.4,
+                fontSize:11, color:InkMuted, lineHeight:1.4,
               }}>{p.desc}</div>
             </div>
           </button>
         ))}
       </div>
 
-      {/* 5e super-pouvoir : Preparer l'entretien (pleine largeur, accent fort) */}
+      {/* 5e super-pouvoir : Preparer l'entretien (gradient violet→magenta) */}
       {onOpenInterview && (
         <button onClick={onOpenInterview} style={{
           ...B({
             display:"flex", alignItems:"center", gap:14,
             width:"100%",
-            background:Ink, color:Cream,
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:"#fff",
             borderRadius:RadiusMd,
             padding:"16px 18px",
             marginTop:12,
-            border:"0.5px solid "+Ink,
+            border:"none",
             textAlign:"left", fontFamily:Sans,
             position:"relative", overflow:"hidden",
             transition:"all 200ms ease-out",
+            boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
           <div style={{
-            position:"absolute", inset:0,
-            background:"radial-gradient(ellipse 80% 100% at 0% 100%, rgba(91,61,245,.35) 0%, transparent 60%)",
-            pointerEvents:"none",
-          }}/>
-          <div style={{
             width:40, height:40, borderRadius:11,
             display:"flex", alignItems:"center", justifyContent:"center",
-            background:"rgba(245,241,232,.15)", color:Cream,
+            background:"rgba(255,255,255,0.2)", color:"#fff",
             flexShrink:0, position:"relative",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -325,14 +321,14 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             <div style={{
               fontFamily:Serif, fontWeight:500,
               fontSize:16, letterSpacing:"-0.01em",
-              color:Cream, marginBottom:3,
+              color:"#fff", marginBottom:3,
             }}>{T.iv_btn || "Preparer l'entretien"}</div>
             <div style={{
-              fontSize:11, color:Gold, lineHeight:1.4,
-            }}>{T.iv_btn_desc || "L'IA simule le recruteur typique de ton marche"}</div>
+              fontSize:11, color:"rgba(255,255,255,0.85)", lineHeight:1.4,
+            }}>{T.iv_btn_desc || "Nuvi simule le recruteur typique de ton marche"}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke={Gold} strokeWidth="2.5"
+            stroke="#fff" strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round"
             style={{flexShrink:0, position:"relative"}}>
             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
@@ -340,7 +336,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         </button>
       )}
 
-      {/* 6e super-pouvoir : Multi-CV strategie (pleine largeur, accent Gold) */}
+      {/* 6e super-pouvoir : Multi-CV strategie (terracotta accent) */}
       {onOpenMultiCV && (
         <button onClick={onOpenMultiCV} style={{
           ...B({
@@ -350,7 +346,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             borderRadius:RadiusMd,
             padding:"16px 18px",
             marginTop:10,
-            border:"0.5px solid "+Gold,
+            border:"0.5px solid "+Coral,
             textAlign:"left", fontFamily:Sans,
             position:"relative", overflow:"hidden",
             boxShadow:ShadowSm,
@@ -358,14 +354,9 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           })
         }}>
           <div style={{
-            position:"absolute", inset:0,
-            background:"radial-gradient(ellipse 80% 100% at 100% 100%, rgba(201,169,110,.18) 0%, transparent 60%)",
-            pointerEvents:"none",
-          }}/>
-          <div style={{
             width:40, height:40, borderRadius:11,
             display:"flex", alignItems:"center", justifyContent:"center",
-            background:CreamSoft, color:GoldDeep,
+            background:CoralSoft, color:Coral,
             flexShrink:0, position:"relative",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -384,11 +375,11 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               color:Ink, marginBottom:3,
             }}>{T.mc_btn || "Quel CV envoyer ?"}</div>
             <div style={{
-              fontSize:11, color:Gray600, lineHeight:1.4,
-            }}>{T.mc_btn_desc || "L'IA recommande la meilleure version"}</div>
+              fontSize:11, color:InkMuted, lineHeight:1.4,
+            }}>{T.mc_btn_desc || "Nuvi recommande la meilleure version"}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke={GoldDeep} strokeWidth="2.5"
+            stroke={Coral} strokeWidth="2.5"
             strokeLinecap="round" strokeLinejoin="round"
             style={{flexShrink:0, position:"relative"}}>
             <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>

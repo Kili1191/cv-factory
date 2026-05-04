@@ -1,12 +1,12 @@
 "use client";
 
-// CV Factory — ScorePanel
-// Extrait de page.jsx pour permettre le lazy loading.
+// Nuvi v3 - ScorePanel (refondu palette Nuvi).
 
 import { useState } from "react";
 import ScoreDashboard from "./ScoreDashboard";
 import {
-  Coral, Cream, GoldDeep, Gray100, Gray200, Gray600, Green, Ink, Paper,
+  Coral, CoralSoft, Cream, CreamSoft, Hairline, InkMuted, Magenta,
+  Gray100, Gray200, Gray400, Gray600, Green, Ink, Paper, Purple, PurpleSoft,
   RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B,
 } from "./sharedTokens";
 
@@ -14,9 +14,9 @@ import {
 // Helper local : couleur de fond selon le score
 function scoreBg(s) {
   if (s >= 80) return "#dcfce7";
-  if (s >= 65) return "rgba(201,169,110,.15)";
-  if (s >= 50) return "#fff1ed";
-  return "#fff1ed";
+  if (s >= 65) return PurpleSoft;
+  if (s >= 50) return CoralSoft;
+  return CoralSoft;
 }
 
 function ScorePanel({ cv, apiKey, notify, layout, T,
@@ -58,18 +58,20 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
     setQuickRes({score,checks:C,bycat});
   };
 
-  const sc = (s) => { if (s >= 80) return Green; if (s >= 65) return GoldDeep; if (s >= 50) return Coral; return "#dc2626"; };
+  const sc = (s) => { if (s >= 80) return Green; if (s >= 65) return Purple; if (s >= 50) return Coral; return "#dc2626"; };
 
   return (
     <div style={{fontFamily:Sans}}>
-      {/* Tabs pills */}
+      {/* Tabs pills - active = gradient violet→magenta */}
       <div style={{display:"flex", gap:6, marginBottom:18}}>
         <button onClick={()=>setMode("dashboard")} style={{
           ...B({
             flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background: mode==="dashboard" ? Ink : Paper,
-            color: mode==="dashboard" ? Cream : Ink,
-            border:"0.5px solid "+(mode==="dashboard" ? Ink : Gray200),
+            background: mode==="dashboard"
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : Paper,
+            color: mode==="dashboard" ? "#fff" : Ink,
+            border:"0.5px solid "+(mode==="dashboard" ? "transparent" : Hairline),
             fontFamily:Sans, fontWeight:mode==="dashboard"?600:500, fontSize:12,
             transition:"all 180ms ease-out",
           })
@@ -77,9 +79,11 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
         <button onClick={()=>setMode("quick")} style={{
           ...B({
             flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background: mode==="quick" ? Ink : Paper,
-            color: mode==="quick" ? Cream : Ink,
-            border:"0.5px solid "+(mode==="quick" ? Ink : Gray200),
+            background: mode==="quick"
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : Paper,
+            color: mode==="quick" ? "#fff" : Ink,
+            border:"0.5px solid "+(mode==="quick" ? "transparent" : Hairline),
             fontFamily:Sans, fontWeight:mode==="quick"?600:500, fontSize:12,
             transition:"all 180ms ease-out",
           })
@@ -100,15 +104,18 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
 
       {mode === "quick" && (
         <div>
+          {/* CTA principal - gradient violet→magenta */}
           <button onClick={computeQuick} style={{
             ...B({
               width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-              background: "linear-gradient(135deg,#0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)",
-              color:Cream,
+              background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+              color:"#fff",
               fontFamily:Sans, fontWeight:600, fontSize:14,
               marginBottom: 18,
+              border:"none",
               transition:"all 200ms ease-out",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
+              boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
             })
           }}>
             {quickRes ? "Recalculer" : "Analyser mon CV maintenant"}
@@ -121,12 +128,12 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
 
           {quickRes && (
             <>
-              {/* Score global rapide */}
+              {/* Score global rapide - hero card */}
               <div style={{
                 padding: "20px 22px",
                 background: scoreBg(quickRes.score),
                 borderRadius: RadiusMd, marginBottom: 18,
-                border:"0.5px solid "+Gray200,
+                border:"0.5px solid "+Hairline,
                 boxShadow: ShadowSm,
                 display:"flex", alignItems:"center", gap:18,
               }}>
@@ -140,7 +147,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
                   <div style={{
                     fontSize: 11, fontWeight: 600,
                     letterSpacing: "0.1em", textTransform: "uppercase",
-                    color: Gray600, fontFamily: Sans, marginBottom: 4,
+                    color: InkMuted, fontFamily: Sans, marginBottom: 4,
                   }}>SCORE</div>
                   <div style={{
                     fontFamily: Serif, fontSize: 14, fontWeight: 400,
@@ -154,17 +161,17 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
                 </div>
               </div>
 
-              {/* Detail par categorie */}
+              {/* Detail par categorie - eyebrow Coral */}
               <div style={{
                 fontSize: 11, fontWeight: 600,
                 letterSpacing: "0.1em", textTransform: "uppercase",
-                color: GoldDeep, marginBottom: 10,
+                color: Coral, marginBottom: 10,
                 fontFamily: Sans,
               }}>Detail</div>
               <div style={{
                 background: Paper,
                 borderRadius: RadiusMd,
-                border: "0.5px solid "+Gray200,
+                border: "0.5px solid "+Hairline,
                 boxShadow: ShadowSm,
                 padding: "8px 0",
               }}>
@@ -172,7 +179,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
                   <div key={i} style={{
                     padding: "6px 16px",
                     display: "flex", alignItems: "flex-start", gap: 10,
-                    borderBottom: i < quickRes.checks.length - 1 ? "0.5px solid "+Gray100 : "none",
+                    borderBottom: i < quickRes.checks.length - 1 ? "0.5px solid "+Hairline : "none",
                   }}>
                     <span style={{
                       fontSize: 13, fontWeight: 700,
@@ -189,7 +196,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
                       }}>{c.cat}: {c.label}</span>
                       {!c.ok && (
                         <div style={{
-                          fontSize: 11, color: Gray600,
+                          fontSize: 11, color: InkMuted,
                           marginTop: 2, fontFamily: Sans,
                           lineHeight: 1.4,
                         }}>{c.tip}</div>

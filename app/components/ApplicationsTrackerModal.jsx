@@ -1,51 +1,29 @@
 "use client";
 
-// CV Factory v17 - ApplicationsTrackerModal
+// Nuvi v3 - ApplicationsTrackerModal (refondu palette Nuvi).
 //
 // Suivi des candidatures de l'utilisateur. CRUD local en localStorage.
-// Aucun stockage cote serveur, isolation totale par utilisateur.
-//
-// Shape d'une candidature :
-//   {
-//     id: number (timestamp),
-//     company: string,
-//     role: string,
-//     date: "YYYY-MM-DD",
-//     status: "applied"|"phone"|"interview"|"offer"|"rejected"|"ghosted"|"accepted",
-//     notes: string,
-//     link: string,
-//     created: timestamp
-//   }
-//
-// Props :
-//   T              : i18n
-//   applications   : tableau d'apps
-//   onAdd(app)     : ajoute une nouvelle candidature
-//   onUpdate(app)  : met a jour une candidature existante (par id)
-//   onDelete(id)   : supprime
-//   onClose()
 
 import { useState, useEffect, useMemo } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradDark, GradPurple, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
   switch (status) {
-    case "applied":   return { fg:Gold,    bg:CreamSoft,   label:T.ap_status_applied };
+    case "applied":   return { fg:Coral,   bg:CoralSoft,   label:T.ap_status_applied };
     case "phone":     return { fg:Purple,  bg:PurpleSoft,  label:T.ap_status_phone };
     case "interview": return { fg:Purple,  bg:PurpleSoft,  label:T.ap_status_interview };
     case "offer":     return { fg:Green,   bg:GreenSoft,   label:T.ap_status_offer };
     case "accepted":  return { fg:"#fff",  bg:Green,       label:T.ap_status_accepted };
     case "rejected":  return { fg:Coral,   bg:CoralSoft,   label:T.ap_status_rejected };
-    case "ghosted":   return { fg:Gray600, bg:Gray100,     label:T.ap_status_ghosted };
-    default:          return { fg:Gray600, bg:Gray100,     label:status || "?" };
+    case "ghosted":   return { fg:InkMuted,bg:Hairline,    label:T.ap_status_ghosted };
+    default:          return { fg:InkMuted,bg:Hairline,    label:status || "?" };
   }
 }
 
@@ -57,7 +35,7 @@ function StatCard({ label, value, color }) {
       padding:"12px 14px",
       background:Paper,
       borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200,
+      border:"0.5px solid "+Hairline,
       boxShadow:ShadowSm,
       textAlign:"center",
       fontFamily:Sans,
@@ -70,7 +48,7 @@ function StatCard({ label, value, color }) {
       <div style={{
         fontSize:10, fontWeight:600,
         letterSpacing:"0.08em", textTransform:"uppercase",
-        color:Gray600, marginTop:4,
+        color:InkMuted, marginTop:4,
       }}>{label}</div>
     </div>
   );
@@ -93,11 +71,11 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
   const labelStyle = {
     display:"block", fontSize:11, fontWeight:600,
     letterSpacing:"0.08em", textTransform:"uppercase",
-    color:GoldDeep, marginBottom:6, fontFamily:Sans,
+    color:Coral, marginBottom:6, fontFamily:Sans,
   };
   const inputStyle = {
     width:"100%", padding:"10px 12px", borderRadius:RadiusSm,
-    border:"1px solid "+Gray200, fontSize:13, color:Ink,
+    border:"1px solid "+Hairline, fontSize:13, color:Ink,
     background:Paper, fontFamily:Sans,
     outline:"none", boxSizing:"border-box",
   };
@@ -106,7 +84,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
     <div style={{
       padding:"16px 18px",
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gold, boxShadow:ShadowSm,
+      border:"0.5px solid "+Purple, boxShadow:ShadowSm,
       marginBottom:16,
     }}>
       <div style={{marginBottom:12}}>
@@ -156,17 +134,21 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
         <button onClick={onCancel} style={{
           ...B({
             flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background:Paper, color:Gray600,
-            border:"0.5px solid "+Gray200,
+            background:Paper, color:InkMuted,
+            border:"0.5px solid "+Hairline,
             fontSize:13, fontWeight:500, fontFamily:Sans,
           })
         }}>{T.ap_cancel}</button>
         <button onClick={()=>onSave(form)} disabled={!canSave} style={{
           ...B({
             flex:1, padding:"10px 14px", borderRadius:RadiusPill,
-            background: canSave ? Ink : Gray200,
-            color: canSave ? Cream : Gray600,
+            background: canSave
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : Hairline,
+            color: canSave ? "#fff" : InkMuted,
             fontSize:13, fontWeight:600, fontFamily:Sans,
+            border:"none",
+            boxShadow: canSave ? "0 2px 8px rgba(91, 61, 245, 0.2)" : "none",
           })
         }}>{T.ap_save}</button>
       </div>
@@ -181,7 +163,7 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
     <div style={{
       padding:"14px 16px",
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+      border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
       marginBottom:10, fontFamily:Sans,
     }}>
       {/* Header avec entreprise + status badge */}
@@ -195,7 +177,7 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
             color:Ink, letterSpacing:"-0.01em", lineHeight:1.3,
           }}>{app.company || "?"}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:2,
+            fontSize:12, color:InkMuted, marginTop:2,
           }}>{app.role || "?"}</div>
         </div>
         <span style={{
@@ -209,7 +191,7 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
       {/* Date + lien */}
       <div style={{
         display:"flex", gap:10, alignItems:"center",
-        fontSize:11, color:Gray600, marginBottom: app.notes ? 8 : 10,
+        fontSize:11, color:InkMuted, marginBottom: app.notes ? 8 : 10,
       }}>
         {app.date && <span>{app.date}</span>}
         {app.link && (
@@ -238,8 +220,8 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
         <button onClick={()=>onEdit(app)} style={{
           ...B({
             flex:1, padding:"7px 12px", borderRadius:RadiusPill,
-            background:CreamSoft, color:GoldDeep,
-            border:"0.5px solid "+Gold,
+            background:CreamSoft, color:Coral,
+            border:"0.5px solid "+Coral,
             fontSize:11, fontWeight:600, fontFamily:Sans,
           })
         }}>{T.ap_edit}</button>
@@ -261,7 +243,6 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
   const [editingApp, setEditingApp] = useState(null);
   const [filter, setFilter] = useState("all");
 
-  // Esc to close
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
     if (typeof window !== "undefined") {
@@ -286,7 +267,6 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
       v = v.filter(a => a.status === filter);
     }
     return [...v].sort((a, b) => {
-      // Sort by date desc, fallback to created desc
       const da = a.date || "";
       const db = b.date || "";
       if (da !== db) return db.localeCompare(da);
@@ -322,7 +302,11 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
         <>
           {T.ap_title_a}
           {" "}<em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
           }}>{T.ap_title_em}</em>
           {T.ap_title_b}
         </>
@@ -330,7 +314,7 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.ap_sub}</p>
 
@@ -338,22 +322,25 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
       {applications.length > 0 && (
         <div style={{display:"flex", gap:8, marginBottom:16}}>
           <StatCard label={T.ap_stats_total}    value={stats.total}    color={Ink}/>
-          <StatCard label={T.ap_stats_active}   value={stats.active}   color={GoldDeep}/>
+          <StatCard label={T.ap_stats_active}   value={stats.active}   color={Purple}/>
           <StatCard label={T.ap_stats_offers}   value={stats.offers}   color={Green}/>
           <StatCard label={T.ap_stats_rejected} value={stats.rejected} color={Coral}/>
         </div>
       )}
 
-      {/* Bouton add */}
+      {/* Bouton add - gradient violet→magenta */}
       {!showForm && (
         <button onClick={()=>{ setEditingApp(null); setShowForm(true); }} style={{
           ...B({
             width:"100%", padding:"13px 18px", borderRadius:RadiusPill,
-            background:GradDark, color:Cream,
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:"#fff",
             fontFamily:Sans, fontWeight:600, fontSize:13,
+            border:"none",
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             marginBottom:16,
             transition:"all 200ms ease-out",
+            boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -374,7 +361,7 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
         />
       )}
 
-      {/* Filtre par status */}
+      {/* Filtre par status - active = gradient violet→magenta */}
       {applications.length > 0 && !showForm && (
         <div style={{
           display:"flex", gap:6, marginBottom:14,
@@ -390,9 +377,11 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
             <button key={k} onClick={()=>setFilter(k)} style={{
               ...B({
                 padding:"6px 12px", borderRadius:RadiusPill,
-                background: filter === k ? Ink : Paper,
-                color: filter === k ? Cream : Gray600,
-                border: "0.5px solid "+(filter === k ? Ink : Gray200),
+                background: filter === k
+                  ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+                  : Paper,
+                color: filter === k ? "#fff" : InkMuted,
+                border: "0.5px solid "+(filter === k ? "transparent" : Hairline),
                 fontSize:11, fontWeight:500, fontFamily:Sans,
                 whiteSpace:"nowrap", flexShrink:0,
                 transition:"all 180ms ease-out",
@@ -407,7 +396,7 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
         <div style={{
           padding:"32px 18px",
           background:CreamSoft, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
+          border:"0.5px solid "+Hairline,
           textAlign:"center",
         }}>
           <div style={{
@@ -415,7 +404,7 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
             color:Ink, letterSpacing:"-0.01em", marginBottom:6,
           }}>{T.ap_empty_title}</div>
           <div style={{
-            fontSize:12, color:Gray600, lineHeight:1.5,
+            fontSize:12, color:InkMuted, lineHeight:1.5,
           }}>{T.ap_empty_sub}</div>
         </div>
       )}

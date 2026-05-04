@@ -1,48 +1,23 @@
 "use client";
 
-// CV Factory v17 - MultiCVStrategyModal
+// Nuvi v3 - MultiCVStrategyModal (refondu palette Nuvi).
 //
 // L'utilisateur a sauvegarde plusieurs versions de son CV. Cet outil prend une
 // offre d'emploi et recommande LA version la plus pertinente a envoyer.
-// Plus malin que Versions (qui est juste du stockage) - ici on a l'analyse IA.
-//
-// Shape attendue de result :
-//   {
-//     recommended_id: number (id de la version recommandee),
-//     recommended_score: number (0-100),
-//     why: "texte explicatif",
-//     alternatives: [
-//       { id: number, score: number, comment: "..." }
-//     ]
-//   }
-//
-// Props :
-//   T              : i18n
-//   versions       : [{ id, name, cv, created }]
-//   apiKey         : string
-//   loading        : bool
-//   result         : recommendation | null
-//   offerText      : string (textarea controlled)
-//   setOfferText   : setter
-//   prefilledOffer : bool
-//   onRun()
-//   onLoadVersion(id)
-//   onClose()
 
 import { useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep,
-  Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
+  Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
+  Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur score.
 function scoreAccent(s) {
   if (s >= 80) return Green;
-  if (s >= 65) return GoldDeep;
+  if (s >= 65) return Purple;
   if (s >= 50) return Coral;
   return "#dc2626";
 }
@@ -69,7 +44,7 @@ export default function MultiCVStrategyModal({
 
   // Version recommandee.
   const recVersion = result && result.recommended_id ? versionById(result.recommended_id) : null;
-  const recAccent = result ? scoreAccent(result.recommended_score || 0) : Gray600;
+  const recAccent = result ? scoreAccent(result.recommended_score || 0) : InkMuted;
 
   return (
     <Sheet
@@ -78,7 +53,11 @@ export default function MultiCVStrategyModal({
         <>
           {T.mc_title_a}
           {" "}<em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip: "text",
+            backgroundClip: "text",
+            color: "transparent",
           }}>{T.mc_title_em}</em>
           {" "}{T.mc_title_b}
         </>
@@ -86,7 +65,7 @@ export default function MultiCVStrategyModal({
       onClose={onClose}
     >
       <p style={{
-        fontSize:13, color:Gray600, lineHeight:1.5,
+        fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.mc_sub}</p>
 
@@ -95,8 +74,8 @@ export default function MultiCVStrategyModal({
         <div style={{
           padding:"24px 18px",
           background:CreamSoft, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
-          textAlign:"center", color:Gray600,
+          border:"0.5px solid "+Hairline,
+          textAlign:"center", color:InkMuted,
           fontSize:13, fontFamily:Sans, lineHeight:1.6,
         }}>{T.mc_no_versions}</div>
       )}
@@ -108,7 +87,7 @@ export default function MultiCVStrategyModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:8, fontFamily:Sans,
+              color:Coral, marginBottom:8, fontFamily:Sans,
             }}>{T.mc_offer_label}</label>
             {prefilledOffer && (
               <div style={{
@@ -129,7 +108,7 @@ export default function MultiCVStrategyModal({
                 width:"100%",
                 padding:"12px 14px",
                 borderRadius:RadiusSm,
-                border:"0.5px solid "+Gray200,
+                border:"0.5px solid "+Hairline,
                 background:Paper,
                 color:Ink, fontSize:13,
                 fontFamily:Sans,
@@ -144,11 +123,15 @@ export default function MultiCVStrategyModal({
           <button onClick={onRun} disabled={!canRun} style={{
             ...B({
               width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-              background: canRun ? GradPurple : Gray200,
-              color: canRun ? "#fff" : Gray600,
+              background: canRun
+                ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+                : Hairline,
+              color: canRun ? "#fff" : InkMuted,
               fontFamily:Sans, fontWeight:600, fontSize:14,
+              border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
               transition:"all 200ms ease-out",
+              boxShadow: canRun ? "0 4px 16px rgba(91, 61, 245, 0.25)" : "none",
             })
           }}>
             {T.mc_run}
@@ -166,11 +149,11 @@ export default function MultiCVStrategyModal({
         <div style={{
           padding:"40px 20px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
         }}>
           <div style={{
             width:42, height:42, margin:"0 auto 14px",
-            border:"3px solid "+Gray200, borderTopColor:Purple,
+            border:"3px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -179,7 +162,7 @@ export default function MultiCVStrategyModal({
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.mc_loading}</div>
           <div style={{
-            fontSize:12, color:Gray600, marginTop:6,
+            fontSize:12, color:InkMuted, marginTop:6,
           }}>{T.mc_loading_sub}</div>
         </div>
       )}
@@ -187,25 +170,21 @@ export default function MultiCVStrategyModal({
       {/* Etat 4 : result */}
       {!loading && result && (
         <>
-          {/* Recommendation hero */}
+          {/* Recommendation hero - gradient violet→magenta */}
           {recVersion && (
             <div style={{
               padding:"20px 22px",
-              background:Ink, color:Cream,
+              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+              color:"#fff",
               borderRadius:RadiusMd, marginBottom:16,
               position:"relative", overflow:"hidden",
               fontFamily:Sans,
             }}>
-              <div style={{
-                position:"absolute", inset:0,
-                background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(91,61,245,.45) 0%, transparent 60%)",
-                pointerEvents:"none",
-              }}/>
               <div style={{position:"relative"}}>
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.12em", textTransform:"uppercase",
-                  color:Purple, marginBottom:6,
+                  color:"rgba(255,255,255,0.85)", marginBottom:6,
                 }}>{T.mc_recommendation}</div>
                 <div style={{
                   fontFamily:Serif, fontSize:22, fontWeight:500,
@@ -216,7 +195,7 @@ export default function MultiCVStrategyModal({
                 }}>
                   <div style={{
                     fontSize:11, fontWeight:600,
-                    letterSpacing:"0.06em", color:Gold,
+                    letterSpacing:"0.06em", color:"rgba(255,255,255,0.9)",
                   }}>{T.mc_match}</div>
                   <div style={{
                     padding:"4px 12px", borderRadius:RadiusPill,
@@ -229,18 +208,18 @@ export default function MultiCVStrategyModal({
             </div>
           )}
 
-          {/* Why */}
+          {/* Why - eyebrow Coral */}
           {result.why && (
             <div style={{marginBottom:16}}>
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:8, fontFamily:Sans,
+                color:Coral, marginBottom:8, fontFamily:Sans,
               }}>{T.mc_why}</div>
               <div style={{
                 padding:"14px 16px",
-                background:CreamSoft, borderRadius:RadiusMd,
-                border:"0.5px solid "+Gold,
+                background:CoralSoft, borderRadius:RadiusMd,
+                border:"0.5px solid "+Coral,
                 fontFamily:Serif, fontStyle:"italic",
                 fontSize:13, color:Ink, lineHeight:1.65,
                 letterSpacing:"-0.005em",
@@ -248,16 +227,19 @@ export default function MultiCVStrategyModal({
             </div>
           )}
 
-          {/* Bouton charger */}
+          {/* Bouton charger - gradient violet→magenta */}
           {recVersion && onLoadVersion && (
             <button onClick={()=>onLoadVersion(recVersion.id)} style={{
               ...B({
                 width:"100%", padding:"13px 18px", borderRadius:RadiusPill,
-                background:GradPurple, color:"#fff",
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff",
                 fontFamily:Sans, fontWeight:600, fontSize:13,
+                border:"none",
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
                 marginBottom:18,
                 transition:"all 200ms ease-out",
+                boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
               })
             }}>
               {T.mc_load_recommended}
@@ -275,7 +257,7 @@ export default function MultiCVStrategyModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:10, fontFamily:Sans,
+                color:Coral, marginBottom:10, fontFamily:Sans,
               }}>{T.mc_alternatives}</div>
               {result.alternatives.map((alt, i) => {
                 const v = versionById(alt.id);
@@ -285,7 +267,7 @@ export default function MultiCVStrategyModal({
                   <div key={i} style={{
                     padding:"12px 14px",
                     background:Paper,
-                    border:"0.5px solid "+Gray200,
+                    border:"0.5px solid "+Hairline,
                     borderRadius:RadiusMd,
                     boxShadow:ShadowSm,
                     marginBottom:8, fontFamily:Sans,
@@ -309,7 +291,7 @@ export default function MultiCVStrategyModal({
                     </div>
                     {alt.comment && (
                       <div style={{
-                        fontSize:11, color:Gray600, lineHeight:1.5,
+                        fontSize:11, color:InkMuted, lineHeight:1.5,
                       }}>{alt.comment}</div>
                     )}
                   </div>
