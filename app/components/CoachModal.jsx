@@ -1,27 +1,32 @@
 "use client";
 
-// Nuvi v2 - CoachModal (conversational AI assistant)
+// Nuvi v3 - CoachModal (compagnon proactif)
 //
-// Mode coaching conversationnel : Nuvi dialogue avec l'utilisateur pour
-// l'aider a faire briller son CV.
+// [Nuvi v3 redesign] : Coach n'est plus un menu de parcours statiques.
+// C'est un compagnon qui :
+//   1. Analyse le CV en local (instant, sans API) au mount
+//   2. Genere un message d'accueil PERSONNALISE selon ce qu'il voit
+//      (CV vide / accroche manquante / bullets sans chiffres / trou / etc.)
+//   3. Propose des quick replies = boutons de FEATURES (Audit, Match, Score, etc.)
+//   4. Mentionne les features au fil de la conversation (proactif)
+//   5. Garde le chat libre pour conversations ouvertes
 //
-// Workflow :
-//   1. Welcome screen avec 5 parcours guides + 1 question libre
-//   2. Une fois le parcours selectionne, Nuvi pose la 1ere question
-//   3. L'utilisateur repond, Nuvi reformule + propose une adoption directe au CV
-//   4. Conversation libre apres ca
-//
-// Persistance : historique stocke en localStorage (cap 50 derniers messages).
-//
-// [Nuvi v2 redesign] :
-//   - Emojis remplaces par SVG line-style 1.6px (coherent NuviSidebar v2)
-//   - Mix de couleurs : violet pour actions IA, terracotta pour narratif
-//   - Icones dans containers tinted (couleur+opacite 10%)
-//   - Hero serif Fraunces avec gradient violet->magenta
-//   - Bouton close avec icone SVG (plus de "x" texte)
-//   - Strings actualisees pour matcher le ton Nuvi compagnon
+// Props :
+//   T              : i18n
+//   cv             : CV actuel
+//   apiKey         : string
+//   loading        : bool
+//   messages       : tableau de messages [{role, content, ts, adopt?, quickReplies?}]
+//   onSend(text)   : envoie un message utilisateur
+//   onClear()      : efface la conversation
+//   onAdopt(kind, value) : applique une suggestion au CV
+//   onClose()      : ferme la modale
+//   onAction(action) : NOUVEAU - dispatch des actions feature
+//                      ex: { type: "open_modal", modal: "audit" }
+//                      ex: { type: "send_text", text: "Aide-moi avec mon accroche" }
 
 import { useState, useEffect, useRef } from "react";
+import dynamic from "next/dynamic";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Gold, GoldDeep,
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft, Magenta,
@@ -30,118 +35,226 @@ import {
   GradPurple, B,
 } from "./tokens";
 
-// SVG icons line-style 1.6px stroke (style coherent NuviSidebar v2)
-// Chaque icon est defini comme JSX inline pour eviter les fichiers separes
+// [Nuvi v3] NuviLogo en dynamic pour eviter mismatch hydratation
+const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
+
+// SVG icons line-style 1.6px stroke
 const Icons = {
-  // Decrire experience : icone "edit/pen"
-  describe: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-    </svg>
-  ),
-  // Faire briller mon CV : icone "sparkle/star"
-  shine: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
-      strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
-    </svg>
-  ),
-  // Gerer un trou : icone "ligne brisee" (signal-curve)
-  gap: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
+  audit: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
       strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 12h4l3-9 4 18 3-9h4"/>
     </svg>
   ),
-  // Presenter une transition : icone "fleches bidirectionnelles"
-  transition: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
-      strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="17 1 21 5 17 9"/>
-      <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-      <polyline points="7 23 3 19 7 15"/>
-      <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-    </svg>
-  ),
-  // Construire pitch personnel : icone "cible concentrique"
-  pitch: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
+  match: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
       strokeLinecap="round" strokeLinejoin="round">
       <circle cx="12" cy="12" r="9"/>
       <circle cx="12" cy="12" r="5"/>
       <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
     </svg>
   ),
-  // Question libre : icone "bulle de chat avec points"
-  free: (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.6"
+  score: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+      <polyline points="22 4 12 14.01 9 11.01"/>
+    </svg>
+  ),
+  truth: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 12l2 2 4-4"/>
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+    </svg>
+  ),
+  pack: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  ),
+  rewrite: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z"/>
+    </svg>
+  ),
+  chat: (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.8"
       strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
     </svg>
   ),
+  arrow: (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2.5"
+      strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 12h14"/>
+      <path d="m12 5 7 7-7 7"/>
+    </svg>
+  ),
 };
 
-// 5 parcours guides + 1 question libre.
-// [Nuvi v2] : icon SVG au lieu d'emoji + couleur d'accent semantique
-//   - violet (Purple) pour actions IA (Decrire, Briller, Pitch)
-//   - terracotta (Coral) pour actions narratives (Trou, Transition, Question libre)
-function getPaths(T) {
-  return [
-    {
-      key:"describe",
-      icon:Icons.describe,
-      accent:Purple,  // [Nuvi v2] action IA = violet
-      title:T.co_path_describe, desc:T.co_path_describe_desc,
-      starter:"J'aimerais bien decrire mieux une de mes experiences. Aide-moi.",
-    },
-    {
-      key:"shine",
-      icon:Icons.shine,
-      accent:Purple,  // [Nuvi v2] action IA = violet
-      title:T.co_path_shine, desc:T.co_path_shine_desc,
-      starter:"Mon CV manque de relief. Aide-moi a identifier ce qui peut etre ameliore et a le transformer.",
-    },
-    {
-      key:"gap",
-      icon:Icons.gap,
-      accent:Coral,  // [Nuvi v2] narratif = terracotta
-      title:T.co_path_gap, desc:T.co_path_gap_desc,
-      starter:"J'ai un trou ou une periode floue dans mon parcours. Aide-moi a la presenter en force.",
-    },
-    {
-      key:"transition",
-      icon:Icons.transition,
-      accent:Coral,  // [Nuvi v2] narratif = terracotta
-      title:T.co_path_transition, desc:T.co_path_transition_desc,
-      starter:"Je fais une transition (secteur, role). Aide-moi a la justifier de maniere convaincante.",
-    },
-    {
-      key:"pitch",
-      icon:Icons.pitch,
-      accent:Purple,  // [Nuvi v2] action IA = violet
-      title:T.co_path_pitch, desc:T.co_path_pitch_desc,
-      starter:"Aide-moi a construire mon pitch personnel de 60 secondes.",
-    },
-    {
-      key:"free",
-      icon:Icons.free,
-      accent:Coral,  // [Nuvi v2] narratif/libre = terracotta
-      title:T.co_path_free, desc:T.co_path_free_desc,
-      starter:null,
-    },
-  ];
+// Analyse locale du CV pour generer le message d'accueil
+function analyzeCv(cv, T, lang) {
+  const empty = !cv.name && !cv.title && !cv.summary
+    && (cv.experience || []).every(e => !e.title && !e.company)
+    && (cv.education || []).every(e => !e.degree && !e.school);
+
+  if (empty) {
+    return {
+      type: "empty",
+      message: lang === "fr"
+        ? "Salut ! Je suis Nuvi, ton compagnon CV. Tu n'as encore rien rempli, c'est parfait : on part d'une page blanche.\n\nJe peux te le rediger depuis zero (juste avec un peu d'info sur toi), ou si tu as deja un CV ailleurs, on l'importe et je l'audite."
+        : "Hi! I'm Nuvi, your CV companion. Nothing here yet, perfect: we start from scratch.\n\nI can write it from zero (just need a bit about you), or if you have a CV elsewhere, we import it and I'll audit it.",
+      quickReplies: [
+        { label: lang === "fr" ? "Rediger mon CV" : "Write my CV",
+          icon: "rewrite", accent: Purple,
+          action: { type: "send_text", text: lang === "fr" ? "Aide-moi a rediger mon CV depuis zero" : "Help me write my CV from scratch" }
+        },
+        { label: lang === "fr" ? "Importer un CV" : "Import a CV",
+          icon: "pack", accent: Coral,
+          action: { type: "send_text", text: lang === "fr" ? "Comment importer mon CV existant ?" : "How do I import my existing CV?" }
+        },
+        { label: lang === "fr" ? "Discuter d'abord" : "Chat first",
+          icon: "chat", accent: null,
+          action: { type: "send_text", text: lang === "fr" ? "Avant de commencer, j'aimerais te poser des questions sur mon parcours" : "Before starting, I'd like to ask questions about my career" }
+        },
+      ]
+    };
+  }
+
+  const issues = [];
+  const summaryEmpty = !cv.summary || !cv.summary.trim();
+  if (summaryEmpty) issues.push("summary");
+
+  let bulletsTotal = 0;
+  let bulletsWithNumbers = 0;
+  (cv.experience || []).forEach(e => {
+    (e.bullets || []).forEach(b => {
+      if (b && b.trim()) {
+        bulletsTotal++;
+        if (/\d/.test(b)) bulletsWithNumbers++;
+      }
+    });
+  });
+  const bulletsWeak = bulletsTotal > 0 && (bulletsWithNumbers / bulletsTotal) < 0.4;
+  if (bulletsWeak) issues.push("bullets");
+
+  const titles = (cv.experience || []).map(e => (e.title || "").toLowerCase());
+  const hasSeniorTitles = titles.some(t =>
+    t.includes("director") || t.includes("head") || t.includes("vp") ||
+    t.includes("chef") || t.includes("directeur") || t.includes("responsable")
+  );
+  const fewBullets = bulletsTotal < 5 && (cv.experience || []).length > 0;
+  const possiblyOverstated = hasSeniorTitles && fewBullets;
+
+  let intro = lang === "fr"
+    ? "Salut ! Je suis Nuvi, ton compagnon CV.\n\n"
+    : "Hi! I'm Nuvi, your CV companion.\n\n";
+
+  let observation = "";
+  let suggestions = [];
+
+  if (issues.length === 0) {
+    observation = lang === "fr"
+      ? "J'ai jete un coup d'oeil rapide a ton CV : ca a l'air solide. Bonne base. On peut maintenant aller plus loin : audit detaille, adapter a une offre precise, ou check du score recruteur."
+      : "I had a quick look at your CV: it looks solid. Good base. Now we can go further: detailed audit, adapt to a specific job, or check recruiter score.";
+    suggestions = [
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: Purple,
+        action: { type: "open_modal", modal: "audit" }
+      },
+      { label: lang === "fr" ? "Adapter a une offre" : "Match to a job",
+        icon: "match", accent: Purple,
+        action: { type: "open_modal", modal: "offer" }
+      },
+      { label: lang === "fr" ? "Score recruteur" : "Recruiter score",
+        icon: "score", accent: Purple,
+        action: { type: "open_modal", modal: "score" }
+      },
+    ];
+  } else if (issues.includes("summary") && issues.includes("bullets")) {
+    observation = lang === "fr"
+      ? "J'ai jete un coup d'oeil : tu as un parcours mais ton accroche est vide ET tes bullets manquent de chiffres. C'est dommage, c'est exactement ce que les recruteurs lisent en premier.\n\nOn s'attaque a quoi en premier ?"
+      : "I had a look: you have experience but your summary is empty AND your bullets lack numbers. Too bad, that's exactly what recruiters read first.\n\nWhat do we tackle first?";
+    suggestions = [
+      { label: lang === "fr" ? "Reecrire mon accroche" : "Rewrite my summary",
+        icon: "rewrite", accent: Purple,
+        action: { type: "send_text", text: lang === "fr" ? "Aide-moi a reecrire mon accroche" : "Help me rewrite my summary" }
+      },
+      { label: lang === "fr" ? "Muscler les bullets" : "Strengthen bullets",
+        icon: "rewrite", accent: Purple,
+        action: { type: "send_text", text: lang === "fr" ? "Aide-moi a chiffrer et muscler mes bullets" : "Help me add numbers to my bullets" }
+      },
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: Purple,
+        action: { type: "open_modal", modal: "audit" }
+      },
+    ];
+  } else if (issues.includes("summary")) {
+    observation = lang === "fr"
+      ? "Ton CV a une bonne base, mais ton accroche est vide. C'est dommage : c'est la premiere chose que les recruteurs lisent. Je te la rediger ?"
+      : "Your CV has a good base but the summary is empty. Too bad: that's the first thing recruiters read. Want me to write it?";
+    suggestions = [
+      { label: lang === "fr" ? "Rediger mon accroche" : "Write my summary",
+        icon: "rewrite", accent: Purple,
+        action: { type: "send_text", text: lang === "fr" ? "Aide-moi a rediger mon accroche" : "Help me write my summary" }
+      },
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: Purple,
+        action: { type: "open_modal", modal: "audit" }
+      },
+      { label: lang === "fr" ? "J'ai une offre en tete" : "I have a job in mind",
+        icon: "match", accent: Purple,
+        action: { type: "open_modal", modal: "offer" }
+      },
+    ];
+  } else if (issues.includes("bullets")) {
+    observation = lang === "fr"
+      ? "Ton CV est bien rempli mais tes bullets manquent de chiffres. Les recruteurs adorent les chiffres : impact, equipes, budgets. On les muscle ensemble ?"
+      : "Your CV is filled but bullets lack numbers. Recruiters love numbers: impact, teams, budgets. Want to strengthen them?";
+    suggestions = [
+      { label: lang === "fr" ? "Muscler les bullets" : "Strengthen bullets",
+        icon: "rewrite", accent: Purple,
+        action: { type: "send_text", text: lang === "fr" ? "Aide-moi a chiffrer et muscler mes bullets" : "Help me add numbers to my bullets" }
+      },
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: Purple,
+        action: { type: "open_modal", modal: "audit" }
+      },
+      { label: lang === "fr" ? "Truth check" : "Truth check",
+        icon: "truth", accent: Coral,
+        action: { type: "open_modal", modal: "truth" }
+      },
+    ];
+  }
+
+  if (possiblyOverstated && !suggestions.find(s => s.action && s.action.modal === "truth")) {
+    suggestions.push({
+      label: lang === "fr" ? "Verifier la coherence" : "Truth check",
+      icon: "truth", accent: Coral,
+      action: { type: "open_modal", modal: "truth" }
+    });
+  }
+
+  return {
+    type: "diagnostic",
+    message: intro + observation,
+    quickReplies: suggestions,
+  };
 }
 
-// Convertit une couleur hex en rgba avec opacite donnee
-// (utilise pour les backgrounds tinted des icones)
 function withOpacity(hex, opacity) {
   if (!hex || hex[0] !== "#") return hex;
   const r = parseInt(hex.slice(1, 3), 16);
@@ -150,64 +263,136 @@ function withOpacity(hex, opacity) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-// Bulle de message individuelle.
-function Bubble({ T, msg, onAdopt }) {
+// QuickReplyButton : bouton de feature dans un message
+function QuickReplyButton({ qr, onAction, primary = false }) {
+  const [hovered, setHovered] = useState(false);
+  const accent = qr.accent || InkMuted;
+
+  if (primary) {
+    return (
+      <button
+        onClick={() => onAction(qr.action)}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          ...B({
+            display: "inline-flex", alignItems: "center", gap: 6,
+            padding: "7px 14px", borderRadius: 999,
+            background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color: "#fff",
+            border: "none",
+            fontSize: 12, fontWeight: 600,
+            fontFamily: Sans,
+            letterSpacing: "0.01em",
+            boxShadow: hovered
+              ? "0 4px 14px rgba(91, 61, 245, 0.35)"
+              : "0 2px 8px rgba(91, 61, 245, 0.25)",
+            transform: hovered ? "translateY(-1px)" : "translateY(0)",
+            transition: "all 180ms ease-out",
+          })
+        }}>
+        {qr.icon && Icons[qr.icon]}
+        {qr.label}
+        {Icons.arrow}
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => onAction(qr.action)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        ...B({
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "7px 12px", borderRadius: 999,
+          background: hovered ? withOpacity(accent, 0.06) : Paper,
+          color: Ink,
+          border: "0.5px solid " + (hovered ? accent : Hairline),
+          fontSize: 12, fontWeight: 500,
+          fontFamily: Sans,
+          letterSpacing: "0.01em",
+          transition: "all 150ms ease",
+        })
+      }}>
+      {qr.icon && (
+        <span style={{ color: accent, display: "flex" }}>
+          {Icons[qr.icon]}
+        </span>
+      )}
+      {qr.label}
+    </button>
+  );
+}
+
+// Bubble : bulle de message (user / nuvi)
+function Bubble({ T, msg, onAdopt, onAction }) {
   const isUser = msg.role === "user";
 
-  // Style pour message utilisateur : aligne a droite
-  // [Nuvi v2] : background violet (Purple) au lieu de Ink pour matcher le branding
   if (isUser) {
     return (
       <div style={{
-        display:"flex", justifyContent:"flex-end", marginBottom:12,
+        display: "flex", justifyContent: "flex-end", marginBottom: 12,
       }}>
         <div style={{
-          maxWidth:"80%",
-          padding:"10px 14px", borderRadius:"18px 18px 4px 18px",
-          background:Purple, color:"#fff",
-          fontSize:13, lineHeight:1.5, fontFamily:Sans,
-          whiteSpace:"pre-wrap",
+          maxWidth: "80%",
+          padding: "10px 14px", borderRadius: "18px 18px 4px 18px",
+          background: Purple, color: "#fff",
+          fontSize: 13, lineHeight: 1.5, fontFamily: Sans,
+          whiteSpace: "pre-wrap",
         }}>{msg.content}</div>
       </div>
     );
   }
 
-  // Style pour message Nuvi : aligne a gauche, fond Paper/Ink
-  // [Nuvi v2] : avatar violet/magenta gradient devant la bulle
   return (
     <div style={{
-      display:"flex", justifyContent:"flex-start", marginBottom:12,
-      gap:8, alignItems:"flex-start",
+      display: "flex", justifyContent: "flex-start", marginBottom: 12,
+      gap: 10, alignItems: "flex-start",
     }}>
-      {/* Avatar Nuvi (gradient violet/magenta) */}
       <div style={{
-        width:24, height:24, flexShrink:0,
-        borderRadius:"50%",
-        background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
-        marginTop:4,
-      }}/>
-      <div style={{maxWidth:"85%"}}>
+        width: 28, height: 28, flexShrink: 0,
+        borderRadius: "50%",
+        background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+        marginTop: 2,
+      }} />
+      <div style={{ maxWidth: "85%" }}>
         <div style={{
-          padding:"12px 16px", borderRadius:"4px 18px 18px 18px",
-          background:Paper, color:Ink,
-          border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
-          fontSize:13, lineHeight:1.55, fontFamily:Sans,
-          whiteSpace:"pre-wrap",
+          padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
+          background: Paper, color: Ink,
+          border: "0.5px solid " + Hairline, boxShadow: ShadowSm,
+          fontSize: 13, lineHeight: 1.55, fontFamily: Sans,
+          whiteSpace: "pre-wrap",
         }}>{msg.content}</div>
 
-        {/* Bouton d'adoption si Nuvi a propose une reformulation */}
+        {msg.quickReplies && msg.quickReplies.length > 0 && onAction && (
+          <div style={{
+            display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10,
+          }}>
+            {msg.quickReplies.map((qr, i) => (
+              <QuickReplyButton
+                key={i}
+                qr={qr}
+                onAction={onAction}
+                primary={qr.primary === true}
+              />
+            ))}
+          </div>
+        )}
+
         {msg.adopt && msg.adopt.kind && msg.adopt.value && onAdopt && (
           <button
-            onClick={()=>onAdopt(msg.adopt.kind, msg.adopt.value)}
+            onClick={() => onAdopt(msg.adopt.kind, msg.adopt.value)}
             style={{
               ...B({
-                marginTop:6,
-                padding:"7px 12px", borderRadius:RadiusPill,
-                background:GradPurple, color:"#fff",
-                fontSize:11, fontWeight:600, fontFamily:Sans,
-                display:"inline-flex", alignItems:"center", gap:5,
-                transition:"all 180ms ease-out",
-                boxShadow:"0 2px 8px rgba(91, 61, 245, 0.25)",
+                marginTop: 6,
+                padding: "7px 12px", borderRadius: RadiusPill,
+                background: GradPurple, color: "#fff",
+                fontSize: 11, fontWeight: 600, fontFamily: Sans,
+                display: "inline-flex", alignItems: "center", gap: 5,
+                transition: "all 180ms ease-out",
+                boxShadow: "0 2px 8px rgba(91, 61, 245, 0.25)",
               })
             }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -225,15 +410,33 @@ function Bubble({ T, msg, onAdopt }) {
   );
 }
 
+// CoachModal v3
 export default function CoachModal({
-  T, cv, apiKey, loading, messages,
-  onSend, onClear, onAdopt, onClose,
+  T, cv, apiKey, lang = "fr",
+  loading, messages,
+  onSend, onClear, onAdopt, onClose, onAction,
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const [welcomeMsg, setWelcomeMsg] = useState(null);
 
-  // Lock body scroll
+  // Genere le welcome contextuel SEULEMENT si pas de messages existants
+  useEffect(() => {
+    if ((!messages || messages.length === 0) && cv) {
+      const analysis = analyzeCv(cv, T, lang);
+      setWelcomeMsg({
+        role: "nuvi",
+        content: analysis.message,
+        quickReplies: analysis.quickReplies,
+        ts: Date.now(),
+      });
+    } else {
+      setWelcomeMsg(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages?.length, cv]);
+
   useEffect(() => {
     if (typeof document === "undefined") return;
     const prev = document.body.style.overflow;
@@ -241,7 +444,6 @@ export default function CoachModal({
     return () => { document.body.style.overflow = prev; };
   }, []);
 
-  // Esc to close
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
     if (typeof window !== "undefined") {
@@ -250,18 +452,13 @@ export default function CoachModal({
     }
   }, [loading, onClose]);
 
-  // Auto-scroll vers le bas quand un nouveau message arrive
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading]);
-
-  const cvIsEmpty = !cv.name && !cv.title && !cv.summary
-    && (cv.experience || []).every(e => !e.title && !e.company);
+  }, [messages, loading, welcomeMsg]);
 
   const hasMessages = messages && messages.length > 0;
-  const paths = getPaths(T);
 
   const submit = () => {
     const t = input.trim();
@@ -270,74 +467,89 @@ export default function CoachModal({
     setInput("");
   };
 
-  const onPickPath = (path) => {
-    if (path.starter) {
-      onSend(path.starter);
-    } else {
-      // Question libre : focus l'input pour que l'utilisateur ecrive
-      setTimeout(() => { if (inputRef.current) inputRef.current.focus(); }, 100);
+  const handleAction = (action) => {
+    if (!action) return;
+    if (action.type === "send_text" && action.text) {
+      onSend(action.text);
+    } else if (action.type === "open_modal" && onAction) {
+      onAction(action);
+    } else if (action.type === "external" && action.url) {
+      if (typeof window !== "undefined") {
+        window.open(action.url, "_blank", "noopener");
+      }
     }
   };
 
   return (
     <div style={{
-      position:"fixed", inset:0, zIndex:99998,
-      display:"flex", flexDirection:"column", justifyContent:"flex-end",
-      fontFamily:Sans,
+      position: "fixed", inset: 0, zIndex: 99998,
+      display: "flex", flexDirection: "column", justifyContent: "flex-end",
+      fontFamily: Sans,
     }}>
       {/* Backdrop */}
       <div style={{
-        position:"absolute", inset:0,
-        background:"rgba(10,10,10,.55)",
-        backdropFilter:"blur(8px)",
-        WebkitBackdropFilter:"blur(8px)",
-        animation:"cvfFadeIn 200ms ease-out",
-      }} onClick={()=>{ if (!loading) onClose(); }}/>
+        position: "absolute", inset: 0,
+        background: "rgba(10,10,10,.55)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
+        animation: "cvfFadeIn 200ms ease-out",
+      }} onClick={() => { if (!loading) onClose(); }} />
 
       {/* Sheet */}
       <div style={{
-        position:"relative", background:CreamSoft,
-        borderRadius:"32px 32px 0 0",
-        height:"94vh", display:"flex", flexDirection:"column",
-        boxShadow:"0 -20px 60px rgba(0,0,0,.2)",
-        animation:"cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
+        position: "relative", background: CreamSoft,
+        borderRadius: "32px 32px 0 0",
+        height: "94vh", display: "flex", flexDirection: "column",
+        boxShadow: "0 -20px 60px rgba(0,0,0,.2)",
+        animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
+        width: "100%", maxWidth: 840,
+        marginLeft: "auto", marginRight: "auto",
       }}>
         {/* iOS handle */}
         <div style={{
-          width:40, height:4, background:Gray200,
-          borderRadius:RadiusPill,
-          margin:"10px auto 6px", flexShrink:0,
-        }}/>
+          width: 40, height: 4, background: Hairline,
+          borderRadius: RadiusPill,
+          margin: "10px auto 6px", flexShrink: 0,
+        }} />
 
-        {/* Header [Nuvi v2] : eyebrow violet + hero gradient + close icon */}
+        {/* [Nuvi v3] NuviLogo wordmark anime en haut a gauche */}
         <div style={{
-          padding:"6px 24px 14px",
-          borderBottom:"0.5px solid "+Hairline, flexShrink:0,
-          display:"flex", alignItems:"flex-start",
-          justifyContent:"space-between", gap:12,
+          padding: "8px 24px 0",
+          display: "flex", alignItems: "center",
+          flexShrink: 0,
         }}>
-          <div style={{flex:1, minWidth:0}}>
+          <NuviLogo size={28} inkColor={Ink} />
+        </div>
+
+        {/* Header */}
+        <div style={{
+          padding: "10px 24px 14px",
+          borderBottom: "0.5px solid " + Hairline, flexShrink: 0,
+          display: "flex", alignItems: "flex-start",
+          justifyContent: "space-between", gap: 12,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize:11, fontWeight:600,
-              letterSpacing:"0.12em", textTransform:"uppercase",
-              color:Purple, marginBottom:4,
+              fontSize: 11, fontWeight: 600,
+              letterSpacing: "0.12em", textTransform: "uppercase",
+              color: Purple, marginBottom: 4,
             }}>{T.co_eyebrow}</div>
             <div style={{
-              fontFamily:Serif, fontWeight:400, fontSize:24,
-              letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
+              fontFamily: Serif, fontWeight: 400, fontSize: 24,
+              letterSpacing: "-0.02em", color: Ink, lineHeight: 1.15,
             }}>
               {T.co_title_a}
               {" "}<em style={{
-                fontStyle:"italic",
-                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
-                WebkitBackgroundClip:"text",
-                backgroundClip:"text",
-                color:"transparent",
+                fontStyle: "italic",
+                background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                WebkitBackgroundClip: "text",
+                backgroundClip: "text",
+                color: "transparent",
               }}>{T.co_title_em}</em>
               {" "}{T.co_title_b}
             </div>
             <div style={{
-              fontSize:12, color:Gray600, marginTop:4, lineHeight:1.5,
+              fontSize: 12, color: InkMuted, marginTop: 4, lineHeight: 1.5,
             }}>{T.co_sub}</div>
           </div>
 
@@ -349,13 +561,13 @@ export default function CoachModal({
               title={T.co_clear}
               style={{
                 ...B({
-                  background:Paper, borderRadius:"50%",
-                  width:32, height:32, color:Gray600,
-                  border:"0.5px solid "+Hairline,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                  flexShrink:0,
+                  background: Paper, borderRadius: "50%",
+                  width: 32, height: 32, color: InkMuted,
+                  border: "0.5px solid " + Hairline,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
                   opacity: loading ? 0.4 : 1,
-                  transition:"all 150ms ease",
+                  transition: "all 150ms ease",
                 })
               }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -368,16 +580,16 @@ export default function CoachModal({
             </button>
           )}
 
-          {/* Close button [Nuvi v2] : icone SVG au lieu de "x" texte */}
+          {/* Close button */}
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
-              background:Paper, borderRadius:"50%",
-              width:32, height:32, color:Gray600,
-              border:"0.5px solid "+Hairline,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              flexShrink:0,
+              background: Paper, borderRadius: "50%",
+              width: 32, height: 32, color: InkMuted,
+              border: "0.5px solid " + Hairline,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
               opacity: loading ? 0.4 : 1,
-              transition:"all 150ms ease",
+              transition: "all 150ms ease",
             })
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -389,232 +601,155 @@ export default function CoachModal({
           </button>
         </div>
 
-        {/* Body : welcome OU messages */}
+        {/* Body */}
         <div ref={scrollRef} style={{
-          flex:1,
-          overflowY:"auto",
-          padding:"18px 24px",
+          flex: 1,
+          overflowY: "auto",
+          padding: "18px 24px",
         }}>
-          {/* Etat 1 : pas de CV */}
-          {cvIsEmpty && (
+          {/* [Nuvi v3] Welcome message contextuel */}
+          {!hasMessages && welcomeMsg && (
+            <Bubble
+              T={T}
+              msg={welcomeMsg}
+              onAdopt={onAdopt}
+              onAction={handleAction}
+            />
+          )}
+
+          {/* Conversation */}
+          {hasMessages && messages.map((msg, i) => (
+            <Bubble
+              key={i}
+              T={T}
+              msg={msg}
+              onAdopt={onAdopt}
+              onAction={handleAction}
+            />
+          ))}
+
+          {/* Loading bubble */}
+          {loading && (
             <div style={{
-              padding:"24px 18px",
-              background:CreamSoft, borderRadius:RadiusMd,
-              border:"0.5px solid "+Hairline,
-              textAlign:"center", color:Gray600,
-              fontSize:13, fontFamily:Sans,
-            }}>{T.co_no_cv}</div>
-          )}
-
-          {/* Etat 2 [Nuvi v2] : welcome screen avec parcours redesignes */}
-          {!cvIsEmpty && !hasMessages && (
-            <>
-              {/* [Nuvi v2] Eyebrow terracotta pour signaler la section */}
+              display: "flex", justifyContent: "flex-start", marginBottom: 12,
+              gap: 10, alignItems: "flex-start",
+            }}>
               <div style={{
-                fontSize:10, fontWeight:600,
-                letterSpacing:"0.12em", textTransform:"uppercase",
-                color:Coral, marginBottom:10,
-              }}>{T.co_paths_eyebrow || "Parcours guides"}</div>
-
+                width: 28, height: 28, flexShrink: 0,
+                borderRadius: "50%",
+                background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                marginTop: 2,
+              }} />
               <div style={{
-                fontFamily:Serif, fontSize:20, fontWeight:400,
-                letterSpacing:"-0.01em",
-                color:Ink, marginBottom:6,
-              }}>{T.co_welcome_title}</div>
-              <div style={{
-                fontSize:13, color:Gray600, marginBottom:18, lineHeight:1.5,
-              }}>{T.co_welcome_sub}</div>
-
-              {paths.map(path => (
-                <button
-                  key={path.key}
-                  onClick={()=>onPickPath(path)}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = path.accent;
-                    e.currentTarget.style.transform = "translateY(-1px)";
-                    e.currentTarget.style.boxShadow = "0 4px 14px rgba(0,0,0,.06), 0 0 0 0.5px rgba(0,0,0,.06)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = Hairline;
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = ShadowSm;
-                  }}
-                  style={{
-                    ...B({
-                      width:"100%", textAlign:"left",
-                      padding:"14px 16px", marginBottom:8, borderRadius:12,
-                      background:Paper, color:Ink,
-                      border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
-                      display:"flex", alignItems:"center", gap:14,
-                      fontFamily:Sans,
-                      transition:"all 180ms ease-out",
-                    })
-                  }}>
-                  {/* [Nuvi v2] Container icone tinted (accent + 10% opacite) */}
-                  <div style={{
-                    width:38, height:38, borderRadius:10,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    background:withOpacity(path.accent, 0.1),
-                    color:path.accent,
-                    flexShrink:0,
-                  }}>{path.icon}</div>
-                  <div style={{flex:1, minWidth:0}}>
-                    <div style={{
-                      fontFamily:Serif, fontWeight:500, fontSize:15,
-                      letterSpacing:"-0.01em", color:Ink, marginBottom:2,
-                    }}>{path.title}</div>
-                    <div style={{
-                      fontSize:11, color:Gray600, lineHeight:1.4,
-                    }}>{path.desc}</div>
-                  </div>
-                  {/* [Nuvi v2] Chevron simple gris (au lieu de fleche violet) */}
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    stroke={Gray400} strokeWidth="1.8"
-                    strokeLinecap="round" strokeLinejoin="round"
-                    style={{flexShrink:0}}>
-                    <path d="m9 18 6-6-6-6"/>
-                  </svg>
-                </button>
-              ))}
-            </>
-          )}
-
-          {/* Etat 3 : conversation */}
-          {!cvIsEmpty && hasMessages && (
-            <>
-              {messages.map((msg, i) => (
-                <Bubble key={i} T={T} msg={msg} onAdopt={onAdopt}/>
-              ))}
-
-              {/* Loading bubble (Nuvi reflechit) */}
-              {loading && (
+                padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
+                background: Paper, color: InkMuted,
+                border: "0.5px solid " + Hairline,
+                fontSize: 13, fontFamily: Sans,
+                display: "flex", alignItems: "center", gap: 8,
+              }}>
                 <div style={{
-                  display:"flex", justifyContent:"flex-start", marginBottom:12,
-                  gap:8, alignItems:"flex-start",
-                }}>
-                  <div style={{
-                    width:24, height:24, flexShrink:0,
-                    borderRadius:"50%",
-                    background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
-                    marginTop:4,
-                  }}/>
-                  <div style={{
-                    padding:"12px 16px", borderRadius:"4px 18px 18px 18px",
-                    background:Paper, color:Gray600,
-                    border:"0.5px solid "+Hairline,
-                    fontSize:13, fontFamily:Sans,
-                    display:"flex", alignItems:"center", gap:8,
-                  }}>
-                    <div style={{
-                      width:6, height:6, borderRadius:"50%", background:Purple,
-                      animation:"cvfPulse1 1.4s ease-in-out infinite",
-                    }}/>
-                    <div style={{
-                      width:6, height:6, borderRadius:"50%", background:Purple,
-                      animation:"cvfPulse2 1.4s ease-in-out infinite",
-                    }}/>
-                    <div style={{
-                      width:6, height:6, borderRadius:"50%", background:Purple,
-                      animation:"cvfPulse3 1.4s ease-in-out infinite",
-                    }}/>
-                  </div>
-                </div>
-              )}
-
-              <style>{`
-                @keyframes cvfPulse1 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
-                @keyframes cvfPulse2 {
-                  0%, 30%, 70%, 100% { opacity:.3; }
-                  50% { opacity:1; }
-                }
-                @keyframes cvfPulse3 {
-                  0%, 50%, 80%, 100% { opacity:.3; }
-                  70% { opacity:1; }
-                }
-              `}</style>
-            </>
+                  width: 6, height: 6, borderRadius: "50%", background: Purple,
+                  animation: "cvfPulse1 1.4s ease-in-out infinite",
+                }} />
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", background: Purple,
+                  animation: "cvfPulse2 1.4s ease-in-out infinite",
+                }} />
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", background: Purple,
+                  animation: "cvfPulse3 1.4s ease-in-out infinite",
+                }} />
+              </div>
+            </div>
           )}
+
+          <style>{`
+            @keyframes cvfPulse1 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
+            @keyframes cvfPulse2 {
+              0%, 30%, 70%, 100% { opacity:.3; }
+              50% { opacity:1; }
+            }
+            @keyframes cvfPulse3 {
+              0%, 50%, 80%, 100% { opacity:.3; }
+              70% { opacity:1; }
+            }
+          `}</style>
         </div>
 
-        {/* Input zone [Nuvi v2] : style coherent AdjustModal */}
-        {!cvIsEmpty && (
+        {/* Input zone */}
+        <div style={{
+          padding: "12px 24px 18px",
+          borderTop: "0.5px solid " + Hairline,
+          flexShrink: 0,
+          background: CreamSoft,
+        }}>
           <div style={{
-            padding:"12px 24px 18px",
-            borderTop:"0.5px solid "+Hairline,
-            flexShrink:0,
-            background:CreamSoft,
+            display: "flex", gap: 8, alignItems: "flex-end",
           }}>
-            <div style={{
-              display:"flex", gap:8, alignItems:"flex-end",
-            }}>
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={e=>setInput(e.target.value)}
-                onKeyDown={e=>{
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    submit();
-                  }
-                }}
-                placeholder={T.co_input_ph}
-                rows={1}
-                disabled={loading}
-                style={{
-                  flex:1,
-                  padding:"11px 16px",
-                  borderRadius:RadiusPill,
-                  border:"0.5px solid "+Hairline,
-                  background:Paper,
-                  color:Ink, fontSize:13,
-                  fontFamily:Sans,
-                  outline:"none",
-                  resize:"none",
-                  maxHeight:120,
-                  boxSizing:"border-box",
-                  opacity: loading ? 0.5 : 1,
-                  transition:"border-color 150ms ease",
-                }}
-                onFocus={(e) => { e.currentTarget.style.borderColor = Purple; }}
-                onBlur={(e) => { e.currentTarget.style.borderColor = Hairline; }}
-              />
-              <button
-                onClick={submit}
-                disabled={loading || !input.trim() || !apiKey}
-                aria-label={T.co_send}
-                style={{
-                  ...B({
-                    width:42, height:42, borderRadius:"50%",
-                    background: (loading || !input.trim() || !apiKey)
-                      ? Gray200 : GradPurple,
-                    color:"#fff",
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    flexShrink:0,
-                    transition:"all 180ms ease-out",
-                    boxShadow: (loading || !input.trim() || !apiKey)
-                      ? "none"
-                      : "0 2px 8px rgba(91, 61, 245, 0.3)",
-                  })
-                }}>
-                {/* [Nuvi v2] Icone fleche-up au lieu de paper-plane */}
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.5"
-                  strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 19V5"/>
-                  <path d="m5 12 7-7 7 7"/>
-                </svg>
-              </button>
-            </div>
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  submit();
+                }
+              }}
+              placeholder={T.co_input_ph || (lang === "fr" ? "Demande a Nuvi..." : "Ask Nuvi...")}
+              rows={1}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: "11px 16px",
+                borderRadius: RadiusPill,
+                border: "0.5px solid " + Hairline,
+                background: Paper,
+                color: Ink, fontSize: 13,
+                fontFamily: Sans,
+                outline: "none",
+                resize: "none",
+                maxHeight: 120,
+                boxSizing: "border-box",
+                opacity: loading ? 0.5 : 1,
+                transition: "border-color 150ms ease",
+              }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = Purple; }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = Hairline; }}
+            />
+            <button
+              onClick={submit}
+              disabled={loading || !input.trim() || !apiKey}
+              aria-label={T.co_send}
+              style={{
+                ...B({
+                  width: 42, height: 42, borderRadius: "50%",
+                  background: (loading || !input.trim() || !apiKey)
+                    ? Gray200 : GradPurple,
+                  color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  flexShrink: 0,
+                  transition: "all 180ms ease-out",
+                  boxShadow: (loading || !input.trim() || !apiKey)
+                    ? "none"
+                    : "0 2px 8px rgba(91, 61, 245, 0.3)",
+                })
+              }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2.5"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 19V5"/>
+                <path d="m5 12 7-7 7 7"/>
+              </svg>
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-// ============================================================
-// CoachFAB : bouton flottant persistant en bas a droite
-// ============================================================
+// CoachFAB : bouton flottant persistant (preserve)
 export function CoachFAB({ T, onOpen, hidden }) {
   if (hidden) return null;
   return (
@@ -624,16 +759,16 @@ export function CoachFAB({ T, onOpen, hidden }) {
       title={T.co_fab_aria}
       style={{
         ...B({
-          position:"fixed",
-          bottom:90,  // au-dessus du BottomNav
-          right:16,
-          width:56, height:56, borderRadius:"50%",
-          background:GradPurple, color:"#fff",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          boxShadow:"0 8px 24px rgba(91,61,245,.45)",
-          zIndex:9999,
-          transition:"all 200ms ease-out",
-          animation:"cvfFabIn 350ms cubic-bezier(.34,1.56,.64,1)",
+          position: "fixed",
+          bottom: 90,
+          right: 16,
+          width: 56, height: 56, borderRadius: "50%",
+          background: GradPurple, color: "#fff",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 8px 24px rgba(91,61,245,.45)",
+          zIndex: 9999,
+          transition: "all 200ms ease-out",
+          animation: "cvfFabIn 350ms cubic-bezier(.34,1.56,.64,1)",
         })
       }}>
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
