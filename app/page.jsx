@@ -667,7 +667,7 @@ function Shimmer() {
 // Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
 function Sheet({ title, eyebrow, onClose, children }) {
   return (
-    <div style={{
+    <div data-cvf="app" style={{
       position:"fixed", inset:0, zIndex:2000,
       display:"flex", flexDirection:"column", justifyContent:"flex-end",
       fontFamily:Sans,
