@@ -1,60 +1,30 @@
 "use client";
-
-// CV Factory v17 - InterviewModal
+// CV Factory v17 - InterviewModal (Nuvi v3 palette)
 //
 // Flashcards 1 question par page. Navigation suivant/precedent + indicateur dots.
 // L'IA retourne des questions adaptees au pays/secteur/niveau du candidat.
-//
-// Shape attendue de result :
-// {
-//   country, sector, level, total_questions, questions: [
-//     {
-//       category: "Technique" | "Comportementale" | "Cas pratique" | "Culture" | "Motivation",
-//       question: "...",
-//       why: "...", // pourquoi le recruteur la pose
-//       answer: {
-//         situation: "...",
-//         task: "...",
-//         action: "...",
-//         result: "...",
-//         tip: "..."
-//       }
-//     }
-//   ]
-// }
-//
-// Props :
-//   T              : i18n
-//   cv             : CV
-//   apiKey         : string
-//   loading        : bool
-//   result         : { questions: [...], ... } | null
-//   offerText      : string (textarea controlled)
-//   setOfferText   : setter
-//   prefilledOffer : bool (true if offer was prefilled from Cibler)
-//   onRun()
-//   onClose()
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft,
-  Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
+  Ink, Cream, CreamSoft, Paper, Purple, Magenta, PurpleSoft,
+  Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400,
+  Hairline, InkMuted,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, GradGold, KEYFRAMES_V17, B,
+  KEYFRAMES_V17, B,
 } from "./tokens";
 
 // Couleur d'accent par categorie de question.
 function categoryAccent(cat) {
-  if (!cat) return { fg: Gray600, bg: Gray100 };
+  if (!cat) return { fg: InkMuted, bg: Gray100 };
   const c = String(cat).toLowerCase();
   if (c.indexOf("tech") !== -1)        return { fg: Purple,   bg: PurpleSoft };
   if (c.indexOf("comport") !== -1
-   || c.indexOf("behav")   !== -1)     return { fg: GoldDeep, bg: "rgba(201,169,110,.15)" };
+   || c.indexOf("behav")   !== -1)     return { fg: Coral,    bg: CoralSoft };
   if (c.indexOf("cas")     !== -1
-   || c.indexOf("case")    !== -1)     return { fg: Coral,    bg: CoralSoft };
+   || c.indexOf("case")    !== -1)     return { fg: Magenta,  bg: PurpleSoft };
   if (c.indexOf("culture") !== -1)     return { fg: Green,    bg: GreenSoft };
   if (c.indexOf("motiv")   !== -1)     return { fg: Ink,      bg: Gray100 };
-  return { fg: Gray600, bg: Gray100 };
+  return { fg: InkMuted, bg: Gray100 };
 }
 
 // Petit composant : affiche une section de la reponse STAR.
@@ -110,12 +80,12 @@ function Flashcard({ T, q }) {
           padding:"12px 14px",
           background:CreamSoft,
           borderRadius:RadiusSm,
-          border:"0.5px solid "+Gray200,
+          border:"0.5px solid "+Hairline,
         }}>
           <div style={{
             fontSize:10, fontWeight:700,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:GoldDeep, marginBottom:4,
+            color:Coral, marginBottom:4,
             fontFamily:Sans,
           }}>{T.iv_star_tip || "Conseil"}</div>
           <div style={{
@@ -130,14 +100,14 @@ function Flashcard({ T, q }) {
       <div style={{
         padding:"16px 18px",
         background:Paper,
-        border:"0.5px solid "+Gray200,
+        border:"0.5px solid "+Hairline,
         borderRadius:RadiusMd,
         boxShadow:ShadowSm,
       }}>
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:GoldDeep, marginBottom:14,
+          color:Coral, marginBottom:14,
           fontFamily:Sans,
         }}>{T.iv_star_title}</div>
 
@@ -173,14 +143,14 @@ function Flashcard({ T, q }) {
 // === v2 Interview Continuity ===
 // Helper : accent par categorie de "question a poser au recruteur"
 function categoryAccentAsk(cat) {
-  if (!cat) return { fg: Gray600, bg: Gray100, label: "" };
+  if (!cat) return { fg: InkMuted, bg: Gray100, label: "" };
   const c = String(cat).toLowerCase();
   if (c === "role")     return { fg: Purple,  bg: PurpleSoft };
   if (c === "team")     return { fg: Green,   bg: GreenSoft };
-  if (c === "strategy") return { fg: GoldDeep,bg: "#fff3d9" };
+  if (c === "strategy") return { fg: Magenta, bg: PurpleSoft };
   if (c === "culture")  return { fg: Coral,   bg: CoralSoft };
   if (c === "next")     return { fg: Ink,     bg: Gray100 };
-  return { fg: Gray600, bg: Gray100 };
+  return { fg: InkMuted, bg: Gray100 };
 }
 
 // Section "Questions a poser au recruteur" : se rend dans le tab "before"
@@ -238,13 +208,13 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
     <div style={{
       marginTop:32,
       paddingTop:24,
-      borderTop:"0.5px solid "+Gray200,
+      borderTop:"0.5px solid "+Hairline,
     }}>
       {/* Eyebrow + titre */}
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:GoldDeep, marginBottom:4, fontFamily:Sans,
+        color:Coral, marginBottom:4, fontFamily:Sans,
       }}>{T.iv_qta_eyebrow}</div>
       <div style={{
         fontFamily:Serif, fontWeight:400, fontSize:20,
@@ -252,7 +222,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
         marginBottom:6,
       }}>{T.iv_qta_title}</div>
       <div style={{
-        fontSize:12, color:Gray600, marginBottom:18,
+        fontSize:12, color:InkMuted, marginBottom:18,
         lineHeight:1.5, fontFamily:Sans,
       }}>{T.iv_qta_sub}</div>
 
@@ -261,8 +231,8 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
         <div style={{
           padding:"18px 16px",
           background:CreamSoft, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
-          textAlign:"center", color:Gray600,
+          border:"0.5px solid "+Hairline,
+          textAlign:"center", color:InkMuted,
           fontSize:12, fontFamily:Sans, lineHeight:1.5,
         }}>{T.iv_qta_empty}</div>
       )}
@@ -272,7 +242,9 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
         <button onClick={onRun} style={{
           ...B({
             width:"100%", padding:"14px 22px", borderRadius:RadiusPill,
-            background: GradPurple, color: "#fff",
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color:"#fff",
+            border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             transition:"all 200ms ease-out",
@@ -292,16 +264,16 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
         <div style={{
           padding:"32px 18px", textAlign:"center",
           background:Paper, borderRadius:RadiusMd,
-          border:"0.5px solid "+Gray200,
+          border:"0.5px solid "+Hairline,
         }}>
           <div style={{
             width:32, height:32, margin:"0 auto 12px",
-            border:"2.5px solid "+Gray200, borderTopColor:Purple,
+            border:"2.5px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
           <div style={{
-            fontSize:13, color:Gray600, fontFamily:Sans,
+            fontSize:13, color:InkMuted, fontFamily:Sans,
           }}>{T.iv_qta_loading}</div>
         </div>
       )}
@@ -319,7 +291,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                 padding:"7px 14px", borderRadius:RadiusPill,
                 background: copiedAll ? GreenSoft : Paper,
                 color: copiedAll ? Green : Ink,
-                border:"0.5px solid "+(copiedAll ? Green : Gray200),
+                border:"0.5px solid "+(copiedAll ? Green : Hairline),
                 fontSize:11, fontWeight:600,
                 fontFamily:Sans, letterSpacing:"0.02em",
                 display:"inline-flex", alignItems:"center", gap:6,
@@ -368,7 +340,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                   return (
                     <div key={qi} style={{
                       background:Paper, borderRadius:RadiusMd,
-                      border:"0.5px solid "+Gray200,
+                      border:"0.5px solid "+Hairline,
                       boxShadow:ShadowSm,
                       padding:"14px 16px",
                       marginBottom:10,
@@ -382,10 +354,10 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                       }}>"{q.question || ""}"</div>
                       {q.why && (
                         <div style={{
-                          fontSize:11, color:Gray600,
+                          fontSize:11, color:InkMuted,
                           lineHeight:1.5, marginBottom:6,
                         }}>
-                          <span style={{fontWeight:600, color:GoldDeep}}>{T.iv_qta_why}</span>
+                          <span style={{fontWeight:600, color:Coral}}>{T.iv_qta_why}</span>
                           {" : " + q.why}
                         </div>
                       )}
@@ -396,7 +368,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                       }}>
                         {q.best_for ? (
                           <span style={{
-                            fontSize:10, color:Gray600,
+                            fontSize:10, color:InkMuted,
                             fontFamily:Sans, letterSpacing:"0.04em",
                             textTransform:"uppercase", fontWeight:600,
                           }}>
@@ -407,8 +379,8 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                           ...B({
                             padding:"5px 11px", borderRadius:RadiusPill,
                             background: isCopied ? GreenSoft : "transparent",
-                            color: isCopied ? Green : Gray600,
-                            border:"0.5px solid "+(isCopied ? Green : Gray200),
+                            color: isCopied ? Green : InkMuted,
+                            border:"0.5px solid "+(isCopied ? Green : Hairline),
                             fontSize:10, fontWeight:600,
                             fontFamily:Sans, letterSpacing:"0.04em",
                             textTransform:"uppercase",
@@ -440,12 +412,12 @@ function AfterContextForm({ T, afterContext, setAfterContext }) {
   const fld = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.08em", textTransform:"uppercase",
-    color:GoldDeep, marginBottom:6, fontFamily:Sans,
+    color:Coral, marginBottom:6, fontFamily:Sans,
   };
   const inputStyle = {
     width:"100%", padding:"9px 12px",
     borderRadius:RadiusSm,
-    border:"0.5px solid "+Gray200,
+    border:"0.5px solid "+Hairline,
     background:Paper, color:Ink,
     fontSize:13, fontFamily:Sans,
     outline:"none",
@@ -456,7 +428,7 @@ function AfterContextForm({ T, afterContext, setAfterContext }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:GoldDeep, marginBottom:14, fontFamily:Sans,
+        color:Coral, marginBottom:14, fontFamily:Sans,
       }}>{T.iv_af_section_context}</div>
 
       <div style={{
@@ -531,7 +503,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
     padding:"6px 12px", borderRadius:RadiusPill,
     background: tone === val ? Ink : Paper,
     color: tone === val ? Cream : Ink,
-    border:"0.5px solid "+(tone === val ? Ink : Gray200),
+    border:"0.5px solid "+(tone === val ? Ink : Hairline),
     fontFamily:Sans, fontWeight: tone === val ? 600 : 500,
     fontSize:11, letterSpacing:"0.02em",
     transition:"all 180ms ease-out", cursor:"pointer",
@@ -540,7 +512,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
   return (
     <div style={{
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200,
+      border:"0.5px solid "+Hairline,
       boxShadow:ShadowSm,
       padding:18, marginBottom:16,
       fontFamily:Sans,
@@ -551,7 +523,8 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
       }}>
         <div style={{
           width:34, height:34, borderRadius:9,
-          background:GoldDeep, color:Cream,
+          background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:"#fff",
           display:"flex", alignItems:"center", justifyContent:"center",
           flexShrink:0,
         }}>
@@ -567,7 +540,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
             fontFamily:Serif, fontWeight:500, fontSize:16,
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.iv_em_card_title}</div>
-          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+          <div style={{fontSize:11, color:InkMuted, marginTop:2}}>
             {T.iv_em_card_sub}
           </div>
         </div>
@@ -579,7 +552,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
           <div style={{
             fontSize:10, fontWeight:600,
             letterSpacing:"0.08em", textTransform:"uppercase",
-            color:Gray600, marginBottom:8, marginTop:6,
+            color:InkMuted, marginBottom:8, marginTop:6,
             fontFamily:Sans,
           }}>{T.iv_em_tone_label}</div>
           <div style={{
@@ -593,8 +566,9 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
           <button onClick={onRun} disabled={!recapFilled} style={{
             ...B({
               width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
-              background: recapFilled ? Ink : Gray200,
-              color: recapFilled ? Cream : Gray600,
+              background: recapFilled ? `linear-gradient(135deg, ${Purple}, ${Magenta})` : Gray200,
+              color: recapFilled ? "#fff" : InkMuted,
+              border:"none",
               fontFamily:Sans, fontWeight:600, fontSize:13,
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
               transition:"all 200ms ease-out",
@@ -617,11 +591,11 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
         }}>
           <div style={{
             width:28, height:28, margin:"0 auto 10px",
-            border:"2px solid "+Gray200, borderTopColor:GoldDeep,
+            border:"2px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
-          <div style={{fontSize:12, color:Gray600}}>{T.iv_em_loading}</div>
+          <div style={{fontSize:12, color:InkMuted}}>{T.iv_em_loading}</div>
         </div>
       )}
 
@@ -632,12 +606,12 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
           <div style={{
             background:CreamSoft, borderRadius:RadiusSm,
             padding:"10px 12px", marginBottom:10,
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
           }}>
             <div style={{
               fontSize:9, fontWeight:700,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:3,
+              color:Coral, marginBottom:3,
             }}>{T.iv_em_subject}</div>
             <div style={{
               fontSize:13, fontWeight:500, color:Ink,
@@ -648,12 +622,12 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
           <div style={{
             background:CreamSoft, borderRadius:RadiusSm,
             padding:"12px 14px", marginBottom:14,
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
           }}>
             <div style={{
               fontSize:9, fontWeight:700,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:6,
+              color:Coral, marginBottom:6,
             }}>{T.iv_em_body}</div>
             <div style={{
               fontSize:13, color:Ink, lineHeight:1.6,
@@ -668,7 +642,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
                 padding:"7px 12px", borderRadius:RadiusPill,
                 background: copiedSubject ? GreenSoft : Paper,
                 color: copiedSubject ? Green : Ink,
-                border:"0.5px solid "+(copiedSubject ? Green : Gray200),
+                border:"0.5px solid "+(copiedSubject ? Green : Hairline),
                 fontSize:11, fontWeight:600, fontFamily:Sans,
                 letterSpacing:"0.02em",
               })
@@ -680,7 +654,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
                 padding:"7px 12px", borderRadius:RadiusPill,
                 background: copiedBody ? GreenSoft : Paper,
                 color: copiedBody ? Green : Ink,
-                border:"0.5px solid "+(copiedBody ? Green : Gray200),
+                border:"0.5px solid "+(copiedBody ? Green : Hairline),
                 fontSize:11, fontWeight:600, fontFamily:Sans,
                 letterSpacing:"0.02em",
               })
@@ -693,9 +667,9 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
               )} style={{
               ...B({
                 padding:"7px 12px", borderRadius:RadiusPill,
-                background: copiedAll ? GreenSoft : Ink,
-                color: copiedAll ? Green : Cream,
-                border:"0.5px solid "+(copiedAll ? Green : Ink),
+                background: copiedAll ? GreenSoft : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color: copiedAll ? Green : "#fff",
+                border:"none",
                 fontSize:11, fontWeight:600, fontFamily:Sans,
                 letterSpacing:"0.02em",
               })
@@ -706,12 +680,12 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
           {/* Tone selector + regenerate */}
           <div style={{
             paddingTop:14,
-            borderTop:"0.5px solid "+Gray200,
+            borderTop:"0.5px solid "+Hairline,
           }}>
             <div style={{
               fontSize:10, fontWeight:600,
               letterSpacing:"0.08em", textTransform:"uppercase",
-              color:Gray600, marginBottom:8,
+              color:InkMuted, marginBottom:8,
             }}>{T.iv_em_regenerate}</div>
             <div style={{display:"flex", flexWrap:"wrap", gap:6}}>
               <button onClick={()=>{ setTone("warm"); onRun(); }} style={B(tonePill("warm", T.iv_em_tone_warm))}>{T.iv_em_tone_warm}</button>
@@ -731,7 +705,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
   return (
     <div style={{
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200,
+      border:"0.5px solid "+Hairline,
       boxShadow:ShadowSm,
       padding:18, marginBottom:16,
       fontFamily:Sans,
@@ -742,7 +716,8 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
       }}>
         <div style={{
           width:34, height:34, borderRadius:9,
-          background:Purple, color:Cream,
+          background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:"#fff",
           display:"flex", alignItems:"center", justifyContent:"center",
           flexShrink:0,
         }}>
@@ -758,7 +733,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
             fontFamily:Serif, fontWeight:500, fontSize:16,
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.iv_db_card_title}</div>
-          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+          <div style={{fontSize:11, color:InkMuted, marginTop:2}}>
             {T.iv_db_card_sub}
           </div>
         </div>
@@ -769,8 +744,9 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
         <button onClick={onRun} disabled={!recapFilled} style={{
           ...B({
             width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
-            background: recapFilled ? GradPurple : Gray200,
-            color: recapFilled ? Cream : Gray600,
+            background: recapFilled ? `linear-gradient(135deg, ${Purple}, ${Magenta})` : Gray200,
+            color: recapFilled ? "#fff" : InkMuted,
+            border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             transition:"all 200ms ease-out",
@@ -793,11 +769,11 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
         }}>
           <div style={{
             width:28, height:28, margin:"0 auto 10px",
-            border:"2px solid "+Gray200, borderTopColor:Purple,
+            border:"2px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
-          <div style={{fontSize:12, color:Gray600}}>{T.iv_db_loading}</div>
+          <div style={{fontSize:12, color:InkMuted}}>{T.iv_db_loading}</div>
         </div>
       )}
 
@@ -809,14 +785,14 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
             <div style={{
               padding:"14px 16px",
               background:CreamSoft,
-              border:"0.5px solid "+Gray200,
+              border:"0.5px solid "+Hairline,
               borderRadius:RadiusMd,
               marginBottom:14,
             }}>
               <div style={{
                 fontSize:10, fontWeight:700,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:5,
+                color:Coral, marginBottom:5,
               }}>{T.iv_db_verdict}</div>
               <div style={{
                 fontFamily:Serif, fontWeight:500, fontSize:16,
@@ -824,7 +800,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                 marginBottom:4,
               }}>{result.verdict.label || ""}</div>
               <div style={{
-                fontSize:12, color:Gray600, lineHeight:1.5,
+                fontSize:12, color:InkMuted, lineHeight:1.5,
                 fontStyle:"italic",
               }}>{result.verdict.why || ""}</div>
             </div>
@@ -859,17 +835,17 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.08em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:8,
+                color:Coral, marginBottom:8,
               }}>{T.iv_db_improvements}</div>
               {result.improvements.map((s, i) => (
                 <div key={i} style={{
                   display:"flex", gap:8, alignItems:"flex-start",
                   padding:"9px 12px", marginBottom:6,
-                  background:"#fff8e6", borderRadius:RadiusSm,
-                  border:"0.5px solid "+GoldDeep,
+                  background:CoralSoft, borderRadius:RadiusSm,
+                  border:"0.5px solid "+Coral,
                   fontSize:12, color:Ink, lineHeight:1.5,
                 }}>
-                  <span style={{color:GoldDeep, fontWeight:700, flexShrink:0}}>!</span>
+                  <span style={{color:Coral, fontWeight:700, flexShrink:0}}>!</span>
                   <span>{s}</span>
                 </div>
               ))}
@@ -888,8 +864,8 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                 <div style={{
                   padding:"9px 12px",
                   background:CreamSoft, borderRadius:RadiusSm,
-                  border:"0.5px solid "+Gray200,
-                  fontSize:12, color:Gray600, fontStyle:"italic",
+                  border:"0.5px solid "+Hairline,
+                  fontSize:12, color:InkMuted, fontStyle:"italic",
                 }}>{T.iv_db_no_red_flags}</div>
               ) : (
                 result.red_flags.map((s, i) => (
@@ -1009,7 +985,7 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
   return (
     <div style={{
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200,
+      border:"0.5px solid "+Hairline,
       boxShadow:ShadowSm,
       padding:18, marginBottom:16,
       fontFamily:Sans,
@@ -1020,7 +996,8 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
       }}>
         <div style={{
           width:34, height:34, borderRadius:9,
-          background:GoldDeep, color:Cream,
+          background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:"#fff",
           display:"flex", alignItems:"center", justifyContent:"center",
           flexShrink:0,
         }}>
@@ -1037,7 +1014,7 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
             fontFamily:Serif, fontWeight:500, fontSize:16,
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.iv_cs_card_title}</div>
-          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+          <div style={{fontSize:11, color:InkMuted, marginTop:2}}>
             {T.iv_cs_card_sub}
           </div>
         </div>
@@ -1048,8 +1025,9 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
         <button onClick={onRun} disabled={!hasMainResult} style={{
           ...B({
             width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
-            background: hasMainResult ? GradGold : Gray200,
-            color: hasMainResult ? Cream : Gray600,
+            background: hasMainResult ? `linear-gradient(135deg, ${Purple}, ${Magenta})` : Gray200,
+            color: hasMainResult ? "#fff" : InkMuted,
+            border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             transition:"all 200ms ease-out",
@@ -1074,11 +1052,11 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
         }}>
           <div style={{
             width:28, height:28, margin:"0 auto 10px",
-            border:"2px solid "+Gray200, borderTopColor:GoldDeep,
+            border:"2px solid "+Hairline, borderTopColor:Purple,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
-          <div style={{fontSize:12, color:Gray600}}>{T.iv_cs_loading}</div>
+          <div style={{fontSize:12, color:InkMuted}}>{T.iv_cs_loading}</div>
         </div>
       )}
 
@@ -1094,7 +1072,9 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
               ...B({
                 flex:1, minWidth:130,
                 padding:"10px 14px", borderRadius:RadiusPill,
-                background:Ink, color:Cream,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff",
+                border:"none",
                 fontSize:12, fontWeight:600, fontFamily:Sans,
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
               })
@@ -1113,8 +1093,8 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
                 flex:1, minWidth:130,
                 padding:"10px 14px", borderRadius:RadiusPill,
                 background: downloading ? Gray200 : Paper,
-                color: downloading ? Gray600 : Ink,
-                border:"0.5px solid "+(downloading ? Gray200 : Ink),
+                color: downloading ? InkMuted : Ink,
+                border:"0.5px solid "+(downloading ? Hairline : Ink),
                 fontSize:12, fontWeight:600, fontFamily:Sans,
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
               })
@@ -1130,10 +1110,10 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
             </button>
           </div>
 
-          {/* Preview du pense-bete (rendu A4 simule) */}
+          {/* Preview du pense-bete (rendu A4 simule) - garde palette gold pour cohérence avec PDF */}
           <div ref={sheetRef} style={{
             background:"#ffffff",
-            border:"0.5px solid "+Gray200,
+            border:"0.5px solid "+Hairline,
             borderRadius:8,
             padding:"24px 28px",
             fontFamily:"Inter, Helvetica, Arial, sans-serif",
@@ -1147,7 +1127,7 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
                 fontSize:9, letterSpacing:"0.12em",
                 textTransform:"uppercase", color:"#a07e3a",
                 fontWeight:600, marginBottom:3,
-              }}>CV Factory</div>
+              }}>Nuvi</div>
               <div style={{
                 fontFamily:"Georgia, serif", fontSize:20,
                 fontWeight:600, letterSpacing:"-0.02em",
@@ -1248,7 +1228,7 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
   return (
     <div style={{
       background:Paper, borderRadius:RadiusMd,
-      border:"0.5px solid "+Gray200,
+      border:"0.5px solid "+Hairline,
       boxShadow:ShadowSm,
       padding:18, marginBottom:16,
       fontFamily:Sans,
@@ -1259,7 +1239,8 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
       }}>
         <div style={{
           width:34, height:34, borderRadius:9,
-          background:Purple, color:Cream,
+          background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:"#fff",
           display:"flex", alignItems:"center", justifyContent:"center",
           flexShrink:0,
         }}>
@@ -1278,7 +1259,7 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
             fontFamily:Serif, fontWeight:500, fontSize:16,
             color:Ink, letterSpacing:"-0.01em",
           }}>{T.iv_pk_card_title}</div>
-          <div style={{fontSize:11, color:Gray600, marginTop:2}}>
+          <div style={{fontSize:11, color:InkMuted, marginTop:2}}>
             {T.iv_pk_card_sub}
           </div>
         </div>
@@ -1287,8 +1268,9 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
       <button onClick={onRun} disabled={!hasMainResult || loading} style={{
         ...B({
           width:"100%", padding:"12px 18px", borderRadius:RadiusPill,
-          background: !hasMainResult ? Gray200 : (loading ? Gray200 : GradPurple),
-          color: !hasMainResult ? Gray600 : (loading ? Gray600 : Cream),
+          background: !hasMainResult ? Gray200 : (loading ? Gray200 : `linear-gradient(135deg, ${Purple}, ${Magenta})`),
+          color: !hasMainResult ? InkMuted : (loading ? InkMuted : "#fff"),
+          border:"none",
           fontFamily:Sans, fontWeight:600, fontSize:13,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           transition:"all 200ms ease-out",
@@ -1311,7 +1293,7 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
           <span style={{
             display:"inline-block",
             width:14, height:14,
-            border:"2px solid "+Gray400, borderTopColor:Gray600,
+            border:"2px solid "+Gray400, borderTopColor:InkMuted,
             borderRadius:"50%",
             animation:"cvfSpin 1s linear infinite",
           }}/>
@@ -1401,7 +1383,7 @@ export default function InterviewModal({
       }}>
         {/* iOS handle */}
         <div style={{
-          width:40, height:4, background:Gray200,
+          width:40, height:4, background:Hairline,
           borderRadius:RadiusPill,
           margin:"10px auto 6px", flexShrink:0,
         }}/>
@@ -1409,7 +1391,7 @@ export default function InterviewModal({
         {/* Header */}
         <div style={{
           padding:"6px 24px 14px",
-          borderBottom:"0.5px solid "+Gray200, flexShrink:0,
+          borderBottom:"0.5px solid "+Hairline, flexShrink:0,
           display:"flex", alignItems:"flex-start",
           justifyContent:"space-between", gap:12,
         }}>
@@ -1417,7 +1399,7 @@ export default function InterviewModal({
             <div style={{
               fontSize:11, fontWeight:600,
               letterSpacing:"0.12em", textTransform:"uppercase",
-              color:GoldDeep, marginBottom:4,
+              color:Coral, marginBottom:4,
             }}>{T.iv_eyebrow}</div>
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1425,20 +1407,26 @@ export default function InterviewModal({
             }}>
               {T.iv_title_a}
               {" "}<em style={{
-                fontStyle:"italic", color:Gold,
+                fontStyle:"italic",
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                WebkitBackgroundClip:"text",
+                WebkitTextFillColor:"transparent",
+                backgroundClip:"text",
+                paddingRight:"0.15em",
+                display:"inline-block",
               }}>{T.iv_title_em}</em>
               {T.iv_title_b}
             </div>
             <div style={{
-              fontSize:12, color:Gray600, marginTop:4,
+              fontSize:12, color:InkMuted, marginTop:4,
               lineHeight:1.5,
             }}>{T.iv_sub}</div>
           </div>
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
               background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:Gray600,
-              border:"0.5px solid "+Gray200,
+              width:32, height:32, fontSize:16, color:InkMuted,
+              border:"0.5px solid "+Hairline,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,
               opacity: loading ? 0.4 : 1,
@@ -1449,7 +1437,7 @@ export default function InterviewModal({
         {/* v2 Interview Continuity : Round selector + Tabs */}
         <div style={{
           padding:"14px 24px 6px",
-          borderBottom:"0.5px solid "+Gray200,
+          borderBottom:"0.5px solid "+Hairline,
           flexShrink:0,
           background:CreamSoft,
         }}>
@@ -1459,7 +1447,7 @@ export default function InterviewModal({
               <div style={{
                 fontSize:10, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:GoldDeep, marginBottom:6, fontFamily:Sans,
+                color:Coral, marginBottom:6, fontFamily:Sans,
               }}>{T.iv_round_label}</div>
               <select
                 value={round || "all"}
@@ -1467,7 +1455,7 @@ export default function InterviewModal({
                 style={{
                   width:"100%", padding:"9px 12px",
                   borderRadius:RadiusSm,
-                  border:"0.5px solid "+Gray200,
+                  border:"0.5px solid "+Hairline,
                   background:Paper, color:Ink,
                   fontSize:13, fontFamily:Sans,
                   outline:"none", cursor:"pointer",
@@ -1479,7 +1467,7 @@ export default function InterviewModal({
                 <option value="board">{T.iv_round_board}</option>
               </select>
               <div style={{
-                fontSize:10, color:Gray600,
+                fontSize:10, color:InkMuted,
                 marginTop:5, fontFamily:Sans, lineHeight:1.4,
                 fontStyle:"italic",
               }}>
@@ -1505,7 +1493,7 @@ export default function InterviewModal({
                   flex:1, padding:"9px 12px", borderRadius:RadiusPill,
                   background: tab === k ? Ink : Paper,
                   color: tab === k ? Cream : Ink,
-                  border:"0.5px solid "+(tab === k ? Ink : Gray200),
+                  border:"0.5px solid "+(tab === k ? Ink : Hairline),
                   fontFamily:Sans, fontWeight: tab === k ? 600 : 500,
                   fontSize:12,
                   transition:"all 180ms ease-out",
@@ -1530,8 +1518,8 @@ export default function InterviewModal({
                 <div style={{
                   padding:"24px 18px",
                   background:CreamSoft, borderRadius:RadiusMd,
-                  border:"0.5px solid "+Gray200,
-                  textAlign:"center", color:Gray600,
+                  border:"0.5px solid "+Hairline,
+                  textAlign:"center", color:InkMuted,
                   fontSize:13, fontFamily:Sans,
                 }}>{T.iv_no_cv}</div>
               ) : (
@@ -1541,7 +1529,7 @@ export default function InterviewModal({
                     <div style={{
                       fontSize:11, fontWeight:600,
                       letterSpacing:"0.12em", textTransform:"uppercase",
-                      color:GoldDeep, marginBottom:4, fontFamily:Sans,
+                      color:Coral, marginBottom:4, fontFamily:Sans,
                     }}>{T.iv_during_eyebrow}</div>
                     <div style={{
                       fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1549,12 +1537,18 @@ export default function InterviewModal({
                     }}>
                       {T.iv_during_title_a}
                       {" "}<em style={{
-                        fontStyle:"italic", color:Gold,
+                        fontStyle:"italic",
+                        background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                        WebkitBackgroundClip:"text",
+                        WebkitTextFillColor:"transparent",
+                        backgroundClip:"text",
+                        paddingRight:"0.15em",
+                        display:"inline-block",
                       }}>{T.iv_during_title_em}</em>
                       {T.iv_during_title_b}
                     </div>
                     <div style={{
-                      fontSize:12, color:Gray600, marginTop:5,
+                      fontSize:12, color:InkMuted, marginTop:5,
                       lineHeight:1.5,
                     }}>{T.iv_during_sub}</div>
                   </div>
@@ -1563,7 +1557,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.12em", textTransform:"uppercase",
-                    color:GoldDeep, marginBottom:14, fontFamily:Sans,
+                    color:Coral, marginBottom:14, fontFamily:Sans,
                   }}>{T.iv_during_section_tools}</div>
 
                   {/* Cartes pense-bete + pack PDF */}
@@ -1593,8 +1587,8 @@ export default function InterviewModal({
                 <div style={{
                   padding:"24px 18px",
                   background:CreamSoft, borderRadius:RadiusMd,
-                  border:"0.5px solid "+Gray200,
-                  textAlign:"center", color:Gray600,
+                  border:"0.5px solid "+Hairline,
+                  textAlign:"center", color:InkMuted,
                   fontSize:13, fontFamily:Sans,
                 }}>{T.iv_no_cv}</div>
               ) : (
@@ -1604,7 +1598,7 @@ export default function InterviewModal({
                     <div style={{
                       fontSize:11, fontWeight:600,
                       letterSpacing:"0.12em", textTransform:"uppercase",
-                      color:GoldDeep, marginBottom:4, fontFamily:Sans,
+                      color:Coral, marginBottom:4, fontFamily:Sans,
                     }}>{T.iv_after_eyebrow}</div>
                     <div style={{
                       fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1612,12 +1606,18 @@ export default function InterviewModal({
                     }}>
                       {T.iv_after_title_a}
                       {" "}<em style={{
-                        fontStyle:"italic", color:Gold,
+                        fontStyle:"italic",
+                        background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                        WebkitBackgroundClip:"text",
+                        WebkitTextFillColor:"transparent",
+                        backgroundClip:"text",
+                        paddingRight:"0.15em",
+                        display:"inline-block",
                       }}>{T.iv_after_title_em}</em>
                       {T.iv_after_title_b}
                     </div>
                     <div style={{
-                      fontSize:12, color:Gray600, marginTop:5,
+                      fontSize:12, color:InkMuted, marginTop:5,
                       lineHeight:1.5,
                     }}>{T.iv_after_sub}</div>
                   </div>
@@ -1635,7 +1635,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.12em", textTransform:"uppercase",
-                    color:GoldDeep, marginBottom:14, fontFamily:Sans,
+                    color:Coral, marginBottom:14, fontFamily:Sans,
                   }}>{T.iv_af_section_tools}</div>
 
                   {/* Cartes email + debrief */}
@@ -1667,8 +1667,8 @@ export default function InterviewModal({
             <div style={{
               padding:"24px 18px",
               background:CreamSoft, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200,
-              textAlign:"center", color:Gray600,
+              border:"0.5px solid "+Hairline,
+              textAlign:"center", color:InkMuted,
               fontSize:13, fontFamily:Sans,
             }}>{T.iv_no_cv}</div>
           )}
@@ -1681,7 +1681,7 @@ export default function InterviewModal({
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  color:GoldDeep, marginBottom:8,
+                  color:Coral, marginBottom:8,
                   fontFamily:Sans,
                 }}>{T.iv_offer_label}</div>
                 {prefilledOffer && (
@@ -1703,7 +1703,7 @@ export default function InterviewModal({
                     width:"100%",
                     padding:"12px 14px",
                     borderRadius:RadiusSm,
-                    border:"0.5px solid "+Gray200,
+                    border:"0.5px solid "+Hairline,
                     background:Paper,
                     color:Ink, fontSize:13,
                     fontFamily:Sans,
@@ -1719,8 +1719,9 @@ export default function InterviewModal({
               <button onClick={onRun} disabled={!apiKey} style={{
                 ...B({
                   width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-                  background: apiKey ? GradPurple : Gray200,
-                  color: apiKey ? "#fff" : Gray600,
+                  background: apiKey ? `linear-gradient(135deg, ${Purple}, ${Magenta})` : Gray200,
+                  color: apiKey ? "#fff" : InkMuted,
+                  border:"none",
                   fontFamily:Sans, fontWeight:600, fontSize:14,
                   display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
                   transition:"all 200ms ease-out",
@@ -1741,11 +1742,11 @@ export default function InterviewModal({
             <div style={{
               padding:"40px 20px", textAlign:"center",
               background:Paper, borderRadius:RadiusMd,
-              border:"0.5px solid "+Gray200, boxShadow:ShadowSm,
+              border:"0.5px solid "+Hairline, boxShadow:ShadowSm,
             }}>
               <div style={{
                 width:42, height:42, margin:"0 auto 14px",
-                border:"3px solid "+Gray200, borderTopColor:Purple,
+                border:"3px solid "+Hairline, borderTopColor:Purple,
                 borderRadius:"50%",
                 animation:"cvfSpin 1s linear infinite",
               }}/>
@@ -1754,7 +1755,7 @@ export default function InterviewModal({
                 color:Ink, letterSpacing:"-0.01em",
               }}>{T.iv_running}</div>
               <div style={{
-                fontSize:12, color:Gray600, marginTop:6,
+                fontSize:12, color:InkMuted, marginTop:6,
               }}>{T.iv_running_sub}</div>
             </div>
           )}
@@ -1774,7 +1775,7 @@ export default function InterviewModal({
                       background:Paper, color:Ink,
                       fontSize:11, fontWeight:500,
                       fontFamily:Sans,
-                      border:"0.5px solid "+Gray200,
+                      border:"0.5px solid "+Hairline,
                     }}>{result.country}</span>
                   )}
                   {result.sector && (
@@ -1783,7 +1784,7 @@ export default function InterviewModal({
                       background:Paper, color:Ink,
                       fontSize:11, fontWeight:500,
                       fontFamily:Sans,
-                      border:"0.5px solid "+Gray200,
+                      border:"0.5px solid "+Hairline,
                     }}>{result.sector}</span>
                   )}
                   {result.level && (
@@ -1792,7 +1793,7 @@ export default function InterviewModal({
                       background:Paper, color:Ink,
                       fontSize:11, fontWeight:500,
                       fontFamily:Sans,
-                      border:"0.5px solid "+Gray200,
+                      border:"0.5px solid "+Hairline,
                     }}>{result.level}</span>
                   )}
                 </div>
@@ -1807,15 +1808,15 @@ export default function InterviewModal({
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  color:Gray600,
+                  color:InkMuted,
                 }}>
                   {T.iv_progress} {idx + 1} {T.iv_of} {total}
                 </div>
                 <button onClick={onRun} style={{
                   ...B({
                     padding:"6px 12px", borderRadius:RadiusPill,
-                    background:"transparent", color:GoldDeep,
-                    border:"0.5px solid "+Gray200,
+                    background:"transparent", color:Coral,
+                    border:"0.5px solid "+Hairline,
                     fontSize:11, fontWeight:500,
                     fontFamily:Sans,
                   })
@@ -1834,7 +1835,7 @@ export default function InterviewModal({
                     style={{
                       ...B({
                         flex:1, height:4,
-                        background: i === idx ? Ink : (i < idx ? Gold : Gray200),
+                        background: i === idx ? Ink : (i < idx ? Purple : Hairline),
                         borderRadius:RadiusPill,
                         cursor:"pointer", padding:0,
                         transition:"all 200ms ease-out",
@@ -1859,7 +1860,7 @@ export default function InterviewModal({
                       flex:1, padding:"12px 14px", borderRadius:RadiusPill,
                       background: idx === 0 ? Gray100 : Paper,
                       color: idx === 0 ? Gray400 : Ink,
-                      border:"0.5px solid "+(idx === 0 ? Gray200 : Ink),
+                      border:"0.5px solid "+(idx === 0 ? Hairline : Ink),
                       fontFamily:Sans, fontWeight:600, fontSize:13,
                       display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
                       transition:"all 200ms ease-out",
@@ -1878,8 +1879,9 @@ export default function InterviewModal({
                   style={{
                     ...B({
                       flex:1, padding:"12px 14px", borderRadius:RadiusPill,
-                      background: idx >= total - 1 ? Gray100 : Ink,
-                      color: idx >= total - 1 ? Gray400 : Cream,
+                      background: idx >= total - 1 ? Gray100 : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                      color: idx >= total - 1 ? Gray400 : "#fff",
+                      border:"none",
                       fontFamily:Sans, fontWeight:600, fontSize:13,
                       display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
                       transition:"all 200ms ease-out",
@@ -1904,7 +1906,7 @@ export default function InterviewModal({
                 }}>
                   <div style={{
                     position:"absolute", inset:0,
-                    background:"radial-gradient(ellipse 100% 80% at 90% 0%, rgba(201,169,110,.4) 0%, transparent 60%)",
+                    background:`radial-gradient(ellipse 100% 80% at 90% 0%, ${Purple}66 0%, transparent 60%)`,
                     pointerEvents:"none",
                   }}/>
                   <div style={{position:"relative"}}>
@@ -1913,7 +1915,7 @@ export default function InterviewModal({
                       color:Cream, letterSpacing:"-0.01em", marginBottom:4,
                     }}>{T.iv_done}</div>
                     <div style={{
-                      fontSize:12, color:Gold,
+                      fontSize:12, color:Purple,
                       lineHeight:1.5,
                     }}>{T.iv_done_sub}</div>
                   </div>
