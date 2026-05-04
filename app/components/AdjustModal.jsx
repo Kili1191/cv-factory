@@ -443,8 +443,7 @@ export default function AdjustModal({
               color: Ink,
               margin: "0 0 6px",
               letterSpacing: "-0.015em",
-              textWrap: "balance",
-              maxWidth: "80%",
+              maxWidth: "85%",
             }}>
               {lang === "fr"
                 ? "Que veux-tu ameliorer ?"
@@ -455,8 +454,7 @@ export default function AdjustModal({
               color: InkMuted,
               lineHeight: 1.5,
               margin: "0 0 22px",
-              maxWidth: "85%",
-              textWrap: "balance",
+              maxWidth: "90%",
             }}>
               {lang === "fr"
                 ? "Decris en une phrase, je m'occupe du reste."
@@ -642,11 +640,12 @@ export default function AdjustModal({
                   >
                     {!isUser && (
                       <div style={{
-                        width: 24, height: 24, flexShrink: 0,
-                        borderRadius: "50%",
-                        background: `linear-gradient(135deg, ${Violet}, ${Magenta})`,
-                        marginTop: 4,
-                      }}/>
+                        width: 28, height: 28, flexShrink: 0,
+                        marginTop: 2,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <NuviCompanion size={28} mode="speaking" />
+                      </div>
                     )}
                     <div style={{
                       padding: "9px 13px",
@@ -675,11 +674,12 @@ export default function AdjustModal({
                   alignItems: "flex-start",
                 }}>
                   <div style={{
-                    width: 24, height: 24, flexShrink: 0,
-                    borderRadius: "50%",
-                    background: `linear-gradient(135deg, ${Violet}, ${Magenta})`,
-                    marginTop: 4,
-                  }}/>
+                    width: 28, height: 28, flexShrink: 0,
+                    marginTop: 2,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <NuviCompanion size={28} mode="loading" />
+                  </div>
                   <div style={{
                     padding: "9px 13px",
                     borderRadius: "4px 16px 16px 16px",
