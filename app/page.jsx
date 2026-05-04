@@ -5411,7 +5411,7 @@ export default function App() {
       {showSettings && (
         <Suspense fallback={null}>
         <SettingsPanel
-          T={T} locale={locale} setLocale={setLocale}
+          T={T} locale={locale} setLocale={setLc_}
           darkMode={darkMode}
           onToggleDark={toggleDarkMode}
           onRelaunchTutorial={relaunchTutorial}
