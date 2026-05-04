@@ -362,7 +362,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
         marginTop: 2,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>
-        <NuviCompanion size={32} mode="speaking" />
+        <NuviCompanion size={48} mode="speaking" />
       </div>
       <div style={{ maxWidth: "85%" }}>
         <div style={{
