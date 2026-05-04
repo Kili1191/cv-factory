@@ -134,7 +134,7 @@ export default function NuviLoadingOverlay({
           <NuviLoadingMessages
             series={series}
             user={user}
-            cycleDuration={15}
+            cycleDuration={18}
           />
         </div>
 
