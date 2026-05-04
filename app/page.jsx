@@ -5684,7 +5684,7 @@ export default function App() {
           lang={locale}
           mob={false}
         />
-        <div style={{
+        <div data-cvf="app" style={{
           display:"flex", height:"100vh",
           fontFamily:Sans,
           background:CreamSoft, overflow:"hidden",
