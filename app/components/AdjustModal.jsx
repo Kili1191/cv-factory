@@ -46,19 +46,19 @@ export default function AdjustModal({
   notify,
   mob = false,
 }) {
-  // Couleurs Nuvi
-  const Cream = "#faf8f3";
-  const CreamSoft = "#f6f2e8";
-  const Paper = "#ffffff";
-  const Ink = "#0f0f12";
-  const InkMuted = "#5a5a62";
-  const Hairline = "#e8e3d6";
-  const Coral = "#d97757";
-  const CoralSoft = "#fce7dd";
+ // Couleurs Nuvi (CSS variables - support dark mode)
+  const Cream = "var(--nuvi-cream)";
+  const CreamSoft = "var(--nuvi-cream-soft)";
+  const Paper = "var(--nuvi-paper)";
+  const Ink = "var(--nuvi-ink)";
+  const InkMuted = "var(--nuvi-ink-muted)";
+  const Hairline = "var(--nuvi-hairline)";
+  const Coral = "var(--nuvi-coral)";
+  const CoralSoft = "var(--nuvi-coral-soft)";
   const CoralDeep = "#993C1D";
-  const Violet = "#5b3df5";
-  const Magenta = "#b91c8c";
-  const VioletSoft = "#ede9fe";
+  const Violet = "var(--nuvi-purple)";
+  const Magenta = "var(--nuvi-magenta)";
+  const VioletSoft = "var(--nuvi-purple-soft)";
 
   // Mode : "intro" (par defaut, single instruction) ou "chat" (apres 1ere instruction)
   const [mode, setMode] = useState("intro");
