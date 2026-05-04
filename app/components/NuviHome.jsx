@@ -100,17 +100,17 @@ export default function NuviHome({
   const [phase, setPhase] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
 
-  // Couleurs Nuvi (design system)
-  const Cream = "#faf8f3";
-  const CreamSoft = "#f6f2e8";
-  const Paper = "#ffffff";
-  const Ink = "#0f0f12";
-  const InkMuted = "#5a5a62";
-  const InkSubtle = "#a0a0a8";
-  const Hairline = "#e8e3d6";
-  const Coral = "#d97757";
-  const Violet = "#5b3df5";
-  const Magenta = "#b91c8c";
+  // Couleurs Nuvi (CSS variables - support dark mode)
+  const Cream = "var(--nuvi-cream)";
+  const CreamSoft = "var(--nuvi-cream-soft)";
+  const Paper = "var(--nuvi-paper)";
+  const Ink = "var(--nuvi-ink)";
+  const InkMuted = "var(--nuvi-ink-muted)";
+  const InkSubtle = "var(--nuvi-gray400)";
+  const Hairline = "var(--nuvi-hairline)";
+  const Coral = "var(--nuvi-coral)";
+  const Violet = "var(--nuvi-purple)";
+  const Magenta = "var(--nuvi-magenta)";
 
   // Sequence cinematique (texte plus riche : ~140 chars * 28ms ~= 4s de stream)
   // 0    -> 1.2s  : compagnon arrive en spinning
