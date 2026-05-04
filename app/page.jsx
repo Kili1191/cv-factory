@@ -1245,6 +1245,8 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
             WebkitBackgroundClip:"text",
             WebkitTextFillColor:"transparent",
             backgroundClip:"text",
+            paddingRight:"0.15em",
+            display:"inline-block",
           }}>{T.off_title_em}</em>
           {", "}{T.off_title_b}
         </>
