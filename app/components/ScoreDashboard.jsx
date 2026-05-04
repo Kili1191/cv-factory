@@ -19,7 +19,7 @@
 
 import { useState, useEffect } from "react";
 import {
-  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft,
+  Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft, Magenta,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradPurple, B,
@@ -28,12 +28,12 @@ import {
 // 8 axes : id stable, label/sub viennent de T (i18n).
 // L'ordre ici detemine l'ordre d'affichage dans la grille.
 const AXES = [
-  { id: "title",           tKey: "sd_ax_title",           subKey: "sd_ax_title_sub",           ctaKey: "sd_cta_title",           accent: GoldDeep,  bg: "rgba(201,169,110,.15)" },
+  { id: "title",           tKey: "sd_ax_title",           subKey: "sd_ax_title_sub",           ctaKey: "sd_cta_title",           accent: Purple,    bg: PurpleSoft },
   { id: "bullets",         tKey: "sd_ax_bullets",         subKey: "sd_ax_bullets_sub",         ctaKey: "sd_cta_bullets",         accent: Purple,    bg: PurpleSoft },
   { id: "ats",             tKey: "sd_ax_ats",             subKey: "sd_ax_ats_sub",             ctaKey: "sd_cta_ats",             accent: Ink,       bg: Gray100 },
   { id: "relevance",       tKey: "sd_ax_relevance",       subKey: "sd_ax_relevance_sub",       ctaKey: "sd_cta_relevance",       accent: Purple,    bg: PurpleSoft },
   { id: "credibility",     tKey: "sd_ax_credibility",     subKey: "sd_ax_credibility_sub",     ctaKey: "sd_cta_credibility",     accent: Coral,     bg: CoralSoft },
-  { id: "design",          tKey: "sd_ax_design",          subKey: "sd_ax_design_sub",          ctaKey: "sd_cta_design",          accent: GoldDeep,  bg: "rgba(201,169,110,.15)" },
+  { id: "design",          tKey: "sd_ax_design",          subKey: "sd_ax_design_sub",          ctaKey: "sd_cta_design",          accent: Purple,    bg: PurpleSoft },
   { id: "readability",     tKey: "sd_ax_readability",     subKey: "sd_ax_readability_sub",     ctaKey: "sd_cta_readability",     accent: Ink,       bg: Gray100 },
   { id: "differentiation", tKey: "sd_ax_differentiation", subKey: "sd_ax_differentiation_sub", ctaKey: "sd_cta_differentiation", accent: Purple,    bg: PurpleSoft },
 ];
@@ -47,7 +47,7 @@ function scoreColor(s) {
 }
 function scoreBg(s) {
   if (s >= 85) return GreenSoft;
-  if (s >= 70) return "rgba(201,169,110,.15)";
+  if (s >= 70) return PurpleSoft;
   if (s >= 50) return CoralSoft;
   return CoralSoft;
 }
@@ -146,7 +146,9 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
                 ...B({
                   display:"inline-flex", alignItems:"center", gap:6,
                   padding: "9px 16px", borderRadius: RadiusPill,
-                  background: Ink, color: Cream,
+                  background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                  color: "#fff",
+                  border: "none",
                   fontFamily: Sans, fontWeight: 600, fontSize: 12,
                 })
               }}
