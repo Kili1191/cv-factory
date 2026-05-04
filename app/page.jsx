@@ -5286,12 +5286,39 @@ export default function App() {
         <Suspense fallback={null}>
         <CoachModal
           T={T} cv={cv} apiKey={apiKey}
+          lang={locale}
           loading={coachLoading}
           messages={coachMessages}
           onSend={runCoachMessage}
           onClear={clearCoach}
           onAdopt={adoptCoachSuggestion}
           onClose={()=>setShowCoach(false)}
+          onAction={(action) => {
+            // [Nuvi v3] Coach proactif : dispatch des actions feature.
+            // Le coach peut proposer des boutons qui ouvrent les modales directement.
+            if (!action || action.type !== "open_modal") return;
+            const m = action.modal;
+            // Ferme le coach d'abord pour eviter conflit modales
+            setShowCoach(false);
+            // Petite tempo pour transition propre
+            setTimeout(() => {
+              if (m === "audit")           setShowAudit(true);
+              else if (m === "score")      setShowScore(true);
+              else if (m === "offer")      setShowOffer(true);
+              else if (m === "match")      setShowOffer(true);
+              else if (m === "pack")       setShowPack(true);
+              else if (m === "truth")      { runTruthCheck && runTruthCheck(); }
+              else if (m === "pos")        { runPositioning && runPositioning(); }
+              else if (m === "gap")        setShowGapRepair(true);
+              else if (m === "translate")  setShowTranslate(true);
+              else if (m === "adjust")     setShowAdjust(true);
+              else if (m === "versions")   setShowVersions(true);
+              else if (m === "compare")    setShowCompare(true);
+              else if (m === "multicv")    setShowMultiCV(true);
+              else if (m === "tracking")   setShowApplications(true);
+              else if (m === "customize")  setShowCustomize(true);
+            }, 150);
+          }}
         />
         </Suspense>
       )}
