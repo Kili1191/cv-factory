@@ -1,31 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 /**
- * NuviLoadingMessages — Copy à haut impact pour le chargement
+ * NuviLoadingMessages : copy à haut impact pour le chargement
  *
- * Affiche des messages psychologiques pendant que Nuvi charge,
- * pour transformer l'attente en moment de prise de conscience.
+ * v3 - Refonte copywriting expert (Mai 2026)
  *
- * 8 leviers psychologiques :
- *   - Contraste avant/après
- *   - Identité projetée
- *   - Spécificité concrète
- *   - Perte > gain (loss aversion)
- *   - Urgence douce implicite
- *   - Validation sociale en creux
- *   - Vision concrète
- *   - Justification post-action
+ * Principes appliqués :
+ *   - Apple style : phrases courtes, mots simples, émotions grandes
+ *   - Mentor brutalement honnête : pas de complaisance, pas de bullshit
+ *   - Mix de 5 leviers psychologiques en rotation :
+ *     1. Identité projetée
+ *     2. Loss aversion
+ *     3. Spécificité concrète
+ *     4. Vision tangible
+ *     5. Validation sociale en creux
  *
- * Structure typographique :
- *   - 2 lignes par message (accroche + révélation)
- *   - Aucun ? orphelin, aucun mot veuve
- *   - Lignes équilibrées (text-wrap: balance)
- *   - Police DM Serif Display (cohérence brand)
+ * Cycle : 15 secondes / 6 phases = 2.5s par phase
+ * Pluriel correct (1 an / 5 ans, 1 année / 5 années)
  *
  * @param {string}  series        - "generation" | "audit" | "match" | "interview" | "generic"
  * @param {object}  user          - { nom, metier, secteur, annees } pour personnaliser
  * @param {number}  cycleDuration - Durée du cycle complet en secondes (default 15)
- *                                  ~2.5 secondes par phrase, rythme dynamique
  * @param {string}  className     - Classes additionnelles
  */
 export default function NuviLoadingMessages({
@@ -40,7 +35,6 @@ export default function NuviLoadingMessages({
   const startTimeRef = useRef(Date.now());
   const currentPhaseIdxRef = useRef(0);
 
-  // Reset start time si phases changent (changement de serie)
   useEffect(() => {
     startTimeRef.current = Date.now();
     currentPhaseIdxRef.current = 0;
@@ -52,7 +46,7 @@ export default function NuviLoadingMessages({
     const tick = () => {
       const elapsed = (Date.now() - startTimeRef.current) / 1000;
       const phaseTime = elapsed % cycleDuration;
-      const progress = phaseTime / cycleDuration; // 0 to 1
+      const progress = phaseTime / cycleDuration;
       const phaseIdx = phases.findIndex(p => progress >= p.from && progress < p.to);
       if (phaseIdx >= 0 && phaseIdx !== currentPhaseIdxRef.current) {
         currentPhaseIdxRef.current = phaseIdx;
@@ -98,7 +92,6 @@ function getSeriesLabel(series) {
 }
 
 // Helper de personnalisation avec gestion du pluriel pour "annees"
-// {annees} ans de travail → "1 an de travail" ou "5 ans de travail"
 function p(template, fallback, user) {
   try {
     let result = template;
@@ -110,11 +103,10 @@ function p(template, fallback, user) {
       hasMissing = true;
       return '';
     });
-    // Gestion du pluriel pour "ans" / "années"
+    // Pluriel correct : "1 an" / "5 ans", "1 année" / "5 années"
     if (!hasMissing && user.annees !== undefined && user.annees !== null && user.annees !== '') {
       const n = parseInt(user.annees, 10);
       if (n === 1 || n === 0) {
-        // Singulier : "1 an" au lieu de "1 ans", "1 année" au lieu de "1 années"
         result = result.replace(/\b(\d+) ans\b/gi, '$1 an');
         result = result.replace(/\b(\d+) années\b/gi, '$1 année');
       }
@@ -127,105 +119,124 @@ function p(template, fallback, user) {
 
 function getPhases(series, user) {
   const seriesMap = {
+    // ======== GÉNÉRATION ========
+    // Cible : quelqu'un qui clique pour générer son CV
+    // Émotion : excitation + appréhension du résultat
     generation: [
       { from: 0,    to: 0.18,
-        line1: p("{annees} ans de travail.", "Des années de travail.", user),
-        line2: "Quelques secondes pour les rassembler." },
+        line1: p("{annees} ans condensés.", "Ton parcours condensé.", user),
+        line2: "C'est ce que les meilleurs savent faire." },
       { from: 0.18, to: 0.34,
-        line1: "La version de toi qui obtient des entretiens",
-        line2: "ne ressemble pas à celle qui hésite à postuler." },
+        line1: "Le candidat moyen postule.",
+        line2: "Le bon candidat est lu." },
       { from: 0.34, to: 0.50,
-        line1: "Quelque part, dans une boîte mail",
-        line2: "un recruteur va lire ce qu'on prépare là." },
+        line1: "Quelque part, là, maintenant",
+        line2: "ton prochain employeur ouvre une boîte mail." },
       { from: 0.50, to: 0.66,
-        line1: p("Ce que tu as fait dans le {secteur}", "Ce que tu as appris dans ton métier", user),
-        line2: "personne ne peut le raconter à ta place." },
+        line1: p("Personne ne raconte un parcours dans le {secteur}", "Personne ne raconte ton métier", user),
+        line2: "comme celui qui l'a vraiment vécu." },
       { from: 0.66, to: 0.84,
-        line1: "Pendant que tu attends, beaucoup envoient",
-        line2: "le même CV banal à dix entreprises." },
+        line1: "Combien de fois tu t'es dit",
+        line2: "que ton CV ne te ressemblait pas ?" },
       { from: 0.84, to: 1.0,
-        line1: "Toi tu vas avoir quelque chose",
-        line2: "qui ne ressemble à personne d'autre." },
+        line1: "Cette fois, il va te ressembler.",
+        line2: "Et c'est ça qui change tout." },
     ],
+
+    // ======== AUDIT ========
+    // Cible : quelqu'un qui veut savoir pourquoi ses candidatures ratent
+    // Émotion : anxiété + soulagement de comprendre enfin
     audit: [
       { from: 0,    to: 0.18,
-        line1: "Un recruteur passe sept secondes",
-        line2: "sur un CV avant de décider." },
+        line1: "Sept secondes.",
+        line2: "C'est tout ce qu'un recruteur t'accorde." },
       { from: 0.18, to: 0.34,
-        line1: "Ce qu'il voit, ce qu'il rate, ce qui le freine",
-        line2: "c'est exactement ce qu'on regarde maintenant." },
+        line1: "Ce qu'il voit, ce qu'il rate, ce qui le gêne.",
+        line2: "Tu vas le savoir avant lui." },
       { from: 0.34, to: 0.50,
-        line1: "La plupart des candidats ne savent pas",
-        line2: "ce qui les a fait passer à la trappe." },
+        line1: "Personne ne t'a jamais expliqué",
+        line2: "pourquoi ton CV finissait à la corbeille." },
       { from: 0.50, to: 0.66,
-        line1: "Tu vas le savoir avant le prochain envoi.",
-        line2: "C'est rare. C'est une vraie longueur d'avance." },
-      { from: 0.66, to: 0.84,
-        line1: "Pas de complaisance, pas de flatterie.",
+        line1: "Pas de flatterie. Pas de complaisance.",
         line2: "Une lecture honnête, comme entre alliés." },
+      { from: 0.66, to: 0.84,
+        line1: "Ceux qui décrochent les bons postes",
+        line2: "ont eu ce diagnostic avant les autres." },
       { from: 0.84, to: 1.0,
-        line1: "Ce que tu vas lire ensuite",
-        line2: "vaudra plus qu'une heure de coaching." },
+        line1: "Ce que tu vas lire dans 3 secondes",
+        line2: "vaut plus qu'une heure de coaching." },
     ],
+
+    // ======== MATCH ========
+    // Cible : quelqu'un qui veut adapter son CV à une offre
+    // Émotion : ciblage + précision chirurgicale
     match: [
       { from: 0,    to: 0.18,
-        line1: "Quelque part en France, à cette seconde",
-        line2: "ton prochain poste est en train d'être ouvert." },
+        line1: "Cette offre.",
+        line2: "Pas une autre. Celle-là." },
       { from: 0.18, to: 0.34,
-        line1: "Pas n'importe lequel.",
-        line2: "Celui où tu seras enfin à ta place." },
+        line1: "Le candidat générique envoie le même CV partout.",
+        line2: "Toi, tu vas être chirurgical." },
       { from: 0.34, to: 0.50,
-        line1: "Les meilleures offres ne sont jamais visibles",
-        line2: "longtemps. On les attrape ou on les rate." },
+        line1: "Chaque mot-clé compte.",
+        line2: "Chaque silence aussi." },
       { from: 0.50, to: 0.66,
         line1: p("Avec {annees} ans d'expérience", "Avec ton expérience", user),
-        line2: "tu mérites mieux que les listes génériques." },
+        line2: "tu mérites un CV taillé sur mesure." },
       { from: 0.66, to: 0.84,
-        line1: "On filtre pour toi le bruit du marché.",
-        line2: "Ce qui reste, c'est ce qui te ressemble." },
+        line1: "Les ATS filtrent 75% des CV en moins d'une seconde.",
+        line2: "Le tien va passer." },
       { from: 0.84, to: 1.0,
         line1: "Dans quelques secondes",
-        line2: "tu sauras ce qui vaut le coup de viser." },
+        line2: "ce poste sera moins une chance qu'une cible." },
     ],
+
+    // ======== INTERVIEW ========
+    // Cible : quelqu'un qui se prépare à un entretien
+    // Émotion : préparation + confiance acquise
     interview: [
       { from: 0,    to: 0.18,
         line1: "Le candidat préparé",
         line2: "ne dit pas les mêmes choses que les autres." },
       { from: 0.18, to: 0.34,
-        line1: "Ce que tu vas répéter dans ta tête ce soir",
-        line2: "tu vas le construire ici, maintenant." },
+        line1: "Les questions pièges. Les silences. Les bouchons.",
+        line2: "On les anticipe ensemble, ici, maintenant." },
       { from: 0.34, to: 0.50,
-        line1: "Les questions pièges, les silences, les bouchons.",
-        line2: "On les anticipe ensemble, là, tout de suite." },
-      { from: 0.50, to: 0.66,
-        line1: "Ceux qui obtiennent les bons salaires",
-        line2: "ne sont pas ceux qui parlent le mieux." },
-      { from: 0.66, to: 0.84,
-        line1: "Ce sont ceux qui sont prêts à raconter",
-        line2: "leur valeur sans hésiter." },
-      { from: 0.84, to: 1.0,
         line1: "Tu n'auras pas une seconde occasion",
         line2: "de faire la première impression." },
+      { from: 0.50, to: 0.66,
+        line1: "Ceux qui négocient les meilleurs salaires",
+        line2: "ne sont pas ceux qui parlent le mieux." },
+      { from: 0.66, to: 0.84,
+        line1: "Ce sont ceux qui savent raconter",
+        line2: "leur valeur sans hésiter." },
+      { from: 0.84, to: 1.0,
+        line1: "Demain, dans la salle",
+        line2: "tu seras content d'avoir fait ça." },
     ],
+
+    // ======== GENERIC ========
+    // Cible : tout autre traitement (Coach, traduction, etc.)
+    // Émotion : confiance + sensation de momentum
     generic: [
       { from: 0,    to: 0.18,
         line1: "Les grands tournants ne s'annoncent jamais.",
         line2: "Ils se reconnaissent après coup." },
       { from: 0.18, to: 0.34,
         line1: "Pendant que tu lis ces lignes",
-        line2: "quelque chose se met en place pour toi." },
+        line2: "quelque chose se met en place." },
       { from: 0.34, to: 0.50,
         line1: "Ce que beaucoup remettent à demain",
         line2: "tu es en train de le faire maintenant." },
       { from: 0.50, to: 0.66,
-        line1: "Le futur toi qui regarde en arrière",
-        line2: "se souviendra de ce moment." },
-      { from: 0.66, to: 0.84,
         line1: "Pas de magie. Pas de promesse vide.",
         line2: "Juste un travail propre, sur ce qui compte." },
+      { from: 0.66, to: 0.84,
+        line1: "Le toi de dans six mois",
+        line2: "se souviendra de cet instant précis." },
       { from: 0.84, to: 1.0,
-        line1: "Le résultat dans quelques secondes",
-        line2: "ne sera utile que si tu en fais quelque chose." },
+        line1: "Le résultat dans quelques secondes.",
+        line2: "Ce que tu en feras, c'est à toi." },
     ],
   };
   return seriesMap[series] || seriesMap.generic;
@@ -237,7 +248,7 @@ const messagesStyles = `
     flex-direction: column;
     align-items: center;
     gap: 14px;
-    max-width: 360px;
+    max-width: 380px;
     text-align: center;
   }
   .nuvi-lm-series {
