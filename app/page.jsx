@@ -1240,7 +1240,11 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         <>
           {T.off_title_a}{" "}
           <em style={{
-            fontFamily:Serif, fontStyle:"italic", color:Gold,
+            fontFamily:Serif, fontStyle:"italic",
+            background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            WebkitBackgroundClip:"text",
+            WebkitTextFillColor:"transparent",
+            backgroundClip:"text",
           }}>{T.off_title_em}</em>
           {", "}{T.off_title_b}
         </>
