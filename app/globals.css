@@ -1,0 +1,119 @@
+/* ============================================================
+ * Nuvi v3 - Theme system avec CSS Variables
+ * ============================================================
+ * 
+ * Light theme par defaut sur :root
+ * Dark theme active via [data-theme="dark"] sur <html>
+ * 
+ * Le switch est gere par page.jsx :
+ *   document.documentElement.dataset.theme = darkMode ? 'dark' : 'light';
+ * 
+ * Les variables sont consommees par tokens.js qui les expose
+ * comme constantes JS (Cream = "var(--nuvi-cream)").
+ * Aucune modification des composants n'est requise.
+ * ============================================================
+ */
+
+:root {
+  /* ===== LIGHT THEME (default) ===== */
+  
+  /* Couleurs de base */
+  --nuvi-ink: #0a0a0a;
+  --nuvi-ink-muted: #5a5a62;
+  --nuvi-cream: #faf8f3;
+  --nuvi-cream-soft: #f6f2e8;
+  --nuvi-paper: #ffffff;
+  --nuvi-hairline: #e8e3d6;
+  
+  /* Echelle de gris */
+  --nuvi-gray50: #fafaf9;
+  --nuvi-gray100: #f5f4f0;
+  --nuvi-gray200: #e7e5dc;
+  --nuvi-gray400: #a8a59a;
+  --nuvi-gray600: #57534e;
+  --nuvi-gray900: #292524;
+  
+  /* Couleurs accent (inchangees en dark) */
+  --nuvi-purple: #5b3df5;
+  --nuvi-purple-soft: #ede9fe;
+  --nuvi-magenta: #b91c8c;
+  --nuvi-coral: #d97757;
+  --nuvi-coral-soft: #fce7dd;
+  --nuvi-green: #16a34a;
+  --nuvi-green-soft: #dcfce7;
+  
+  /* Gold (RESERVE au CV preview, ne change pas en dark) */
+  --nuvi-gold: #c9a96e;
+  --nuvi-gold-deep: #a07840;
+}
+
+/* ===== DARK THEME ===== */
+[data-theme="dark"] {
+  /* Inversion des couleurs de base */
+  --nuvi-ink: #f5f4f0;        /* Texte principal devient clair */
+  --nuvi-ink-muted: #a8a59a;  /* Texte secondaire */
+  --nuvi-cream: #1a1a1c;      /* Fond app devient sombre */
+  --nuvi-cream-soft: #232326; /* Fond secondaire */
+  --nuvi-paper: #2a2a2e;      /* Cards */
+  --nuvi-hairline: #3a3a3e;   /* Borders */
+  
+  /* Echelle de gris inversee */
+  --nuvi-gray50: #1a1a1c;
+  --nuvi-gray100: #232326;
+  --nuvi-gray200: #3a3a3e;
+  --nuvi-gray400: #6a6a72;
+  --nuvi-gray600: #c4c1b8;
+  --nuvi-gray900: #faf8f3;
+  
+  /* Accents adoucis pour dark (moins saturees, plus lisibles) */
+  --nuvi-purple: #7c5dff;
+  --nuvi-purple-soft: rgba(91, 61, 245, 0.15);
+  --nuvi-magenta: #d946ad;
+  --nuvi-coral: #e89579;
+  --nuvi-coral-soft: rgba(217, 119, 87, 0.15);
+  --nuvi-green: #4ade80;
+  --nuvi-green-soft: rgba(22, 163, 74, 0.15);
+  
+  /* Gold reste pareil (reserve CV preview qui reste clair) */
+  --nuvi-gold: #c9a96e;
+  --nuvi-gold-deep: #a07840;
+}
+
+/* ===== Body bg + text par defaut ===== */
+html, body {
+  background-color: var(--nuvi-cream);
+  color: var(--nuvi-ink);
+  transition: background-color 250ms ease, color 250ms ease;
+}
+
+/* ===== Force le CV preview a rester clair en dark mode ===== */
+/* Le CV preview garde son aspect cream/gold pour rester imprimable et professionnel */
+[data-theme="dark"] .cv-preview-container,
+[data-theme="dark"] [data-cv-preview="true"] {
+  --nuvi-ink: #0a0a0a;
+  --nuvi-ink-muted: #5a5a62;
+  --nuvi-cream: #faf8f3;
+  --nuvi-cream-soft: #f6f2e8;
+  --nuvi-paper: #ffffff;
+  --nuvi-hairline: #e8e3d6;
+  --nuvi-gray100: #f5f4f0;
+  --nuvi-gray200: #e7e5dc;
+  --nuvi-gray400: #a8a59a;
+  --nuvi-gray600: #57534e;
+}
+
+/* ===== Scrollbars qui suivent le theme ===== */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--nuvi-cream-soft);
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--nuvi-hairline);
+  border-radius: 5px;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--nuvi-gray400);
+}
