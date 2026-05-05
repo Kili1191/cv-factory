@@ -25,6 +25,7 @@ const ApplicationsTrackerModal = dynamic(() => import("./components/Applications
 const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyModal"), { ssr: false });
 const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
 const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
+const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 
 // CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
@@ -2580,6 +2581,64 @@ export default function App() {
   const [multiCVOffer, setMultiCVOffer] = useState("");
   // v17 chantier 12 : Tutorial
   const [showTutorial, setShowTutorial] = useState(false);
+  // === Tutorial Nuvi v3 demo handlers ===
+  const [tutorialDemoMode, setTutorialDemoMode] = useState(false);
+  const tutorialBackupCV = useRef(null);
+
+  const tutLoadDemoCV = useCallback((demoCV) => {
+    tutorialBackupCV.current = cv;
+    setCV_(demoCV);
+  }, [cv]);
+
+  const tutRestoreCV = useCallback(() => {
+    if (tutorialBackupCV.current) {
+      setCV_(tutorialBackupCV.current);
+      tutorialBackupCV.current = null;
+    }
+  }, []);
+
+  const tutOpenModal = useCallback((modalKey) => {
+    if (modalKey === "open-coach") setShowCoach(true);
+    else if (modalKey === "open-match") setShowOffer(true);
+    else if (modalKey === "open-pack") {
+      setPackCtx({ offer: "Marketing Manager B2B", matchRes: null });
+      setShowPack(true);
+    }
+    else if (modalKey === "open-score") setShowScore(true);
+    else if (modalKey === "open-truth") setShowTruth(true);
+    else if (modalKey === "open-gap") setShowGapRepair(true);
+    else if (modalKey === "open-positioning") setShowPos(true);
+    else if (modalKey === "open-interview") setShowInterview(true);
+    else if (modalKey === "open-multicv") setShowMultiCV(true);
+    else if (modalKey === "open-versions") setShowVersions(true);
+    else if (modalKey === "open-compare") setShowCompare(true);
+    else if (modalKey === "open-customize") setShowCustomize(true);
+    else if (modalKey === "open-translate") setShowTranslate(true);
+    else if (modalKey === "open-linkedin") setShowLinkedIn(true);
+    else if (modalKey === "open-audit") setShowAudit(true);
+    else if (modalKey === "open-tracker") setShowApplications(true);
+    else if (modalKey === "open-adjust") setShowAdjust(true);
+  }, []);
+
+  const tutCloseModal = useCallback(() => {
+    setShowCoach(false);
+    setShowOffer(false);
+    setShowPack(false);
+    setShowScore(false);
+    setShowTruth(false);
+    setShowGapRepair(false);
+    setShowPos(false);
+    setShowInterview(false);
+    setShowMultiCV(false);
+    setShowVersions(false);
+    setShowCompare(false);
+    setShowCustomize(false);
+    setShowTranslate(false);
+    setShowLinkedIn(false);
+    setShowAudit(false);
+    setShowApplications(false);
+    setShowAdjust(false);
+  }, []);
   // v17 chantier 13 : Dark mode (interface uniquement, le CV reste clair)
   const [darkMode, setDarkMode] = useState(false);
   // v17 chantier 14 : Settings panel
@@ -5454,10 +5513,14 @@ export default function App() {
       {showTutorial && (
         <Suspense fallback={null}>
         <NuviTutorial
-          lang={locale}
           mob={mob}
           onComplete={closeTutorial}
           onSkip={closeTutorial}
+          onLoadDemoCV={tutLoadDemoCV}
+          onRestoreCV={tutRestoreCV}
+          onOpenModal={tutOpenModal}
+          onCloseModal={tutCloseModal}
+          onSetMockMode={setTutorialDemoMode}
         />
         </Suspense>
       )}
