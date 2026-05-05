@@ -21,9 +21,9 @@ const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
  *   * = avec sub-items flottants au hover
  *
  * Specs validees par panel d'experts (Fadell, Kare, Ive, Saarinen, Walter, Eden) :
- *   - Panel a droite, fade+slide-in 150ms ease-out
- *   - Bridge invisible 8px entre parent et panel (anti-flicker)
- *   - Delay 150ms a la fermeture (intent-based)
+ *   - Panel a droite, fade+slide-in 320ms cubic-bezier
+ *   - Bridge invisible 28px entre parent et panel (anti-flicker)
+ *   - Delay 600ms a la fermeture (intent-based)
  *   - Hierarchie : 1er/2eme item en gras
  *   - Ombre 0 8px 24px rgba(0,0,0,.08) + backdrop blur
  *   - Border radius 14px
@@ -47,7 +47,11 @@ export default function NuviSidebar({
   hasNotification = {},
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [hoveredItem, setHoveredItem] = useState(null);
+  const closeTimerRef = useRef(null);
+
   // [Tutorial] Ecoute les signaux du tutorial pour ouvrir le sub-menu
+  // Place APRES la declaration de hoveredItem/setHoveredItem (ordre obligatoire)
   useEffect(() => {
     const onTutHover = (e) => {
       if (e && e.detail && e.detail.key !== undefined) {
@@ -59,7 +63,6 @@ export default function NuviSidebar({
       return () => window.removeEventListener("nuvi-tutorial-hover", onTutHover);
     }
   }, []);
-  const closeTimerRef = useRef(null);
 
   // Couleurs Nuvi (CSS variables - support dark mode)
   const Cream = "var(--nuvi-cream)";
