@@ -25,7 +25,6 @@ const ApplicationsTrackerModal = dynamic(() => import("./components/Applications
 const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyModal"), { ssr: false });
 const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
 const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
-const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 
 // CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
