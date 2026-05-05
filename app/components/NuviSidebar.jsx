@@ -309,6 +309,7 @@ export default function NuviSidebar({
           }
         }}
         style={itemStyle(isActive, accentColor)}
+        data-nv-nav={item.key}
         aria-label={item.label}
         aria-current={isActive ? "page" : undefined}
         aria-haspopup={item.hasSub ? "menu" : undefined}
@@ -434,6 +435,7 @@ export default function NuviSidebar({
               e.currentTarget.style.color = InkMuted;
             }}
             style={itemStyle(false, InkMuted)}
+            data-nv-nav="settings"
             aria-label={L.settings}
           >
             <span style={{
