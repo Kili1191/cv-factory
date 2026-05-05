@@ -24,6 +24,7 @@ const CVCompareModal = dynamic(() => import("./components/CVCompareModal"), { ss
 const ApplicationsTrackerModal = dynamic(() => import("./components/ApplicationsTrackerModal"), { ssr: false });
 const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyModal"), { ssr: false });
 const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
+const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 
 // CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
@@ -2647,8 +2648,12 @@ export default function App() {
     // Load dark mode preference
     const savedDk = lsG(SK.DK, false);
     if (savedDk === true) setDarkMode(true);
-    // Tutorial : remplace par NuviIntro (presentation Nuvi). On marque tutorial comme vu.
-    lsS(SK.TU, true);
+    // Tutorial : auto-launch si jamais vu
+    const tutSeen = lsG(SK.TU, false);
+    if (tutSeen !== true) {
+      // On lance apres 800ms pour laisser l'app se stabiliser
+      setTimeout(() => setShowTutorial(true), 800);
+    }
     setHydrated(true);
   }, []);
 
@@ -5448,9 +5453,10 @@ export default function App() {
       )}
       {showTutorial && (
         <Suspense fallback={null}>
-        <TutorialOverlay
-          T={T}
-          onClose={closeTutorial}
+        <NuviTutorial
+          lang={locale}
+          mob={mob}
+          onComplete={closeTutorial}
           onSkip={closeTutorial}
         />
         </Suspense>
