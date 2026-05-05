@@ -48,6 +48,18 @@ export default function NuviSidebar({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
+  // [Tutorial] Ecoute les signaux du tutorial pour ouvrir le sub-menu
+  useEffect(() => {
+    const onTutHover = (e) => {
+      if (e && e.detail && e.detail.key !== undefined) {
+        setHoveredItem(e.detail.key);
+      }
+    };
+    if (typeof window !== "undefined") {
+      window.addEventListener("nuvi-tutorial-hover", onTutHover);
+      return () => window.removeEventListener("nuvi-tutorial-hover", onTutHover);
+    }
+  }, []);
   const closeTimerRef = useRef(null);
 
   // Couleurs Nuvi (CSS variables - support dark mode)
