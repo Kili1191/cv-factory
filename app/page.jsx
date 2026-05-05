@@ -2355,9 +2355,9 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
   // Pill style (re-usable in this sheet)
   const pill = (active) => ({
     flex:1, padding:"10px 12px", borderRadius:RadiusPill,
-    background:active ? Ink : Paper,
-    color:active ? Cream : Ink,
-    border:"0.5px solid "+(active ? Ink : Gray200),
+    background:active ? GradPurple : "var(--nuvi-paper)",
+    color:active ? "#fff" : "var(--nuvi-ink)",
+    border:"0.5px solid "+(active ? "transparent" : "var(--nuvi-hairline)"),
     fontFamily:Sans, fontWeight:active ? 600 : 500, fontSize:12,
     transition:"all 180ms ease-out",
     cursor:"pointer",
