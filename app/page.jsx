@@ -711,7 +711,7 @@ function Sheet({ title, eyebrow, onClose, children }) {
             )}
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
-              letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
+              letterSpacing:"-0.02em", color:"var(--nuvi-ink)", lineHeight:1.15,
             }}>{title}</div>
           </div>
           <button onClick={onClose} aria-label="close" style={{
