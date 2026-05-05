@@ -47,7 +47,6 @@ export default function NuviSidebar({
   hasNotification = {},
 }) {
   const [expanded, setExpanded] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState(null);
   // [Tutorial] Ecoute les signaux du tutorial pour ouvrir le sub-menu
   useEffect(() => {
     const onTutHover = (e) => {
@@ -242,7 +241,7 @@ export default function NuviSidebar({
   const handleItemMouseLeave = () => {
     closeTimerRef.current = setTimeout(() => {
       setHoveredItem(null);
-    }, 250);
+    }, 600);
   };
 
   const handlePanelMouseEnter = () => {
@@ -255,7 +254,7 @@ export default function NuviSidebar({
   const handlePanelMouseLeave = () => {
     closeTimerRef.current = setTimeout(() => {
       setHoveredItem(null);
-    }, 250);
+    }, 600);
   };
 
   useEffect(() => {
@@ -548,17 +547,17 @@ function FloatingPanel({
         boxShadow: "0 8px 24px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
         padding: 8,
         zIndex: 100,
-        animation: "nuviPanelIn 150ms cubic-bezier(0.22, 1, 0.36, 1)",
+        animation: "nuviPanelIn 320ms cubic-bezier(0.22, 1, 0.36, 1)",
         transformOrigin: "left center",
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
       <div style={{
         position: "absolute",
-        left: -16,
-        top: 0,
-        width: 16,
-        height: "100%",
+        left: -24,
+        top: -8,
+        width: 28,
+        height: "calc(100% + 16px)",
         background: "transparent",
       }} />
 
@@ -637,13 +636,19 @@ function FloatingPanel({
 
       <style>{`
         @keyframes nuviPanelIn {
-          from {
+          0% {
             opacity: 0;
-            transform: translateX(-8px);
+            transform: translateX(-12px) scale(0.96);
+            filter: blur(2px);
           }
-          to {
+          50% {
+            opacity: 0.5;
+            filter: blur(0px);
+          }
+          100% {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateX(0) scale(1);
+            filter: blur(0px);
           }
         }
       `}</style>
