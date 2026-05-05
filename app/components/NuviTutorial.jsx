@@ -6,23 +6,23 @@ import dynamic from "next/dynamic";
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
 // ============================================================
-// NuviTutorial v4 — Sidebar Tour Zen
+// NuviTutorial v5 — Sidebar Tour Zen + Sub-menu auto
 //
 // Le tutorial fait visiter les onglets de la sidebar :
-//   - NuviHome cachee (via prop onLoadDemoCV qui injecte le CV demo)
-//   - Sidebar visible, pas de modale qui s'ouvre
-//   - Nuvi vole vers chaque onglet de la sidebar (700ms cubic-bezier)
-//   - Highlight pulsant subtil sur l'onglet cible
-//   - Bulle premium a cote avec Eyebrow + Title + Text
-//   - 5s par etape, ~55s total
-//   - Detection langue auto (navigator.language)
-//   - Skip via Esc, ArrowRight, Espace
+//   - NuviHome cachee (CV demo charge)
+//   - Sidebar FORCEE expanded (240px) pendant tout le tour
+//   - Pour Editer/Audits/Mes CV/Design : panel flottant auto-ouvert
+//   - Nuvi vole vers chaque onglet (700ms cubic-bezier)
+//   - Highlight pulsant subtil
+//   - Bulle a cote avec Eyebrow + Title + Text
+//   - 5-7s par etape, ~70s total
+//   - Detection langue auto (FR/EN)
 //
 // Props:
 //   - mob: boolean
 //   - onComplete: () => void
 //   - onSkip: () => void
-//   - onLoadDemoCV: (demoCV) => void  - charge un CV demo
+//   - onLoadDemoCV: (demoCV) => void
 //   - onRestoreCV: () => void
 // ============================================================
 
@@ -98,19 +98,15 @@ export const DEMO_CV = {
   ]
 };
 
-// === Etapes du tutorial - 11 etapes ===
-// Format: { id, target, duration, eyebrow, title, text, cta?, position? }
-// target = selecteur CSS de l'onglet sidebar
-// position = "center" pour intro/conclusion, sinon "near-target" auto
-const STEP_DURATION = 5500; // 5.5s par etape (assez pour lire confortablement)
-const FIRST_LAST_DURATION = 6500; // un peu plus pour intro/conclusion
-
+// === Etapes du tutorial ===
+// Format: { id, target, hasSubMenu, duration, eyebrow, title, text, cta?, position? }
+// hasSubMenu: true = simule mouseenter pour ouvrir le panel flottant
 const STEPS_FR = [
   {
     id: "welcome",
     target: null,
     position: "center",
-    duration: FIRST_LAST_DURATION,
+    duration: 6500,
     eyebrow: "Bienvenue",
     title: "Je vais te faire briller.",
     text: "60 secondes pour découvrir comment Nuvi t'aide à décrocher ton prochain job.",
@@ -118,15 +114,15 @@ const STEPS_FR = [
   },
   {
     id: "home",
-    target: "[data-nv-nav=\"home\"]",
-    duration: STEP_DURATION,
+    target: "home",
+    duration: 5500,
     eyebrow: "Accueil",
     title: "Ton tableau de bord.",
     text: "Tout ton CV en un coup d'œil. Tes modifications en direct.",
   },
   {
     id: "coach",
-    target: "[data-nv-nav=\"coach\"]",
+    target: "coach",
     duration: 7500,
     eyebrow: "Coach IA",
     title: "Ton conseiller carrière 24/7.",
@@ -134,56 +130,60 @@ const STEPS_FR = [
   },
   {
     id: "edit",
-    target: "[data-nv-nav=\"edit\"]",
-    duration: STEP_DURATION,
+    target: "edit",
+    hasSubMenu: true,
+    duration: 6500,
     eyebrow: "Éditer",
     title: "Clique et ça change.",
-    text: "Tout ton CV se modifie sur place. Aucun bouton « Modifier ».",
+    text: "Identité, expériences, formation, compétences. Tout se modifie sur place.",
   },
   {
     id: "target",
-    target: "[data-nv-nav=\"target\"]",
-    duration: STEP_DURATION,
+    target: "target",
+    duration: 5500,
     eyebrow: "Match offre",
     title: "87% de match. Bonne nouvelle.",
     text: "Tes chances avant de postuler. Et les mots-clés à ajouter pour passer à 95%.",
   },
   {
     id: "pack",
-    target: "[data-nv-nav=\"pack\"]",
-    duration: STEP_DURATION,
+    target: "pack",
+    duration: 5500,
     eyebrow: "Pack candidature",
     title: "4 textes. 1 clic.",
     text: "Lettre, message LinkedIn, mail, pitch entretien. Tous cohérents avec l'offre.",
   },
   {
-    id: "score",
-    target: "[data-nv-nav=\"score\"]",
-    duration: 6500,
+    id: "audits",
+    target: "audits",
+    hasSubMenu: true,
+    duration: 7000,
     eyebrow: "Score & Audits",
     title: "75/100 et tu sais quoi faire.",
-    text: "Note sur 8 axes. Plus l'action numéro 1 pour gagner 5 points immédiatement.",
+    text: "Score recruteur, positionnement, vérité, lisser le parcours. L'action numéro 1 te fait gagner 5 points.",
   },
   {
     id: "cvs",
-    target: "[data-nv-nav=\"cvs\"]",
-    duration: STEP_DURATION,
+    target: "cvs",
+    hasSubMenu: true,
+    duration: 6000,
     eyebrow: "Mes CV",
     title: "Plusieurs CV pour plusieurs cibles.",
-    text: "Garde toutes tes versions. Compare-les côte à côte.",
+    text: "Liste, versions, comparaison, modèles. Garde toutes tes versions.",
   },
   {
     id: "design",
-    target: "[data-nv-nav=\"design\"]",
-    duration: STEP_DURATION,
+    target: "design",
+    hasSubMenu: true,
+    duration: 6000,
     eyebrow: "Apparence",
     title: "Design adapté à ton secteur.",
-    text: "Banque : sobre. Créatif : audacieux. Avec jauge de lisibilité.",
+    text: "Personnaliser couleurs et polices. Traduire FR/EN en 1 clic.",
   },
   {
     id: "tracking",
-    target: "[data-nv-nav=\"tracking\"]",
-    duration: STEP_DURATION,
+    target: "tracking",
+    duration: 5500,
     eyebrow: "Candidatures",
     title: "Suivi de toutes tes candidatures.",
     text: "Plus jamais « j'ai postulé chez qui déjà ? ».",
@@ -192,7 +192,7 @@ const STEPS_FR = [
     id: "conclusion",
     target: null,
     position: "center",
-    duration: FIRST_LAST_DURATION,
+    duration: 6500,
     eyebrow: "À toi",
     title: "À toi de briller.",
     text: "Tu peux relancer ce tour à tout moment dans Réglages.",
@@ -205,7 +205,7 @@ const STEPS_EN = [
     id: "welcome",
     target: null,
     position: "center",
-    duration: FIRST_LAST_DURATION,
+    duration: 6500,
     eyebrow: "Welcome",
     title: "I'll make you shine.",
     text: "60 seconds to discover how Nuvi helps you land your next job.",
@@ -213,15 +213,15 @@ const STEPS_EN = [
   },
   {
     id: "home",
-    target: "[data-nv-nav=\"home\"]",
-    duration: STEP_DURATION,
+    target: "home",
+    duration: 5500,
     eyebrow: "Home",
     title: "Your dashboard.",
     text: "All your CV at a glance. Your edits in real time.",
   },
   {
     id: "coach",
-    target: "[data-nv-nav=\"coach\"]",
+    target: "coach",
     duration: 7500,
     eyebrow: "AI Coach",
     title: "Your 24/7 career advisor.",
@@ -229,56 +229,60 @@ const STEPS_EN = [
   },
   {
     id: "edit",
-    target: "[data-nv-nav=\"edit\"]",
-    duration: STEP_DURATION,
+    target: "edit",
+    hasSubMenu: true,
+    duration: 6500,
     eyebrow: "Edit",
     title: "Click and it changes.",
-    text: "Your entire CV edits in place. No 'Edit' button.",
+    text: "Identity, experience, education, skills. Everything edits in place.",
   },
   {
     id: "target",
-    target: "[data-nv-nav=\"target\"]",
-    duration: STEP_DURATION,
+    target: "target",
+    duration: 5500,
     eyebrow: "Match",
     title: "87% match. Good news.",
     text: "Your chances before you apply. Plus the keywords to add to reach 95%.",
   },
   {
     id: "pack",
-    target: "[data-nv-nav=\"pack\"]",
-    duration: STEP_DURATION,
+    target: "pack",
+    duration: 5500,
     eyebrow: "Application pack",
     title: "4 texts. 1 click.",
     text: "Cover letter, LinkedIn message, email, interview pitch. All aligned with the offer.",
   },
   {
-    id: "score",
-    target: "[data-nv-nav=\"score\"]",
-    duration: 6500,
+    id: "audits",
+    target: "audits",
+    hasSubMenu: true,
+    duration: 7000,
     eyebrow: "Score & Audits",
     title: "75/100 and you know what to do.",
-    text: "Score on 8 axes. Plus the #1 action to gain 5 points immediately.",
+    text: "Recruiter score, positioning, truth check, gap repair. The #1 action gains you 5 points.",
   },
   {
     id: "cvs",
-    target: "[data-nv-nav=\"cvs\"]",
-    duration: STEP_DURATION,
+    target: "cvs",
+    hasSubMenu: true,
+    duration: 6000,
     eyebrow: "My CVs",
     title: "Multiple CVs for multiple targets.",
-    text: "Keep all your versions. Compare them side by side.",
+    text: "List, versions, compare, templates. Keep all your versions.",
   },
   {
     id: "design",
-    target: "[data-nv-nav=\"design\"]",
-    duration: STEP_DURATION,
+    target: "design",
+    hasSubMenu: true,
+    duration: 6000,
     eyebrow: "Appearance",
     title: "Design tailored to your industry.",
-    text: "Banking: sober. Creative: bold. With readability gauge.",
+    text: "Customize colors and fonts. Translate FR/EN in 1 click.",
   },
   {
     id: "tracking",
-    target: "[data-nv-nav=\"tracking\"]",
-    duration: STEP_DURATION,
+    target: "tracking",
+    duration: 5500,
     eyebrow: "Applications",
     title: "Track all your applications.",
     text: "Never again 'where did I apply already?'.",
@@ -287,7 +291,7 @@ const STEPS_EN = [
     id: "conclusion",
     target: null,
     position: "center",
-    duration: FIRST_LAST_DURATION,
+    duration: 6500,
     eyebrow: "Your turn",
     title: "Now it's your turn.",
     text: "You can replay this tour anytime in Settings.",
@@ -302,6 +306,27 @@ function detectBrowserLang() {
   return browserLang.toLowerCase().startsWith("fr") ? "fr" : "en";
 }
 
+// Cherche l'element de la sidebar par data-nv-nav
+function findSidebarItem(navKey) {
+  if (!navKey) return null;
+  return document.querySelector(`[data-nv-nav="${navKey}"]`);
+}
+
+// Force la sidebar en mode expanded en simulant un mouseenter
+function forceSidebarExpanded() {
+  const aside = document.querySelector("aside");
+  if (!aside) return;
+  // Simule mouseenter sur la sidebar pour declencher le state expanded
+  const event = new MouseEvent("mouseenter", { bubbles: true });
+  aside.dispatchEvent(event);
+}
+
+// Cherche le panel flottant (sub-menu) qui s'ouvre apres mouseenter sur Editer/Audits/etc
+function findFloatingPanel() {
+  // Le panel flottant a role="menu"
+  return document.querySelector('[role="menu"]');
+}
+
 // Calcule la position de NuviCompanion
 function computeCompanionPos(step, viewportW, viewportH) {
   const SIZE = 110;
@@ -312,8 +337,8 @@ function computeCompanionPos(step, viewportW, viewportH) {
       y: viewportH * 0.30 - SIZE / 2,
     };
   }
-  // Etape avec target : a droite de l'onglet
-  const el = document.querySelector(step.target);
+  // Etape avec target : a droite de l'onglet (ou plus a droite si sub-menu)
+  const el = findSidebarItem(step.target);
   if (!el) {
     return {
       x: (viewportW - SIZE) / 2,
@@ -321,9 +346,14 @@ function computeCompanionPos(step, viewportW, viewportH) {
     };
   }
   const rect = el.getBoundingClientRect();
-  // Companion a droite de l'onglet
+  // Si sub-menu ouvert, Nuvi va plus a droite pour laisser voir le panel
+  let xOffset = 24;
+  if (step.hasSubMenu) {
+    // Sidebar expanded = 240px, panel flottant ~220-260px de large
+    xOffset = 250 + 24;
+  }
   return {
-    x: Math.min(rect.right + 24, viewportW - SIZE - 20),
+    x: Math.min(rect.right + xOffset, viewportW - SIZE - 20),
     y: Math.max(20, rect.top + rect.height / 2 - SIZE / 2),
   };
 }
@@ -331,7 +361,7 @@ function computeCompanionPos(step, viewportW, viewportH) {
 // Calcule la box de highlight autour du target
 function computeHighlightBox(step) {
   if (!step.target) return null;
-  const el = document.querySelector(step.target);
+  const el = findSidebarItem(step.target);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
   const PAD = 6;
@@ -361,6 +391,7 @@ export default function NuviTutorial({
   const [progress, setProgress] = useState(0);
   const autoSkipTimer = useRef(null);
   const progressTimer = useRef(null);
+  const sidebarKeepAliveTimer = useRef(null);
 
   const step = STEPS[stepIdx];
   const isLast = stepIdx === STEPS.length - 1;
@@ -374,10 +405,19 @@ export default function NuviTutorial({
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Au mount : load CV demo (cache NuviHome)
+  // Au mount : load CV demo + force sidebar expanded
   useEffect(() => {
     if (onLoadDemoCV) onLoadDemoCV(DEMO_CV);
+    // Force la sidebar expanded en boucle (toutes les 200ms)
+    // pour eviter qu'elle se ferme si on bouge accidentellement la souris
+    const keepAlive = () => {
+      forceSidebarExpanded();
+    };
+    keepAlive();
+    sidebarKeepAliveTimer.current = setInterval(keepAlive, 300);
+
     return () => {
+      if (sidebarKeepAliveTimer.current) clearInterval(sidebarKeepAliveTimer.current);
       if (onRestoreCV) onRestoreCV();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -409,15 +449,26 @@ export default function NuviTutorial({
     if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
     if (progressTimer.current) clearInterval(progressTimer.current);
 
-    // Recalcul positions
+    // Force sidebar expanded
+    forceSidebarExpanded();
+
+    // Simule mouseenter sur l'onglet pour highlight + sub-menu si applicable
+    const targetEl = findSidebarItem(step.target);
+    if (targetEl) {
+      // mouseenter sur l'onglet declenche l'ouverture du sub-menu (via le code de NuviSidebar)
+      const event = new MouseEvent("mouseenter", { bubbles: true });
+      targetEl.dispatchEvent(event);
+    }
+
+    // Recalcul positions apres petit delai (pour laisser le sub-menu s'ouvrir)
+    const positionDelay = step.hasSubMenu ? 250 : 100;
     setTimeout(() => {
       const pos = computeCompanionPos(step, viewport.w, viewport.h);
       const box = computeHighlightBox(step);
       setCompanionPos(pos);
       setHighlightBox(box);
-      // Bulle apparait apres que le companion ait commence sa transition
       setTimeout(() => setBubbleVisible(true), 400);
-    }, 50);
+    }, positionDelay);
 
     // Auto-skip
     const startTime = Date.now();
@@ -449,36 +500,33 @@ export default function NuviTutorial({
 
   if (!viewport.w) return null;
 
-  // Position de la bulle (a cote du companion)
+  // Position de la bulle
   const COMPANION_SIZE = 110;
   const BUBBLE_W = mob ? Math.min(280, viewport.w - 40) : 320;
   let bubbleStyle = {};
 
   if (isFirstOrLast) {
-    // Bulle centree sous le companion
     bubbleStyle = {
       left: companionPos.x + COMPANION_SIZE / 2 - BUBBLE_W / 2,
       top: companionPos.y + COMPANION_SIZE + 18,
     };
   } else {
-    // Bulle a droite du companion
     bubbleStyle = {
       left: companionPos.x + COMPANION_SIZE + 16,
       top: companionPos.y - 10,
     };
   }
-  // Clamp
   bubbleStyle.left = Math.max(20, Math.min(bubbleStyle.left, viewport.w - BUBBLE_W - 20));
   bubbleStyle.top = Math.max(20, Math.min(bubbleStyle.top, viewport.h - 240));
 
   return (
     <>
-      {/* Overlay sombre - mais on n'utilise PAS backdrop-filter:blur car ca floute la sidebar */}
+      {/* Overlay sombre - sans flou pour garder la sidebar nette */}
       <div
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(10, 10, 10, 0.45)",
+          background: "rgba(10, 10, 10, 0.4)",
           zIndex: 9000,
           animation: "nvTutFadeIn 350ms ease-out",
           pointerEvents: "auto",
@@ -486,7 +534,7 @@ export default function NuviTutorial({
         onClick={handleSkip}
       />
 
-      {/* Highlight box decoupant l'overlay - laisse voir l'onglet en clair */}
+      {/* Highlight box decoupant l'overlay */}
       {highlightBox && (
         <div
           style={{
@@ -497,7 +545,7 @@ export default function NuviTutorial({
             height: highlightBox.height,
             zIndex: 9001,
             borderRadius: 14,
-            boxShadow: "0 0 0 9999px rgba(10, 10, 10, 0.45)",
+            boxShadow: "0 0 0 9999px rgba(10, 10, 10, 0.4)",
             pointerEvents: "none",
             transition: "all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
             animation: "nvTutHighlight 1.8s ease-in-out infinite",
@@ -664,12 +712,12 @@ export default function NuviTutorial({
         @keyframes nvTutHighlight {
           0%, 100% {
             box-shadow:
-              0 0 0 9999px rgba(10, 10, 10, 0.45),
+              0 0 0 9999px rgba(10, 10, 10, 0.4),
               0 0 0 0 rgba(91, 61, 245, 0.5);
           }
           50% {
             box-shadow:
-              0 0 0 9999px rgba(10, 10, 10, 0.45),
+              0 0 0 9999px rgba(10, 10, 10, 0.4),
               0 0 0 8px rgba(91, 61, 245, 0);
           }
         }
