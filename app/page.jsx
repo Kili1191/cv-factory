@@ -680,7 +680,7 @@ function Sheet({ title, eyebrow, onClose, children }) {
         animation:"cvfFadeIn 200ms ease-out",
       }} onClick={onClose}/>
       <div style={{
-        position:"relative", background:CreamSoft,
+        position:"relative", background:"var(--nuvi-cream-soft)",
         borderRadius:"32px 32px 0 0",
         maxHeight:"92vh", display:"flex", flexDirection:"column",
         boxShadow:"0 -20px 60px rgba(0,0,0,.2)",
@@ -5687,7 +5687,7 @@ export default function App() {
         <div data-cvf="app" style={{
           display:"flex", height:"100vh",
           fontFamily:Sans,
-          background:CreamSoft, overflow:"hidden",
+          background:"var(--nuvi-cream-soft)", overflow:"hidden",
         }}>
           <NuviSidebar
             active={navSection}
@@ -6006,7 +6006,7 @@ export default function App() {
       )}
       <div data-cvf="app" style={{
         display:"flex", flexDirection:"column", height:"100vh",
-        overflow:"hidden", background:CreamSoft,
+        overflow:"hidden", background:"var(--nuvi-cream-soft)",
         fontFamily:Sans,
       }}>
         <div style={{
