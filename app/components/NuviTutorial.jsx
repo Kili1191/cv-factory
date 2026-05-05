@@ -3,29 +3,27 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 
-// NuviCompanion en dynamic (ssr:false)
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
 // ============================================================
-// NuviTutorial v2 — Mode Demo Interactif
+// NuviTutorial v4 — Sidebar Tour Zen
 //
-// Le tutorial NAVIGUE dans l'app pour de vrai avec :
-//   - Un CV demo (Marie Dupont) charge temporairement
-//   - Un curseur fantome qui clique sur les boutons
-//   - Des resultats IA mockes (pas d'appels API reels)
-//   - Auto-skip 4-6s par etape avec progress bar
-//   - Sauvegarde/restore du CV original a la fin
+// Le tutorial fait visiter les onglets de la sidebar :
+//   - NuviHome cachee (via prop onLoadDemoCV qui injecte le CV demo)
+//   - Sidebar visible, pas de modale qui s'ouvre
+//   - Nuvi vole vers chaque onglet de la sidebar (700ms cubic-bezier)
+//   - Highlight pulsant subtil sur l'onglet cible
+//   - Bulle premium a cote avec Eyebrow + Title + Text
+//   - 5s par etape, ~55s total
+//   - Detection langue auto (navigator.language)
+//   - Skip via Esc, ArrowRight, Espace
 //
 // Props:
-//   - lang: "fr" | "en"
 //   - mob: boolean
 //   - onComplete: () => void
 //   - onSkip: () => void
-//   - onLoadDemoCV: (demoCV) => void
+//   - onLoadDemoCV: (demoCV) => void  - charge un CV demo
 //   - onRestoreCV: () => void
-//   - onOpenModal: (modalKey) => void  - "open-coach" | "open-match" | etc.
-//   - onCloseModal: () => void
-//   - onSetMockMode: (active) => void
 // ============================================================
 
 const Purple    = "#5b3df5";
@@ -100,83 +98,104 @@ export const DEMO_CV = {
   ]
 };
 
-// === Etapes ===
+// === Etapes du tutorial - 11 etapes ===
+// Format: { id, target, duration, eyebrow, title, text, cta?, position? }
+// target = selecteur CSS de l'onglet sidebar
+// position = "center" pour intro/conclusion, sinon "near-target" auto
+const STEP_DURATION = 5500; // 5.5s par etape (assez pour lire confortablement)
+const FIRST_LAST_DURATION = 6500; // un peu plus pour intro/conclusion
+
 const STEPS_FR = [
   {
     id: "welcome",
     target: null,
-    duration: 4500,
-    companionPosition: "center",
-    companionMode: "idle",
-    bubblePosition: "below",
+    position: "center",
+    duration: FIRST_LAST_DURATION,
     eyebrow: "Bienvenue",
-    title: "Salut, je suis Nuvi.",
-    text: "Mon job ? Transformer ton CV en arme pour decrocher tes entretiens. Je te montre 4 features cles en 30 secondes avec un CV exemple.",
-    cta: "Allons-y",
+    title: "Je vais te faire briller.",
+    text: "60 secondes pour découvrir comment Nuvi t'aide à décrocher ton prochain job.",
+    cta: "C'est parti",
+  },
+  {
+    id: "home",
+    target: "[data-nv-nav=\"home\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Accueil",
+    title: "Ton tableau de bord.",
+    text: "Tout ton CV en un coup d'œil. Tes modifications en direct.",
   },
   {
     id: "coach",
-    target: "button[aria-label=\"Coach\"]",
-    duration: 5500,
-    action: "open-coach",
-    companionPosition: "near-target",
-    companionMode: "speaking",
-    bubblePosition: "left",
+    target: "[data-nv-nav=\"coach\"]",
+    duration: 7500,
     eyebrow: "Coach IA",
-    title: "Je suis ton conseiller perso",
-    text: "Tu doutes d'une formulation ? Tu chattes avec moi, je te propose 3 versions, tu choisis. Resultat : une accroche taillee pour ton secteur.",
-    cta: "Suivant",
+    title: "Ton conseiller carrière 24/7.",
+    text: "Reformuler, préparer un entretien, comprendre un refus, choisir entre 2 jobs, négocier ton salaire. Tout ce dont tu as besoin, je le fais.",
   },
   {
-    id: "match",
-    target: null,
-    duration: 5500,
-    action: "open-match",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
+    id: "edit",
+    target: "[data-nv-nav=\"edit\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Éditer",
+    title: "Clique et ça change.",
+    text: "Tout ton CV se modifie sur place. Aucun bouton « Modifier ».",
+  },
+  {
+    id: "target",
+    target: "[data-nv-nav=\"target\"]",
+    duration: STEP_DURATION,
     eyebrow: "Match offre",
-    title: "87% de match detecte",
-    text: "Tu colles une offre, je te dis ton % de match et les mots-cles manquants. Tu candidates qu'aux jobs ou t'as des chances.",
-    cta: "Suivant",
+    title: "87% de match. Bonne nouvelle.",
+    text: "Tes chances avant de postuler. Et les mots-clés à ajouter pour passer à 95%.",
   },
   {
     id: "pack",
-    target: null,
-    duration: 5500,
-    action: "open-pack",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
+    target: "[data-nv-nav=\"pack\"]",
+    duration: STEP_DURATION,
     eyebrow: "Pack candidature",
-    title: "4 textes en 1 click",
-    text: "Lettre de motiv + message LinkedIn + mail + pitch entretien. Tout coherent, tout cible sur l'offre. Pret a copier-coller.",
-    cta: "Suivant",
+    title: "4 textes. 1 clic.",
+    text: "Lettre, message LinkedIn, mail, pitch entretien. Tous cohérents avec l'offre.",
   },
   {
     id: "score",
-    target: null,
-    duration: 5500,
-    action: "open-score",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
-    eyebrow: "Score 8 axes",
-    title: "Note 75/100 - Top priorite",
-    text: "Je note ton CV sur 8 dimensions et te dis EXACTEMENT quoi ameliorer. La premiere chose a faire est tout en haut.",
-    cta: "Suivant",
+    target: "[data-nv-nav=\"score\"]",
+    duration: 6500,
+    eyebrow: "Score & Audits",
+    title: "75/100 et tu sais quoi faire.",
+    text: "Note sur 8 axes. Plus l'action numéro 1 pour gagner 5 points immédiatement.",
+  },
+  {
+    id: "cvs",
+    target: "[data-nv-nav=\"cvs\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Mes CV",
+    title: "Plusieurs CV pour plusieurs cibles.",
+    text: "Garde toutes tes versions. Compare-les côte à côte.",
+  },
+  {
+    id: "design",
+    target: "[data-nv-nav=\"design\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Apparence",
+    title: "Design adapté à ton secteur.",
+    text: "Banque : sobre. Créatif : audacieux. Avec jauge de lisibilité.",
+  },
+  {
+    id: "tracking",
+    target: "[data-nv-nav=\"tracking\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Candidatures",
+    title: "Suivi de toutes tes candidatures.",
+    text: "Plus jamais « j'ai postulé chez qui déjà ? ».",
   },
   {
     id: "conclusion",
     target: null,
-    duration: 6000,
-    action: "restore",
-    companionPosition: "center",
-    companionMode: "idle",
-    bubblePosition: "below",
-    eyebrow: "Et bien plus",
-    title: "Pret a briller ?",
-    text: "Audit ATS, Truth Check, Positionnement, Versions multi-CV, Preparation entretien... Tu decouvriras le reste. A toi de jouer !",
+    position: "center",
+    duration: FIRST_LAST_DURATION,
+    eyebrow: "À toi",
+    title: "À toi de briller.",
+    text: "Tu peux relancer ce tour à tout moment dans Réglages.",
     cta: "Commencer",
   },
 ];
@@ -185,250 +204,222 @@ const STEPS_EN = [
   {
     id: "welcome",
     target: null,
-    duration: 4500,
-    companionPosition: "center",
-    companionMode: "idle",
-    bubblePosition: "below",
+    position: "center",
+    duration: FIRST_LAST_DURATION,
     eyebrow: "Welcome",
-    title: "Hi, I'm Nuvi.",
-    text: "My job? Turn your CV into a weapon to land interviews. Let me show you 4 key features in 30 seconds with a sample CV.",
+    title: "I'll make you shine.",
+    text: "60 seconds to discover how Nuvi helps you land your next job.",
     cta: "Let's go",
   },
   {
-    id: "coach",
-    target: "button[aria-label=\"Coach\"]",
-    duration: 5500,
-    action: "open-coach",
-    companionPosition: "near-target",
-    companionMode: "speaking",
-    bubblePosition: "left",
-    eyebrow: "AI Coach",
-    title: "Your personal advisor",
-    text: "Doubting a phrasing? Chat with me, I suggest 3 versions, you pick. Result: a summary tailored to your industry.",
-    cta: "Next",
+    id: "home",
+    target: "[data-nv-nav=\"home\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Home",
+    title: "Your dashboard.",
+    text: "All your CV at a glance. Your edits in real time.",
   },
   {
-    id: "match",
-    target: null,
-    duration: 5500,
-    action: "open-match",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
-    eyebrow: "Job match",
-    title: "87% match detected",
-    text: "Paste a job offer, I tell you your match % and missing keywords. Apply only to jobs where you have a real shot.",
-    cta: "Next",
+    id: "coach",
+    target: "[data-nv-nav=\"coach\"]",
+    duration: 7500,
+    eyebrow: "AI Coach",
+    title: "Your 24/7 career advisor.",
+    text: "Rephrase, prepare interviews, understand rejections, choose between 2 jobs, negotiate salary. Whatever you need, I do it.",
+  },
+  {
+    id: "edit",
+    target: "[data-nv-nav=\"edit\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Edit",
+    title: "Click and it changes.",
+    text: "Your entire CV edits in place. No 'Edit' button.",
+  },
+  {
+    id: "target",
+    target: "[data-nv-nav=\"target\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Match",
+    title: "87% match. Good news.",
+    text: "Your chances before you apply. Plus the keywords to add to reach 95%.",
   },
   {
     id: "pack",
-    target: null,
-    duration: 5500,
-    action: "open-pack",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
+    target: "[data-nv-nav=\"pack\"]",
+    duration: STEP_DURATION,
     eyebrow: "Application pack",
-    title: "4 texts in 1 click",
-    text: "Cover letter + LinkedIn message + email + interview pitch. All consistent, all targeted. Ready to copy-paste.",
-    cta: "Next",
+    title: "4 texts. 1 click.",
+    text: "Cover letter, LinkedIn message, email, interview pitch. All aligned with the offer.",
   },
   {
     id: "score",
-    target: null,
-    duration: 5500,
-    action: "open-score",
-    companionPosition: "center",
-    companionMode: "speaking",
-    bubblePosition: "below",
-    eyebrow: "Score 8 axes",
-    title: "75/100 - Top priority",
-    text: "I score your CV on 8 dimensions and tell you EXACTLY what to improve. The first thing to fix is at the top.",
-    cta: "Next",
+    target: "[data-nv-nav=\"score\"]",
+    duration: 6500,
+    eyebrow: "Score & Audits",
+    title: "75/100 and you know what to do.",
+    text: "Score on 8 axes. Plus the #1 action to gain 5 points immediately.",
+  },
+  {
+    id: "cvs",
+    target: "[data-nv-nav=\"cvs\"]",
+    duration: STEP_DURATION,
+    eyebrow: "My CVs",
+    title: "Multiple CVs for multiple targets.",
+    text: "Keep all your versions. Compare them side by side.",
+  },
+  {
+    id: "design",
+    target: "[data-nv-nav=\"design\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Appearance",
+    title: "Design tailored to your industry.",
+    text: "Banking: sober. Creative: bold. With readability gauge.",
+  },
+  {
+    id: "tracking",
+    target: "[data-nv-nav=\"tracking\"]",
+    duration: STEP_DURATION,
+    eyebrow: "Applications",
+    title: "Track all your applications.",
+    text: "Never again 'where did I apply already?'.",
   },
   {
     id: "conclusion",
     target: null,
-    duration: 6000,
-    action: "restore",
-    companionPosition: "center",
-    companionMode: "idle",
-    bubblePosition: "below",
-    eyebrow: "And much more",
-    title: "Ready to shine?",
-    text: "ATS Audit, Truth Check, Positioning, Multi-CV, Interview Prep... You'll discover the rest. Now it's your turn!",
+    position: "center",
+    duration: FIRST_LAST_DURATION,
+    eyebrow: "Your turn",
+    title: "Now it's your turn.",
+    text: "You can replay this tour anytime in Settings.",
     cta: "Start",
   },
 ];
 
+// Detection langue navigateur
+function detectBrowserLang() {
+  if (typeof window === "undefined" || typeof navigator === "undefined") return "en";
+  const browserLang = navigator.language || navigator.userLanguage || "en";
+  return browserLang.toLowerCase().startsWith("fr") ? "fr" : "en";
+}
+
 // Calcule la position de NuviCompanion
 function computeCompanionPos(step, viewportW, viewportH) {
-  const SIZE = 120;
-  if (step.companionPosition === "center" || !step.target) {
+  const SIZE = 110;
+  // Etape welcome / conclusion : centre haut
+  if (step.position === "center" || !step.target) {
     return {
       x: (viewportW - SIZE) / 2,
-      y: (viewportH - SIZE) / 2 - 80,
+      y: viewportH * 0.30 - SIZE / 2,
     };
   }
+  // Etape avec target : a droite de l'onglet
   const el = document.querySelector(step.target);
   if (!el) {
     return {
       x: (viewportW - SIZE) / 2,
-      y: (viewportH - SIZE) / 2 - 80,
+      y: viewportH * 0.30 - SIZE / 2,
     };
   }
   const rect = el.getBoundingClientRect();
-  if (step.bubblePosition === "right") {
-    return {
-      x: Math.min(rect.right + 30, viewportW - SIZE - 20),
-      y: Math.max(20, rect.top + rect.height / 2 - SIZE / 2),
-    };
-  }
-  if (step.bubblePosition === "left") {
-    return {
-      x: Math.max(20, rect.left - SIZE - 30),
-      y: Math.max(20, rect.top + rect.height / 2 - SIZE / 2),
-    };
-  }
-  if (step.bubblePosition === "above") {
-    return {
-      x: Math.max(20, Math.min(rect.left + rect.width / 2 - SIZE / 2, viewportW - SIZE - 20)),
-      y: Math.max(20, rect.top - SIZE - 30),
-    };
-  }
+  // Companion a droite de l'onglet
   return {
-    x: Math.max(20, Math.min(rect.left + rect.width / 2 - SIZE / 2, viewportW - SIZE - 20)),
-    y: Math.min(rect.bottom + 30, viewportH - SIZE - 20),
+    x: Math.min(rect.right + 24, viewportW - SIZE - 20),
+    y: Math.max(20, rect.top + rect.height / 2 - SIZE / 2),
   };
 }
 
-function computeCursorTarget(step) {
+// Calcule la box de highlight autour du target
+function computeHighlightBox(step) {
   if (!step.target) return null;
   const el = document.querySelector(step.target);
   if (!el) return null;
   const rect = el.getBoundingClientRect();
+  const PAD = 6;
   return {
-    x: rect.left + rect.width / 2,
-    y: rect.top + rect.height / 2,
+    top: rect.top - PAD,
+    left: rect.left - PAD,
+    width: rect.width + PAD * 2,
+    height: rect.height + PAD * 2,
   };
 }
 
 export default function NuviTutorial({
-  lang = "fr",
   mob = false,
   onComplete,
   onSkip,
   onLoadDemoCV,
   onRestoreCV,
-  onOpenModal,
-  onCloseModal,
-  onSetMockMode,
 }) {
-  const STEPS = lang === "en" ? STEPS_EN : STEPS_FR;
+  const [detectedLang] = useState(() => detectBrowserLang());
+  const STEPS = detectedLang === "fr" ? STEPS_FR : STEPS_EN;
+
   const [stepIdx, setStepIdx] = useState(0);
   const [companionPos, setCompanionPos] = useState({ x: 0, y: 0 });
-  const [cursorPos, setCursorPos] = useState({ x: 0, y: 0, visible: false, clicking: false });
+  const [highlightBox, setHighlightBox] = useState(null);
   const [viewport, setViewport] = useState({ w: 0, h: 0 });
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [progress, setProgress] = useState(0);
   const autoSkipTimer = useRef(null);
   const progressTimer = useRef(null);
-  const cursorTimer = useRef(null);
 
   const step = STEPS[stepIdx];
   const isLast = stepIdx === STEPS.length - 1;
+  const isFirstOrLast = step.position === "center";
 
+  // Init viewport
   useEffect(() => {
-    const update = () => {
-      setViewport({ w: window.innerWidth, h: window.innerHeight });
-    };
+    const update = () => setViewport({ w: window.innerWidth, h: window.innerHeight });
     update();
     window.addEventListener("resize", update);
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Au mount : load CV demo + mock mode
+  // Au mount : load CV demo (cache NuviHome)
   useEffect(() => {
     if (onLoadDemoCV) onLoadDemoCV(DEMO_CV);
-    if (onSetMockMode) onSetMockMode(true);
     return () => {
-      if (onSetMockMode) onSetMockMode(false);
-      if (onCloseModal) onCloseModal();
       if (onRestoreCV) onRestoreCV();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleNext = useCallback(() => {
-    if (onCloseModal) onCloseModal();
     if (isLast) {
-      if (onSetMockMode) onSetMockMode(false);
       if (onRestoreCV) onRestoreCV();
       onComplete && onComplete();
     } else {
       setStepIdx(i => i + 1);
     }
-  }, [isLast, onCloseModal, onComplete, onRestoreCV, onSetMockMode]);
+  }, [isLast, onComplete, onRestoreCV]);
 
   const handleSkip = useCallback(() => {
     if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
     if (progressTimer.current) clearInterval(progressTimer.current);
-    if (onCloseModal) onCloseModal();
-    if (onSetMockMode) onSetMockMode(false);
     if (onRestoreCV) onRestoreCV();
     onSkip && onSkip();
-  }, [onCloseModal, onRestoreCV, onSetMockMode, onSkip]);
+  }, [onRestoreCV, onSkip]);
 
-  // Sequence d'animation par etape
+  // Sequence par etape
   useEffect(() => {
     if (!viewport.w || !viewport.h) return;
 
     setBubbleVisible(false);
     setProgress(0);
-    setCursorPos(p => ({ ...p, visible: false, clicking: false }));
 
     if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
     if (progressTimer.current) clearInterval(progressTimer.current);
-    if (cursorTimer.current) clearTimeout(cursorTimer.current);
 
-    const cursorTarget = computeCursorTarget(step);
-
-    if (cursorTarget && step.action) {
-      // Curseur fantome se deplace puis clique
-      setCursorPos({
-        x: viewport.w / 2,
-        y: viewport.h / 2,
-        visible: true,
-        clicking: false,
-      });
-      cursorTimer.current = setTimeout(() => {
-        setCursorPos({
-          x: cursorTarget.x,
-          y: cursorTarget.y,
-          visible: true,
-          clicking: false,
-        });
-        cursorTimer.current = setTimeout(() => {
-          setCursorPos(p => ({ ...p, clicking: true }));
-          if (step.action && onOpenModal) {
-            onOpenModal(step.action);
-          }
-          cursorTimer.current = setTimeout(() => {
-            setCursorPos(p => ({ ...p, clicking: false, visible: false }));
-          }, 600);
-        }, 800);
-      }, 200);
-    } else if (step.action && onOpenModal) {
-      // Pas de target visible mais action a faire (open-match, open-pack, etc.)
-      setTimeout(() => onOpenModal(step.action), 400);
-    }
-
+    // Recalcul positions
     setTimeout(() => {
       const pos = computeCompanionPos(step, viewport.w, viewport.h);
+      const box = computeHighlightBox(step);
       setCompanionPos(pos);
-      setTimeout(() => setBubbleVisible(true), 300);
-    }, cursorTarget ? 1500 : 100);
+      setHighlightBox(box);
+      // Bulle apparait apres que le companion ait commence sa transition
+      setTimeout(() => setBubbleVisible(true), 400);
+    }, 50);
 
+    // Auto-skip
     const startTime = Date.now();
     progressTimer.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -442,11 +433,11 @@ export default function NuviTutorial({
     return () => {
       if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
       if (progressTimer.current) clearInterval(progressTimer.current);
-      if (cursorTimer.current) clearTimeout(cursorTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIdx, viewport.w, viewport.h]);
 
+  // Keyboard
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") handleSkip();
@@ -458,93 +449,63 @@ export default function NuviTutorial({
 
   if (!viewport.w) return null;
 
-  const BUBBLE_W = mob ? Math.min(280, viewport.w - 40) : 340;
-  const COMPANION_SIZE = 120;
+  // Position de la bulle (a cote du companion)
+  const COMPANION_SIZE = 110;
+  const BUBBLE_W = mob ? Math.min(280, viewport.w - 40) : 320;
   let bubbleStyle = {};
-  if (step.bubblePosition === "below") {
+
+  if (isFirstOrLast) {
+    // Bulle centree sous le companion
     bubbleStyle = {
       left: companionPos.x + COMPANION_SIZE / 2 - BUBBLE_W / 2,
-      top: companionPos.y + COMPANION_SIZE + 16,
+      top: companionPos.y + COMPANION_SIZE + 18,
     };
-  } else if (step.bubblePosition === "above") {
-    bubbleStyle = {
-      left: companionPos.x + COMPANION_SIZE / 2 - BUBBLE_W / 2,
-      top: companionPos.y - 16,
-      transform: "translateY(-100%)",
-    };
-  } else if (step.bubblePosition === "right") {
+  } else {
+    // Bulle a droite du companion
     bubbleStyle = {
       left: companionPos.x + COMPANION_SIZE + 16,
-      top: companionPos.y,
-    };
-  } else if (step.bubblePosition === "left") {
-    bubbleStyle = {
-      left: companionPos.x - 16,
-      top: companionPos.y,
-      transform: "translateX(-100%)",
+      top: companionPos.y - 10,
     };
   }
+  // Clamp
   bubbleStyle.left = Math.max(20, Math.min(bubbleStyle.left, viewport.w - BUBBLE_W - 20));
   bubbleStyle.top = Math.max(20, Math.min(bubbleStyle.top, viewport.h - 240));
 
   return (
     <>
-      {/* Overlay sombre */}
+      {/* Overlay sombre - mais on n'utilise PAS backdrop-filter:blur car ca floute la sidebar */}
       <div
         style={{
           position: "fixed",
           inset: 0,
-          background: "rgba(10, 10, 10, 0.55)",
-          backdropFilter: "blur(4px)",
-          WebkitBackdropFilter: "blur(4px)",
+          background: "rgba(10, 10, 10, 0.45)",
           zIndex: 9000,
-          animation: "nvTutFadeIn 300ms ease-out",
+          animation: "nvTutFadeIn 350ms ease-out",
           pointerEvents: "auto",
         }}
         onClick={handleSkip}
       />
 
-      {/* Curseur fantome */}
-      {cursorPos.visible && (
+      {/* Highlight box decoupant l'overlay - laisse voir l'onglet en clair */}
+      {highlightBox && (
         <div
           style={{
             position: "fixed",
-            left: cursorPos.x - 14,
-            top: cursorPos.y - 14,
-            width: 28,
-            height: 28,
-            zIndex: 9004,
+            top: highlightBox.top,
+            left: highlightBox.left,
+            width: highlightBox.width,
+            height: highlightBox.height,
+            zIndex: 9001,
+            borderRadius: 14,
+            boxShadow: "0 0 0 9999px rgba(10, 10, 10, 0.45)",
             pointerEvents: "none",
-            transition: "left 800ms cubic-bezier(0.4, 0, 0.2, 1), top 800ms cubic-bezier(0.4, 0, 0.2, 1)",
+            transition: "all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            animation: "nvTutHighlight 1.8s ease-in-out infinite",
           }}
-        >
-          <div
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "#ffffff",
-              boxShadow: "0 4px 16px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(0, 0, 0, 0.1)",
-              border: "2px solid rgba(255, 255, 255, 0.9)",
-              transform: cursorPos.clicking ? "scale(0.85)" : "scale(1)",
-              transition: "transform 200ms ease-out",
-            }}
-          />
-          {cursorPos.clicking && (
-            <div
-              style={{
-                position: "absolute",
-                inset: -8,
-                borderRadius: "50%",
-                border: "2px solid rgba(255, 255, 255, 0.6)",
-                animation: "nvTutClickPulse 600ms ease-out",
-              }}
-            />
-          )}
-        </div>
+        />
       )}
 
-      {/* NuviCompanion */}
+      {/* NuviCompanion qui vole entre les positions */}
       <div
         style={{
           position: "fixed",
@@ -553,14 +514,14 @@ export default function NuviTutorial({
           width: COMPANION_SIZE,
           height: COMPANION_SIZE,
           zIndex: 9002,
-          transition: "all 700ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: "left 700ms cubic-bezier(0.34, 1.56, 0.64, 1), top 700ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
         }}
       >
-        <NuviCompanion size={COMPANION_SIZE} mode={step.companionMode} />
+        <NuviCompanion size={COMPANION_SIZE} mode={isFirstOrLast ? "idle" : "speaking"} />
       </div>
 
       {/* Bulle de dialogue */}
@@ -573,19 +534,16 @@ export default function NuviTutorial({
           background: "var(--nuvi-paper)",
           color: "var(--nuvi-ink)",
           borderRadius: 20,
-          padding: "20px 22px 16px",
+          padding: "20px 22px 14px",
           boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25), 0 0 0 0.5px rgba(10, 10, 10, 0.08)",
           fontFamily: Sans,
           opacity: bubbleVisible ? 1 : 0,
-          transform: `${bubbleStyle.transform || ""} ${bubbleVisible ? "scale(1)" : "scale(0.92)"}`,
-          transformOrigin:
-            step.bubblePosition === "above" ? "bottom center" :
-            step.bubblePosition === "left" ? "right center" :
-            step.bubblePosition === "right" ? "left center" :
-            "top center",
+          transform: bubbleVisible ? "scale(1)" : "scale(0.94)",
+          transformOrigin: isFirstOrLast ? "top center" : "left center",
           transition: "opacity 280ms ease-out, transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
+        {/* Eyebrow + counter */}
         <div style={{
           display: "flex",
           justifyContent: "space-between",
@@ -595,10 +553,10 @@ export default function NuviTutorial({
           <span style={{
             fontSize: 10,
             fontWeight: 600,
-            letterSpacing: "0.12em",
+            letterSpacing: "0.14em",
             textTransform: "uppercase",
             color: Purple,
-          }}>{step.eyebrow || "Nuvi"}</span>
+          }}>{step.eyebrow}</span>
           <span style={{
             fontSize: 10,
             fontWeight: 500,
@@ -606,6 +564,7 @@ export default function NuviTutorial({
           }}>{stepIdx + 1} / {STEPS.length}</span>
         </div>
 
+        {/* Titre */}
         <div style={{
           fontFamily: Serif,
           fontSize: mob ? 18 : 20,
@@ -615,6 +574,7 @@ export default function NuviTutorial({
           lineHeight: 1.2,
         }}>{step.title}</div>
 
+        {/* Texte */}
         <div style={{
           fontSize: mob ? 13 : 14,
           lineHeight: 1.5,
@@ -622,6 +582,7 @@ export default function NuviTutorial({
           marginBottom: 14,
         }}>{step.text}</div>
 
+        {/* Boutons */}
         <div style={{
           display: "flex",
           gap: 10,
@@ -644,7 +605,7 @@ export default function NuviTutorial({
               textUnderlineOffset: "2px",
             }}
           >
-            {lang === "en" ? "Skip" : "Passer"}
+            {detectedLang === "en" ? "Skip" : "Passer"}
           </button>
           <button
             onClick={handleNext}
@@ -656,7 +617,7 @@ export default function NuviTutorial({
               fontFamily: Sans,
               fontWeight: 600,
               cursor: "pointer",
-              padding: "10px 22px",
+              padding: "10px 20px",
               borderRadius: 999,
               display: "inline-flex",
               alignItems: "center",
@@ -667,7 +628,7 @@ export default function NuviTutorial({
             onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-1px)"; }}
             onMouseLeave={e => { e.currentTarget.style.transform = ""; }}
           >
-            {step.cta}
+            {step.cta || (detectedLang === "en" ? "Next" : "Suivant")}
             {!isLast && (
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2.5"
@@ -678,6 +639,7 @@ export default function NuviTutorial({
           </button>
         </div>
 
+        {/* Progress bar */}
         <div style={{
           height: 3,
           background: "rgba(91, 61, 245, 0.12)",
@@ -699,9 +661,17 @@ export default function NuviTutorial({
           from { opacity: 0; }
           to { opacity: 1; }
         }
-        @keyframes nvTutClickPulse {
-          0% { transform: scale(0.5); opacity: 1; }
-          100% { transform: scale(2); opacity: 0; }
+        @keyframes nvTutHighlight {
+          0%, 100% {
+            box-shadow:
+              0 0 0 9999px rgba(10, 10, 10, 0.45),
+              0 0 0 0 rgba(91, 61, 245, 0.5);
+          }
+          50% {
+            box-shadow:
+              0 0 0 9999px rgba(10, 10, 10, 0.45),
+              0 0 0 8px rgba(91, 61, 245, 0);
+          }
         }
       `}</style>
     </>
