@@ -6,17 +6,11 @@ import dynamic from "next/dynamic";
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
 // ============================================================
-// NuviTutorial v6 — Sidebar Tour Zen + Custom Event
+// NuviTutorial v7 — Sub-menu visible + highlight panel
 //
-// Le tutorial fait visiter les onglets de la sidebar :
-//   - NuviHome cachee (CV demo charge)
-//   - Sidebar FORCEE expanded (240px) en boucle
-//   - Pour Editer/Audits/Mes CV/Design : custom event ouvre le sub-menu
-//   - Nuvi vole vers chaque onglet (700ms cubic-bezier)
-//   - Highlight pulsant subtil
-//   - Bulle a cote avec Eyebrow + Title + Text
-//   - 5-7s par etape
-//   - Detection langue auto (FR/EN)
+// Nouveautes vs v6 :
+//   - Highlight aussi le panel flottant (pas juste l'onglet)
+//   - Sub-menu sort du sombre (panel + onglet en clair)
 // ============================================================
 
 const Purple    = "#5b3df5";
@@ -25,7 +19,6 @@ const GradPurple = `linear-gradient(135deg, ${Purple}, ${Magenta})`;
 const Sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 const Serif = "'Fraunces', 'Playfair Display', Georgia, serif";
 
-// === CV Demo ===
 export const DEMO_CV = {
   name: "Marie Dupont",
   title: "Marketing Manager B2B SaaS",
@@ -51,7 +44,6 @@ export const DEMO_CV = {
   certifications: ["HubSpot Inbound Marketing", "Google Analytics Individual Qualification"]
 };
 
-// === Etapes ===
 const STEPS_FR = [
   { id: "welcome", target: null, position: "center", duration: 6500,
     eyebrow: "Bienvenue", title: "Je vais te faire briller.",
@@ -139,7 +131,10 @@ function findSidebarItem(navKey) {
   return document.querySelector(`[data-nv-nav="${navKey}"]`);
 }
 
-// Envoi le signal au sub-menu (custom event)
+function findFloatingPanel() {
+  return document.querySelector('[role="menu"]');
+}
+
 function dispatchSubMenuSignal(navKey) {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new CustomEvent("nuvi-tutorial-hover", {
@@ -147,16 +142,9 @@ function dispatchSubMenuSignal(navKey) {
   }));
 }
 
-// Force la sidebar en expanded via custom event (si NuviSidebar le supporte)
-// Sinon on simule un mouseover sur le aside
 function forceSidebarExpanded() {
   const aside = document.querySelector("aside");
   if (!aside) return;
-  // Custom event que la sidebar peut ecouter
-  window.dispatchEvent(new CustomEvent("nuvi-tutorial-expand", {
-    detail: { expanded: true }
-  }));
-  // Backup : event mouseenter (peut ne pas marcher)
   const event = new MouseEvent("mouseenter", { bubbles: true });
   aside.dispatchEvent(event);
 }
@@ -179,8 +167,7 @@ function computeCompanionPos(step, viewportW, viewportH) {
   const rect = el.getBoundingClientRect();
   let xOffset = 24;
   if (step.hasSubMenu) {
-    // Decale Nuvi a droite du panel flottant
-    xOffset = 250 + 24;
+    xOffset = 280;
   }
   return {
     x: Math.min(rect.right + xOffset, viewportW - SIZE - 20),
@@ -188,17 +175,44 @@ function computeCompanionPos(step, viewportW, viewportH) {
   };
 }
 
-function computeHighlightBox(step) {
+// Combine 2 boites pour faire un highlight englobant onglet + panel
+function computeCombinedHighlight(step) {
   if (!step.target) return null;
-  const el = findSidebarItem(step.target);
-  if (!el) return null;
-  const rect = el.getBoundingClientRect();
-  const PAD = 6;
+  const itemEl = findSidebarItem(step.target);
+  if (!itemEl) return null;
+  const itemRect = itemEl.getBoundingClientRect();
+
+  // Si pas de sub-menu, juste highlight l'onglet
+  if (!step.hasSubMenu) {
+    const PAD = 6;
+    return {
+      top: itemRect.top - PAD,
+      left: itemRect.left - PAD,
+      width: itemRect.width + PAD * 2,
+      height: itemRect.height + PAD * 2,
+    };
+  }
+
+  // Si sub-menu : englobe onglet ET panel
+  const panel = findFloatingPanel();
+  if (!panel) {
+    // Panel pas encore visible, juste l'onglet
+    const PAD = 6;
+    return {
+      top: itemRect.top - PAD,
+      left: itemRect.left - PAD,
+      width: itemRect.width + PAD * 2,
+      height: itemRect.height + PAD * 2,
+    };
+  }
+
+  const panelRect = panel.getBoundingClientRect();
+  const PAD = 8;
   return {
-    top: rect.top - PAD,
-    left: rect.left - PAD,
-    width: rect.width + PAD * 2,
-    height: rect.height + PAD * 2,
+    top: Math.min(itemRect.top, panelRect.top) - PAD,
+    left: Math.min(itemRect.left, panelRect.left) - PAD,
+    width: Math.max(itemRect.right, panelRect.right) - Math.min(itemRect.left, panelRect.left) + PAD * 2,
+    height: Math.max(itemRect.bottom, panelRect.bottom) - Math.min(itemRect.top, panelRect.top) + PAD * 2,
   };
 }
 
@@ -220,6 +234,7 @@ export default function NuviTutorial({
   const [progress, setProgress] = useState(0);
   const autoSkipTimer = useRef(null);
   const progressTimer = useRef(null);
+  const recomputeTimer = useRef(null);
 
   const step = STEPS[stepIdx];
   const isLast = stepIdx === STEPS.length - 1;
@@ -232,14 +247,10 @@ export default function NuviTutorial({
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Au mount : load CV demo + force sidebar expanded au demarrage
   useEffect(() => {
     if (onLoadDemoCV) onLoadDemoCV(DEMO_CV);
-    // Force sidebar expanded au demarrage
     forceSidebarExpanded();
-
     return () => {
-      // Cleanup : ferme le sub-menu et restore le CV
       dispatchSubMenuSignal(null);
       if (onRestoreCV) onRestoreCV();
     };
@@ -247,7 +258,6 @@ export default function NuviTutorial({
   }, []);
 
   const handleNext = useCallback(() => {
-    // Ferme le sub-menu avant de passer
     dispatchSubMenuSignal(null);
     if (isLast) {
       if (onRestoreCV) onRestoreCV();
@@ -260,12 +270,12 @@ export default function NuviTutorial({
   const handleSkip = useCallback(() => {
     if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
     if (progressTimer.current) clearInterval(progressTimer.current);
+    if (recomputeTimer.current) clearTimeout(recomputeTimer.current);
     dispatchSubMenuSignal(null);
     if (onRestoreCV) onRestoreCV();
     onSkip && onSkip();
   }, [onRestoreCV, onSkip]);
 
-  // Sequence par etape
   useEffect(() => {
     if (!viewport.w || !viewport.h) return;
 
@@ -274,28 +284,34 @@ export default function NuviTutorial({
 
     if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
     if (progressTimer.current) clearInterval(progressTimer.current);
+    if (recomputeTimer.current) clearTimeout(recomputeTimer.current);
 
-    // Force sidebar expanded
     forceSidebarExpanded();
 
-    // Envoi le signal pour ouvrir le sub-menu (ou le fermer si pas de sub)
     if (step.hasSubMenu) {
       dispatchSubMenuSignal(step.target);
     } else {
       dispatchSubMenuSignal(null);
     }
 
-    // Recalcul positions apres delai (laisser le sub-menu s'ouvrir)
-    const positionDelay = step.hasSubMenu ? 250 : 100;
+    // Recalcul positions APRES que le sub-menu soit ouvert (animation 320ms)
+    const positionDelay = step.hasSubMenu ? 380 : 100;
     setTimeout(() => {
       const pos = computeCompanionPos(step, viewport.w, viewport.h);
-      const box = computeHighlightBox(step);
+      const box = computeCombinedHighlight(step);
       setCompanionPos(pos);
       setHighlightBox(box);
       setTimeout(() => setBubbleVisible(true), 400);
     }, positionDelay);
 
-    // Auto-skip
+    // Re-calcul du highlight 600ms plus tard pour englober le panel une fois anim finie
+    if (step.hasSubMenu) {
+      recomputeTimer.current = setTimeout(() => {
+        const box = computeCombinedHighlight(step);
+        setHighlightBox(box);
+      }, 700);
+    }
+
     const startTime = Date.now();
     progressTimer.current = setInterval(() => {
       const elapsed = Date.now() - startTime;
@@ -309,6 +325,7 @@ export default function NuviTutorial({
     return () => {
       if (autoSkipTimer.current) clearTimeout(autoSkipTimer.current);
       if (progressTimer.current) clearInterval(progressTimer.current);
+      if (recomputeTimer.current) clearTimeout(recomputeTimer.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stepIdx, viewport.w, viewport.h]);
@@ -355,6 +372,7 @@ export default function NuviTutorial({
         onClick={handleSkip}
       />
 
+      {/* Highlight englobant onglet + panel (si sub-menu) */}
       {highlightBox && (
         <div
           style={{
