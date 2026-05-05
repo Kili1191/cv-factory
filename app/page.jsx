@@ -1298,25 +1298,66 @@ function ColorSwatch({ color, name, active, onClick, size=44 }) {
   );
 }
 
-// Badge WCAG : "AAA" (vert), "AA" (gold-deep), ou warning si "FAIL".
+// Jauge de lisibilite Nuvi : demi-cercle tachymetre avec aiguille.
+// Remplace le badge WCAG technique par une experience premium.
 function WCAGBadge({ ratio, level, T }) {
   if (!ratio || ratio === 0) return null;
-  const isFail = level === "FAIL";
-  const color = isFail ? Coral : (level === "AAA" ? Green : Purple);
-  const bg    = isFail ? CoralSoft : (level === "AAA" ? GreenSoft : PurpleSoft);
+  
+  // Mappe le ratio (1-21) sur un angle (-90deg = rouge a gauche, +90deg = vert a droite)
+  // Seuils: <3 = mauvais, 3-4.5 = moyen, 4.5-7 = bon, >7 = excellent
+  const clampedRatio = Math.min(21, Math.max(1, ratio));
+  const normalizedRatio = (clampedRatio - 1) / 20; // 0 a 1
+  const angle = -90 + (normalizedRatio * 180); // -90 a +90
+  
+  // Texte selon ratio
+  let label, color;
+  if (ratio >= 4.5) {
+    label = "Tres lisible";
+    color = "#16a34a";
+  } else if (ratio >= 3) {
+    label = "Moyen";
+    color = "#d97757";
+  } else {
+    label = "A revoir";
+    color = "#dc2626";
+  }
+  
   return (
-    <span style={{
-      display:"inline-flex", alignItems:"center", gap:6,
-      padding:"3px 9px", borderRadius:RadiusPill,
-      background:bg, color:color,
-      fontSize:11, fontWeight:600, fontFamily:Sans,
-      letterSpacing:"0.04em",
+    <div style={{
+      display:"inline-flex", flexDirection:"column", alignItems:"center", gap:2,
+      fontFamily:Sans,
     }}>
-      <span>{isFail ? T.cust_wcag_fail : level}</span>
-      <span style={{opacity:.65, fontWeight:500}}>
-        {ratio.toFixed(1)}:1
-      </span>
-    </span>
+      <span style={{
+        fontSize:10, fontWeight:600,
+        color:color, letterSpacing:"0.02em",
+      }}>{label}</span>
+      <svg width="64" height="36" viewBox="0 0 64 36" style={{display:"block"}}>
+        {/* Arc gradient rouge -> orange -> vert */}
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#dc2626"/>
+            <stop offset="50%" stopColor="#d97757"/>
+            <stop offset="100%" stopColor="#16a34a"/>
+          </linearGradient>
+        </defs>
+        {/* Arc de fond (demi-cercle) */}
+        <path d="M 6 32 A 26 26 0 0 1 58 32"
+              fill="none" stroke="url(#gaugeGrad)" strokeWidth="5"
+              strokeLinecap="round"/>
+        {/* Aiguille */}
+        <line
+          x1="32" y1="32"
+          x2={32 + 22 * Math.cos((angle - 90) * Math.PI / 180)}
+          y2={32 + 22 * Math.sin((angle - 90) * Math.PI / 180)}
+          stroke="var(--nuvi-ink)"
+          strokeWidth="2"
+          strokeLinecap="round"
+          style={{transition:"all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)"}}
+        />
+        {/* Pivot central */}
+        <circle cx="32" cy="32" r="3" fill="var(--nuvi-ink)"/>
+      </svg>
+    </div>
   );
 }
 
