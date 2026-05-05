@@ -1393,7 +1393,8 @@ function ColorPickerBlock({
         gap:8,
         marginBottom:12,
         overflowX:"auto",
-        paddingBottom:4,
+        paddingTop:6,
+        paddingBottom:8,
       }}>
         {presets.map(p => (
           <div key={p.id} style={{
