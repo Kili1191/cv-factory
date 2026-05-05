@@ -5517,9 +5517,6 @@ export default function App() {
           onSkip={closeTutorial}
           onLoadDemoCV={tutLoadDemoCV}
           onRestoreCV={tutRestoreCV}
-          onOpenModal={tutOpenModal}
-          onCloseModal={tutCloseModal}
-          onSetMockMode={setTutorialDemoMode}
         />
         </Suspense>
       )}
