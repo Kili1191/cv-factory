@@ -1,50 +1,56 @@
 "use client";
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * NuviCompanion — The Nuvi mascot eye, with 4 contextual modes
+ * NuviCompanion v2 — The Nuvi mascot eye, with full emotional range
  *
- * Self-contained React component with all CSS animations inlined.
- * Drop into your app and import: <NuviCompanion size={56} mode="idle" />
+ * NEW IN v2:
+ *   - 15+ emoji-style expressions (joy, sad, surprised, angry, etc.)
+ *   - Eye follows mouse cursor (presence magique)
+ *   - Subtle breathing cycle (4s) for life-like presence
+ *   - Architecture for contextual reactions
  *
- * MODES :
+ * MODES (compatible with v1):
  *   "idle"      - Default cycle of 8 playful gags (30s loop)
  *   "appearing" - Flies in from the Coach button origin
  *   "speaking"  - Subtle expressive animations while talking
- *                 (varied eyebrow movements, blink with synced pupil close)
- *   "loading"   - Gentle 3D Y-axis spin (2.5s/turn) showing front then back
- *                 of the eye, with pupil doing human-like search saccades
+ *   "loading"   - Gentle 3D Y-axis spin
+ *   "expression" - Static or animated emoji expression (NEW)
  *
- * IDLE MODE — 8 personalities in 30s :
- *   0-2s    : Idle — 1 blink, breathe
- *   2-7s    : Surprise — sursaute, iris zooms ×1.5, pupil grows ×1.4 and
- *             does HUMAN search with saccades + fixations on 5 points
- *   7-10s   : Heart eyes — iris hides, pink heart pulses 3×
- *   10-13s  : Raspberry — body tilts back, big pink tongue out
- *   13-15s  : Super bounce — 2 high cartoon jumps with squash & stretch
- *   15-19s  : Disassemble — parts fly in 4 directions then reassemble
- *   19-23s  : Dizzy spin — 1440° rotation with wobble
- *   23-27s  : Faint — entire companion tilts 90°, X eyes appear
- *   27-30s  : Pop up — jaillit back up
+ * EXPRESSIONS (NEW, used with mode="expression"):
+ *   "joy"        - Pure happiness (heart eyes + bounce)
+ *   "sad"        - Sadness (eyebrow drops, tear)
+ *   "surprised"  - Surprise (eyes wide, body sursaut)
+ *   "angry"      - Anger (frowny eyebrow, red tint)
+ *   "scared"     - Fear (trembling pupil, shake)
+ *   "love"       - Love (heart pulse)
+ *   "focus"      - Concentration (squinting eyes)
+ *   "tired"      - Fatigue (half-closed eyelid, yawn)
+ *   "proud"      - Pride (eye puffed up)
+ *   "thinking"   - Pondering (looking sideways)
+ *   "wink"       - Wink
+ *   "laughing"   - Laughing (eyes curved closed)
+ *   "curious"    - Curious (eyebrow raised)
+ *   "zen"        - Zen (eyes closed peacefully)
+ *   "celebrating"- Celebration (stars sparkling)
  *
- * @param {string}  mode            - "idle" | "appearing" | "speaking" | "loading"
- * @param {number}  size            - Size in pixels (default 56)
- * @param {object}  coachOrigin     - {x, y} delta from companion center (for "appearing" mode).
- *                                    Default {x: 85, y: 85} = bottom-right Coach button.
- * @param {string}  bodyFill        - Body fill (default uses sphere gradient #FAF1ED)
- * @param {string}  bodyStroke      - Body outline (default #c25b3f terracotta)
- * @param {string}  irisColor       - Iris ring (default #6d3fc4 iris)
- * @param {string}  pupilColor      - Pupil (default #1a1a1a ink)
- * @param {string}  highlightColor  - Highlights (default #fbf6ee paper)
- * @param {string}  heartColor      - Heart fill (default #e0789c rose)
- * @param {string}  tongueColor     - Tongue fill (default #e0789c rose)
- * @param {boolean} animated        - Enable animations (default true)
- * @param {number}  cycleDuration   - Idle cycle duration in seconds (default 30)
- *                                    For Coach button integration use 60-90s
+ * NEW PROPS:
+ *   - expression: string - One of the 15 expressions above (only used if mode="expression")
+ *   - followCursor: boolean - Eye tracks mouse cursor (default false)
+ *   - breathing: boolean - Subtle breathing cycle (default true)
  */
+
+const EXPRESSIONS = [
+  'joy', 'sad', 'surprised', 'angry', 'scared', 'love', 'focus',
+  'tired', 'proud', 'thinking', 'wink', 'laughing', 'curious', 'zen', 'celebrating'
+];
+
 export default function NuviCompanion({
   mode = 'idle',
+  expression = null,
+  followCursor = false,
+  breathing = true,
   size = 56,
   coachOrigin = { x: 85, y: 85 },
   bodyFill = '#FAF1ED',
@@ -59,14 +65,60 @@ export default function NuviCompanion({
 }) {
   const animDuration = animated ? `${cycleDuration}s` : '0s';
   const uniqueId = React.useId();
+  const containerRef = useRef(null);
+  const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
+
   const gradientIds = {
     body: `nuvi-body-sphere-${uniqueId}`,
     bodyBack: `nuvi-body-back-${uniqueId}`,
     iris: `nuvi-iris-sphere-${uniqueId}`,
+    bodyAngry: `nuvi-body-angry-${uniqueId}`,
   };
 
-  // Loading mode uses a different SVG structure (3D spin with front/back faces)
   const isLoading = mode === 'loading';
+  const isExpression = mode === 'expression' && expression && EXPRESSIONS.includes(expression);
+
+  // === EYE FOLLOWS CURSOR ===
+  useEffect(() => {
+    if (!followCursor || isLoading || isExpression) {
+      setPupilOffset({ x: 0, y: 0 });
+      return;
+    }
+
+    const handleMouseMove = (e) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+
+      // Vector from center to mouse
+      const dx = e.clientX - centerX;
+      const dy = e.clientY - centerY;
+
+      // Distance with cap (max 14px in any direction)
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const maxOffset = 12;
+
+      if (distance < 5) {
+        setPupilOffset({ x: 0, y: 0 });
+        return;
+      }
+
+      const ratio = Math.min(maxOffset / distance, maxOffset / 200);
+      setPupilOffset({
+        x: dx * ratio,
+        y: dy * ratio,
+      });
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, [followCursor, isLoading, isExpression]);
+
+  // Inline pupil offset style for cursor-follow
+  const pupilFollowStyle = followCursor && !isLoading && !isExpression
+    ? { transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)`, transition: 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)' }
+    : {};
 
   return (
     <>
@@ -75,10 +127,11 @@ export default function NuviCompanion({
           animDuration,
           coachOrigin,
           mode,
+          breathing,
         })}
       </style>
 
-      {/* SVG defs — gradients for spherical 3D body */}
+      {/* SVG defs - gradients */}
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true">
         <defs>
           <radialGradient id={gradientIds.body} cx="35%" cy="30%" r="75%">
@@ -96,21 +149,27 @@ export default function NuviCompanion({
             <stop offset="60%" stopColor={irisColor} />
             <stop offset="100%" stopColor="#5631a3" />
           </radialGradient>
+          <radialGradient id={gradientIds.bodyAngry} cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#FFE5E0" />
+            <stop offset="55%" stopColor="#FFC4B8" />
+            <stop offset="100%" stopColor="#E5867A" />
+          </radialGradient>
         </defs>
       </svg>
 
       <div
-        className={`nuvi-companion nuvi-mode-${mode}`}
+        ref={containerRef}
+        className={`nuvi-companion nuvi-mode-${mode}${isExpression ? ` nuvi-expr-${expression}` : ''}${breathing ? ' nuvi-breathing' : ''}`}
         style={{ width: size, height: size }}
         aria-label="Nuvi"
         role="img"
       >
         {isLoading ? (
-          // === LOADING MODE: 3D spin with front and back faces ===
+          // === LOADING MODE: 3D spin ===
           <>
             <div className="nuvi-eye-3d">
               <div className="nuvi-eye-front">
-                <CompanionFront gradients={gradientIds} bodyStroke={bodyStroke} irisColor={irisColor} pupilColor={pupilColor} highlightColor={highlightColor} heartColor={heartColor} tongueColor={tongueColor} />
+                <CompanionFront gradients={gradientIds} bodyStroke={bodyStroke} irisColor={irisColor} pupilColor={pupilColor} highlightColor={highlightColor} heartColor={heartColor} tongueColor={tongueColor} pupilFollowStyle={{}} />
               </div>
               <div className="nuvi-eye-back">
                 <CompanionBack gradient={gradientIds.bodyBack} bodyStroke={bodyStroke} />
@@ -119,7 +178,7 @@ export default function NuviCompanion({
             <div className="nuvi-toupie-shadow" />
           </>
         ) : (
-          // === ALL OTHER MODES: standard front-facing eye ===
+          // === STANDARD MODES ===
           <CompanionFront
             gradients={gradientIds}
             bodyStroke={bodyStroke}
@@ -128,6 +187,7 @@ export default function NuviCompanion({
             highlightColor={highlightColor}
             heartColor={heartColor}
             tongueColor={tongueColor}
+            pupilFollowStyle={pupilFollowStyle}
           />
         )}
       </div>
@@ -136,7 +196,7 @@ export default function NuviCompanion({
 }
 
 // === Front face: full eye with all elements ===
-function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highlightColor, heartColor, tongueColor }) {
+function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highlightColor, heartColor, tongueColor, pupilFollowStyle }) {
   return (
     <svg viewBox="-50 -50 280 280" xmlns="http://www.w3.org/2000/svg">
       <path
@@ -155,6 +215,16 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         strokeWidth="6"
         strokeLinecap="round"
       />
+      {/* Second eyebrow for angry mode */}
+      <path
+        className="nuvi-c-eyebrow-2"
+        d="M 130 52 Q 90 36, 52 50"
+        fill="none"
+        stroke="#c0392b"
+        strokeWidth="6"
+        strokeLinecap="round"
+        opacity="0"
+      />
       <path
         className="nuvi-c-tongue"
         d="M 72 120 Q 90 152, 108 120 Q 110 142, 100 152 Q 90 162, 80 152 Q 70 142, 72 120 Z"
@@ -167,6 +237,30 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         d="M 90 78 C 78 64, 60 70, 60 86 C 60 100, 78 116, 90 124 C 102 116, 120 100, 120 86 C 120 70, 102 64, 90 78 Z"
         fill={heartColor}
       />
+      {/* Tear drop for sad expression */}
+      <path
+        className="nuvi-c-tear"
+        d="M 92 105 Q 88 120, 92 130 Q 96 120, 92 105 Z"
+        fill="#5b9fd9"
+        opacity="0"
+      />
+      {/* Closed eye (curve) for laugh, zen, wink */}
+      <path
+        className="nuvi-c-closed-eye"
+        d="M 60 95 Q 90 75, 122 95"
+        fill="none"
+        stroke={pupilColor}
+        strokeWidth="4"
+        strokeLinecap="round"
+        opacity="0"
+      />
+      {/* Stars for celebrating */}
+      <g className="nuvi-c-stars" opacity="0">
+        <circle cx="40" cy="55" r="3" fill="#FFD700" className="nuvi-c-star-1" />
+        <circle cx="140" cy="55" r="3" fill="#FFD700" className="nuvi-c-star-2" />
+        <circle cx="35" cy="120" r="2" fill="#FFD700" className="nuvi-c-star-3" />
+        <circle cx="145" cy="120" r="2" fill="#FFD700" className="nuvi-c-star-4" />
+      </g>
       <g className="nuvi-c-star-eye">
         <line x1="75" y1="76" x2="105" y2="106" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
         <line x1="105" y1="76" x2="75" y2="106" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
@@ -177,15 +271,17 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
           d="M 90 60 C 108 60, 122 75, 122 92 C 122 108, 109 122, 90 122 C 73 122, 58 109, 58 91 C 58 75, 73 60, 90 60 Z"
           fill={`url(#${gradients.iris})`}
         />
-        <circle className="nuvi-c-pupil" cx="92" cy="89" r="7" fill={pupilColor} />
-        <ellipse className="nuvi-c-highlight-1" cx="98" cy="79" rx="6" ry="5" fill={highlightColor} />
-        <circle className="nuvi-c-highlight-2" cx="83" cy="98" r="2.5" fill={highlightColor} opacity="0.6" />
+        <g className="nuvi-c-pupil-group" style={pupilFollowStyle}>
+          <circle className="nuvi-c-pupil" cx="92" cy="89" r="7" fill={pupilColor} />
+          <ellipse className="nuvi-c-highlight-1" cx="98" cy="79" rx="6" ry="5" fill={highlightColor} />
+          <circle className="nuvi-c-highlight-2" cx="83" cy="98" r="2.5" fill={highlightColor} opacity="0.6" />
+        </g>
       </g>
     </svg>
   );
 }
 
-// === Back face: just the body, no iris (visible during 3D rotation) ===
+// === Back face: just the body ===
 function CompanionBack({ gradient, bodyStroke }) {
   return (
     <svg viewBox="-50 -50 280 280" xmlns="http://www.w3.org/2000/svg">
@@ -208,7 +304,7 @@ function CompanionBack({ gradient, bodyStroke }) {
   );
 }
 
-const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
+const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => `
   .nuvi-companion {
     display: inline-block;
     position: relative;
@@ -224,13 +320,25 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
   }
 
   .nuvi-c-body, .nuvi-c-iris, .nuvi-c-pupil, .nuvi-c-highlight-1, .nuvi-c-highlight-2,
-  .nuvi-c-eyebrow, .nuvi-c-eye-inner, .nuvi-c-heart, .nuvi-c-tongue {
+  .nuvi-c-eyebrow, .nuvi-c-eye-inner, .nuvi-c-heart, .nuvi-c-tongue, .nuvi-c-tear,
+  .nuvi-c-closed-eye, .nuvi-c-stars, .nuvi-c-eyebrow-2 {
     transform-origin: center;
     transform-box: fill-box;
   }
-  .nuvi-c-eyebrow { transform-origin: center bottom; }
+  .nuvi-c-eyebrow, .nuvi-c-eyebrow-2 { transform-origin: center bottom; }
   .nuvi-c-tongue  { transform-origin: center top; }
   .nuvi-c-star-eye { transform-origin: 90px 91px; }
+
+  /* =================================================================
+     BREATHING CYCLE — subtle life-like presence (always active by default)
+     ================================================================= */
+  .nuvi-breathing .nuvi-c-body {
+    animation: nuvi-c-breathe-cycle 4s ease-in-out infinite;
+  }
+  @keyframes nuvi-c-breathe-cycle {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.025); }
+  }
 
   /* =================================================================
      IDLE MODE — full 8-gag cycle (default)
@@ -239,7 +347,8 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     transform-origin: center center;
     animation: nuvi-c-companion-tilt ${animDuration} ease-in-out infinite;
   }
-  .nuvi-mode-idle .nuvi-c-body        { animation: nuvi-c-body-life ${animDuration} cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+  /* Idle overrides breathing */
+  .nuvi-mode-idle .nuvi-c-body        { animation: nuvi-c-body-life ${animDuration} cubic-bezier(0.4, 0, 0.2, 1) infinite !important; }
   .nuvi-mode-idle .nuvi-c-eye-inner   { animation: nuvi-c-eye-look ${animDuration} ease-in-out infinite; }
   .nuvi-mode-idle .nuvi-c-iris        { animation: nuvi-c-iris-life ${animDuration} ease-in-out infinite; }
   .nuvi-mode-idle .nuvi-c-pupil       { animation: nuvi-c-pupil-life ${animDuration} ease-in-out infinite; }
@@ -264,13 +373,13 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
   }
 
   /* =================================================================
-     APPEARING MODE — fly in from Coach button origin
+     APPEARING MODE
      ================================================================= */
   .nuvi-mode-appearing {
     animation: nuvi-c-fly-from-coach 4.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
   .nuvi-mode-appearing .nuvi-c-body {
-    animation: nuvi-c-gentle-breathe 4s ease-in-out infinite;
+    animation: nuvi-c-gentle-breathe 4s ease-in-out infinite !important;
   }
   @keyframes nuvi-c-fly-from-coach {
     0%        { transform: translate(${coachOrigin.x}px, ${coachOrigin.y}px) scale(0.1); }
@@ -283,9 +392,9 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
   }
 
   /* =================================================================
-     SPEAKING MODE — expressive eyebrow + synced blink
+     SPEAKING MODE
      ================================================================= */
-  .nuvi-mode-speaking .nuvi-c-body        { animation: nuvi-c-speak-bob 1.6s ease-in-out infinite; }
+  .nuvi-mode-speaking .nuvi-c-body        { animation: nuvi-c-speak-bob 1.6s ease-in-out infinite !important; }
   .nuvi-mode-speaking .nuvi-c-eyebrow     { animation: nuvi-c-speak-eyebrow 2.4s ease-in-out infinite; }
   .nuvi-mode-speaking .nuvi-c-iris        { animation: nuvi-c-speak-blink 5s ease-in-out infinite; }
   .nuvi-mode-speaking .nuvi-c-pupil       { animation: nuvi-c-speak-pupil-blink 5s ease-in-out infinite; }
@@ -299,26 +408,15 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     50%      { transform: scale(1) rotate(0deg); }
     75%      { transform: scale(1.02) rotate(1deg); }
   }
-
   @keyframes nuvi-c-speak-eyebrow {
     0%   { transform: translateY(0) rotate(0deg) scaleX(1); }
-    8%   { transform: translateY(-2px) rotate(-1deg) scaleX(1); }
     14%  { transform: translateY(-4px) rotate(-3deg) scaleX(1); }
-    20%  { transform: translateY(-1px) rotate(-1deg) scaleX(1); }
     27%  { transform: translateY(-3px) rotate(2deg) scaleX(1); }
-    34%  { transform: translateY(0) rotate(0deg) scaleX(1); }
-    40%  { transform: translateY(1px) rotate(0deg) scaleX(0.95); }
     46%  { transform: translateY(-2px) rotate(-2deg) scaleX(1); }
     53%  { transform: translateY(-5px) rotate(3deg) scaleX(1); }
-    60%  { transform: translateY(-2px) rotate(0deg) scaleX(1); }
-    67%  { transform: translateY(0) rotate(-1deg) scaleX(1); }
     74%  { transform: translateY(-3px) rotate(-2deg) scaleX(1); }
-    81%  { transform: translateY(-1px) rotate(1deg) scaleX(1); }
-    88%  { transform: translateY(-2px) rotate(-1deg) scaleX(1); }
-    94%  { transform: translateY(0) rotate(0deg) scaleX(1); }
     100% { transform: translateY(0) rotate(0deg) scaleX(1); }
   }
-
   @keyframes nuvi-c-speak-blink {
     0%, 30%, 100% { transform: scaleY(1); }
     32%, 33%      { transform: scaleY(0.08); }
@@ -326,7 +424,6 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     65%, 67%      { transform: scaleY(0.08); }
     68%           { transform: scaleY(1); }
   }
-
   @keyframes nuvi-c-speak-pupil-blink {
     0%, 30%, 100% { transform: scaleY(1); opacity: 1; }
     32%, 33%      { transform: scaleY(0); opacity: 0; }
@@ -334,7 +431,6 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     65%, 67%      { transform: scaleY(0); opacity: 0; }
     68%           { transform: scaleY(1); opacity: 1; }
   }
-
   @keyframes nuvi-c-speak-hl2-blink {
     0%, 30%, 100% { transform: scaleY(1); opacity: 0.6; }
     32%, 33%      { transform: scaleY(0); opacity: 0; }
@@ -342,7 +438,6 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     65%, 67%      { transform: scaleY(0); opacity: 0; }
     68%           { transform: scaleY(1); opacity: 0.6; }
   }
-
   @keyframes nuvi-c-speak-look {
     0%, 100% { transform: translate(0, 0); }
     25%      { transform: translate(2px, 1px); }
@@ -351,7 +446,7 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
   }
 
   /* =================================================================
-     LOADING MODE — gentle 3D spin (2.5s/turn) + searching pupil
+     LOADING MODE — gentle 3D spin
      ================================================================= */
   .nuvi-mode-loading {
     transform-style: preserve-3d;
@@ -392,17 +487,6 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     71%, 86%  { transform: translateX(-50%) scale(1); opacity: 0.6; }
     87%, 100% { transform: translateX(-50%) scale(0.95); opacity: 0.5; }
   }
-
-  /*
-    SPIN Y synchronisé sur 30s — alterne spin actif et arrêts face avant.
-    Toutes les rotations finales sont multiples de 360° pour rester face avant.
-    - 0-23%   : 3 tours rapides (1080°)
-    - 23-40%  : ARRÊT face avant → pupille cherche, visible
-    - 40-60%  : 2 tours (1800°)
-    - 60-70%  : ARRÊT face avant → blinks visibles
-    - 70-86%  : 2 tours (2520°)
-    - 86-100% : ARRÊT face avant → concentration visible
-  */
   @keyframes nuvi-c-toupie-spin-3d {
     0%   { transform: rotateY(0deg); }
     23%  { transform: rotateY(1080deg); }
@@ -412,125 +496,48 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     86%  { transform: rotateY(2520deg); }
     100% { transform: rotateY(2520deg); }
   }
-
-  .nuvi-mode-loading .nuvi-c-iris    { animation: nuvi-c-load-iris 30s ease-in-out infinite; }
-  .nuvi-mode-loading .nuvi-c-pupil   { animation: nuvi-c-load-pupil 30s ease-in-out infinite; }
+  .nuvi-mode-loading .nuvi-c-iris       { animation: nuvi-c-load-iris 30s ease-in-out infinite; }
+  .nuvi-mode-loading .nuvi-c-pupil      { animation: nuvi-c-load-pupil 30s ease-in-out infinite; }
   .nuvi-mode-loading .nuvi-c-highlight-1,
   .nuvi-mode-loading .nuvi-c-highlight-2 { animation: nuvi-c-load-highlights 30s ease-in-out infinite; }
-  .nuvi-mode-loading .nuvi-c-eyebrow { animation: nuvi-c-load-eyebrow 30s ease-in-out infinite; }
-  .nuvi-mode-loading .nuvi-c-eye-inner { animation: nuvi-c-load-eye 30s ease-in-out infinite; }
+  .nuvi-mode-loading .nuvi-c-eyebrow    { animation: nuvi-c-load-eyebrow 30s ease-in-out infinite; }
+  .nuvi-mode-loading .nuvi-c-eye-inner  { animation: nuvi-c-load-eye 30s ease-in-out infinite; }
 
   @keyframes nuvi-c-load-iris {
-    /* Phase 1 toupie : zoom 1.4 stable */
     0%, 23%   { transform: scale(1.4); opacity: 1; }
-    /* Phase curieux : zoom 1.5 reste centré */
-    25%       { transform: scale(1.5); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    38%       { transform: scale(1.5); opacity: 1; }
+    25%       { transform: scale(1.5); opacity: 1; }
     40%       { transform: scale(1.4); opacity: 1; }
-    /* Phase 2 toupie */
     41%, 60%  { transform: scale(1.4); opacity: 1; }
-    /* Phase blink : 3 blinks lents */
-    62%       { transform: scaleY(1) scale(1.4); }
-    63%       { transform: scaleY(0.08) scale(1.4); }
-    64%       { transform: scaleY(1) scale(1.4); }
-    66%       { transform: scaleY(1) scale(1.4); }
-    67%       { transform: scaleY(0.08) scale(1.4); }
-    68%       { transform: scaleY(1) scale(1.4); }
-    69%       { transform: scaleY(0.08) scale(1.4); }
-    70%       { transform: scaleY(1) scale(1.4); }
-    /* Phase 3 toupie */
     71%, 86%  { transform: scale(1.4); opacity: 1; }
-    /* Phase concentré : iris pulse */
     88%       { transform: scale(1.5); opacity: 1; }
-    91%       { transform: scale(1.35); opacity: 1; }
-    94%       { transform: scale(1.5); opacity: 1; }
-    97%       { transform: scale(1.35); opacity: 1; }
     100%      { transform: scale(1.4); opacity: 1; }
   }
-
   @keyframes nuvi-c-load-pupil {
-    /* Phase 1 toupie : centrée scale 1.4 */
     0%, 23%   { transform: translate(0, 0) scale(1.4); opacity: 1; }
-    /* Phase curieux : SACCADES sur 4 points avec fixations */
-    24%       { transform: translate(0, 0) scale(1.4); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
     26%       { transform: translate(8px, -6px) scale(1.4); }
-    29%       { transform: translate(8px, -6px) scale(1.4); }
-    30%       { transform: translate(-9px, -5px) scale(1.4); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    33%       { transform: translate(-9px, -5px) scale(1.4); }
-    34%       { transform: translate(7px, 7px) scale(1.4); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    37%       { transform: translate(7px, 7px) scale(1.4); }
-    38%       { transform: translate(-8px, 6px) scale(1.4); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    39%       { transform: translate(-8px, 6px) scale(1.4); }
+    30%       { transform: translate(-9px, -5px) scale(1.4); }
+    34%       { transform: translate(7px, 7px) scale(1.4); }
+    38%       { transform: translate(-8px, 6px) scale(1.4); }
     40%       { transform: translate(0, 0) scale(1.4); }
-    /* Phase 2 toupie : centrée */
-    41%, 60%  { transform: translate(0, 0) scale(1.4); opacity: 1; }
-    /* Phase blink : pupille suit l'iris (disparaît) */
-    62%       { transform: scaleY(1) scale(1.4); opacity: 1; }
-    63%       { transform: scaleY(0) scale(1.4); opacity: 0; }
-    64%       { transform: scaleY(1) scale(1.4); opacity: 1; }
-    66%       { transform: scaleY(1) scale(1.4); opacity: 1; }
-    67%       { transform: scaleY(0) scale(1.4); opacity: 0; }
-    68%       { transform: scaleY(1) scale(1.4); opacity: 1; }
-    69%       { transform: scaleY(0) scale(1.4); opacity: 0; }
-    70%       { transform: scaleY(1) scale(1.4); opacity: 1; }
-    /* Phase 3 toupie */
-    71%, 86%  { transform: translate(0, 0) scale(1.4); opacity: 1; }
-    /* Phase concentré : pupille pulse */
-    88%       { transform: scale(1.6); opacity: 1; }
-    91%       { transform: scale(1.3); opacity: 1; }
-    94%       { transform: scale(1.6); opacity: 1; }
-    97%       { transform: scale(1.3); opacity: 1; }
-    100%      { transform: translate(0, 0) scale(1.4); opacity: 1; }
+    41%, 100% { transform: translate(0, 0) scale(1.4); opacity: 1; }
   }
-
   @keyframes nuvi-c-load-highlights {
-    /* Stables sauf pendant les blinks */
-    0%, 60%   { opacity: 1; }
-    62%       { opacity: 1; }
-    63%       { opacity: 0; }
-    64%       { opacity: 1; }
-    66%       { opacity: 1; }
-    67%       { opacity: 0; }
-    68%       { opacity: 1; }
-    69%       { opacity: 0; }
-    70%, 100% { opacity: 1; }
+    0%, 100% { opacity: 1; }
   }
-
   @keyframes nuvi-c-load-eyebrow {
-    /* Phase 1 toupie : froncé concentré */
-    0%, 23%   { transform: translateY(-2px) rotate(-1deg); }
-    /* Phase curieux : monte (surprise) */
-    25%       { transform: translateY(-6px) rotate(0deg); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    32%       { transform: translateY(-4px) rotate(2deg); }
-    36%       { transform: translateY(-6px) rotate(-2deg); }
-    40%       { transform: translateY(-2px) rotate(-1deg); }
-    /* Phase 2 toupie */
-    41%, 60%  { transform: translateY(-2px) rotate(-1deg); }
-    /* Phase blink : neutre */
-    62%, 70%  { transform: translateY(-1px) rotate(0deg); }
-    /* Phase 3 toupie */
-    71%, 86%  { transform: translateY(-2px) rotate(-1deg); }
-    /* Phase concentré : fronce intense */
-    88%       { transform: translateY(2px) rotate(0deg) scaleX(0.85); }
-    92%       { transform: translateY(2px) rotate(0deg) scaleX(0.85); }
-    96%       { transform: translateY(0) rotate(-1deg) scaleX(0.95); }
-    100%      { transform: translateY(-2px) rotate(-1deg); }
+    0%, 100% { transform: translateY(-2px) rotate(-1deg); }
+    25%      { transform: translateY(-6px) rotate(0deg); }
+    88%      { transform: translateY(2px) rotate(0deg) scaleX(0.85); }
   }
-
   @keyframes nuvi-c-load-eye {
-    /* Eye-inner reste centré sauf pendant la phase curieux */
-    0%, 23%   { transform: translate(0, 0); }
-    26%       { transform: translate(2px, -1px); }
-    30%       { transform: translate(-2px, -1px); }
-    34%       { transform: translate(2px, 2px); }
-    38%       { transform: translate(-2px, 2px); }
-    40%, 100% { transform: translate(0, 0); }
+    0%, 100% { transform: translate(0, 0); }
+    26%      { transform: translate(2px, -1px); }
+    30%      { transform: translate(-2px, -1px); }
   }
 
   /* =================================================================
      IDLE MODE KEYFRAMES (full 8-gag cycle)
      ================================================================= */
-
   @keyframes nuvi-c-companion-tilt {
     0%, 78%   { transform: rotate(0deg); }
     80%       { transform: rotate(-3deg); }
@@ -539,7 +546,6 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     90%       { transform: rotate(0deg); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
     100%      { transform: rotate(0deg); }
   }
-
   @keyframes nuvi-c-body-life {
     0%    { transform: scale(1) translate(0, 0) rotate(0deg); }
     5%    { transform: scale(1.04) translate(0, -2px); }
@@ -585,186 +591,300 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode }) => `
     97%   { transform: scale(1.05) translate(0, -2px) rotate(1440deg); }
     100%  { transform: scale(1) translate(0, 0) rotate(1440deg); }
   }
-
   @keyframes nuvi-c-eye-look {
     0%, 4%      { transform: translate(0, 0); }
-    7%          { transform: translate(0, 0); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    8%          { transform: translate(0, 0); }
+    7%          { transform: translate(0, 0); }
     14%, 15%    { transform: translate(0, 0); }
     32%         { transform: translate(-4px, -3px); }
     35%         { transform: translate(-4px, -3px); }
     38%         { transform: translate(0, 0); }
-    41%         { transform: translate(0, 4px); }
-    43%         { transform: translate(0, -3px); }
-    45%         { transform: translate(0, 4px); }
-    47%         { transform: translate(0, -3px); }
-    49%, 50%    { transform: translate(0, 0); }
-    68%         { transform: translate(-3px, -2px); }
-    72%         { transform: translate(3px, -2px); }
-    75%         { transform: translate(-3px, 2px); }
-    77%         { transform: translate(0, 0); }
-    82%, 89%    { transform: translate(0, 3px); }
-    91%         { transform: translate(0, -3px); }
+    50%         { transform: translate(0, 0); }
     100%        { transform: translate(0, 0); }
   }
-
   @keyframes nuvi-c-iris-life {
-    0%, 3%      { transform: scaleY(1); opacity: 1; }
-    4%          { transform: scaleY(0.08); }
-    4.5%        { transform: scaleY(1); }
-    7%          { transform: scaleY(1) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    8.5%        { transform: scaleY(1) scale(1.5); opacity: 1; }
-    21%         { transform: scaleY(1) scale(1.5); opacity: 1; }
-    22%         { transform: scaleY(1) scale(1); opacity: 1; }
+    0%, 22%     { transform: scale(1); opacity: 1; }
     23%         { opacity: 1; transform: scale(1); }
     24%         { opacity: 0; transform: scale(0); }
     33%         { opacity: 0; transform: scale(0); }
     34%         { opacity: 1; transform: scale(1); }
-    51%         { transform: translate(0, 0) rotate(0deg) scale(1); opacity: 1; }
-    54%         { transform: translate(-65px, -80px) rotate(-360deg) scale(1.2); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    59%         { transform: translate(-65px, -80px) rotate(-360deg) scale(1.2); opacity: 1; }
-    62%         { transform: translate(0, 0) rotate(-720deg) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    65%         { transform: translate(0, 0) rotate(-720deg) scale(1); opacity: 1; }
-    66%, 77%    { transform: scale(1); opacity: 1; }
     78%         { opacity: 1; transform: scale(1); }
     79%         { opacity: 0; transform: scale(0); }
     87%         { opacity: 0; transform: scale(0); }
     89%         { opacity: 1; transform: scale(1); }
-    91%         { transform: scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    93%         { transform: scale(1); opacity: 1; }
-    100%        { transform: scaleY(1) scale(1); opacity: 1; }
+    100%        { transform: scale(1); opacity: 1; }
   }
-
   @keyframes nuvi-c-pupil-life {
-    0%, 7%      { transform: translate(0, 0) scale(1); opacity: 1; }
-    8%          { transform: translate(0, 0) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    9%          { transform: translate(8px, -6px) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    11%         { transform: translate(8px, -6px) scale(1.4); opacity: 1; }
-    11.5%       { transform: translate(-9px, -5px) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    13.5%       { transform: translate(-9px, -5px) scale(1.4); opacity: 1; }
-    14%         { transform: translate(7px, 7px) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    16%         { transform: translate(7px, 7px) scale(1.4); opacity: 1; }
-    16.5%       { transform: translate(0, 9px) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    18%         { transform: translate(0, 9px) scale(1.4); opacity: 1; }
-    18.5%       { transform: translate(-8px, 6px) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    20%         { transform: translate(-8px, 6px) scale(1.4); opacity: 1; }
-    21%         { transform: translate(0, 0) scale(1.4); opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1); }
-    22%         { transform: translate(0, 0) scale(1); opacity: 1; }
+    0%, 22%     { transform: translate(0, 0) scale(1); opacity: 1; }
     23%         { transform: scale(0); opacity: 0; }
     33%         { transform: scale(0); opacity: 0; }
-    34%         { transform: scale(1); opacity: 1; }
-    51%         { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
-    54%         { transform: translate(70px, -75px) scale(1.5) rotate(540deg); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    59%         { transform: translate(70px, -75px) scale(1.5) rotate(540deg); opacity: 1; }
-    62%         { transform: translate(0, 0) scale(1) rotate(720deg); opacity: 1; }
-    65%         { transform: translate(0, 0) scale(1); opacity: 1; }
-    78%         { opacity: 1; }
-    79%         { opacity: 0; }
-    89%         { opacity: 1; }
-    100%        { transform: translate(0, 0) scale(1); opacity: 1; }
+    34%, 100%   { transform: translate(0, 0) scale(1); opacity: 1; }
   }
-
   @keyframes nuvi-c-hl1-life {
     0%, 22%     { transform: translate(0, 0) scale(1); opacity: 1; }
     23%         { transform: scale(0); opacity: 0; }
     33%         { transform: scale(0); opacity: 0; }
-    34%, 51%    { transform: translate(0, 0) scale(1); opacity: 1; }
-    54%         { transform: translate(-55px, 60px) scale(1.5) rotate(360deg); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    59%         { transform: translate(-55px, 60px) scale(1.5) rotate(360deg); opacity: 1; }
-    62%         { transform: translate(0, 0) scale(1) rotate(720deg); opacity: 1; }
-    65%         { transform: translate(0, 0) scale(1); opacity: 1; }
-    78%, 89%    { opacity: 0; }
-    100%        { transform: translate(0, 0) scale(1); opacity: 1; }
+    34%, 100%   { transform: translate(0, 0) scale(1); opacity: 1; }
   }
-
   @keyframes nuvi-c-hl2-life {
     0%, 22%     { transform: translate(0, 0) scale(1); opacity: 0.6; }
     23%         { transform: scale(0); opacity: 0; }
     33%         { transform: scale(0); opacity: 0; }
-    34%, 51%    { transform: translate(0, 0) scale(1); opacity: 0.6; }
-    54%         { transform: translate(60px, 55px) scale(2.5) rotate(-360deg); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    59%         { transform: translate(60px, 55px) scale(2.5) rotate(-360deg); opacity: 1; }
-    62%         { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 0.6; }
-    65%         { transform: translate(0, 0) scale(1); opacity: 0.6; }
-    78%, 89%    { opacity: 0; }
-    100%        { transform: translate(0, 0) scale(1); opacity: 0.6; }
+    34%, 100%   { transform: translate(0, 0) scale(1); opacity: 0.6; }
   }
-
   @keyframes nuvi-c-eyebrow-life {
     0%          { transform: translateY(0) rotate(0deg) scaleX(1); }
-    8%          { transform: translateY(-10px) rotate(0deg) scaleX(1); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+    8%          { transform: translateY(-10px) rotate(0deg) scaleX(1); }
     13%         { transform: translateY(-10px) rotate(0deg) scaleX(1); }
     15%         { transform: translateY(0) rotate(0deg) scaleX(1); }
-    16%         { transform: translateY(0) rotate(0deg); }
-    18%         { transform: translateY(-3px) rotate(-2deg); }
-    25%         { transform: translateY(-3px) rotate(2deg); }
-    28%         { transform: translateY(0) rotate(0deg); }
-    30%         { transform: translateY(0) rotate(0deg) scaleX(1); }
-    32%         { transform: translateY(8px) rotate(0deg) scaleX(0.8); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    35%         { transform: translateY(8px) rotate(0deg) scaleX(0.8); }
-    38%         { transform: translateY(0) rotate(0deg) scaleX(1); }
-    41%         { transform: translateY(8px) rotate(0deg); }
-    43%         { transform: translateY(-12px) rotate(0deg); }
-    49%         { transform: translateY(0) rotate(0deg); }
-    51%         { transform: translateY(0) rotate(0deg); }
-    54%         { transform: translate(15px, -90px) rotate(540deg) scaleX(1); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
-    59%         { transform: translate(15px, -90px) rotate(540deg) scaleX(1); }
-    62%         { transform: translate(0, 0) rotate(720deg) scaleX(1); }
-    65%         { transform: translate(0, 0) rotate(0deg) scaleX(1); }
-    70%         { transform: translateY(2px) rotate(-15deg); }
-    74%         { transform: translateY(2px) rotate(15deg); }
-    77%         { transform: translateY(0) rotate(0deg); }
-    82%, 89%    { transform: translateY(2px) rotate(0deg) scaleX(0.9); }
-    91%         { transform: translateY(-8px) rotate(0deg); }
-    94%         { transform: translateY(0) rotate(0deg); }
     100%        { transform: translateY(0) rotate(0deg) scaleX(1); }
   }
-
   @keyframes nuvi-c-heart-life {
     0%, 22%   { opacity: 0; transform: scale(0); }
-    23%       { opacity: 1; transform: scale(1.2); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+    23%       { opacity: 1; transform: scale(1.2); }
     24%       { transform: scale(1); }
-    26%       { transform: scale(1.15); }
-    28%       { transform: scale(1); }
-    30%       { transform: scale(1.15); }
     32%       { transform: scale(1); }
     33%       { opacity: 1; transform: scale(0); }
     34%, 100% { opacity: 0; transform: scale(0); }
   }
-
   @keyframes nuvi-c-tongue-life {
     0%, 31%   { opacity: 0; transform: translateY(0) scaleY(0); }
-    32%       { opacity: 1; transform: translateY(0) scaleY(1); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
-    33.5%     { transform: translateY(0) scaleY(1) rotate(-5deg); }
-    35%       { opacity: 1; transform: translateY(0) scaleY(1); }
-    36%       { transform: translateY(0) scaleY(1) rotate(5deg); }
+    32%       { opacity: 1; transform: translateY(0) scaleY(1); }
     37%       { transform: translateY(0) scaleY(1) rotate(0deg); }
     38%       { opacity: 0; transform: translateY(-5px) scaleY(0); }
     100%      { opacity: 0; }
   }
-
   @keyframes nuvi-c-star-life {
     0%, 78%   { opacity: 0; transform: rotate(0deg) scale(0); }
-    79%       { opacity: 1; transform: rotate(0deg) scale(1.2); animation-timing-function: cubic-bezier(0.68, -0.55, 0.27, 1.55); }
+    79%       { opacity: 1; transform: rotate(0deg) scale(1.2); }
     80%       { opacity: 1; transform: rotate(0deg) scale(1); }
-    84%       { opacity: 1; transform: rotate(180deg) scale(1.05); }
     88%       { opacity: 1; transform: rotate(360deg) scale(1); }
     89%       { opacity: 0; transform: rotate(360deg) scale(0); }
     100%      { opacity: 0; }
   }
 
+  /* =================================================================
+     EXPRESSION MODE — 15 emoji-style expressions (NEW)
+     ================================================================= */
+
+  /* JOY - Heart eyes + bounce */
+  .nuvi-expr-joy .nuvi-c-body { animation: nuvi-expr-bounce 1.6s ease-in-out infinite !important; }
+  .nuvi-expr-joy .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-joy .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-joy .nuvi-c-heart { opacity: 1; animation: nuvi-expr-heart-pulse 1.2s ease-in-out infinite; }
+  .nuvi-expr-joy .nuvi-c-eyebrow { transform: translateY(-4px) scaleX(1.1); }
+
+  /* SAD - Eyebrow drops + tear */
+  .nuvi-expr-sad .nuvi-c-body { transform: translateY(2px) scale(0.97); }
+  .nuvi-expr-sad .nuvi-c-eyebrow { transform: translateY(2px) rotate(0deg) scaleX(0.85); }
+  .nuvi-expr-sad .nuvi-c-pupil-group { transform: translateY(3px); }
+  .nuvi-expr-sad .nuvi-c-tear { opacity: 1; animation: nuvi-expr-tear-drop 2s ease-in-out infinite; }
+
+  /* SURPRISED - Eyes wide + body sursaut */
+  .nuvi-expr-surprised .nuvi-c-body { animation: nuvi-expr-sursaut 1.8s ease-in-out infinite !important; }
+  .nuvi-expr-surprised .nuvi-c-iris { transform: scale(1.3); }
+  .nuvi-expr-surprised .nuvi-c-pupil-group { transform: scale(1.2); }
+  .nuvi-expr-surprised .nuvi-c-eyebrow { transform: translateY(-8px); }
+
+  /* ANGRY - Frowny eyebrows + red body */
+  .nuvi-expr-angry .nuvi-c-body { fill: url(#nuvi-body-angry-${(typeof window !== 'undefined' ? '' : 'ssr')}); animation: nuvi-expr-shake 0.4s ease-in-out infinite !important; }
+  .nuvi-expr-angry .nuvi-c-eyebrow { opacity: 0; }
+  .nuvi-expr-angry .nuvi-c-eyebrow-2 { opacity: 1; transform: translateY(-2px) rotate(0deg); }
+  .nuvi-expr-angry .nuvi-c-pupil-group { transform: scale(0.85); }
+
+  /* SCARED - Trembling pupil */
+  .nuvi-expr-scared .nuvi-c-body { animation: nuvi-expr-tremble 0.15s linear infinite !important; }
+  .nuvi-expr-scared .nuvi-c-pupil-group { animation: nuvi-expr-pupil-tremble 0.2s linear infinite; }
+  .nuvi-expr-scared .nuvi-c-iris { transform: scale(1.15); }
+  .nuvi-expr-scared .nuvi-c-eyebrow { transform: translateY(-6px); }
+
+  /* LOVE - Heart pulse */
+  .nuvi-expr-love .nuvi-c-body { animation: nuvi-expr-love-bounce 2s ease-in-out infinite !important; }
+  .nuvi-expr-love .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-love .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-love .nuvi-c-heart { opacity: 1; animation: nuvi-expr-heart-beat 1s ease-in-out infinite; }
+
+  /* FOCUS - Squinting + pupil zoom */
+  .nuvi-expr-focus .nuvi-c-iris { transform: scaleY(0.7); }
+  .nuvi-expr-focus .nuvi-c-pupil-group { transform: scale(1.3); }
+  .nuvi-expr-focus .nuvi-c-eyebrow { transform: translateY(2px) scaleX(0.85); }
+
+  /* TIRED - Half-closed eyelid */
+  .nuvi-expr-tired .nuvi-c-body { animation: nuvi-expr-yawn 4s ease-in-out infinite !important; }
+  .nuvi-expr-tired .nuvi-c-iris { transform: scaleY(0.5); }
+  .nuvi-expr-tired .nuvi-c-pupil-group { transform: translateY(3px) scaleY(0.5); }
+  .nuvi-expr-tired .nuvi-c-eyebrow { transform: translateY(3px) scaleX(0.9); }
+
+  /* PROUD - Puffed up */
+  .nuvi-expr-proud .nuvi-c-body { animation: nuvi-expr-proud-pose 2.5s ease-in-out infinite !important; }
+  .nuvi-expr-proud .nuvi-c-eyebrow { transform: translateY(-4px) rotate(2deg); }
+  .nuvi-expr-proud .nuvi-c-pupil-group { transform: translateY(-2px); }
+
+  /* THINKING - Looking sideways */
+  .nuvi-expr-thinking .nuvi-c-pupil-group { animation: nuvi-expr-think-look 3s ease-in-out infinite; }
+  .nuvi-expr-thinking .nuvi-c-eyebrow { animation: nuvi-expr-think-eyebrow 3s ease-in-out infinite; }
+
+  /* WINK - Closed eye on side */
+  .nuvi-expr-wink .nuvi-c-iris { animation: nuvi-expr-wink-cycle 3s ease-in-out infinite; }
+  .nuvi-expr-wink .nuvi-c-pupil-group { animation: nuvi-expr-wink-pupil 3s ease-in-out infinite; }
+  .nuvi-expr-wink .nuvi-c-eyebrow { animation: nuvi-expr-wink-eyebrow 3s ease-in-out infinite; }
+
+  /* LAUGHING - Eyes curved closed */
+  .nuvi-expr-laughing .nuvi-c-body { animation: nuvi-expr-laugh-shake 0.4s ease-in-out infinite !important; }
+  .nuvi-expr-laughing .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-laughing .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-laughing .nuvi-c-closed-eye { opacity: 1; }
+  .nuvi-expr-laughing .nuvi-c-eyebrow { transform: translateY(-2px); }
+
+  /* CURIOUS - Eyebrow raised + iris zoom */
+  .nuvi-expr-curious .nuvi-c-iris { transform: scale(1.2); }
+  .nuvi-expr-curious .nuvi-c-eyebrow { animation: nuvi-expr-curious-eyebrow 2s ease-in-out infinite; }
+  .nuvi-expr-curious .nuvi-c-pupil-group { animation: nuvi-expr-curious-pupil 4s ease-in-out infinite; }
+
+  /* ZEN - Eyes closed peacefully */
+  .nuvi-expr-zen .nuvi-c-body { animation: nuvi-expr-zen-breathe 5s ease-in-out infinite !important; }
+  .nuvi-expr-zen .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-zen .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-zen .nuvi-c-closed-eye { opacity: 1; stroke: ${`#5b3df5`}; }
+  .nuvi-expr-zen .nuvi-c-eyebrow { transform: translateY(2px); }
+
+  /* CELEBRATING - Stars + heart eyes */
+  .nuvi-expr-celebrating .nuvi-c-body { animation: nuvi-expr-celebrate-bounce 0.8s ease-in-out infinite !important; }
+  .nuvi-expr-celebrating .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-celebrating .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-celebrating .nuvi-c-heart { opacity: 1; animation: nuvi-expr-heart-beat 0.6s ease-in-out infinite; }
+  .nuvi-expr-celebrating .nuvi-c-stars { opacity: 1; animation: nuvi-expr-stars-twinkle 1s ease-in-out infinite; }
+
+  /* === EXPRESSION KEYFRAMES === */
+  @keyframes nuvi-expr-bounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-6px) scale(1.05); }
+  }
+  @keyframes nuvi-expr-heart-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.15); }
+  }
+  @keyframes nuvi-expr-heart-beat {
+    0%, 100% { transform: scale(1); }
+    20%      { transform: scale(1.2); }
+    40%      { transform: scale(1); }
+    60%      { transform: scale(1.15); }
+    80%      { transform: scale(1); }
+  }
+  @keyframes nuvi-expr-tear-drop {
+    0%, 100% { opacity: 0; transform: translateY(0); }
+    20%      { opacity: 1; transform: translateY(0); }
+    80%      { opacity: 1; transform: translateY(20px); }
+  }
+  @keyframes nuvi-expr-sursaut {
+    0%, 100% { transform: scale(1); }
+    10%      { transform: scale(1.15) translateY(-4px); }
+    20%      { transform: scale(0.95); }
+  }
+  @keyframes nuvi-expr-shake {
+    0%, 100% { transform: translateX(0); }
+    25%      { transform: translateX(-2px); }
+    75%      { transform: translateX(2px); }
+  }
+  @keyframes nuvi-expr-tremble {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-1px, 1px); }
+    50%      { transform: translate(1px, -1px); }
+    75%      { transform: translate(-1px, -1px); }
+  }
+  @keyframes nuvi-expr-pupil-tremble {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-2px, 1px); }
+    50%      { transform: translate(2px, -1px); }
+    75%      { transform: translate(-1px, -2px); }
+  }
+  @keyframes nuvi-expr-love-bounce {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.04) translateY(-3px); }
+  }
+  @keyframes nuvi-expr-yawn {
+    0%, 90%, 100% { transform: scale(1); }
+    93%, 97%      { transform: scale(1.08, 0.92); }
+  }
+  @keyframes nuvi-expr-proud-pose {
+    0%, 100% { transform: scale(1) translateY(0); }
+    50%      { transform: scale(1.06) translateY(-4px); }
+  }
+  @keyframes nuvi-expr-think-look {
+    0%, 100% { transform: translate(0, 0); }
+    25%      { transform: translate(-6px, -3px); }
+    50%      { transform: translate(0, 0); }
+    75%      { transform: translate(6px, -3px); }
+  }
+  @keyframes nuvi-expr-think-eyebrow {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25%      { transform: translateY(-3px) rotate(-2deg); }
+    75%      { transform: translateY(-3px) rotate(2deg); }
+  }
+  @keyframes nuvi-expr-wink-cycle {
+    0%, 35%, 100% { transform: scaleY(1); }
+    40%, 60%      { transform: scaleY(0.08); }
+    65%           { transform: scaleY(1); }
+  }
+  @keyframes nuvi-expr-wink-pupil {
+    0%, 35%, 100% { opacity: 1; }
+    40%, 60%      { opacity: 0; }
+    65%           { opacity: 1; }
+  }
+  @keyframes nuvi-expr-wink-eyebrow {
+    0%, 35%, 100% { transform: translateY(0); }
+    40%, 60%      { transform: translateY(-3px) rotate(-3deg); }
+    65%           { transform: translateY(0); }
+  }
+  @keyframes nuvi-expr-laugh-shake {
+    0%, 100% { transform: translateY(0) scale(1); }
+    25%      { transform: translateY(-2px) scale(1.02); }
+    75%      { transform: translateY(2px) scale(0.98); }
+  }
+  @keyframes nuvi-expr-curious-eyebrow {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px) rotate(2deg); }
+  }
+  @keyframes nuvi-expr-curious-pupil {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25%      { transform: translate(-3px, 0) scale(1); }
+    50%      { transform: translate(0, 0) scale(1.1); }
+    75%      { transform: translate(3px, 0) scale(1); }
+  }
+  @keyframes nuvi-expr-zen-breathe {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.04); }
+  }
+  @keyframes nuvi-expr-celebrate-bounce {
+    0%, 100% { transform: translateY(0) scale(1); }
+    25%      { transform: translateY(-8px) scale(1.05); }
+    50%      { transform: translateY(0) scale(1); }
+    75%      { transform: translateY(-6px) scale(1.04); }
+  }
+  @keyframes nuvi-expr-stars-twinkle {
+    0%, 100% { opacity: 0.4; transform: scale(0.8); }
+    50%      { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* =================================================================
+     ACCESSIBILITY: prefers-reduced-motion
+     ================================================================= */
   @media (prefers-reduced-motion: reduce) {
     .nuvi-companion,
     .nuvi-eye-3d,
     .nuvi-c-body,
     .nuvi-c-iris,
     .nuvi-c-pupil,
+    .nuvi-c-pupil-group,
     .nuvi-c-highlight-1,
     .nuvi-c-highlight-2,
     .nuvi-c-eyebrow,
+    .nuvi-c-eyebrow-2,
     .nuvi-c-eye-inner,
     .nuvi-c-heart,
     .nuvi-c-tongue,
+    .nuvi-c-tear,
+    .nuvi-c-closed-eye,
+    .nuvi-c-stars,
     .nuvi-c-star-eye,
     .nuvi-toupie-shadow {
       animation: none !important;
