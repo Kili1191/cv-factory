@@ -5992,7 +5992,7 @@ export default function App() {
                 background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
                 pointerEvents: "none",
               }} />
-              mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}
+              <NuviCompanion size={48}  mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}  />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
