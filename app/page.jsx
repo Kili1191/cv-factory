@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from "react";
 import dynamic from "next/dynamic";
+import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
@@ -2651,6 +2652,7 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  const { expression: nuviExpression } = useNuviReactions();
   const cRef = useRef();
 
   // Hydrate from localStorage AFTER first render. This is the only safe
@@ -5990,7 +5992,7 @@ export default function App() {
                 background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
                 pointerEvents: "none",
               }} />
-              <NuviCompanion size={52} mode="idle" cycleDuration={60} />
+              mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
