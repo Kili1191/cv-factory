@@ -5986,13 +5986,13 @@ export default function App() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: 60,
-                height: 60,
+                width: 120,
+                height: 120,
                 borderRadius: "50%",
                 background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
                 pointerEvents: "none",
               }} />
-              <NuviCompanion size={60}  mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}  />
+              <NuviCompanion size={120}  mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}  />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
