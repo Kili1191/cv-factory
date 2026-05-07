@@ -2652,8 +2652,9 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
-  const { expression: nuviExpression } = useNuviReactions();
   const cRef = useRef();
+  // === Nuvi Reactions (presence vivante) ===
+  const { expression: nuviExpression, triggerEvent: nuviTrigger } = useNuviReactions();
 
   // Hydrate from localStorage AFTER first render. This is the only safe
   // moment to read localStorage in a Next.js / SSR context.
@@ -5986,13 +5987,13 @@ export default function App() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: 120,
-                height: 120,
+                width: 88,
+                height: 88,
                 borderRadius: "50%",
                 background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
                 pointerEvents: "none",
               }} />
-              <NuviCompanion size={120}  mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression}  />
+              <NuviCompanion size={52} mode="idle" cycleDuration={60} />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
@@ -6391,13 +6392,13 @@ export default function App() {
                 top: "50%",
                 left: "50%",
                 transform: "translate(-50%, -50%)",
-                width: mob ? 44 : 60,
-                height: mob ? 44 : 60,
+                width: mob ? 56 : 88,
+                height: mob ? 56 : 88,
                 borderRadius: "50%",
                 background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
                 pointerEvents: "none",
               }} />
-              <NuviCompanion size={mob ? 36 : 52} mode="idle" cycleDuration={60} />
+              <NuviCompanion size={mob ? 48 : 80} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
             </span>
             {coachUsageCount < 3 && <span>Coach</span>}
             <style>{`
