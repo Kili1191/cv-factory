@@ -5943,33 +5943,29 @@ export default function App() {
                 : { right: 24, bottom: 24 }),
               zIndex: 90,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: coachUsageCount >= 3 ? 0 : 12,
-              padding: coachUsageCount >= 3 ? "8px" : "10px 24px 10px 12px",
-              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
-              color: "#fff",
+              gap: 4,
+              padding: 0,
+              background: "transparent",
+              color: "#5b3df5",
               border: "none",
-              borderRadius: 999,
               cursor: coachDragging ? "grabbing" : "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              fontSize: 15,
+              fontSize: 11,
               fontWeight: 600,
-              letterSpacing: 0.2,
-              boxShadow: coachDragging
-                ? "0 16px 40px rgba(91, 61, 245, 0.55), 0 6px 14px rgba(91, 61, 245, 0.4)"
-                : "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               transition: coachDragging
                 ? "none"
-                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, gap 250ms ease, padding 250ms ease",
-              animation: coachDragging ? "none" : "coachPulse 2.6s ease-in-out infinite",
+                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
               transform: coachDragging ? "scale(1.08)" : "",
               userSelect: "none",
               touchAction: "none",
             }}
             onMouseEnter={(e) => {
               if (coachDragging) return;
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
             }}
           >
             <span
@@ -5980,26 +5976,59 @@ export default function App() {
                 justifyContent: "center",
                 flexShrink: 0,
                 position: "relative",
+                width: 140,
+                height: 140,
               }}
             >
               <span style={{
                 position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 88,
-                height: 88,
+                inset: 0,
                 borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
+                background: "radial-gradient(circle at 50% 55%, rgba(91, 61, 245, 0.35) 0%, rgba(185, 28, 140, 0.20) 35%, rgba(91, 61, 245, 0.05) 60%, transparent 75%)",
+                animation: coachDragging ? "none" : "nuviBoxBreathe 16s ease-in-out infinite",
                 pointerEvents: "none",
+                filter: "blur(8px)",
               }} />
-              <NuviCompanion size={52} mode="idle" cycleDuration={60} />
+              <span style={{
+                position: "absolute",
+                inset: "15%",
+                borderRadius: "50%",
+                background: "radial-gradient(ellipse at 45% 40%, rgba(91, 61, 245, 0.25) 0%, transparent 65%)",
+                animation: coachDragging ? "none" : "nuviBoxBreathe 16s ease-in-out infinite",
+                animationDelay: "0.5s",
+                pointerEvents: "none",
+                filter: "blur(4px)",
+              }} />
+              <span style={{
+                position: "relative",
+                zIndex: 2,
+                filter: "drop-shadow(0 4px 12px rgba(91, 61, 245, 0.25))",
+              }}>
+                <NuviCompanion size={120} mode="idle" cycleDuration={60} />
+              </span>
             </span>
-            {coachUsageCount < 3 && <span>Coach</span>}
+            {coachUsageCount < 3 && (
+              <span style={{
+                marginTop: 2,
+                padding: "3px 10px",
+                background: "rgba(91, 61, 245, 0.08)",
+                borderRadius: 999,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                color: "#5b3df5",
+                border: "0.5px solid rgba(91, 61, 245, 0.15)",
+              }}>
+                Coach
+              </span>
+            )}
             <style>{`
-              @keyframes coachPulse {
-                0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
-                50% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.45), 0 2px 6px rgba(91, 61, 245, 0.3), 0 0 0 8px rgba(91, 61, 245, 0); }
+              @keyframes nuviBoxBreathe {
+                0%   { transform: scale(0.65); opacity: 0.35; }
+                25%  { transform: scale(1.0);  opacity: 0.85; }
+                50%  { transform: scale(1.0);  opacity: 0.85; }
+                75%  { transform: scale(0.65); opacity: 0.35; }
+                100% { transform: scale(0.65); opacity: 0.35; }
               }
             `}</style>
           </button>
