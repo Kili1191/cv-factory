@@ -5884,7 +5884,7 @@ export default function App() {
           || showMultiCV
           || showTutorial || showSettings
         ) && (
-          <button
+         <button
             onClick={(e) => {
               if (coachDragging) { setCoachDragging(false); return; }
               openCoach(e);
@@ -6004,7 +6004,7 @@ export default function App() {
                 zIndex: 2,
                 filter: "drop-shadow(0 4px 12px rgba(91, 61, 245, 0.25))",
               }}>
-                <NuviCompanion size={120} mode="idle" cycleDuration={60} />
+                <NuviCompanion size={120} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
               </span>
             </span>
             {coachUsageCount < 3 && (
