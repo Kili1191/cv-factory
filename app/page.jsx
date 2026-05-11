@@ -2927,6 +2927,7 @@ export default function App() {
         jsPDF:{unit:"mm", format:"a4", orientation:"portrait"},
       }).from(el).save();
       notify(T.okp+": "+fname);
+      if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
     };
     document.head.appendChild(s);
   }, [cv.name, T, notify]);
@@ -3021,6 +3022,12 @@ export default function App() {
         }
       );
       setAuditResult(r);
+      // Nuvi reaction selon score
+      if (typeof nuviTrigger === 'function' && r) {
+        if (r.score >= 80) nuviTrigger('audit-excellent', { score: r.score });
+        else if (r.score < 50) nuviTrigger('audit-low', { score: r.score });
+        else nuviTrigger('feature-completed');
+      }
     } catch (err) {
       notify("Audit: " + (err && err.message ? err.message : "erreur inconnue"));
     } finally {
@@ -3132,6 +3139,7 @@ export default function App() {
       const txt = await aiCall(p);
       const r = parseJSON(txt);
       setPackResult(r);
+      if (typeof nuviTrigger === 'function') nuviTrigger('feature-completed');
     } catch (err) {
       notify("Erreur candidature: " + (err.message || "inconnue"));
       setShowPack(false);
@@ -3396,6 +3404,12 @@ export default function App() {
       const txt = await aiCall(p);
       const r = parseJSON(txt);
       setDashResult(r);
+      // Nuvi reaction selon score
+      if (typeof nuviTrigger === 'function' && r) {
+        if (r.total >= 80) nuviTrigger('audit-excellent', { score: r.total });
+        else if (r.total < 50) nuviTrigger('audit-low', { score: r.total });
+        else nuviTrigger('feature-completed');
+      }
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
     }
@@ -3998,6 +4012,7 @@ export default function App() {
       };
 
       await html2pdf().set(opt).from(container).save();
+      if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       document.body.removeChild(container);
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
@@ -5325,7 +5340,7 @@ export default function App() {
           T={T} cv={cv} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey}
           initialResult={offerResult}
-          onResult={setOfferResult}
+          onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
           onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
           onPackRequest={requestPack}
           onClose={()=>setShowOffer(false)}
