@@ -3,23 +3,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * NuviCompanion v3 — The Nuvi mascot, now with mouth and arms for expressions
+ * NuviCompanion v4 — Refonte complete Apple emoji style
  *
- * NEW IN v3:
- *   - Mouth (changes shape per expression)
- *   - Two arms (left + right) that animate per expression
- *   - Both invisible in standard modes (idle/speaking/loading)
+ * PRINCIPES :
+ *   - Tous les elements d'expression caches en mode idle/speaking/loading/appearing
+ *   - UN seul element bouche (svg group avec opacity contextuel)
+ *   - DEUX bras 3D coherents avec le body (gradient + drop-shadow)
+ *   - Couleurs Apple style (saturees mais douces)
  *
- * MODES (compatible with v1/v2):
- *   "idle"       - Default cycle of 8 playful gags (30s loop)
- *   "appearing"  - Flies in from the Coach button origin
- *   "speaking"   - Subtle expressive animations while talking
- *   "loading"    - Gentle 3D Y-axis spin
- *   "expression" - Static or animated emoji expression with mouth + arms
- *
- * EXPRESSIONS (15):
- *   joy, sad, surprised, angry, scared, love, focus,
- *   tired, proud, thinking, wink, laughing, curious, zen, celebrating
+ * MODES :
+ *   "idle"       - 8 gags classiques (heart, raspberry, faint, etc.)
+ *   "appearing"  - Fly in
+ *   "speaking"   - Subtle eyebrow + blink
+ *   "loading"    - 3D Y spin
+ *   "expression" - 15 emoji-style expressions avec bouche + bras
  */
 
 const EXPRESSIONS = [
@@ -53,7 +50,8 @@ export default function NuviCompanion({
     body: `nuvi-body-sphere-${uniqueId}`,
     bodyBack: `nuvi-body-back-${uniqueId}`,
     iris: `nuvi-iris-sphere-${uniqueId}`,
-    bodyAngry: `nuvi-body-angry-${uniqueId}`,
+    arm: `nuvi-arm-sphere-${uniqueId}`,
+    hand: `nuvi-hand-sphere-${uniqueId}`,
   };
 
   const isLoading = mode === 'loading';
@@ -74,10 +72,7 @@ export default function NuviCompanion({
       const dy = e.clientY - centerY;
       const distance = Math.sqrt(dx * dx + dy * dy);
       const maxOffset = 12;
-      if (distance < 5) {
-        setPupilOffset({ x: 0, y: 0 });
-        return;
-      }
+      if (distance < 5) { setPupilOffset({ x: 0, y: 0 }); return; }
       const ratio = Math.min(maxOffset / distance, maxOffset / 200);
       setPupilOffset({ x: dx * ratio, y: dy * ratio });
     };
@@ -112,10 +107,17 @@ export default function NuviCompanion({
             <stop offset="60%" stopColor={irisColor} />
             <stop offset="100%" stopColor="#5631a3" />
           </radialGradient>
-          <radialGradient id={gradientIds.bodyAngry} cx="35%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#FFE5E0" />
-            <stop offset="55%" stopColor="#FFC4B8" />
-            <stop offset="100%" stopColor="#E5867A" />
+          {/* Bras coherent avec le body */}
+          <radialGradient id={gradientIds.arm} cx="40%" cy="30%" r="80%">
+            <stop offset="0%" stopColor="#FFFCF7" />
+            <stop offset="50%" stopColor={bodyFill} />
+            <stop offset="100%" stopColor="#D4B3A1" />
+          </radialGradient>
+          {/* Main coherente avec le body */}
+          <radialGradient id={gradientIds.hand} cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#FFFCF7" />
+            <stop offset="55%" stopColor={bodyFill} />
+            <stop offset="100%" stopColor="#E5C9B8" />
           </radialGradient>
         </defs>
       </svg>
@@ -156,32 +158,68 @@ export default function NuviCompanion({
   );
 }
 
-// === Front face: full eye + mouth + arms ===
 function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highlightColor, heartColor, tongueColor, pupilFollowStyle }) {
   return (
     <svg viewBox="-50 -50 280 280" xmlns="http://www.w3.org/2000/svg">
-      {/* === BRAS GAUCHE === */}
-      <g className="nuvi-c-arm-left" opacity="0">
+      {/* === BRAS GAUCHE (3D Apple style coherent body) === */}
+      <g className="nuvi-c-arm-left">
+        {/* Arm body */}
         <path
-          d="M 25 110 Q 5 115, -5 130 Q -10 145, 0 155"
+          d="M 30 105 Q 12 115, 0 130 Q -8 145, 0 158"
+          fill="none"
+          stroke={`url(#${gradients.arm})`}
+          strokeWidth="14"
+          strokeLinecap="round"
+          opacity="0.95"
+        />
+        {/* Arm outline */}
+        <path
+          d="M 30 105 Q 12 115, 0 130 Q -8 145, 0 158"
           fill="none"
           stroke={bodyStroke}
-          strokeWidth="6"
+          strokeWidth="2"
           strokeLinecap="round"
+          opacity="0.4"
         />
-        <circle cx="0" cy="155" r="7" fill={`url(#${gradients.body})`} stroke={bodyStroke} strokeWidth="2" />
+        {/* Hand (ovale rempli coherent body) */}
+        <ellipse
+          cx="0"
+          cy="160"
+          rx="10"
+          ry="11"
+          fill={`url(#${gradients.hand})`}
+          stroke={bodyStroke}
+          strokeWidth="2"
+        />
       </g>
 
       {/* === BRAS DROIT === */}
-      <g className="nuvi-c-arm-right" opacity="0">
+      <g className="nuvi-c-arm-right">
         <path
-          d="M 155 110 Q 175 115, 185 130 Q 190 145, 180 155"
+          d="M 150 105 Q 168 115, 180 130 Q 188 145, 180 158"
+          fill="none"
+          stroke={`url(#${gradients.arm})`}
+          strokeWidth="14"
+          strokeLinecap="round"
+          opacity="0.95"
+        />
+        <path
+          d="M 150 105 Q 168 115, 180 130 Q 188 145, 180 158"
           fill="none"
           stroke={bodyStroke}
-          strokeWidth="6"
+          strokeWidth="2"
           strokeLinecap="round"
+          opacity="0.4"
         />
-        <circle cx="180" cy="155" r="7" fill={`url(#${gradients.body})`} stroke={bodyStroke} strokeWidth="2" />
+        <ellipse
+          cx="180"
+          cy="160"
+          rx="10"
+          ry="11"
+          fill={`url(#${gradients.hand})`}
+          stroke={bodyStroke}
+          strokeWidth="2"
+        />
       </g>
 
       {/* === BODY === */}
@@ -204,7 +242,7 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         strokeLinecap="round"
       />
 
-      {/* Second eyebrow for angry mode */}
+      {/* === EYEBROW 2 (angry mode) === */}
       <path
         className="nuvi-c-eyebrow-2"
         d="M 130 52 Q 90 36, 52 50"
@@ -212,10 +250,9 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         stroke="#c0392b"
         strokeWidth="6"
         strokeLinecap="round"
-        opacity="0"
       />
 
-      {/* === MOUTH (varies per expression) === */}
+      {/* === MOUTH (varies) === */}
       <path
         className="nuvi-c-mouth"
         d="M 75 130 Q 90 138, 105 130"
@@ -223,10 +260,8 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         stroke={pupilColor}
         strokeWidth="3"
         strokeLinecap="round"
-        opacity="0"
       />
 
-      {/* Open mouth (O shape) for surprise */}
       <ellipse
         className="nuvi-c-mouth-o"
         cx="90"
@@ -234,18 +269,15 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         rx="8"
         ry="10"
         fill={pupilColor}
-        opacity="0"
       />
 
-      {/* Big smile mouth (filled) for joy/laughing */}
       <path
         className="nuvi-c-mouth-smile"
         d="M 65 125 Q 90 152, 115 125 Q 110 140, 90 142 Q 70 140, 65 125 Z"
         fill={pupilColor}
-        opacity="0"
       />
 
-      {/* === ORIGINAL TONGUE (idle mode raspberry) === */}
+      {/* === IDLE MODE TONGUE (raspberry gag) === */}
       <path
         className="nuvi-c-tongue"
         d="M 72 120 Q 90 152, 108 120 Q 110 142, 100 152 Q 90 162, 80 152 Q 70 142, 72 120 Z"
@@ -254,22 +286,21 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         strokeWidth="1.5"
       />
 
-      {/* === HEART === */}
+      {/* === HEART (idle heart-eyes & love expr) === */}
       <path
         className="nuvi-c-heart"
         d="M 90 78 C 78 64, 60 70, 60 86 C 60 100, 78 116, 90 124 C 102 116, 120 100, 120 86 C 120 70, 102 64, 90 78 Z"
         fill={heartColor}
       />
 
-      {/* === TEAR === */}
+      {/* === TEAR (sad expr) === */}
       <path
         className="nuvi-c-tear"
         d="M 92 105 Q 88 120, 92 130 Q 96 120, 92 105 Z"
         fill="#5b9fd9"
-        opacity="0"
       />
 
-      {/* === CLOSED EYE (laugh, zen, wink) === */}
+      {/* === CLOSED EYE (laugh/zen/wink expr) === */}
       <path
         className="nuvi-c-closed-eye"
         d="M 60 95 Q 90 75, 122 95"
@@ -277,17 +308,17 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
         stroke={pupilColor}
         strokeWidth="4"
         strokeLinecap="round"
-        opacity="0"
       />
 
-      {/* === STARS === */}
-      <g className="nuvi-c-stars" opacity="0">
-        <circle cx="40" cy="55" r="3" fill="#FFD700" className="nuvi-c-star-1" />
-        <circle cx="140" cy="55" r="3" fill="#FFD700" className="nuvi-c-star-2" />
-        <circle cx="35" cy="120" r="2" fill="#FFD700" className="nuvi-c-star-3" />
-        <circle cx="145" cy="120" r="2" fill="#FFD700" className="nuvi-c-star-4" />
+      {/* === STARS (celebrating expr) === */}
+      <g className="nuvi-c-stars">
+        <circle cx="40" cy="55" r="3" fill="#FFD700" />
+        <circle cx="140" cy="55" r="3" fill="#FFD700" />
+        <circle cx="35" cy="120" r="2" fill="#FFD700" />
+        <circle cx="145" cy="120" r="2" fill="#FFD700" />
       </g>
 
+      {/* === STAR EYE (idle faint gag) === */}
       <g className="nuvi-c-star-eye">
         <line x1="75" y1="76" x2="105" y2="106" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
         <line x1="105" y1="76" x2="75" y2="106" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
@@ -345,8 +376,30 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     overflow: visible;
     display: block;
     shape-rendering: geometricPrecision;
+    filter: drop-shadow(0 2px 8px rgba(0,0,0,0.08));
   }
 
+  /* =========================================================
+     CACHE PROPRE — TOUT EST CACHE PAR DEFAUT
+     Seules les classes ".nuvi-mode-X" ou ".nuvi-expr-Y" reactivent
+     specifiquement les elements voulus.
+     ========================================================= */
+  .nuvi-c-mouth,
+  .nuvi-c-mouth-o,
+  .nuvi-c-mouth-smile,
+  .nuvi-c-arm-left,
+  .nuvi-c-arm-right,
+  .nuvi-c-tear,
+  .nuvi-c-closed-eye,
+  .nuvi-c-stars,
+  .nuvi-c-eyebrow-2,
+  .nuvi-c-heart,
+  .nuvi-c-tongue,
+  .nuvi-c-star-eye {
+    opacity: 0;
+  }
+
+  /* transform-origin pour les elements anim */
   .nuvi-c-body, .nuvi-c-iris, .nuvi-c-pupil, .nuvi-c-highlight-1, .nuvi-c-highlight-2,
   .nuvi-c-eyebrow, .nuvi-c-eye-inner, .nuvi-c-heart, .nuvi-c-tongue, .nuvi-c-tear,
   .nuvi-c-closed-eye, .nuvi-c-stars, .nuvi-c-eyebrow-2,
@@ -358,12 +411,12 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-c-eyebrow, .nuvi-c-eyebrow-2 { transform-origin: center bottom; }
   .nuvi-c-tongue  { transform-origin: center top; }
   .nuvi-c-star-eye { transform-origin: 90px 91px; }
-  .nuvi-c-arm-left { transform-origin: 25px 110px; }
-  .nuvi-c-arm-right { transform-origin: 155px 110px; }
+  .nuvi-c-arm-left  { transform-origin: 30px 105px; }
+  .nuvi-c-arm-right { transform-origin: 150px 105px; }
 
-  /* =================================================================
-     BREATHING CYCLE
-     ================================================================= */
+  /* =========================================================
+     BREATHING (always-on subtle life)
+     ========================================================= */
   .nuvi-breathing .nuvi-c-body {
     animation: nuvi-c-breathe-cycle 4s ease-in-out infinite;
   }
@@ -372,9 +425,10 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     50%      { transform: scale(1.025); }
   }
 
-  /* =================================================================
-     IDLE MODE
-     ================================================================= */
+  /* =========================================================
+     IDLE MODE (8-gag cycle)
+     Reactive heart/tongue/star-eye uniquement
+     ========================================================= */
   .nuvi-mode-idle {
     transform-origin: center center;
     animation: nuvi-c-companion-tilt ${animDuration} ease-in-out infinite;
@@ -386,26 +440,14 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-mode-idle .nuvi-c-highlight-1 { animation: nuvi-c-hl1-life ${animDuration} ease-in-out infinite; }
   .nuvi-mode-idle .nuvi-c-highlight-2 { animation: nuvi-c-hl2-life ${animDuration} ease-in-out infinite; }
   .nuvi-mode-idle .nuvi-c-eyebrow     { animation: nuvi-c-eyebrow-life ${animDuration} ease-in-out infinite; }
-  .nuvi-mode-idle .nuvi-c-heart       { animation: nuvi-c-heart-life ${animDuration} ease-in-out infinite; opacity: 0; }
-  .nuvi-mode-idle .nuvi-c-tongue      { animation: nuvi-c-tongue-life ${animDuration} ease-out infinite; opacity: 0; }
-  .nuvi-mode-idle .nuvi-c-star-eye    { animation: nuvi-c-star-life ${animDuration} linear infinite; opacity: 0; }
+  /* Idle reactive these (their keyframes start at opacity 0 then animate up) */
+  .nuvi-mode-idle .nuvi-c-heart    { animation: nuvi-c-heart-life ${animDuration} ease-in-out infinite; }
+  .nuvi-mode-idle .nuvi-c-tongue   { animation: nuvi-c-tongue-life ${animDuration} ease-out infinite; }
+  .nuvi-mode-idle .nuvi-c-star-eye { animation: nuvi-c-star-life ${animDuration} linear infinite; }
 
-  /* Hide elements in non-idle modes */
-  .nuvi-mode-appearing .nuvi-c-heart,
-  .nuvi-mode-appearing .nuvi-c-tongue,
-  .nuvi-mode-appearing .nuvi-c-star-eye,
-  .nuvi-mode-speaking .nuvi-c-heart,
-  .nuvi-mode-speaking .nuvi-c-tongue,
-  .nuvi-mode-speaking .nuvi-c-star-eye,
-  .nuvi-mode-loading .nuvi-c-heart,
-  .nuvi-mode-loading .nuvi-c-tongue,
-  .nuvi-mode-loading .nuvi-c-star-eye {
-    opacity: 0;
-  }
-
-  /* =================================================================
+  /* =========================================================
      APPEARING MODE
-     ================================================================= */
+     ========================================================= */
   .nuvi-mode-appearing {
     animation: nuvi-c-fly-from-coach 4.5s cubic-bezier(0.22, 1, 0.36, 1) infinite;
   }
@@ -422,9 +464,9 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     50%      { transform: scale(1.03); }
   }
 
-  /* =================================================================
+  /* =========================================================
      SPEAKING MODE
-     ================================================================= */
+     ========================================================= */
   .nuvi-mode-speaking .nuvi-c-body        { animation: nuvi-c-speak-bob 1.6s ease-in-out infinite !important; }
   .nuvi-mode-speaking .nuvi-c-eyebrow     { animation: nuvi-c-speak-eyebrow 2.4s ease-in-out infinite; }
   .nuvi-mode-speaking .nuvi-c-iris        { animation: nuvi-c-speak-blink 5s ease-in-out infinite; }
@@ -440,13 +482,13 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     75%      { transform: scale(1.02) rotate(1deg); }
   }
   @keyframes nuvi-c-speak-eyebrow {
-    0%   { transform: translateY(0) rotate(0deg) scaleX(1); }
-    14%  { transform: translateY(-4px) rotate(-3deg) scaleX(1); }
-    27%  { transform: translateY(-3px) rotate(2deg) scaleX(1); }
-    46%  { transform: translateY(-2px) rotate(-2deg) scaleX(1); }
-    53%  { transform: translateY(-5px) rotate(3deg) scaleX(1); }
-    74%  { transform: translateY(-3px) rotate(-2deg) scaleX(1); }
-    100% { transform: translateY(0) rotate(0deg) scaleX(1); }
+    0%   { transform: translateY(0) rotate(0deg); }
+    14%  { transform: translateY(-4px) rotate(-3deg); }
+    27%  { transform: translateY(-3px) rotate(2deg); }
+    46%  { transform: translateY(-2px) rotate(-2deg); }
+    53%  { transform: translateY(-5px) rotate(3deg); }
+    74%  { transform: translateY(-3px) rotate(-2deg); }
+    100% { transform: translateY(0) rotate(0deg); }
   }
   @keyframes nuvi-c-speak-blink {
     0%, 30%, 100% { transform: scaleY(1); }
@@ -476,9 +518,9 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     75%      { transform: translate(2px, 0); }
   }
 
-  /* =================================================================
-     LOADING MODE
-     ================================================================= */
+  /* =========================================================
+     LOADING MODE (3D spin)
+     ========================================================= */
   .nuvi-mode-loading {
     transform-style: preserve-3d;
   }
@@ -556,9 +598,11 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     30%      { transform: translate(-2px, -1px); }
   }
 
-  /* =================================================================
+  /* =========================================================
      IDLE MODE KEYFRAMES (full 8-gag cycle)
-     ================================================================= */
+     Tous les elements partent d'opacity 0 (le CSS de base les cache)
+     et reactivent uniquement au moment voulu
+     ========================================================= */
   @keyframes nuvi-c-companion-tilt {
     0%, 78%   { transform: rotate(0deg); }
     80%       { transform: rotate(-3deg); }
@@ -607,58 +651,56 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     13%      { transform: translateY(-10px); }
     15%      { transform: translateY(0); }
   }
+  /* Idle heart (idle gag) : visible 22-33% du cycle */
   @keyframes nuvi-c-heart-life {
     0%, 22%   { opacity: 0; transform: scale(0); }
     23%       { opacity: 1; transform: scale(1.2); }
-    24%, 32%  { transform: scale(1); }
-    33%       { opacity: 1; transform: scale(0); }
+    24%, 32%  { transform: scale(1); opacity: 1; }
+    33%       { opacity: 0; transform: scale(0); }
     34%, 100% { opacity: 0; transform: scale(0); }
   }
+  /* Idle tongue : raspberry 31-38% */
   @keyframes nuvi-c-tongue-life {
     0%, 31%   { opacity: 0; transform: scaleY(0); }
-    32%       { opacity: 1; transform: scaleY(1); }
-    37%       { transform: scaleY(1); }
-    38%       { opacity: 0; transform: scaleY(0); }
-    100%      { opacity: 0; }
+    32%, 37%  { opacity: 1; transform: scaleY(1); }
+    38%, 100% { opacity: 0; transform: scaleY(0); }
   }
+  /* Idle star-eye : faint 78-89% */
   @keyframes nuvi-c-star-life {
     0%, 78%   { opacity: 0; transform: scale(0); }
-    79%       { opacity: 1; transform: scale(1.2); }
-    88%       { opacity: 1; transform: rotate(360deg) scale(1); }
-    89%       { opacity: 0; transform: scale(0); }
-    100%      { opacity: 0; }
+    79%, 88%  { opacity: 1; transform: scale(1); }
+    89%, 100% { opacity: 0; transform: scale(0); }
   }
 
-  /* =================================================================
-     EXPRESSION MODE - 15 expressions with mouth + arms
-     ================================================================= */
+  /* =========================================================
+     EXPRESSION MODE — 15 expressions
+     Chaque expression force opacity:1 sur les elements voulus
+     ========================================================= */
 
-  /* JOY - Big smile + arms raised in joy */
+  /* JOY */
   .nuvi-expr-joy .nuvi-c-body { animation: nuvi-expr-bounce 1.6s ease-in-out infinite !important; }
   .nuvi-expr-joy .nuvi-c-mouth-smile { opacity: 1; animation: nuvi-expr-mouth-pulse 1.6s ease-in-out infinite; }
   .nuvi-expr-joy .nuvi-c-arm-left {
     opacity: 1;
-    transform: rotate(-110deg) translate(0, -25px);
     animation: nuvi-expr-arm-wave-left 1.2s ease-in-out infinite;
   }
   .nuvi-expr-joy .nuvi-c-arm-right {
     opacity: 1;
-    transform: rotate(110deg) translate(0, -25px);
     animation: nuvi-expr-arm-wave-right 1.2s ease-in-out infinite;
   }
-  .nuvi-expr-joy .nuvi-c-eyebrow { transform: translateY(-4px) scaleX(1.1); }
+  .nuvi-expr-joy .nuvi-c-eyebrow { transform: translateY(-4px); }
   .nuvi-expr-joy .nuvi-c-iris { transform: scaleY(0.6); }
 
-  /* SAD - Frown + arms down */
+  /* SAD */
   .nuvi-expr-sad .nuvi-c-body { transform: translateY(2px) scale(0.97); }
-  .nuvi-expr-sad .nuvi-c-eyebrow { transform: translateY(2px) rotate(0deg) scaleX(0.85); }
+  .nuvi-expr-sad .nuvi-c-eyebrow { transform: translateY(2px) scaleX(0.85); }
   .nuvi-expr-sad .nuvi-c-pupil-group { transform: translateY(3px); }
   .nuvi-expr-sad .nuvi-c-tear { opacity: 1; animation: nuvi-expr-tear-drop 2s ease-in-out infinite; }
   .nuvi-expr-sad .nuvi-c-mouth { opacity: 1; transform: rotate(180deg); }
   .nuvi-expr-sad .nuvi-c-arm-left { opacity: 1; transform: rotate(20deg) translate(-5px, 5px); }
   .nuvi-expr-sad .nuvi-c-arm-right { opacity: 1; transform: rotate(-20deg) translate(5px, 5px); }
 
-  /* SURPRISED - Open mouth O + arms wide */
+  /* SURPRISED */
   .nuvi-expr-surprised .nuvi-c-body { animation: nuvi-expr-sursaut 1.8s ease-in-out infinite !important; }
   .nuvi-expr-surprised .nuvi-c-iris { transform: scale(1.3); }
   .nuvi-expr-surprised .nuvi-c-pupil-group { transform: scale(1.2); }
@@ -667,7 +709,7 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-surprised .nuvi-c-arm-left { opacity: 1; transform: rotate(-45deg) translate(-10px, -5px); }
   .nuvi-expr-surprised .nuvi-c-arm-right { opacity: 1; transform: rotate(45deg) translate(10px, -5px); }
 
-  /* ANGRY - Frown + fists */
+  /* ANGRY */
   .nuvi-expr-angry .nuvi-c-body { animation: nuvi-expr-shake 0.4s ease-in-out infinite !important; }
   .nuvi-expr-angry .nuvi-c-eyebrow { opacity: 0; }
   .nuvi-expr-angry .nuvi-c-eyebrow-2 { opacity: 1; transform: translateY(-2px); }
@@ -675,16 +717,14 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-angry .nuvi-c-mouth { opacity: 1; transform: rotate(180deg) scaleX(0.7); stroke: #c0392b; }
   .nuvi-expr-angry .nuvi-c-arm-left {
     opacity: 1;
-    transform: rotate(-30deg) translate(-5px, 0);
-    animation: nuvi-expr-fist-shake 0.4s ease-in-out infinite;
+    animation: nuvi-expr-fist-shake-left 0.4s ease-in-out infinite;
   }
   .nuvi-expr-angry .nuvi-c-arm-right {
     opacity: 1;
-    transform: rotate(30deg) translate(5px, 0);
-    animation: nuvi-expr-fist-shake 0.4s ease-in-out infinite;
+    animation: nuvi-expr-fist-shake-right 0.4s ease-in-out infinite;
   }
 
-  /* SCARED - Trembling + arms covering */
+  /* SCARED */
   .nuvi-expr-scared .nuvi-c-body { animation: nuvi-expr-tremble 0.15s linear infinite !important; }
   .nuvi-expr-scared .nuvi-c-pupil-group { animation: nuvi-expr-pupil-tremble 0.2s linear infinite; }
   .nuvi-expr-scared .nuvi-c-iris { transform: scale(1.15); }
@@ -693,7 +733,7 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-scared .nuvi-c-arm-left { opacity: 1; transform: rotate(60deg) translate(0, -20px); }
   .nuvi-expr-scared .nuvi-c-arm-right { opacity: 1; transform: rotate(-60deg) translate(0, -20px); }
 
-  /* LOVE - Heart eyes + arms forming heart */
+  /* LOVE */
   .nuvi-expr-love .nuvi-c-body { animation: nuvi-expr-love-bounce 2s ease-in-out infinite !important; }
   .nuvi-expr-love .nuvi-c-iris { opacity: 0; }
   .nuvi-expr-love .nuvi-c-pupil-group { opacity: 0; }
@@ -702,15 +742,15 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-love .nuvi-c-arm-left { opacity: 1; transform: rotate(-80deg) translate(-5px, -15px); }
   .nuvi-expr-love .nuvi-c-arm-right { opacity: 1; transform: rotate(80deg) translate(5px, -15px); }
 
-  /* FOCUS - Squinting + arms crossed (concentrated) */
+  /* FOCUS */
   .nuvi-expr-focus .nuvi-c-iris { transform: scaleY(0.7); }
   .nuvi-expr-focus .nuvi-c-pupil-group { transform: scale(1.3); }
   .nuvi-expr-focus .nuvi-c-eyebrow { transform: translateY(2px) scaleX(0.85); }
-  .nuvi-expr-focus .nuvi-c-mouth { opacity: 1; transform: scaleY(0.4); stroke-width: 2; }
+  .nuvi-expr-focus .nuvi-c-mouth { opacity: 1; transform: scaleY(0.4); }
   .nuvi-expr-focus .nuvi-c-arm-left { opacity: 1; transform: rotate(-15deg); }
   .nuvi-expr-focus .nuvi-c-arm-right { opacity: 1; transform: rotate(15deg); }
 
-  /* TIRED - Half-closed + slumped arms */
+  /* TIRED */
   .nuvi-expr-tired .nuvi-c-body { animation: nuvi-expr-yawn 4s ease-in-out infinite !important; }
   .nuvi-expr-tired .nuvi-c-iris { transform: scaleY(0.5); }
   .nuvi-expr-tired .nuvi-c-pupil-group { transform: translateY(3px) scaleY(0.5); }
@@ -719,28 +759,28 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-tired .nuvi-c-arm-left { opacity: 1; transform: rotate(30deg) translate(0, 10px); }
   .nuvi-expr-tired .nuvi-c-arm-right { opacity: 1; transform: rotate(-30deg) translate(0, 10px); }
 
-  /* PROUD - Chest puffed + arms on hips */
+  /* PROUD */
   .nuvi-expr-proud .nuvi-c-body { animation: nuvi-expr-proud-pose 2.5s ease-in-out infinite !important; }
-  .nuvi-expr-proud .nuvi-c-eyebrow { transform: translateY(-4px) rotate(2deg); }
+  .nuvi-expr-proud .nuvi-c-eyebrow { transform: translateY(-4px); }
   .nuvi-expr-proud .nuvi-c-pupil-group { transform: translateY(-2px); }
   .nuvi-expr-proud .nuvi-c-mouth-smile { opacity: 1; transform: scale(0.6); }
-  .nuvi-expr-proud .nuvi-c-arm-left { opacity: 1; transform: rotate(-90deg) translate(-15px, -25px); }
-  .nuvi-expr-proud .nuvi-c-arm-right { opacity: 1; transform: rotate(90deg) translate(15px, -25px); }
+  .nuvi-expr-proud .nuvi-c-arm-left { opacity: 1; transform: rotate(-70deg) translate(-10px, -15px); }
+  .nuvi-expr-proud .nuvi-c-arm-right { opacity: 1; transform: rotate(70deg) translate(10px, -15px); }
 
-  /* THINKING - Sideways look + chin scratch */
+  /* THINKING */
   .nuvi-expr-thinking .nuvi-c-pupil-group { animation: nuvi-expr-think-look 3s ease-in-out infinite; }
   .nuvi-expr-thinking .nuvi-c-eyebrow { animation: nuvi-expr-think-eyebrow 3s ease-in-out infinite; }
-  .nuvi-expr-thinking .nuvi-c-mouth { opacity: 1; transform: scaleX(0.5); stroke-width: 2; }
-  .nuvi-expr-thinking .nuvi-c-arm-right { opacity: 1; transform: rotate(-110deg) translate(20px, -45px); animation: nuvi-expr-chin-tap 1.5s ease-in-out infinite; }
+  .nuvi-expr-thinking .nuvi-c-mouth { opacity: 1; transform: scaleX(0.5); }
+  .nuvi-expr-thinking .nuvi-c-arm-right { opacity: 1; transform: rotate(-100deg) translate(20px, -40px); animation: nuvi-expr-chin-tap 1.5s ease-in-out infinite; }
 
-  /* WINK - Closed eye + thumbs up */
+  /* WINK */
   .nuvi-expr-wink .nuvi-c-iris { animation: nuvi-expr-wink-cycle 3s ease-in-out infinite; }
   .nuvi-expr-wink .nuvi-c-pupil-group { animation: nuvi-expr-wink-pupil 3s ease-in-out infinite; }
   .nuvi-expr-wink .nuvi-c-eyebrow { animation: nuvi-expr-wink-eyebrow 3s ease-in-out infinite; }
   .nuvi-expr-wink .nuvi-c-mouth-smile { opacity: 1; transform: scale(0.5) translateX(8px); }
   .nuvi-expr-wink .nuvi-c-arm-right { opacity: 1; transform: rotate(-95deg) translate(15px, -25px); }
 
-  /* LAUGHING - Eyes closed + body shake + arms holding belly */
+  /* LAUGHING */
   .nuvi-expr-laughing .nuvi-c-body { animation: nuvi-expr-laugh-shake 0.4s ease-in-out infinite !important; }
   .nuvi-expr-laughing .nuvi-c-iris { opacity: 0; }
   .nuvi-expr-laughing .nuvi-c-pupil-group { opacity: 0; }
@@ -749,14 +789,14 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-laughing .nuvi-c-arm-left { opacity: 1; transform: rotate(60deg) translate(-5px, 10px); }
   .nuvi-expr-laughing .nuvi-c-arm-right { opacity: 1; transform: rotate(-60deg) translate(5px, 10px); }
 
-  /* CURIOUS - Raised eyebrow + finger pointed */
+  /* CURIOUS */
   .nuvi-expr-curious .nuvi-c-iris { transform: scale(1.2); }
   .nuvi-expr-curious .nuvi-c-eyebrow { animation: nuvi-expr-curious-eyebrow 2s ease-in-out infinite; }
   .nuvi-expr-curious .nuvi-c-pupil-group { animation: nuvi-expr-curious-pupil 4s ease-in-out infinite; }
   .nuvi-expr-curious .nuvi-c-mouth { opacity: 1; transform: scaleX(0.4); }
   .nuvi-expr-curious .nuvi-c-arm-right { opacity: 1; transform: rotate(-50deg) translate(20px, -10px); }
 
-  /* ZEN - Closed eyes + meditation arms */
+  /* ZEN */
   .nuvi-expr-zen .nuvi-c-body { animation: nuvi-expr-zen-breathe 5s ease-in-out infinite !important; }
   .nuvi-expr-zen .nuvi-c-iris { opacity: 0; }
   .nuvi-expr-zen .nuvi-c-pupil-group { opacity: 0; }
@@ -766,7 +806,7 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-expr-zen .nuvi-c-arm-left { opacity: 1; transform: rotate(15deg) translate(-3px, 5px); }
   .nuvi-expr-zen .nuvi-c-arm-right { opacity: 1; transform: rotate(-15deg) translate(3px, 5px); }
 
-  /* CELEBRATING - Stars + hands up + bounce */
+  /* CELEBRATING */
   .nuvi-expr-celebrating .nuvi-c-body { animation: nuvi-expr-celebrate-bounce 0.8s ease-in-out infinite !important; }
   .nuvi-expr-celebrating .nuvi-c-iris { opacity: 0; }
   .nuvi-expr-celebrating .nuvi-c-pupil-group { opacity: 0; }
@@ -782,7 +822,9 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     animation: nuvi-expr-arm-celebrate-right 0.6s ease-in-out infinite;
   }
 
-  /* === EXPRESSION KEYFRAMES === */
+  /* =========================================================
+     EXPRESSION KEYFRAMES
+     ========================================================= */
   @keyframes nuvi-expr-bounce {
     0%, 100% { transform: translateY(0) scale(1); }
     50%      { transform: translateY(-6px) scale(1.05); }
@@ -814,9 +856,13 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     25%      { transform: translateX(-2px); }
     75%      { transform: translateX(2px); }
   }
-  @keyframes nuvi-expr-fist-shake {
+  @keyframes nuvi-expr-fist-shake-left {
     0%, 100% { transform: rotate(-30deg) translate(-5px, 0); }
     50%      { transform: rotate(-30deg) translate(-5px, -3px); }
+  }
+  @keyframes nuvi-expr-fist-shake-right {
+    0%, 100% { transform: rotate(30deg) translate(5px, 0); }
+    50%      { transform: rotate(30deg) translate(5px, -3px); }
   }
   @keyframes nuvi-expr-tremble {
     0%, 100% { transform: translate(0, 0); }
@@ -864,8 +910,8 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     75%      { transform: translateY(-3px) rotate(2deg); }
   }
   @keyframes nuvi-expr-chin-tap {
-    0%, 100% { transform: rotate(-110deg) translate(20px, -45px); }
-    50%      { transform: rotate(-110deg) translate(20px, -50px); }
+    0%, 100% { transform: rotate(-100deg) translate(20px, -40px); }
+    50%      { transform: rotate(-100deg) translate(20px, -45px); }
   }
   @keyframes nuvi-expr-wink-cycle {
     0%, 35%, 100% { transform: scaleY(1); }
@@ -924,33 +970,9 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     50%      { opacity: 1; transform: scale(1.2); }
   }
 
-  /* =================================================================
-     ACCESSIBILITY
-     ================================================================= */
   @media (prefers-reduced-motion: reduce) {
-    .nuvi-companion,
-    .nuvi-eye-3d,
-    .nuvi-c-body,
-    .nuvi-c-iris,
-    .nuvi-c-pupil,
-    .nuvi-c-pupil-group,
-    .nuvi-c-highlight-1,
-    .nuvi-c-highlight-2,
-    .nuvi-c-eyebrow,
-    .nuvi-c-eyebrow-2,
-    .nuvi-c-eye-inner,
-    .nuvi-c-heart,
-    .nuvi-c-tongue,
-    .nuvi-c-tear,
-    .nuvi-c-closed-eye,
-    .nuvi-c-stars,
-    .nuvi-c-star-eye,
-    .nuvi-c-mouth,
-    .nuvi-c-mouth-o,
-    .nuvi-c-mouth-smile,
-    .nuvi-c-arm-left,
-    .nuvi-c-arm-right,
-    .nuvi-toupie-shadow {
+    .nuvi-companion *,
+    .nuvi-eye-3d {
       animation: none !important;
     }
   }
