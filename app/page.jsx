@@ -6389,10 +6389,10 @@ export default function App() {
               padding: coachUsageCount >= 3
                 ? "6px"
                 : (mob ? "8px 18px 8px 10px" : "10px 24px 10px 12px"),
-              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
-              color: "#fff",
+              background: "transparent",
+              color: "#5b3df5",
               border: "none",
-              borderRadius: 999,
+              borderRadius: 0,
               cursor: coachDragging ? "grabbing" : "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
               fontSize: mob ? 14 : 15,
