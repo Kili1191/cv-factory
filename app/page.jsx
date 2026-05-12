@@ -4754,7 +4754,7 @@ export default function App() {
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
           onPackRequest={requestPack}
           initialResult={offerResult}
-          onResult={setOfferResult}
+          onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
           onApplied={()=>setOfferResult(null)}
           aiCall={aiCall}
           parseJSON={parseJSON}
