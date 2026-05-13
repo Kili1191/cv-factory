@@ -437,6 +437,89 @@ function getLabel(cv, key, locale) {
   const defaults = locale === "en" ? DEFAULT_LABELS_EN : DEFAULT_LABELS_FR;
   return defaults[key] || key;
 }
+// === EditableTitle : titre de section éditable au double-clic ===
+function EditableTitle({ cv, setCVFn, labelKey, locale, style, defaultUppercase }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const inputRef = useRef(null);
+
+  const currentLabel = getLabel(cv, labelKey, locale);
+
+  // Quand on entre en mode edit : pre-remplit avec le label courant et focus
+  useEffect(() => {
+    if (editing) {
+      setValue(currentLabel);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }, 50);
+    }
+  }, [editing]);
+
+  const save = () => {
+    const trimmed = value.trim();
+    setCVFn(prev => {
+      const newLabels = { ...(prev.labels || {}) };
+      if (trimmed && trimmed !== getLabel({}, labelKey, locale)) {
+        // Sauvegarde uniquement si different du defaut
+        newLabels[labelKey] = trimmed;
+      } else {
+        // Vide ou egal au defaut : on supprime le custom (revient au defaut)
+        delete newLabels[labelKey];
+      }
+      return { ...prev, labels: newLabels };
+    });
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setValue("");
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") cancel();
+        }}
+        style={{
+          ...style,
+          background: "rgba(91, 61, 245, 0.08)",
+          border: "1.5px solid #5b3df5",
+          borderRadius: 4,
+          padding: "2px 6px",
+          outline: "none",
+          fontFamily: "inherit",
+          color: "inherit",
+          textTransform: defaultUppercase ? "uppercase" : "none",
+          minWidth: 80,
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onDoubleClick={() => setEditing(true)}
+      title="Double-clic pour modifier"
+      style={{
+        ...style,
+        cursor: "text",
+        userSelect: "none",
+      }}
+    >
+      {defaultUppercase ? currentLabel.toUpperCase() : currentLabel}
+    </span>
+  );
+}
 
 const TEMPLATES = [
   {
