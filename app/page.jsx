@@ -5991,8 +5991,8 @@ export default function App() {
                 justifyContent: "center",
                 flexShrink: 0,
                 position: "relative",
-                width: 140,
-                height: 140,
+                width: mob ? 90 : 140,
+                height: mob ? 90 : 140,
               }}
             >
               <span style={{
@@ -6019,7 +6019,7 @@ export default function App() {
                 zIndex: 2,
                 filter: "drop-shadow(0 4px 12px rgba(91, 61, 245, 0.25))",
               }}>
-                <NuviCompanion size={120} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
+                <NuviCompanion size={mob ? 70 : 120} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
               </span>
             </span>
             {coachUsageCount < 3 && (
@@ -6444,11 +6444,28 @@ export default function App() {
               }} />
               <NuviCompanion size={mob ? 48 : 80} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
             </span>
-            {coachUsageCount < 3 && <span>Coach</span>}
+            {coachUsageCount < 3 && (
+              <span style={{
+                marginTop: 2,
+                padding: "3px 10px",
+                background: "rgba(91, 61, 245, 0.08)",
+                borderRadius: 999,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.12em",
+                color: "#5b3df5",
+                border: "0.5px solid rgba(91, 61, 245, 0.15)",
+              }}>
+                Coach
+              </span>
+            )}
             <style>{`
-              @keyframes coachPulse {
-                0%, 100% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25), 0 0 0 0 rgba(91, 61, 245, 0.4); }
-                50% { box-shadow: 0 8px 24px rgba(91, 61, 245, 0.45), 0 2px 6px rgba(91, 61, 245, 0.3), 0 0 0 8px rgba(91, 61, 245, 0); }
+              @keyframes nuviBoxBreathe {
+                0%   { transform: scale(0.65); opacity: 0.35; }
+                25%  { transform: scale(1.0);  opacity: 0.85; }
+                50%  { transform: scale(1.0);  opacity: 0.85; }
+                75%  { transform: scale(0.65); opacity: 0.35; }
+                100% { transform: scale(0.65); opacity: 0.35; }
               }
             `}</style>
           </button>
