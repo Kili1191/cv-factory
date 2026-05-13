@@ -6470,6 +6470,105 @@ export default function App() {
             `}</style>
           </button>
         )}
+        {/* === BOUTON TELECHARGER PERSISTANT (Desktop) === */}
+        {!cvIsEmpty && !(
+          showCoach || showAudit || showTranslate || showPack
+          || showPos || showTruth || showVersions
+          || showOffer || showScore || showGapRepair || showInterview
+          || showCustomize || !!modal
+          || showLinkedIn || showCompare || showApplications
+          || showMultiCV || showTutorial || showSettings
+        ) && (
+          <button
+            onClick={exportPDF}
+            aria-label="Telecharger CV"
+            style={{
+              position: "fixed",
+              left: 24,
+              bottom: 24,
+              zIndex: 89,
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "12px 22px",
+              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: 0.2,
+              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
+              userSelect: "none",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
+              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "";
+              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {locale === "en" ? "Download" : "Telecharger"}
+          </button>
+        )}
+        {/* === BOUTON TELECHARGER PERSISTANT (Mobile) === */}
+        {!cvIsEmpty && !(
+          showCoach || showAudit || showTranslate || showPack
+          || showPos || showTruth || showVersions
+          || showOffer || showScore || showGapRepair || showInterview
+          || showCustomize || !!modal
+          || showLinkedIn || showCompare || showApplications
+          || showMultiCV || showTutorial || showSettings
+          || coachScrolling
+        ) && (
+          <button
+            onClick={exportPDF}
+            aria-label="Telecharger CV"
+            style={{
+              position: "fixed",
+              left: 16,
+              bottom: 86,
+              zIndex: 89,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "10px 18px",
+              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 999,
+              cursor: "pointer",
+              fontFamily: "'Inter', sans-serif",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: 0.2,
+              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              userSelect: "none",
+              touchAction: "manipulation",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            {locale === "en" ? "Download" : "Telecharger"}
+          </button>
+        )}
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
             onClick={() => {
