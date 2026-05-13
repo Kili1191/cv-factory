@@ -6062,7 +6062,7 @@ export default function App() {
             aria-label="Telecharger CV"
             style={{
               position: "fixed",
-              left: 24,
+              left: 100,
               bottom: 24,
               zIndex: 89,
               display: "flex",
