@@ -6290,47 +6290,6 @@ export default function App() {
               if (coachDragging) { setCoachDragging(false); return; }
               openCoach(e);
             }}
-            onMouseDown={(e) => {
-              if (mob) return;
-              const startX = e.clientX;
-              const startY = e.clientY;
-              coachDragStartRef.current = { startX, startY };
-              coachLongPressTimer.current = setTimeout(() => {
-                setCoachDragging(true);
-              }, 500);
-            }}
-            onMouseMove={(e) => {
-              if (mob) return;
-              if (!coachDragging) {
-                if (coachDragStartRef.current) {
-                  const dx = Math.abs(e.clientX - coachDragStartRef.current.startX);
-                  const dy = Math.abs(e.clientY - coachDragStartRef.current.startY);
-                  if (dx > 5 || dy > 5) {
-                    clearTimeout(coachLongPressTimer.current);
-                    coachDragStartRef.current = null;
-                  }
-                }
-                return;
-              }
-              const btn = e.currentTarget.getBoundingClientRect();
-              const newX = e.clientX - btn.width / 2;
-              const newY = e.clientY - btn.height / 2;
-              const maxX = window.innerWidth - btn.width - 8;
-              const maxY = window.innerHeight - btn.height - 8;
-              setCoachPos({
-                x: Math.max(8, Math.min(maxX, newX)),
-                y: Math.max(8, Math.min(maxY, newY)),
-              });
-            }}
-            onMouseUp={() => {
-              if (mob) return;
-              clearTimeout(coachLongPressTimer.current);
-              if (coachDragging && coachPos) {
-                lsS("nv-coach-pos", coachPos);
-              }
-              setTimeout(() => setCoachDragging(false), 50);
-              coachDragStartRef.current = null;
-            }}
             onTouchStart={(e) => {
               if (!mob) return;
               const touch = e.touches[0];
@@ -6381,44 +6340,29 @@ export default function App() {
               position: "fixed",
               ...(coachPos
                 ? { left: coachPos.x, top: coachPos.y, right: "auto", bottom: "auto" }
-                : { right: mob ? 16 : 24, bottom: mob ? 86 : 24 }),
+                : { right: 16, bottom: 86 }),
               zIndex: 90,
               display: "flex",
+              flexDirection: "column",
               alignItems: "center",
-              gap: coachUsageCount >= 3 ? 0 : 12,
-              padding: coachUsageCount >= 3
-                ? "6px"
-                : (mob ? "8px 18px 8px 10px" : "10px 24px 10px 12px"),
+              gap: 4,
+              padding: 0,
               background: "transparent",
               color: "#5b3df5",
               border: "none",
-              borderRadius: 0,
               cursor: coachDragging ? "grabbing" : "pointer",
               fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              fontSize: mob ? 14 : 15,
+              fontSize: 11,
               fontWeight: 600,
-              letterSpacing: 0.2,
-              boxShadow: coachDragging
-                ? "0 16px 40px rgba(91, 61, 245, 0.55), 0 6px 14px rgba(91, 61, 245, 0.4)"
-                : "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
               transition: coachDragging
                 ? "none"
-                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease, gap 250ms ease, padding 250ms ease, opacity 200ms ease",
-              animation: coachDragging ? "none" : "coachPulse 2.6s ease-in-out infinite",
+                : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease",
               transform: coachDragging ? "scale(1.08)" : "",
               userSelect: "none",
               touchAction: "none",
-              opacity: coachScrolling && !mob ? 0.4 : 1,
-            }}
-            onMouseEnter={(e) => {
-              if (mob || coachDragging) return;
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              if (mob || coachDragging) return;
-              e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
+              opacity: coachScrolling ? 0.4 : 1,
             }}
           >
             <span
@@ -6429,20 +6373,36 @@ export default function App() {
                 justifyContent: "center",
                 flexShrink: 0,
                 position: "relative",
+                width: 90,
+                height: 90,
               }}
             >
               <span style={{
                 position: "absolute",
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: mob ? 56 : 88,
-                height: mob ? 56 : 88,
+                inset: 0,
                 borderRadius: "50%",
-                background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
+                background: "radial-gradient(circle at 50% 55%, rgba(91, 61, 245, 0.35) 0%, rgba(185, 28, 140, 0.20) 35%, rgba(91, 61, 245, 0.05) 60%, transparent 75%)",
+                animation: coachDragging ? "none" : "nuviBoxBreathe 16s ease-in-out infinite",
                 pointerEvents: "none",
+                filter: "blur(8px)",
               }} />
-              <NuviCompanion size={mob ? 48 : 80} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
+              <span style={{
+                position: "absolute",
+                inset: "15%",
+                borderRadius: "50%",
+                background: "radial-gradient(ellipse at 45% 40%, rgba(91, 61, 245, 0.25) 0%, transparent 65%)",
+                animation: coachDragging ? "none" : "nuviBoxBreathe 16s ease-in-out infinite",
+                animationDelay: "0.5s",
+                pointerEvents: "none",
+                filter: "blur(4px)",
+              }} />
+              <span style={{
+                position: "relative",
+                zIndex: 2,
+                filter: "drop-shadow(0 4px 12px rgba(91, 61, 245, 0.25))",
+              }}>
+                <NuviCompanion size={70} mode={nuviExpression ? "expression" : "idle"} expression={nuviExpression} cycleDuration={60} />
+              </span>
             </span>
             {coachUsageCount < 3 && (
               <span style={{
@@ -6459,15 +6419,6 @@ export default function App() {
                 Coach
               </span>
             )}
-            <style>{`
-              @keyframes nuviBoxBreathe {
-                0%   { transform: scale(0.65); opacity: 0.35; }
-                25%  { transform: scale(1.0);  opacity: 0.85; }
-                50%  { transform: scale(1.0);  opacity: 0.85; }
-                75%  { transform: scale(0.65); opacity: 0.35; }
-                100% { transform: scale(0.65); opacity: 0.35; }
-              }
-            `}</style>
           </button>
         )}
         {/* === BOUTON TELECHARGER PERSISTANT (Desktop) === */}
