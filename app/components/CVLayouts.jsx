@@ -1,6 +1,7 @@
 "use client";
 
 // CV Factory v17 - CVLayouts
+// v18 : Titres editables au double-clic via EditableTitle
 //
 // Les 2 layouts de CV implementes :
 //
@@ -13,40 +14,168 @@
 //               Optimisate pour les robots de tracking (ATS).
 //
 // Tous les champs sont editables inline via le composant E (click-to-edit).
+// Les TITRES de sections sont editables au double-clic via EditableTitle.
 //
 // Props communes :
-//   cv  : objet CV
-//   set : setter useState pour mettre a jour cv
-//   T   : i18n (T.cv_ct, T.cv_s, T.cv_l, T.cv_p, T.cv_e, T.cv_ed, T.cv_c, T.cv_el)
+//   cv     : objet CV
+//   set    : setter useState pour mettre a jour cv
+//   T      : i18n (T.cv_ct, T.cv_s, T.cv_l, T.cv_p, T.cv_e, T.cv_ed, T.cv_c, T.cv_el)
+//   locale : "fr" | "en" (pour fallback des labels)
 //
 // CVSidebar prop specifique :
 //   t : theme effectif (couleurs et fonts) avec t.ac, t.bg, t.sb, t.st,
 //       t.pr, t.hf, t.bf
 
+import { useState, useRef, useEffect } from "react";
 import { E, MK } from "./EditHelpers";
+
+// ============================================================
+// EditableTitle : titre de section editable au double-clic
+// ============================================================
+const DEFAULT_LABELS_FR = {
+  profile: "Profil",
+  experience: "Experience",
+  education: "Formation",
+  skills: "Competences",
+  languages: "Langues",
+  certifications: "Certifications",
+  contact: "Contact",
+  links: "Liens",
+};
+const DEFAULT_LABELS_EN = {
+  profile: "Profile",
+  experience: "Experience",
+  education: "Education",
+  skills: "Skills",
+  languages: "Languages",
+  certifications: "Certifications",
+  contact: "Contact",
+  links: "Links",
+};
+
+function getLabel(cv, key, locale) {
+  const custom = cv && cv.labels && cv.labels[key];
+  if (custom && custom.trim()) return custom;
+  const defaults = locale === "en" ? DEFAULT_LABELS_EN : DEFAULT_LABELS_FR;
+  return defaults[key] || key;
+}
+
+function EditableTitle({ cv, set, labelKey, locale, fallback }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const inputRef = useRef(null);
+
+  // Si un fallback est fourni (texte deja traduit via T.cv_xxx), on l'utilise
+  // sauf si l'utilisateur a defini un label custom.
+  const customLabel = cv && cv.labels && cv.labels[labelKey];
+  const currentLabel = (customLabel && customLabel.trim())
+    ? customLabel
+    : (fallback || getLabel(cv, labelKey, locale));
+
+  useEffect(() => {
+    if (editing) {
+      setValue(currentLabel);
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      }, 50);
+    }
+  }, [editing]);
+
+  const save = () => {
+    const trimmed = value.trim();
+    set(prev => {
+      const newLabels = { ...(prev.labels || {}) };
+      if (trimmed && trimmed !== (fallback || getLabel(prev, labelKey, locale))) {
+        newLabels[labelKey] = trimmed;
+      } else {
+        delete newLabels[labelKey];
+      }
+      return { ...prev, labels: newLabels };
+    });
+    setEditing(false);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setValue("");
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={save}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save();
+          if (e.key === "Escape") cancel();
+        }}
+        style={{
+          background: "rgba(91, 61, 245, 0.08)",
+          border: "1.5px solid #5b3df5",
+          borderRadius: 3,
+          padding: "1px 4px",
+          outline: "none",
+          fontFamily: "inherit",
+          color: "inherit",
+          fontSize: "inherit",
+          fontWeight: "inherit",
+          letterSpacing: "inherit",
+          textTransform: "inherit",
+          minWidth: 80,
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      onDoubleClick={() => setEditing(true)}
+      title="Double-clic pour modifier"
+      style={{
+        cursor: "text",
+        userSelect: "none",
+      }}
+    >
+      {currentLabel}
+    </span>
+  );
+}
 
 // ============================================================
 // CVSidebar : layout sidebar/classic
 // ============================================================
-export function CVSidebar({ cv, set, t, T }) {
+export function CVSidebar({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
   // SS (sidebar section header) : petit titre dans la colonne sidebar.
-  const SS = l => (
+  // labelKey : la cle dans cv.labels (contact, skills, languages, certifications)
+  // fallback : texte i18n actuel (ex T.cv_ct)
+  const SS = (labelKey, fallback) => (
     <div style={{
       fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
       color: t.ac, margin:"14px 0 7px",
       borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
-    }}>{l}</div>
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
   );
 
   // MS (main section header) : titre dans la colonne principale.
-  const MS = l => (
+  const MS = (labelKey, fallback) => (
     <div style={{
       fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
       color: t.ac, margin:"16px 0 9px",
       borderBottom:"2px solid "+t.ac, paddingBottom:3,
-    }}>{l}</div>
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
   );
 
   return (
@@ -68,7 +197,7 @@ export function CVSidebar({ cv, set, t, T }) {
           fontSize:19, fontFamily: t.hf, fontWeight:700, color: t.ac,
         }}>{cv.name ? cv.name.charAt(0) : "?"}</div>
 
-        {SS(T.cv_ct)}
+        {SS("contact", T.cv_ct)}
         {["email","phone","location","linkedin"].map(f => (
           <div key={f} style={{marginBottom:4}}>
             <E value={cv[f]} onChange={u(f)}
@@ -76,7 +205,7 @@ export function CVSidebar({ cv, set, t, T }) {
           </div>
         ))}
 
-        {SS(T.cv_s)}
+        {SS("skills", T.cv_s)}
         {cv.skills.map((s, i) => (
           <div key={i} style={{
             display:"flex", gap:4, marginBottom:3, alignItems:"flex-start",
@@ -87,7 +216,7 @@ export function CVSidebar({ cv, set, t, T }) {
           </div>
         ))}
 
-        {SS(T.cv_l)}
+        {SS("languages", T.cv_l)}
         {cv.languages.map((l, i) => (
           <div key={i} style={{marginBottom:4}}>
             <E value={l.lang} onChange={v=>ul(i, "lang", v)}
@@ -97,7 +226,7 @@ export function CVSidebar({ cv, set, t, T }) {
           </div>
         ))}
 
-        {SS(T.cv_c)}
+        {SS("certifications", T.cv_c)}
         {cv.certifications.map((c, i) => (
           <div key={i} style={{fontSize:8, marginBottom:3, lineHeight:1.4}}>
             <span style={{color: t.ac}}>v </span>
@@ -128,12 +257,12 @@ export function CVSidebar({ cv, set, t, T }) {
         </div>
 
         {/* Summary */}
-        {MS(T.cv_p)}
+        {MS("profile", T.cv_p)}
         <E value={cv.summary} onChange={u("summary")} multi
           style={{fontSize:10, color:"#555", lineHeight:1.7}}/>
 
         {/* Experiences */}
-        {MS(T.cv_e)}
+        {MS("experience", T.cv_e)}
         {cv.experience.map(ex => (
           <div key={ex.id} style={{marginBottom:12}}>
             <div style={{
@@ -171,7 +300,7 @@ export function CVSidebar({ cv, set, t, T }) {
         ))}
 
         {/* Formations */}
-        {MS(T.cv_ed)}
+        {MS("education", T.cv_ed)}
         {cv.education.map(ed => (
           <div key={ed.id} style={{
             marginBottom:7, display:"flex",
@@ -201,17 +330,20 @@ export function CVSidebar({ cv, set, t, T }) {
 // ============================================================
 // CVAts : layout ATS-Safe (sobre, robot-friendly)
 // ============================================================
-export function CVAts({ cv, set, T }) {
+export function CVAts({ cv, set, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
   // S (section header) en style ATS sobre.
-  const S = l => (
+  const S = (labelKey, fallback) => (
     <div style={{
       fontWeight:700, fontSize:11, color:"#000",
       borderBottom:"1.5px solid #000",
       paddingBottom:3, marginBottom:8, marginTop:16,
       letterSpacing:.5, textTransform:"uppercase",
-    }}>{l}</div>
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
   );
 
   return (
@@ -246,7 +378,7 @@ export function CVAts({ cv, set, T }) {
       </div>
 
       {/* Summary */}
-      {S(T.cv_p)}
+      {S("profile", T.cv_p)}
       <p style={{
         fontSize:10, color:"#222", lineHeight:1.7, margin:"0 0 3px",
       }}>
@@ -255,7 +387,7 @@ export function CVAts({ cv, set, T }) {
       </p>
 
       {/* Experiences */}
-      {S(T.cv_el)}
+      {S("experience", T.cv_el)}
       {cv.experience.map(ex => (
         <div key={ex.id} style={{marginBottom:12}}>
           <div style={{display:"flex", justifyContent:"space-between"}}>
@@ -289,7 +421,7 @@ export function CVAts({ cv, set, T }) {
       ))}
 
       {/* Formations */}
-      {S(T.cv_ed)}
+      {S("education", T.cv_ed)}
       {cv.education.map(ed => (
         <div key={ed.id} style={{
           marginBottom:7, display:"flex", justifyContent:"space-between",
@@ -311,7 +443,7 @@ export function CVAts({ cv, set, T }) {
       ))}
 
       {/* Skills */}
-      {S(T.cv_s)}
+      {S("skills", T.cv_s)}
       <p style={{
         fontSize:10, margin:0, lineHeight:1.7, color:"#222",
       }}>
@@ -326,7 +458,7 @@ export function CVAts({ cv, set, T }) {
       </p>
 
       {/* Languages */}
-      {S(T.cv_l)}
+      {S("languages", T.cv_l)}
       {cv.languages.map((l, i) => (
         <div key={i} style={{fontSize:10, marginBottom:2}}>
           <E value={l.lang} onChange={v=>ul(i, "lang", v)}
@@ -339,7 +471,7 @@ export function CVAts({ cv, set, T }) {
       {/* Certifications (seulement si non vide) */}
       {cv.certifications.filter(c => c).length > 0 && (
         <>
-          {S(T.cv_c)}
+          {S("certifications", T.cv_c)}
           {cv.certifications.map((c, i) => (
             <div key={i} style={{fontSize:10, marginBottom:2}}>
               {"- "}
