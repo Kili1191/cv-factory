@@ -406,7 +406,37 @@ const EMPTY = {
   skills:["","","","","","","",""],
   languages:[{lang:"",level:""},{lang:"",level:""}],
   certifications:[""],
+  labels: {},
 };
+
+// === Labels par défaut pour les sections du CV (éditables par l'utilisateur) ===
+const DEFAULT_LABELS_FR = {
+  profile: "Profil",
+  experience: "Expérience",
+  education: "Formation",
+  skills: "Compétences",
+  languages: "Langues",
+  certifications: "Certifications",
+  contact: "Contact",
+  links: "Liens",
+};
+const DEFAULT_LABELS_EN = {
+  profile: "Profile",
+  experience: "Experience",
+  education: "Education",
+  skills: "Skills",
+  languages: "Languages",
+  certifications: "Certifications",
+  contact: "Contact",
+  links: "Links",
+};
+// Helper : retourne le label custom de l'utilisateur OU le défaut selon la langue
+function getLabel(cv, key, locale) {
+  const custom = cv && cv.labels && cv.labels[key];
+  if (custom && custom.trim()) return custom;
+  const defaults = locale === "en" ? DEFAULT_LABELS_EN : DEFAULT_LABELS_FR;
+  return defaults[key] || key;
+}
 
 const TEMPLATES = [
   {
