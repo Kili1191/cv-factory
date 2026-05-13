@@ -4822,9 +4822,9 @@ export default function App() {
   const CVEl = (
     <div id="cv-print" style={{position:"relative"}}>
       {load && <Shimmer/>}
-      {layout==="sidebar" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T}/>}
-      {layout==="classic" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T}/>}
-      {layout==="ats"     && <CVAts     cv={cv} set={setCVFn} T={T}/>}
+      {layout==="sidebar" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="classic" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="ats"     && <CVAts     cv={cv} set={setCVFn} T={T} locale={locale}/>}
     </div>
   );
 
