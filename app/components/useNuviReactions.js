@@ -49,8 +49,8 @@ const REACTION_DURATION = {
   'morning-time': 60000,  // persiste tant que matin
   'api-error': 3500,
   'coach-clicked': 1500,
+  'paste-detected': 800,
 };
-
 const EVENT_TO_EXPRESSION = {
   'first-visit-today': 'wink',
   'audit-excellent': 'celebrating',
@@ -63,6 +63,7 @@ const EVENT_TO_EXPRESSION = {
   'morning-time': 'wink',
   'api-error': 'scared',
   'coach-clicked': 'curious',
+  'paste-detected': 'wink',
 };
 
 // Priorité des events (pour résoudre les conflits)
@@ -76,6 +77,7 @@ const EVENT_PRIORITY = {
   'inactive-back': 6,
   'first-visit-today': 5,
   'coach-clicked': 4,
+  'paste-detected': 3,
   'night-time': 2,
   'morning-time': 2,
   'inactive-long': 1,
