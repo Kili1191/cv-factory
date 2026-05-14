@@ -153,7 +153,6 @@ export default function NuviBigLogo({ active, onDismiss }) {
         </div>
         <div className="nuvi-biglogo-text">
           <span>N</span><span>u</span><span>v</span><span>i</span>
-          <span className="exclaim">!</span>
         </div>
         <div className="nuvi-biglogo-konami">
           🎮 Konami code activated
