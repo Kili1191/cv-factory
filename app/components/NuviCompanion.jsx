@@ -21,7 +21,9 @@ import React, { useState, useEffect, useRef } from 'react';
 
 const EXPRESSIONS = [
   'joy', 'sad', 'surprised', 'angry', 'scared', 'love', 'focus',
-  'tired', 'proud', 'thinking', 'wink', 'laughing', 'curious', 'zen', 'celebrating'
+  'tired', 'proud', 'thinking', 'wink', 'laughing', 'curious', 'zen', 'celebrating',
+  // v5 new expressions
+  'cheshire', 'monocle', 'wizard'
 ];
 
 export default function NuviCompanion({
@@ -337,6 +339,91 @@ function CompanionFront({ gradients, bodyStroke, irisColor, pupilColor, highligh
           <circle className="nuvi-c-highlight-2" cx="83" cy="98" r="2.5" fill={highlightColor} opacity="0.6" />
         </g>
       </g>
+
+      {/* === CHESHIRE SMILE (v5 expr cheshire) === */}
+      <g className="nuvi-c-cheshire-smile">
+        <path
+          d="M 45 110 Q 90 165, 135 110 Q 130 155, 90 158 Q 50 155, 45 110 Z"
+          fill="white"
+          stroke={pupilColor}
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+        <line x1="65" y1="125" x2="65" y2="140" stroke={pupilColor} strokeWidth="1.5" />
+        <line x1="78" y1="130" x2="78" y2="148" stroke={pupilColor} strokeWidth="1.5" />
+        <line x1="90" y1="132" x2="90" y2="152" stroke={pupilColor} strokeWidth="1.5" />
+        <line x1="102" y1="130" x2="102" y2="148" stroke={pupilColor} strokeWidth="1.5" />
+        <line x1="115" y1="125" x2="115" y2="140" stroke={pupilColor} strokeWidth="1.5" />
+      </g>
+
+      {/* === CHESHIRE EYE (mi-clos in cheshire mode) === */}
+      <g className="nuvi-c-cheshire-eyes">
+        <path d="M 50 80 Q 70 70, 90 80" fill="none" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
+        <path d="M 90 80 Q 110 70, 130 80" fill="none" stroke={pupilColor} strokeWidth="4" strokeLinecap="round" />
+      </g>
+
+      {/* === MONOCLE (v5 expr monocle) === */}
+      <g className="nuvi-c-monocle">
+        <circle cx="120" cy="82" r="18" fill="none" stroke={pupilColor} strokeWidth="4" />
+        <circle cx="120" cy="82" r="14" fill={irisColor} fillOpacity="0.05" />
+        <ellipse cx="113" cy="74" rx="3" ry="2" fill="white" opacity="0.6" />
+        <line className="nuvi-c-monocle-string" x1="138" y1="82" x2="160" y2="120" stroke={pupilColor} strokeWidth="1.5" />
+      </g>
+
+      {/* === WIZARD HAT (v5 expr wizard) === */}
+      <g className="nuvi-c-wizard-hat">
+        <path d="M 90 -30 L 50 28 L 130 28 Z" fill="#5b3df5" stroke={pupilColor} strokeWidth="2" />
+        <ellipse cx="90" cy="28" rx="48" ry="8" fill="#7c5cf9" stroke={pupilColor} strokeWidth="2" />
+        <path d="M 65 14 L 115 14 L 113 22 L 67 22 Z" fill="#b91c8c" />
+        <text className="nuvi-c-wizard-star" x="90" y="2" fontSize="22" fill="gold" textAnchor="middle" stroke={pupilColor} strokeWidth="0.5">{'★'}</text>
+      </g>
+
+      {/* === WIZARD SPARKS (v5 expr wizard) === */}
+      <g className="nuvi-c-wizard-sparks">
+        <text className="nuvi-c-spark-1" x="20" y="60" fontSize="20" fill="gold">{'✨'}</text>
+        <text className="nuvi-c-spark-2" x="145" y="55" fontSize="20" fill="gold">{'✨'}</text>
+        <text className="nuvi-c-spark-3" x="30" y="140" fontSize="18" fill="gold">{'✨'}</text>
+      </g>
+
+      {/* === WIZARD WAND (v5 expr wizard) === */}
+      <g className="nuvi-c-wizard-wand">
+        <line x1="155" y1="110" x2="200" y2="55" stroke="#8B4513" strokeWidth="3" strokeLinecap="round" />
+        <text x="195" y="50" fontSize="14" fill="gold">{'✨'}</text>
+      </g>
+
+      {/* === WALKING ARMS (v6 mode walking) - bras croises dans le dos === */}
+      <g className="nuvi-c-walking-arms">
+        <path
+          d="M 25 110 Q 50 125, 90 132 Q 60 118, 35 105"
+          fill="none"
+          stroke={`url(#${gradients.arm})`}
+          strokeWidth="10"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+        <path
+          d="M 155 110 Q 130 125, 90 132 Q 120 118, 145 105"
+          fill="none"
+          stroke={`url(#${gradients.arm})`}
+          strokeWidth="10"
+          strokeLinecap="round"
+          opacity="0.55"
+        />
+      </g>
+
+      {/* === MONOCYCLE WHEEL (v6 mode monocycle) === */}
+      <g className="nuvi-c-monocycle-rig">
+        <line x1="90" y1="156" x2="90" y2="180" stroke={pupilColor} strokeWidth="3" />
+        <ellipse cx="90" cy="180" rx="15" ry="3" fill={pupilColor} />
+        <g className="nuvi-c-monocycle-wheel">
+          <circle cx="90" cy="210" r="28" fill="white" stroke={pupilColor} strokeWidth="4" />
+          <line x1="90" y1="184" x2="90" y2="238" stroke={pupilColor} strokeWidth="2" />
+          <line x1="62" y1="210" x2="118" y2="210" stroke={pupilColor} strokeWidth="2" />
+          <line x1="71" y1="192" x2="109" y2="228" stroke={pupilColor} strokeWidth="1.5" />
+          <line x1="71" y1="228" x2="109" y2="192" stroke={pupilColor} strokeWidth="1.5" />
+          <circle cx="90" cy="210" r="4" fill={pupilColor} />
+        </g>
+      </g>
     </svg>
   );
 }
@@ -395,7 +482,17 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-c-eyebrow-2,
   .nuvi-c-heart,
   .nuvi-c-tongue,
-  .nuvi-c-star-eye {
+  .nuvi-c-star-eye,
+  /* v5 new elements */
+  .nuvi-c-cheshire-smile,
+  .nuvi-c-cheshire-eyes,
+  .nuvi-c-monocle,
+  .nuvi-c-wizard-hat,
+  .nuvi-c-wizard-sparks,
+  .nuvi-c-wizard-wand,
+  /* v6 new elements */
+  .nuvi-c-walking-arms,
+  .nuvi-c-monocycle-rig {
     opacity: 0;
   }
 
@@ -444,6 +541,8 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   .nuvi-mode-idle .nuvi-c-heart    { animation: nuvi-c-heart-life ${animDuration} ease-in-out infinite; }
   .nuvi-mode-idle .nuvi-c-tongue   { animation: nuvi-c-tongue-life ${animDuration} ease-out infinite; }
   .nuvi-mode-idle .nuvi-c-star-eye { animation: nuvi-c-star-life ${animDuration} linear infinite; }
+  /* v7 new idle gags : pop-up mouth, dizzy companion */
+  .nuvi-mode-idle .nuvi-c-mouth-o  { animation: nuvi-c-pop-mouth-life ${animDuration} ease-out infinite; }
 
   /* =========================================================
      APPEARING MODE
@@ -612,26 +711,55 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     100%      { transform: rotate(0deg); }
   }
   @keyframes nuvi-c-body-life {
-    0%    { transform: scale(1); }
-    50%   { transform: scale(1.03); }
-    100%  { transform: scale(1); }
+    0%, 39%  { transform: scale(1); }
+    /* SUPER BOUNCE 40-50% */
+    42%      { transform: translateY(-15px) scale(1.1, 0.9); }
+    45%      { transform: translateY(0) scale(0.95, 1.1); }
+    48%      { transform: translateY(-8px) scale(1.05, 0.95); }
+    50%      { transform: scale(1); }
+    /* POP-UP 68-75% */
+    68%      { transform: scale(1); }
+    70%      { transform: scale(1.15) translateY(-6px); }
+    72%      { transform: scale(0.92); }
+    75%      { transform: scale(1); }
+    100%     { transform: scale(1); }
   }
   @keyframes nuvi-c-eye-look {
     0%, 100% { transform: translate(0, 0); }
   }
   @keyframes nuvi-c-iris-life {
-    0%, 22%   { transform: scale(1); opacity: 1; }
+    0%, 9%    { transform: scaleY(1); opacity: 1; }
+    /* WINK 10-15% : oeil cligne */
+    11%, 13%  { transform: scaleY(0.08); opacity: 1; }
+    14%       { transform: scaleY(1); opacity: 1; }
+    /* HEART 22-33% : iris disparait */
+    22%       { transform: scale(1); opacity: 1; }
     23%       { opacity: 1; transform: scale(1); }
     24%       { opacity: 0; transform: scale(0); }
     33%       { opacity: 0; transform: scale(0); }
     34%       { opacity: 1; transform: scale(1); }
+    /* DIZZY 53-63% : pupille tourne (iris reste normal) */
     100%      { transform: scale(1); opacity: 1; }
   }
   @keyframes nuvi-c-pupil-life {
-    0%, 22%   { transform: scale(1); opacity: 1; }
+    0%, 9%    { transform: scale(1) translate(0, 0); opacity: 1; }
+    /* WINK 10-15% : pupille disparait quand oeil cligne */
+    11%, 13%  { transform: scale(0) translate(0, 0); opacity: 0; }
+    14%, 22%  { transform: scale(1) translate(0, 0); opacity: 1; }
+    /* HEART 22-33% : pupille disparait */
     23%       { transform: scale(0); opacity: 0; }
     33%       { transform: scale(0); opacity: 0; }
-    34%, 100% { transform: scale(1); opacity: 1; }
+    34%, 52%  { transform: scale(1) translate(0, 0); opacity: 1; }
+    /* DIZZY 53-63% : pupille tourne en cercle */
+    55%       { transform: translate(7px, -5px) scale(1); }
+    58%       { transform: translate(7px, 5px) scale(1); }
+    61%       { transform: translate(-7px, 5px) scale(1); }
+    63%       { transform: translate(-7px, -5px) scale(1); }
+    64%       { transform: translate(0, 0) scale(1); }
+    /* POP 68-75% : pupille ecarquillee */
+    70%       { transform: scale(1.4); }
+    72%       { transform: scale(1); }
+    100%      { transform: scale(1) translate(0, 0); opacity: 1; }
   }
   @keyframes nuvi-c-hl1-life {
     0%, 22%   { transform: scale(1); opacity: 1; }
@@ -670,6 +798,14 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
     0%, 78%   { opacity: 0; transform: scale(0); }
     79%, 88%  { opacity: 1; transform: scale(1); }
     89%, 100% { opacity: 0; transform: scale(0); }
+  }
+  /* v7 idle pop : bouche O surprise 68-75% */
+  @keyframes nuvi-c-pop-mouth-life {
+    0%, 67%   { opacity: 0; transform: scale(0); }
+    68%       { opacity: 1; transform: scale(0.5); }
+    70%, 73%  { opacity: 1; transform: scale(1.2); }
+    75%       { opacity: 0; transform: scale(0); }
+    100%      { opacity: 0; transform: scale(0); }
   }
 
   /* =========================================================
@@ -968,6 +1104,170 @@ const nuviCompanionStyles = ({ animDuration, coachOrigin, mode, breathing }) => 
   @keyframes nuvi-expr-stars-twinkle {
     0%, 100% { opacity: 0.4; transform: scale(0.8); }
     50%      { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* =========================================================
+     V5 NEW EXPRESSIONS : cheshire, monocle, wizard
+     ========================================================= */
+
+  /* CHESHIRE - sourire geant style Alice in Wonderland */
+  .nuvi-expr-cheshire .nuvi-c-iris { opacity: 0; }
+  .nuvi-expr-cheshire .nuvi-c-pupil-group { opacity: 0; }
+  .nuvi-expr-cheshire .nuvi-c-cheshire-eyes { opacity: 1; }
+  .nuvi-expr-cheshire .nuvi-c-cheshire-smile {
+    opacity: 1;
+    animation: nuvi-expr-cheshire-pulse 3s ease-in-out infinite;
+    transform-origin: 90px 130px;
+  }
+  .nuvi-expr-cheshire .nuvi-c-body {
+    animation: nuvi-expr-cheshire-float 3s ease-in-out infinite !important;
+  }
+
+  /* MONOCLE - aristocrate */
+  .nuvi-expr-monocle .nuvi-c-monocle { opacity: 1; }
+  .nuvi-expr-monocle .nuvi-c-eyebrow {
+    transform: translateY(-5px) rotate(-2deg);
+    transform-origin: right center;
+  }
+  .nuvi-expr-monocle .nuvi-c-mouth {
+    opacity: 1;
+    transform: scaleX(0.5);
+  }
+  .nuvi-expr-monocle .nuvi-c-monocle-string {
+    animation: nuvi-expr-monocle-sway 3s ease-in-out infinite;
+    transform-origin: 138px 82px;
+  }
+
+  /* WIZARD - magicien */
+  .nuvi-expr-wizard .nuvi-c-wizard-hat {
+    opacity: 1;
+    animation: nuvi-expr-hat-wiggle 2.5s ease-in-out infinite;
+    transform-origin: 90px 28px;
+  }
+  .nuvi-expr-wizard .nuvi-c-wizard-sparks { opacity: 1; }
+  .nuvi-expr-wizard .nuvi-c-wizard-wand {
+    opacity: 1;
+    transform-origin: 155px 110px;
+  }
+  .nuvi-expr-wizard .nuvi-c-wizard-star {
+    animation: nuvi-expr-wizard-star-twinkle 1.5s ease-in-out infinite;
+    transform-origin: 90px -8px;
+  }
+  .nuvi-expr-wizard .nuvi-c-spark-1 {
+    animation: nuvi-expr-wizard-spark-1 2s ease-in-out infinite;
+    transform-origin: 25px 55px;
+  }
+  .nuvi-expr-wizard .nuvi-c-spark-2 {
+    animation: nuvi-expr-wizard-spark-2 2s ease-in-out infinite 0.5s;
+    transform-origin: 150px 50px;
+  }
+  .nuvi-expr-wizard .nuvi-c-spark-3 {
+    animation: nuvi-expr-wizard-spark-3 2s ease-in-out infinite 1s;
+    transform-origin: 35px 135px;
+  }
+  .nuvi-expr-wizard .nuvi-c-mouth-smile {
+    opacity: 1;
+    transform: scale(0.7);
+  }
+
+  /* =========================================================
+     V6 NEW MODES : walking, monocycle
+     ========================================================= */
+
+  /* WALKING - balance gauche/droite + bras dans le dos */
+  .nuvi-mode-walking {
+    animation: nuvi-mode-walking-sway 6s ease-in-out infinite;
+  }
+  .nuvi-mode-walking .nuvi-c-walking-arms { opacity: 1; }
+  .nuvi-mode-walking .nuvi-c-body {
+    animation: nuvi-mode-walking-bob 0.6s ease-in-out infinite !important;
+  }
+  .nuvi-mode-walking .nuvi-c-mouth {
+    opacity: 1;
+    transform: scaleX(0.6);
+  }
+
+  /* MONOCYCLE - traverse + roue qui tourne + bras leves */
+  .nuvi-mode-monocycle {
+    animation: nuvi-mode-monocycle-roll 5s linear infinite;
+  }
+  .nuvi-mode-monocycle .nuvi-c-monocycle-rig { opacity: 1; }
+  .nuvi-mode-monocycle .nuvi-c-monocycle-wheel {
+    animation: nuvi-mode-monocycle-spin 0.4s linear infinite;
+    transform-origin: 90px 210px;
+  }
+  .nuvi-mode-monocycle .nuvi-c-body {
+    animation: nuvi-mode-monocycle-wobble 0.4s ease-in-out infinite !important;
+  }
+  .nuvi-mode-monocycle .nuvi-c-mouth-o { opacity: 1; transform: scale(0.7); }
+  .nuvi-mode-monocycle .nuvi-c-arm-left {
+    opacity: 1;
+    transform: rotate(-60deg) translate(0, -25px);
+  }
+  .nuvi-mode-monocycle .nuvi-c-arm-right {
+    opacity: 1;
+    transform: rotate(60deg) translate(0, -25px);
+  }
+  .nuvi-mode-monocycle .nuvi-c-iris { transform: scale(1.2); }
+
+  /* V6 KEYFRAMES */
+  @keyframes nuvi-mode-walking-sway {
+    0%, 100% { transform: translateX(-12px); }
+    45%      { transform: translateX(12px); }
+    50%      { transform: translateX(12px) scaleX(-1); }
+    95%      { transform: translateX(-12px) scaleX(-1); }
+  }
+  @keyframes nuvi-mode-walking-bob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-3px); }
+  }
+  @keyframes nuvi-mode-monocycle-roll {
+    0%   { transform: translateX(-200px); opacity: 0; }
+    10%  { opacity: 1; }
+    90%  { opacity: 1; }
+    100% { transform: translateX(200px); opacity: 0; }
+  }
+  @keyframes nuvi-mode-monocycle-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes nuvi-mode-monocycle-wobble {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    25%      { transform: translateY(-3px) rotate(-2deg); }
+    75%      { transform: translateY(-3px) rotate(2deg); }
+  }
+
+  /* V5 NEW KEYFRAMES */
+  @keyframes nuvi-expr-cheshire-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  @keyframes nuvi-expr-cheshire-float {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%      { transform: translateY(-3px) scale(1.02); }
+  }
+  @keyframes nuvi-expr-monocle-sway {
+    0%, 100% { transform: rotate(8deg); }
+    50%      { transform: rotate(-3deg); }
+  }
+  @keyframes nuvi-expr-hat-wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50%      { transform: rotate(3deg); }
+  }
+  @keyframes nuvi-expr-wizard-star-twinkle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.4; transform: scale(1.4); }
+  }
+  @keyframes nuvi-expr-wizard-spark-1 {
+    0%, 100% { opacity: 0; transform: translate(0,0) scale(0.5); }
+    50%      { opacity: 1; transform: translate(-8px,-10px) scale(1.3); }
+  }
+  @keyframes nuvi-expr-wizard-spark-2 {
+    0%, 100% { opacity: 0; transform: translate(0,0) scale(0.5); }
+    50%      { opacity: 1; transform: translate(8px,-12px) scale(1.3); }
+  }
+  @keyframes nuvi-expr-wizard-spark-3 {
+    0%, 100% { opacity: 0; transform: translate(0,0) scale(0.5); }
+    50%      { opacity: 1; transform: translate(-10px,8px) scale(1.3); }
   }
 
   @media (prefers-reduced-motion: reduce) {
