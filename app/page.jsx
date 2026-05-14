@@ -48,6 +48,7 @@ const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay
 const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
+const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
@@ -2767,7 +2768,7 @@ export default function App() {
   const [showCustomize, setShowCustomize] = useState(false);
   const cRef = useRef();
   // === Nuvi Reactions (presence vivante) ===
-  const { expression: nuviExpression, triggerEvent: nuviTrigger } = useNuviReactions();
+  const { expression: nuviExpression, mode: nuviMode, bigLogoActive, triggerEvent: nuviTrigger } = useNuviReactions();
 
   // Hydrate from localStorage AFTER first render. This is the only safe
   // moment to read localStorage in a Next.js / SSR context.
@@ -3136,6 +3137,8 @@ export default function App() {
       );
       setAuditResult(r);
       // Nuvi reaction selon score
+      // v7 : trigger wizard pour audit ATS
+      if (typeof nuviTrigger === 'function') nuviTrigger('audit-ats-done');
       if (typeof nuviTrigger === 'function' && r) {
         if (r.score >= 80) nuviTrigger('audit-excellent', { score: r.score });
         else if (r.score < 50) nuviTrigger('audit-low', { score: r.score });
@@ -3407,6 +3410,8 @@ export default function App() {
         }
       );
       setTruthResult(r);
+      // v7 : trigger monocle pour truth check
+      if (typeof nuviTrigger === 'function') nuviTrigger('truth-check-done');
     } catch (err) {
       notify("Erreur truth check: " + (err.message || ""));
       setShowTruth(false);
@@ -6214,6 +6219,7 @@ export default function App() {
             {locale === "en" ? "Download" : "Telecharger"}
           </button>
         )}
+        <NuviBigLogo active={bigLogoActive} onDismiss={() => { /* auto-clear via hook */ }} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
             onClick={() => {
@@ -6614,6 +6620,7 @@ export default function App() {
             )}
          </button>
         )}
+        <NuviBigLogo active={bigLogoActive} onDismiss={() => { /* auto-clear via hook */ }} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
             onClick={() => {
