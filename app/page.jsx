@@ -116,6 +116,7 @@ const KEYFRAMES_V17 = `
 @keyframes cvfSpin{to{transform:rotate(360deg)}}
 @keyframes cvfFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes cvfSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes pasteFlashFade{0%{opacity:0}10%{opacity:0.85}100%{opacity:0}}
 
 /* Dark mode : surface app */
 body.cvf-dark [data-cvf="app"]{background:#0f0f12 !important;color:#f5f1e8 !important;}
@@ -2769,6 +2770,39 @@ export default function App() {
   const cRef = useRef();
   // === Nuvi Reactions (presence vivante) ===
   const { expression: nuviExpression, mode: nuviMode, bigLogoActive, triggerEvent: nuviTrigger } = useNuviReactions();
+
+  // === [v15] Solution simple : paste flash + Konami code en local ===
+  const [pasteFlash, setPasteFlash] = useState(false);
+  const [bigLogoOpen, setBigLogoOpen] = useState(false);
+
+  // Listener paste : flash blanc 200ms quand l'utilisateur colle
+  useEffect(() => {
+    const onPaste = () => {
+      setPasteFlash(true);
+      setTimeout(() => setPasteFlash(false), 200);
+      // Trigger aussi le wink Nuvi via le hook
+      if (typeof nuviTrigger === 'function') nuviTrigger('paste-detected');
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [nuviTrigger]);
+
+  // Listener Konami code : Up Up Down Down Left Right Left Right B A
+  useEffect(() => {
+    const seq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','KeyB','KeyA'];
+    let buf = [];
+    const onKey = (e) => {
+      buf.push(e.code);
+      if (buf.length > seq.length) buf.shift();
+      if (buf.length === seq.length && buf.every((k,i) => k === seq[i])) {
+        setBigLogoOpen(true);
+        setTimeout(() => setBigLogoOpen(false), 3500);
+        buf = [];
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Hydrate from localStorage AFTER first render. This is the only safe
   // moment to read localStorage in a Next.js / SSR context.
@@ -5898,6 +5932,17 @@ export default function App() {
         <link href={FONT} rel="stylesheet"/>
         <style>{KEYFRAMES_V17}</style>
         {notif && <Notif msg={notif}/>}
+        {pasteFlash && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "#ffffff",
+            zIndex: 9998,
+            opacity: 0.85,
+            pointerEvents: "none",
+            animation: "pasteFlashFade 200ms ease-out forwards",
+          }} />
+        )}
         {autoSaved && (
           <div className="cvf-saved-pill">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -6219,7 +6264,7 @@ export default function App() {
             {locale === "en" ? "Download" : "Telecharger"}
           </button>
         )}
-        <NuviBigLogo active={bigLogoActive} onDismiss={() => { /* auto-clear via hook */ }} />
+        <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
             onClick={() => {
@@ -6274,6 +6319,17 @@ export default function App() {
       <link href={FONT} rel="stylesheet"/>
       <style>{KEYFRAMES_V17}</style>
       {notif && <Notif msg={notif}/>}
+        {pasteFlash && (
+          <div style={{
+            position: "fixed",
+            inset: 0,
+            background: "#ffffff",
+            zIndex: 9998,
+            opacity: 0.85,
+            pointerEvents: "none",
+            animation: "pasteFlashFade 200ms ease-out forwards",
+          }} />
+        )}
       {autoSaved && (
         <div className="cvf-saved-pill">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -6620,7 +6676,7 @@ export default function App() {
             )}
          </button>
         )}
-        <NuviBigLogo active={bigLogoActive} onDismiss={() => { /* auto-clear via hook */ }} />
+        <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
             onClick={() => {
