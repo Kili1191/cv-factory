@@ -1,26 +1,17 @@
 "use client";
+
 import React, { useState, useEffect } from "react";
 import NuviCompanion from "./NuviCompanion";
 
 /**
- * NuviHome : Écran d'accueil minimaliste premium
+ * NuviHome v4 : Écran d'accueil minimaliste premium
  *
  * Cinématique :
  *   1. NuviCompanion arrive en tournant (spin) + scale 0→1 (excited)
  *   2. Bulle "Bonjour" apparaît avec stream
  *   3. Cards "Générer" / "Importer" apparaissent en stagger smoothly
- *   4. Coach se déplace en bas-droite (flying)
+ *   4. Coach se déplace en bas-droite avec halo box breathing (v4 style)
  *   5. État stable : utilisateur peut interagir
- *
- * Modes mobile/desktop : adaptation responsive
- *
- * Props:
- *   - lang: "fr" | "en"
- *   - mob: bool (mobile)
- *   - userName: string (optional, "Kilian" ou similaire)
- *   - onGenerate: () => void  (action "Générer avec IA")
- *   - onImport: () => void  (action "Importer mon CV")
- *   - onCoachOpen: () => void (action coach floating)
  */
 
 const TEXT = {
@@ -52,26 +43,11 @@ const TEXT = {
   },
 };
 
-/**
- * balanceText : typographie professionnelle
- *
- * Règles appliquées :
- *   1. Espace insecable avant ponctuation francaise (? ! : ; »)
- *   2. Espace insecable entre les 2 derniers mots (evite la veuve typographique)
- *   3. Espace insecable apres apostrophe + 1-2 lettres (l', d', n', s', t', etc.)
- *   4. Espace insecable entre nombres et leurs unites
- *
- * Utilise \u00A0 (U+00A0 NO-BREAK SPACE)
- */
 function balanceText(text) {
   if (!text || typeof text !== "string") return text;
   let t = text;
-  // 1. Espace insecable avant ponctuation francaise (FR uniquement)
   t = t.replace(/ ([?!:;»])/g, "\u00A0$1");
-  // 2. Espace insecable apres «
   t = t.replace(/« /g, "«\u00A0");
-  // 3. Eviter la veuve : insecable entre les 2 derniers mots
-  // (ex: "Je suis Nuvi" -> "Je suis\u00A0Nuvi" => le dernier mot reste avec le precedent)
   const words = t.split(" ");
   if (words.length >= 2) {
     const lastTwo = words.slice(-2).join("\u00A0");
@@ -89,54 +65,30 @@ export default function NuviHome({
   onCoachOpen = () => {},
 }) {
   const T = TEXT[lang] || TEXT.fr;
-
-  // Phases de la cinématique
-  // 0 = init (compagnon arrive en spinning)
-  // 1 = compagnon stable, bulle apparaît
-  // 2 = stream du texte
-  // 3 = cards apparaissent
-  // 4 = compagnon vole en bas-droite
-  // 5 = état stable
   const [phase, setPhase] = useState(0);
   const [displayedText, setDisplayedText] = useState("");
 
-  // Couleurs Nuvi (CSS variables - support dark mode)
   const Cream = "var(--nuvi-cream)";
-  const CreamSoft = "var(--nuvi-cream-soft)";
   const Paper = "var(--nuvi-paper)";
   const Ink = "var(--nuvi-ink)";
   const InkMuted = "var(--nuvi-ink-muted)";
-  const InkSubtle = "var(--nuvi-gray400)";
   const Hairline = "var(--nuvi-hairline)";
   const Coral = "var(--nuvi-coral)";
   const Violet = "var(--nuvi-purple)";
   const Magenta = "var(--nuvi-magenta)";
 
-  // Sequence cinematique (texte plus riche : ~140 chars * 28ms ~= 4s de stream)
-  // 0    -> 1.2s  : compagnon arrive en spinning
-  // 1.2  -> 1.5s  : bulle apparait
-  // 1.5  -> ~5.5s : streaming des 3 phrases (greeting + intro + outro)
-  // 5.5  -> 9.5s  : temps de lecture confortable (4s, l'utilisateur peut digerer la liste de features)
-  // 9.5  -> 10.3s : compagnon vole en bas-droite
-  // 10.3 -> 10.9s : cards apparaissent
-  // 10.9s+        : etat stable
   useEffect(() => {
     const t1 = setTimeout(() => setPhase(1), 1200);
     const t2 = setTimeout(() => setPhase(2), 1500);
-    const t3 = setTimeout(() => setPhase(3), 9500);     // +8s : lecture tranquille de la presentation riche
-    const t4 = setTimeout(() => setPhase(4), 10300);    // +0.8s : cards apparaissent
-    const t5 = setTimeout(() => setPhase(5), 10900);    // +0.6s : etat stable
+    const t3 = setTimeout(() => setPhase(3), 9500);
+    const t4 = setTimeout(() => setPhase(4), 10300);
+    const t5 = setTimeout(() => setPhase(5), 10900);
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); clearTimeout(t5); };
   }, []);
 
-  // Stream de la phrase d'intro (greeting + nameLine + intro + outro)
   useEffect(() => {
     if (phase < 2) return;
     let i = 0;
-    // Construction du texte complet en 3 parties :
-    // 1. "Salut ! C'est Nuvi." (greeting + presentation)
-    // 2. "Je réécris ton CV..." (intro avec features)
-    // 3. "Ton CV mérite mieux. Prêt(e) ?" (outro engageant)
     const greetingPart = userName
       ? T.greeting + " " + userName + " " + T.nameLineWithUser
       : T.greeting + " ! " + T.nameLine;
@@ -151,7 +103,6 @@ export default function NuviHome({
     setTimeout(tick, 28);
   }, [phase, T, userName]);
 
-  // Skip animation : cliquer fait passer à l'état stable
   const skipAnimation = () => {
     setPhase(5);
     const greetingPart = userName
@@ -161,22 +112,18 @@ export default function NuviHome({
     setDisplayedText(balanceText(rawText));
   };
 
-  // Tailles
-  // Phase >= 3 : compagnon vole en bas-droite (devient Coach button)
-  // Phase >= 4 : cards apparaissent
-  const companionSize = phase >= 3 ? (mob ? 44 : 52) : (mob ? 100 : 130);
+  // === Phase 0-2 : compagnon centré en haut avec halo cream
+  // === Phase 3+ : compagnon en bas-droite avec halo box breathing v4 ===
   const showBubble = phase >= 1 && phase < 3;
   const showCards = phase >= 4;
   const showFloating = phase >= 3;
 
-  // Position du compagnon
-  // Phases 0-2 : centré en haut
-  // Phase 3+ : en bas-droite (Coach button)
-  const companionTop = phase >= 3 ? "auto" : (mob ? 80 : 120);
-  const companionRight = phase >= 3 ? (mob ? 16 : 24) : "auto";
-  const companionLeft = phase >= 3 ? "auto" : "50%";
-  const companionBottom = phase >= 3 ? (mob ? 16 : 24) : "auto";
-  const companionTransform = phase >= 3 ? "none" : "translateX(-50%)";
+  // Taille phase 0-2 : grande (cinematique)
+  const introSize = mob ? 100 : 130;
+  // Taille phase 3+ : version Coach v4 (90 mobile / 140 desktop)
+  const coachSize = mob ? 90 : 140;
+  // Taille de l'oeil v4 a l'interieur du halo (70 mobile / 120 desktop)
+  const innerEyeSize = mob ? 70 : 120;
 
   return (
     <div
@@ -191,126 +138,156 @@ export default function NuviHome({
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}
     >
-      {/* ===== COMPAGNON ===== */}
-      <div
-        style={{
-          position: "absolute",
-          top: companionTop,
-          left: companionLeft,
-          right: companionRight,
-          bottom: companionBottom,
-          transform: companionTransform,
-          width: companionSize,
-          height: companionSize,
-          transition: "all 800ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-          zIndex: 10,
-        }}
-      >
-        {/* Animation d'arrivée : spin + scale 0->1 */}
+      {/* ===== COMPAGNON PHASE 0-2 (cinematique centree) ===== */}
+      {!showFloating && (
         <div
           style={{
-            width: "100%",
-            height: "100%",
-            animation: phase === 0
-              ? "nuviHomeAppear 1100ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
-              : "none",
-            transformOrigin: "center",
-            position: "relative",
+            position: "absolute",
+            top: mob ? 80 : 120,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: introSize,
+            height: introSize,
+            transition: "all 800ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            zIndex: 10,
           }}
         >
-          {/* Halo coach floating (phase 4+) - violet/magenta gradient */}
-          {showFloating && (
-            <div style={{
-              position: "absolute",
-              inset: -8,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
-              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
-              animation: showFloating ? "nuviCoachAppear 600ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "none",
-              zIndex: -1,
-            }} />
-          )}
-
-          {/* Halo cream subtil derriere l'oeil (phases 1-2, sur cream donc subtil) */}
-          {phase < 3 && phase >= 1 && (
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: companionSize * 1.15,
-              height: companionSize * 1.15,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, " + Coral + "1f 0%, " + Coral + "0a 50%, transparent 75%)",
-              pointerEvents: "none",
-              zIndex: -1,
-            }} />
-          )}
-
-          {/* Halo white pour Coach floating (phase 4+) */}
-          {showFloating && (
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: companionSize * 1.1,
-              height: companionSize * 1.1,
-              borderRadius: "50%",
-              background: "radial-gradient(circle, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.15) 40%, rgba(255,255,255,0) 70%)",
-              pointerEvents: "none",
-              zIndex: 1,
-            }} />
-          )}
-
-          {/* Compagnon clickable en mode floating */}
           <div
-            onClick={(e) => {
-              if (showFloating) {
-                e.stopPropagation();
-                onCoachOpen();
-              }
-            }}
             style={{
               width: "100%",
               height: "100%",
-              cursor: showFloating ? "pointer" : "default",
+              animation: phase === 0
+                ? "nuviHomeAppear 1100ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards"
+                : "none",
+              transformOrigin: "center",
               position: "relative",
-              zIndex: 2,
             }}
           >
+            {/* Halo cream subtil derriere l'oeil */}
+            {phase >= 1 && (
+              <div style={{
+                position: "absolute",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: introSize * 1.15,
+                height: introSize * 1.15,
+                borderRadius: "50%",
+                background: "radial-gradient(circle, " + Coral + "1f 0%, " + Coral + "0a 50%, transparent 75%)",
+                pointerEvents: "none",
+                zIndex: -1,
+              }} />
+            )}
             <NuviCompanion
-              size={companionSize}
-              mode={phase < 1 ? "appearing" : (phase >= 3 ? "idle" : "speaking")}
-              cycleDuration={phase >= 3 ? 60 : 4}
+              size={introSize}
+              mode={phase < 1 ? "appearing" : "speaking"}
+              cycleDuration={4}
             />
           </div>
-
-          {/* Label "Coach" quand floating */}
-          {showFloating && !mob && (
-            <div style={{
-              position: "absolute",
-              top: "50%",
-              right: "calc(100% + 12px)",
-              transform: "translateY(-50%)",
-              color: "#fff",
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 14,
-              fontWeight: 600,
-              letterSpacing: 0.3,
-              padding: "8px 16px",
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
-              borderRadius: 999,
-              boxShadow: "0 4px 12px rgba(91, 61, 245, 0.3)",
-              whiteSpace: "nowrap",
-              animation: "nuviLabelAppear 500ms cubic-bezier(0.22, 1, 0.36, 1) 200ms forwards",
-              opacity: 0,
-            }}>
-              {T.coachLabel}
-            </div>
-          )}
         </div>
-      </div>
+      )}
+
+      {/* ===== COMPAGNON PHASE 3+ : COACH BUTTON v4 (eye + halo box breathing) ===== */}
+      {showFloating && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onCoachOpen();
+          }}
+          aria-label="Coach"
+          style={{
+            position: "fixed",
+            ...(mob
+              ? { right: 16, bottom: 16 }
+              : { right: 24, bottom: 24 }),
+            zIndex: 90,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            padding: 0,
+            background: "transparent",
+            color: "#5b3df5",
+            border: "none",
+            cursor: "pointer",
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+            userSelect: "none",
+            animation: "nuviCoachLand 600ms cubic-bezier(0.22, 1, 0.36, 1)",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = "translateY(-2px) scale(1.05)";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = "";
+          }}
+        >
+          <span
+            aria-hidden="true"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              position: "relative",
+              width: coachSize,
+              height: coachSize,
+            }}
+          >
+            {/* Halo box breathing externe (gradient radial qui pulse) */}
+            <span style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              background: "radial-gradient(circle at 50% 55%, rgba(91, 61, 245, 0.35) 0%, rgba(185, 28, 140, 0.20) 35%, rgba(91, 61, 245, 0.05) 60%, transparent 75%)",
+              animation: "nuviBoxBreathe 16s ease-in-out infinite",
+              pointerEvents: "none",
+              filter: "blur(8px)",
+            }} />
+            {/* Halo box breathing interne (plus concentre) */}
+            <span style={{
+              position: "absolute",
+              inset: "15%",
+              borderRadius: "50%",
+              background: "radial-gradient(ellipse at 45% 40%, rgba(91, 61, 245, 0.25) 0%, transparent 65%)",
+              animation: "nuviBoxBreathe 16s ease-in-out infinite",
+              animationDelay: "0.5s",
+              pointerEvents: "none",
+              filter: "blur(4px)",
+            }} />
+            {/* NuviCompanion centre (oeil) */}
+            <span style={{
+              position: "relative",
+              zIndex: 2,
+              filter: "drop-shadow(0 4px 12px rgba(91, 61, 245, 0.25))",
+            }}>
+              <NuviCompanion
+                size={innerEyeSize}
+                mode="idle"
+                cycleDuration={60}
+              />
+            </span>
+          </span>
+          {/* Label Coach pill */}
+          <span style={{
+            marginTop: 2,
+            padding: "3px 10px",
+            background: "rgba(91, 61, 245, 0.08)",
+            borderRadius: 999,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: "0.12em",
+            color: "#5b3df5",
+            border: "0.5px solid rgba(91, 61, 245, 0.15)",
+          }}>
+            {T.coachLabel}
+          </span>
+        </button>
+      )}
 
       {/* ===== BULLE DE TEXTE ===== */}
       {showBubble && (
@@ -378,7 +355,6 @@ export default function NuviHome({
             animation: "nuviCardsAppear 700ms cubic-bezier(0.22, 1, 0.36, 1)",
           }}
         >
-          {/* Titre éditorial */}
           <div style={{
             color: Ink,
             fontFamily: "'DM Serif Display', serif",
@@ -392,14 +368,13 @@ export default function NuviHome({
             {balanceText(T.question)}
           </div>
 
-          {/* Cards container */}
           <div style={{
             display: "flex",
             flexDirection: mob ? "column" : "row",
             gap: mob ? 12 : 16,
             width: "100%",
           }}>
-            {/* Card "Générer" */}
+            {/* Card Generer */}
             <button
               onClick={(e) => { e.stopPropagation(); onGenerate(); }}
               style={{
@@ -431,20 +406,11 @@ export default function NuviHome({
                 e.currentTarget.style.borderColor = Hairline;
               }}
             >
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                marginBottom: 12,
-              }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
                 <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
+                  width: 40, height: 40, borderRadius: 12,
                   background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   boxShadow: "0 2px 8px rgba(91, 61, 245, 0.25)",
                 }}>
@@ -459,19 +425,13 @@ export default function NuviHome({
                 fontWeight: 600,
                 marginBottom: 4,
                 letterSpacing: "-0.01em",
-              }}>
-                {T.generate}
-              </div>
-              <div style={{
-                color: InkMuted,
-                fontSize: mob ? 13 : 14,
-                fontWeight: 400,
-              }}>
+              }}>{T.generate}</div>
+              <div style={{ color: InkMuted, fontSize: mob ? 13 : 14, fontWeight: 400 }}>
                 {balanceText(T.generateSub)}
               </div>
             </button>
 
-            {/* Card "Importer" */}
+            {/* Card Importer */}
             <button
               onClick={(e) => { e.stopPropagation(); onImport(); }}
               style={{
@@ -503,20 +463,11 @@ export default function NuviHome({
                 e.currentTarget.style.borderColor = Hairline;
               }}
             >
-              <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 14,
-                marginBottom: 12,
-              }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 12 }}>
                 <div style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 12,
+                  width: 40, height: 40, borderRadius: 12,
                   background: Coral,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   boxShadow: "0 2px 8px rgba(217, 119, 87, 0.25)",
                 }}>
@@ -531,14 +482,8 @@ export default function NuviHome({
                 fontWeight: 600,
                 marginBottom: 4,
                 letterSpacing: "-0.01em",
-              }}>
-                {T.import}
-              </div>
-              <div style={{
-                color: InkMuted,
-                fontSize: mob ? 13 : 14,
-                fontWeight: 400,
-              }}>
+              }}>{T.import}</div>
+              <div style={{ color: InkMuted, fontSize: mob ? 13 : 14, fontWeight: 400 }}>
                 {balanceText(T.importSub)}
               </div>
             </button>
@@ -546,45 +491,39 @@ export default function NuviHome({
         </div>
       )}
 
-      {/* ===== STYLES (animations) ===== */}
+      {/* ===== STYLES ===== */}
       <style>{`
         @keyframes nuviHomeAppear {
-          0% {
-            opacity: 0;
-            transform: scale(0) rotate(0deg);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.15) rotate(360deg);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) rotate(360deg);
-          }
+          0%   { opacity: 0; transform: scale(0) rotate(0deg); }
+          50%  { opacity: 1; transform: scale(1.15) rotate(360deg); }
+          100% { opacity: 1; transform: scale(1) rotate(360deg); }
         }
         @keyframes nuviBubbleSlideIn {
           from { opacity: 0; transform: translateX(-50%) translateY(12px); }
-          to { opacity: 1; transform: translateX(-50%) translateY(0); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
         @keyframes nuviCardsAppear {
           from { opacity: 0; transform: translate(-50%, -42%); }
-          to { opacity: 1; transform: translate(-50%, -45%); }
+          to   { opacity: 1; transform: translate(-50%, -45%); }
         }
         @keyframes nuviCardStagger {
           from { opacity: 0; transform: translateY(16px); }
-          to { opacity: 1; transform: translateY(0); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes nuviCoachAppear {
-          from { opacity: 0; transform: scale(0.8); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        @keyframes nuviLabelAppear {
-          from { opacity: 0; transform: translateY(-50%) translateX(-8px); }
-          to { opacity: 1; transform: translateY(-50%) translateX(0); }
+        @keyframes nuviCoachLand {
+          from { opacity: 0; transform: scale(0.7) translateY(20px); }
+          to   { opacity: 1; transform: scale(1) translateY(0); }
         }
         @keyframes nuviCursorBlink {
-          0%, 50% { opacity: 1; }
+          0%, 50%   { opacity: 1; }
           51%, 100% { opacity: 0; }
+        }
+        @keyframes nuviBoxBreathe {
+          0%   { transform: scale(0.65); opacity: 0.35; }
+          25%  { transform: scale(1.0);  opacity: 0.85; }
+          50%  { transform: scale(1.0);  opacity: 0.85; }
+          75%  { transform: scale(0.65); opacity: 0.35; }
+          100% { transform: scale(0.65); opacity: 0.35; }
         }
       `}</style>
     </div>
