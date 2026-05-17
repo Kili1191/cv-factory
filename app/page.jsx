@@ -60,6 +60,7 @@ import {
 } from "./components/dateUtils";
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
+import { applyCoachActions } from "../lib/applyCoachActions";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
@@ -4188,6 +4189,13 @@ export default function App() {
   // Format JSON attendu de la reponse IA :
   //   { "reply": "texte conversationnel", "adopt": {"kind":"summary"|"title"|"bullet", "value":"..."} }
   //   adopt est optionnel.
+  // [Nuvi v4] runCoachMessage refondu (fix bugs 1.1.a/b/c/d) :
+  //   - CV COMPLET passe via aiCall options.cv (cache ephemeral cote route.js)
+  //   - Coach retourne des ACTIONS structurees (replace/delete/add/update_*)
+  //   - applyCoachActions applique directement au CV (plus de re-generation JSON)
+  //   - Prompt direct : "Tu APPLIQUES, tu ne proposes pas." Stop les repetitions.
+  //   - Retro-compat : si Claude renvoie {adopt: ...} (ancien format), on garde
+  //     le bouton Adopter manuel via adoptCoachSuggestion.
   const runCoachMessage = useCallback(async (userText) => {
     if (!apiKey) { notify(T.nk); return; }
     if (cvIsEmpty) { notify(T.co_no_cv); return; }
@@ -4204,23 +4212,19 @@ export default function App() {
     setCoachLoading(true);
 
     try {
-      const expT = (cv.experience || []).slice(0, 5).map(e =>
-        (e.title||"") + " chez " + (e.company||"")
-        + " (" + (e.period||"") + "): "
-        + (e.bullets||[]).filter(b=>b).slice(0,3).join("; ")
-      ).join(" | ");
-      const cvCtx = "Nom: " + (cv.name||"")
-        + " | Titre: " + (cv.title||"")
-        + " | Loc: " + (cv.location||"")
-        + " | Accroche: " + (cv.summary||"").slice(0,200)
-        + " | Exp: " + expT
-        + " | Skills: " + (cv.skills||[]).filter(s=>s).slice(0,10).join(", ");
+      // Index explicite des experiences pour que Claude cible par exp_idx
+      const expIndex = (cv.experience || []).map((e, i) =>
+        "  exp_idx=" + i
+        + " : " + (e.title || "(no title)")
+        + " @ " + (e.company || "(no company)")
+        + " [" + (e.period || "no period") + "]"
+        + " (" + ((e.bullets || []).filter(b => b).length) + " bullets)"
+      ).join("\n");
 
-      // Conversation history pour le contexte (transformee en transcription)
-      // On garde les 10 derniers echanges pour eviter context overflow.
+      // Historique conversationnel (10 derniers tours, exclut le message courant)
       const recentHistory = (nextMessages || [])
         .slice(-12)
-        .slice(0, -1)  // exclut le message qu'on vient d'ajouter
+        .slice(0, -1)
         .map(m => (m.role === "user" ? "USER" : "COACH") + ": " + m.content)
         .join("\n");
 
@@ -4228,40 +4232,78 @@ export default function App() {
         ? "Reply STRICTLY in English. "
         : "Reply STRICTLY in French. ";
 
-      const p = "You are a senior career coach with 20 years of experience helping job seekers"
-        + " refine their CV through conversation. Your tone is warm, direct, expert, never pushy."
-        + "\n\nCONTEXT - Candidate's CV:\n" + cvCtx
+      // Prompt v4 : direct, action-oriented, anti-repetition
+      const p = "You are Nuvi, a senior career coach with 20 years of experience."
+        + " The candidate's COMPLETE CV is in your context (cv_context system block)."
+        + " You don't need to ask for info that's already in the CV : read it."
+        + "\n\nEXPERIENCE INDEX (use exp_idx to target a specific job):"
+        + "\n" + (expIndex || "  (no experience)")
         + (recentHistory ? "\n\nCONVERSATION HISTORY:\n" + recentHistory : "")
         + "\n\nLATEST USER MESSAGE: " + userText.trim()
-        + "\n\nINSTRUCTIONS:"
-        + "\n- Reply in 2 to 4 sentences. Be conversational, NOT a wall of text."
-        + "\n- Ask precise follow-up questions to extract concrete details (numbers, scope, impact)."
-        + "\n- When you have enough info, propose a CONCRETE rewrite the user can adopt directly."
-        + "\n- Adoption rewrites must be clean text (no markdown, no quotes around them)."
-        + "\n- " + NO_DASH + " " + langLine + "Output JSON ONLY, no markdown, no backticks."
-        + "\n\nRESPONSE FORMAT (JSON):"
-        + '\n{"reply":"your conversational reply","adopt":{"kind":"summary"|"title"|"bullet","value":"the rewritten text"}}'
-        + '\nIf you don\'t have a concrete rewrite to propose yet, omit "adopt" entirely:'
-        + '\n{"reply":"your reply asking for more details"}';
+        + "\n\nCORE BEHAVIOR :"
+        + "\n- You APPLY changes directly via actions. You DON'T propose, you DO."
+        + "\n- When user says 'do it' / 'fais-le' / 'go' : return the actions, don't re-propose."
+        + "\n- When user gives info, ask a SHORT follow-up OR apply if you have enough."
+        + "\n- Reply is conversational, 1 to 3 sentences max. Never a wall of text."
+        + "\n- You NEVER invent experiences, companies, dates, or diplomas."
+        + "\n- " + NO_DASH + " " + langLine
+        + "\n\nACTION TYPES YOU CAN RETURN :"
+        + "\n  replace_bullet : {type, exp_idx, bullet_idx, new_text}"
+        + "\n  delete_bullet  : {type, exp_idx, bullet_idx}"
+        + "\n  add_bullet     : {type, exp_idx, text}"
+        + "\n  update_summary : {type, new_text}"
+        + "\n  update_title   : {type, new_text}"
+        + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks) :"
+        + '\n{"reply": "your short conversational reply", "actions": [...]}'
+        + '\n\nIf you need more info before acting, return empty actions :'
+        + '\n{"reply": "your follow-up question", "actions": []}';
 
-      const txt = await aiCall(p);
+      // Passe le CV complet via options.cv (cache ephemeral cote route.js)
+      const txt = await aiCall(p, { cv, task_name: "coach_chat" });
       const parsed = parseJSON(txt);
+
       const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
-      const adopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
+      const actions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
+
+      // Retro-compat : ancien format {adopt: {kind, value}}
+      const legacyAdopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
         ? { kind: String(parsed.adopt.kind), value: String(parsed.adopt.value) }
         : null;
 
+      // Applique les actions structurees automatiquement
+      let applySummary = "";
+      if (actions.length > 0) {
+        pushH(cv); // snapshot pour Undo
+        const result = applyCoachActions(cv, actions, { lang: locale });
+        if (result.applied > 0) {
+          setCVFn(() => result.newCv);
+          applySummary = result.summary;
+          if (result.failed.length > 0) {
+            console.warn("[Coach v4] Some actions failed:", result.failed);
+          }
+        } else if (result.failed.length > 0) {
+          console.warn("[Coach v4] All actions failed:", result.failed);
+        }
+      }
+
       const aiMsg = {
-        role:"assistant",
+        role: "assistant",
         content: reply,
         ts: Date.now(),
-        ...(adopt ? { adopt } : {}),
+        ...(legacyAdopt ? { adopt: legacyAdopt } : {}),
+        ...(applySummary ? { appliedSummary: applySummary } : {}),
       };
+
       setCoachMessages(prev => {
         const next = [...prev, aiMsg].slice(-50);
         lsS(SK.CO, next);
         return next;
       });
+
+      // Notif visible des changements appliques
+      if (applySummary) {
+        notify((locale === "en" ? "Applied : " : "Applique : ") + applySummary);
+      }
     } catch (err) {
       const errMsg = {
         role:"assistant",
@@ -4275,7 +4317,8 @@ export default function App() {
       });
     }
     setCoachLoading(false);
-  }, [apiKey, cv, cvIsEmpty, locale, notify, T]);
+  }, [apiKey, cv, cvIsEmpty, locale, notify, T, pushH, setCVFn]);
+
 
   // Efface toute la conversation coach.
   const clearCoach = useCallback(() => {
