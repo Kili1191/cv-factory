@@ -49,7 +49,10 @@ export default function CVPhoto({
   const [editorOpen, setEditorOpen] = useState(false);
   const wrapRef = useRef(null);
 
-  const defaultRatio = variant === "round" ? "round" : "1:1";
+  // Default ratio for the editor: prefer saved choice, else infer from variant
+  const defaultRatio = (photo.crop && photo.crop.ratio)
+    ? photo.crop.ratio
+    : (variant === "round" ? "round" : "1:1");
 
   const accentColor = t.ac || "#5b3df5";
   const accentBg = accentColor + "33";
@@ -155,16 +158,32 @@ export default function CVPhoto({
     );
   }
 
-  const shapeStyle = variant === "square"
-    ? { borderRadius: 6 }
-    : { borderRadius: "50%" };
+  // Compute shape based on user choice in editor (cv.photo.crop.ratio).
+  // Falls back to the variant prop for "initials" / "none" / legacy CVs.
+  const ratioChoice = (photo.crop && photo.crop.ratio)
+    ? photo.crop.ratio
+    : (variant === "round" ? "round" : "1:1");
+
+  // Dimensions based on ratio
+  // Square 1:1 and Round  -> size x size
+  // Portrait 3:4          -> size x (size * 4/3)
+  const renderW = size;
+  const renderH = ratioChoice === "3:4" ? Math.round(size * 4 / 3) : size;
+
+  // Border-radius
+  let borderRadiusValue = "50%";
+  if (ratioChoice === "1:1") borderRadiusValue = 8;
+  else if (ratioChoice === "3:4") borderRadiusValue = 8;
+  // round -> 50%
+
+  const shapeStyle = { borderRadius: borderRadiusValue };
 
   return (
     <>
       <div
         ref={wrapRef}
         style={{
-          width: size,
+          width: renderW,
           margin: "0 auto 12px",
           position: "relative",
           display: "flex",
@@ -177,8 +196,8 @@ export default function CVPhoto({
           aria-label={locale === "en" ? "Change photo" : "Changer la photo"}
           title={locale === "en" ? "Click to change" : "Clique pour modifier"}
           style={{
-            width: size,
-            height: size,
+            width: renderW,
+            height: renderH,
             ...shapeStyle,
             border: "2px solid " + accentColor,
             background: mode === "upload" && src ? "transparent" : accentBg,

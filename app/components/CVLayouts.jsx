@@ -193,7 +193,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
           set={set}
           t={t}
           variant="round"
-          size={52}
+          size={110}
           T={T}
           locale={locale}
         />
