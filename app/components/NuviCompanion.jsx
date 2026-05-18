@@ -3,21 +3,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * NuviCompanion v15 - FINAL avec tous les modes et expressions
+ * NuviCompanion v16 (was v15) - FIX bug 'mascotte broken' (bouche o cassee)
  *
- * Architecture :
- *   - useState currentGag pilote le cycle idle 60s
- *   - Modes statiques (appearing, speaking, loading, walking, monocycle)
- *   - 18 expressions emoji-style avec props
+ * Changes vs v15 :
+ *   - Validation stricte de la prop 'expression' : si invalide -> fallback idle
+ *   - Auto-cleanup : si une expression est passee, elle s'efface auto apres 4s
+ *     (au cas ou useNuviReactions oublie de la nettoyer)
+ *   - Reset du gag idle quand on quitte/revient en mode idle
  *
  * Props:
  *   mode: 'idle' | 'appearing' | 'speaking' | 'loading' | 'walking' | 'monocycle' | 'expression'
- *   expression: 'joy' | 'sad' | ... | 'wizard' (utilise quand mode='expression')
- *   followCursor: bool - pupille suit la souris
- *   breathing: bool - respiration subtile
+ *   expression: 'joy' | 'sad' | 'surprised' | ... | 'wizard' (utilise quand mode='expression')
+ *   followCursor: bool
+ *   breathing: bool
  *   size: number en px
  *   coachOrigin: {x, y} pour mode 'appearing'
- *   animated: bool - active/desactive animations
+ *   animated: bool
  */
 
 const EXPRESSIONS = [
@@ -25,6 +26,15 @@ const EXPRESSIONS = [
   'tired', 'proud', 'thinking', 'wink', 'laughing', 'curious', 'zen', 'celebrating',
   'cheshire', 'monocle', 'wizard'
 ];
+
+const VALID_MODES = [
+  'idle', 'appearing', 'speaking', 'loading', 'walking', 'monocycle', 'expression'
+];
+
+// Cleanup automatique : apres ce delai (ms), une expression revient en idle.
+// Evite que la mascotte reste bloquee sur "surprise" ou "scared" si le hook
+// useNuviReactions oublie de nettoyer.
+const EXPRESSION_AUTO_CLEANUP_MS = 4500;
 
 const IDLE_SCHEDULE = [
   { start: 0,     end: 9000,  gag: null },
@@ -52,17 +62,46 @@ export default function NuviCompanion({
   coachOrigin = { x: 85, y: 85 },
   animated = true,
 }) {
+  // [v16 fix] Validation stricte : si mode invalide -> idle
+  const safeMode = VALID_MODES.indexOf(mode) >= 0 ? mode : 'idle';
+
+  // [v16 fix] Validation stricte : si expression invalide -> null
+  const validExpression = (expression && EXPRESSIONS.indexOf(expression) >= 0)
+    ? expression : null;
+
+  // [v16 fix] Auto-cleanup : on garde une copie locale qui s'efface apres 4.5s
+  // si le parent oublie de reset l'expression. Evite la mascotte bloquee.
+  const [localExpression, setLocalExpression] = useState(validExpression);
+
+  useEffect(() => {
+    setLocalExpression(validExpression);
+    if (validExpression) {
+      const timer = setTimeout(() => {
+        setLocalExpression(null);
+      }, EXPRESSION_AUTO_CLEANUP_MS);
+      return () => clearTimeout(timer);
+    }
+  }, [validExpression]);
+
+  // Si l'expression a ete cleanee localement mais que le parent dit toujours
+  // mode='expression', on bascule en idle pour pas avoir un mode zombie.
+  const effectiveMode = (safeMode === 'expression' && !localExpression)
+    ? 'idle'
+    : safeMode;
+  const effectiveExpression = (effectiveMode === 'expression') ? localExpression : null;
+  const isExpression = effectiveMode === 'expression' && effectiveExpression;
+
   const containerRef = useRef(null);
   const [currentGag, setCurrentGag] = useState(null);
   const [pupilOffset, setPupilOffset] = useState({ x: 0, y: 0 });
   const startTimeRef = useRef(Date.now());
   const rafRef = useRef(null);
 
-  const isExpression = mode === 'expression' && expression && EXPRESSIONS.includes(expression);
-
   // Cycle idle
   useEffect(() => {
-    if (mode !== 'idle' || !animated) {
+    if (effectiveMode !== 'idle' || !animated) {
+      // [v16 fix] Quand on quitte idle, on reset le gag pour qu'il ne reste
+      // pas bloque sur 'pop' ou 'raspberry' au prochain retour
       setCurrentGag(null);
       return;
     }
@@ -78,11 +117,11 @@ export default function NuviCompanion({
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [mode, animated]);
+  }, [effectiveMode, animated]);
 
   // Follow cursor
   useEffect(() => {
-    if (!followCursor || mode === 'loading' || isExpression) {
+    if (!followCursor || effectiveMode === 'loading' || isExpression) {
       setPupilOffset({ x: 0, y: 0 });
       return;
     }
@@ -101,21 +140,21 @@ export default function NuviCompanion({
     };
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [followCursor, mode, isExpression]);
+  }, [followCursor, effectiveMode, isExpression]);
 
   const gagClass = currentGag ? ` gag-${currentGag}` : '';
-  const modeClass = ` nuvi-mode-${mode}`;
-  const exprClass = isExpression ? ` nuvi-expr-${expression}` : '';
+  const modeClass = ` nuvi-mode-${effectiveMode}`;
+  const exprClass = isExpression ? ` nuvi-expr-${effectiveExpression}` : '';
   const breathingClass = breathing ? ' nuvi-breathing' : '';
   const followClass = followCursor ? ' nuvi-follow' : '';
 
-  const pupilStyle = followCursor && !currentGag && !isExpression && mode === 'idle'
+  const pupilStyle = followCursor && !currentGag && !isExpression && effectiveMode === 'idle'
     ? { transform: `translate(${pupilOffset.x}px, ${pupilOffset.y}px)` }
     : {};
 
   return (
     <>
-      <style>{nuviV15Styles({ coachOrigin })}</style>
+      <style>{nuviV16Styles({ coachOrigin })}</style>
       <div
         ref={containerRef}
         className={`nuvi-companion${modeClass}${exprClass}${gagClass}${breathingClass}${followClass}`}
@@ -324,7 +363,7 @@ function CompanionSVG({ pupilStyle = {} }) {
   );
 }
 
-const nuviV15Styles = ({ coachOrigin }) => `
+const nuviV16Styles = ({ coachOrigin }) => `
   .nuvi-companion {
     display: inline-block;
     position: relative;
