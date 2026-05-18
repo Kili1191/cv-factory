@@ -3244,10 +3244,13 @@ export default function App() {
           if (document.fonts && document.fonts.ready) await document.fonts.ready;
         } catch {}
 
-        // Measure REAL content (the actual CV inside, not the wrapper)
-        const target = el.firstElementChild || el;
-        const contentH = target.scrollHeight || el.scrollHeight;
-        const contentW = target.scrollWidth || el.scrollWidth || 794;
+        // [v5 fix] Use the FULL #cv-print element, NOT firstElementChild.
+        // The CV is a flex container with sidebar + content. Using firstElementChild
+        // captures only the sidebar (or only the content), losing half the CV.
+        // We measure the FULL element instead.
+        const target = el;
+        const contentH = target.scrollHeight;
+        const contentW = target.scrollWidth || target.offsetWidth || 794;
 
         // Convert content height to mm
         // CV preview is 794px wide which maps to 210mm (A4 width)
@@ -3290,10 +3293,8 @@ export default function App() {
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
-            height: contentH,
-            width: contentW,
-            windowHeight: contentH,
-            windowWidth: contentW,
+            // Don't force width — let html2canvas use the natural element width
+            // (forcing windowWidth breaks flex layouts and crops sidebar)
             scrollX: 0,
             scrollY: 0,
           },
