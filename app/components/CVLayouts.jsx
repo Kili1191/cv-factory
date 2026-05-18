@@ -2,6 +2,7 @@
 
 // CV Factory v17 - CVLayouts
 // v18 : Titres editables au double-clic via EditableTitle
+// v19 [Deploy B] : Photo CV 3 modes (Upload/Initials/None) via CVPhoto
 //
 // Les 2 layouts de CV implementes :
 //
@@ -28,6 +29,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { E, MK } from "./EditHelpers";
+import CVPhoto from "./CVPhoto";
 
 // ============================================================
 // EditableTitle : titre de section editable au double-clic
@@ -65,8 +67,6 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
 
-  // Si un fallback est fourni (texte deja traduit via T.cv_xxx), on l'utilise
-  // sauf si l'utilisateur a defini un label custom.
   const customLabel = cv && cv.labels && cv.labels[labelKey];
   const currentLabel = (customLabel && customLabel.trim())
     ? customLabel
@@ -148,13 +148,12 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
 
 // ============================================================
 // CVSidebar : layout sidebar/classic
+// v19 [Deploy B] : Photo CV gere par CVPhoto component
 // ============================================================
 export function CVSidebar({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  // SS (sidebar section header) : petit titre dans la colonne sidebar.
-  // labelKey : la cle dans cv.labels (contact, skills, languages, certifications)
-  // fallback : texte i18n actuel (ex T.cv_ct)
+  // SS (sidebar section header)
   const SS = (labelKey, fallback) => (
     <div style={{
       fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
@@ -166,7 +165,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
     </div>
   );
 
-  // MS (main section header) : titre dans la colonne principale.
+  // MS (main section header)
   const MS = (labelKey, fallback) => (
     <div style={{
       fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
@@ -188,14 +187,16 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         width:185, background: t.sb, color: t.st,
         padding:"22px 15px", flexShrink:0, minHeight:"100%",
       }}>
-        {/* Avatar (initiale) */}
-        <div style={{
-          width:52, height:52, borderRadius:"50%",
-          background: t.ac + "33", border:"2px solid "+t.ac,
-          margin:"0 auto 12px",
-          display:"flex", alignItems:"center", justifyContent:"center",
-          fontSize:19, fontFamily: t.hf, fontWeight:700, color: t.ac,
-        }}>{cv.name ? cv.name.charAt(0) : "?"}</div>
+        {/* [Deploy B] Photo CV (3 modes : upload/initials/none) */}
+        <CVPhoto
+          cv={cv}
+          set={set}
+          t={t}
+          variant="round"
+          size={52}
+          T={T}
+          locale={locale}
+        />
 
         {SS("contact", T.cv_ct)}
         {["email","phone","location","linkedin"].map(f => (
@@ -328,12 +329,11 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 }
 
 // ============================================================
-// CVAts : layout ATS-Safe (sobre, robot-friendly)
+// CVAts : layout ATS-Safe (sobre, robot-friendly, PAS de photo par convention)
 // ============================================================
 export function CVAts({ cv, set, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  // S (section header) en style ATS sobre.
   const S = (labelKey, fallback) => (
     <div style={{
       fontWeight:700, fontSize:11, color:"#000",
