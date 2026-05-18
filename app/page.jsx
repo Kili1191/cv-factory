@@ -4751,13 +4751,14 @@ export default function App() {
         return next;
       });
 
-      // [Glass Coach v1] Si une action a ete appliquee, montre "done" 1.5s
-      // puis reset le status. Sinon (juste reply, pas d'action), reset direct.
+      // [Glass Coach v2] Si une action a ete appliquee, montre "done" et le
+      // LAISSE affiche. Il sera reset au prochain envoi de message ou close.
+      // Si juste reply (pas d'action), reset direct.
       clearTimeout(statusTimer1);
       clearTimeout(statusTimer2);
       if (applySummary) {
         setCoachStatus("done");
-        setTimeout(() => setCoachStatus(null), 1800);
+        // Pas de timeout : le "done" reste tant que l'user n'envoie pas un nouveau message
       } else {
         setCoachStatus(null);
       }
@@ -6097,120 +6098,32 @@ export default function App() {
         <Suspense fallback={null}>
         {/* [Glass Coach v1] Styles injectes pour rendre le CoachModal glass
             quand Nuvi travaille, et flash les sections CV modifiees. */}
+        {/* [Glass Coach v2] Glass mode quand Nuvi travaille : cible la sheet
+            via data-nv-coach-sheet. Le status discret est maintenant in-flow
+            dans le CoachModal (prop coachStatus), plus d'overlay externe. */}
         <style>{`
-          /* [Glass Coach v1] Mode glass : on cible plusieurs selecteurs possibles
-             car on ne controle pas le DOM exact du CoachModal. */
-          body[data-coach-busy="true"] [data-nv-coach-modal],
-          body[data-coach-busy="true"] [class*="coachModal"],
-          body[data-coach-busy="true"] [class*="CoachModal"],
-          body[data-coach-busy="true"] .nv-coach-modal,
-          body[data-coach-busy="true"] [data-coach="modal"],
-          body[data-coach-busy="true"] [data-modal="coach"] {
-            background-color: rgba(250, 248, 243, 0.62) !important;
-            backdrop-filter: blur(12px) saturate(1.15);
-            -webkit-backdrop-filter: blur(12px) saturate(1.15);
-            transition: background-color 0.35s ease, backdrop-filter 0.35s ease;
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
+            background-color: rgba(246, 242, 232, 0.55) !important;
+            backdrop-filter: blur(14px) saturate(1.2);
+            -webkit-backdrop-filter: blur(14px) saturate(1.2);
           }
-
-          /* Fallback agressif : si rien ci-dessus matche, on tente le panneau
-             principal du coach (souvent un container avec background cream/paper).
-             On cible les elements qui ont une largeur > 600px et qui sont fixed. */
-          body[data-coach-busy="true"] .nuvi-companion + *,
-          body[data-coach-busy="true"] [aria-label*="oach"],
-          body[data-coach-busy="true"] [aria-label*="OACH"] {
-            background-color: rgba(250, 248, 243, 0.62) !important;
-            backdrop-filter: blur(12px) saturate(1.15);
-            -webkit-backdrop-filter: blur(12px) saturate(1.15);
-          }
-
-          /* Status live indicator au-dessus du coach */
-          .nv-coach-live-status {
-            position: fixed;
-            left: 50%;
-            top: 14px;
-            transform: translateX(-50%);
-            z-index: 99999;
-            background: linear-gradient(135deg, #5b3df5, #b91c8c);
-            color: #fff;
-            padding: 8px 18px 8px 14px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: 600;
-            box-shadow: 0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 8px rgba(0,0,0,0.08);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            pointer-events: none;
-            animation: nvStatusIn 0.3s ease-out;
-            max-width: calc(100vw - 40px);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
-          @keyframes nvStatusIn {
-            from { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-          }
-          .nv-coach-live-status .nv-status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #fff;
-            box-shadow: 0 0 0 0 rgba(255,255,255,0.7);
-            animation: nvStatusPulse 1.4s ease-in-out infinite;
-            flex-shrink: 0;
-          }
-          .nv-coach-live-status.nv-status-done .nv-status-dot {
-            background: #fff;
-            animation: none;
-          }
-          .nv-coach-live-status.nv-status-done {
-            background: linear-gradient(135deg, #16a34a, #15803d);
-            box-shadow: 0 8px 24px rgba(22, 163, 74, 0.35);
-          }
-          @keyframes nvStatusPulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.7); }
-            50%      { box-shadow: 0 0 0 8px rgba(255,255,255,0); }
-          }
-          .nv-coach-live-status .nv-status-text {
-            display: inline-block;
+          /* Reduit l'opacite du backdrop quand glass, pour mieux voir le CV */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] + div,
+          body[data-coach-busy="true"] [aria-label="close"] {
+            /* placeholder */
           }
         `}</style>
-
-        {/* [Glass Coach v1] Status live overlay (au-dessus du coach modal) */}
-        {coachStatus && (
-          <div
-            className={"nv-coach-live-status" + (coachStatus === "done" ? " nv-status-done" : "")}
-            role="status"
-            aria-live="polite"
-          >
-            {coachStatus === "done" ? (
-              <>
-                <span style={{fontSize:16, lineHeight:1}}>✓</span>
-                <span className="nv-status-text">
-                  {locale === "en" ? "Done !" : "C'est fait !"}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="nv-status-dot"></span>
-                <span className="nv-status-text">
-                  {coachStatus === "reading"   && (locale === "en" ? "Reading your CV..."        : "Je lis ton CV...")}
-                  {coachStatus === "analyzing" && (locale === "en" ? "Analyzing your background..." : "J'analyse ton parcours...")}
-                  {coachStatus === "applying"  && (locale === "en" ? "Applying changes..."       : "J'applique les changements...")}
-                </span>
-              </>
-            )}
-          </div>
-        )}
 
         <CoachModal
           T={T} cv={cv} apiKey={apiKey}
           lang={locale}
           loading={coachLoading}
+          coachStatus={coachStatus}
           messages={coachMessages}
           onSend={runCoachMessage}
           onClear={clearCoach}
           onAdopt={adoptCoachSuggestion}
-          onClose={()=>setShowCoach(false)}
+          onClose={() => { setShowCoach(false); setCoachStatus(null); }}
           onAction={(action) => {
             // [Nuvi v3] Coach proactif : dispatch des actions feature.
             // Le coach peut proposer des boutons qui ouvrent les modales directement.
