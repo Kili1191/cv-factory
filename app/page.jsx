@@ -3164,6 +3164,20 @@ export default function App() {
   // Cleans the CV (removes empty sections/items) BEFORE snapshot for a homogeneous
   // PDF, then restores the original CV. Also strips wrapper minHeight to avoid
   // blank bottom band. Returns the cleanup report so we can notify the user.
+  // [Bande blanche fix v3] Direct html2canvas + jsPDF approach.
+  // Bypass html2pdf's auto-page logic which forces A4 height. Instead :
+  //   1. Capture the CV inner element (not the wrapper) with html2canvas at real height
+  //   2. Calculate how many A4 pages fit
+  //   3. Slice the canvas into A4-sized images and append to jsPDF
+  //   4. Last page gets trimmed to actual content height (NO blank band)
+  //
+  // options : {
+  //   filename : string,
+  //   mode     : "single" | "multi" | "long",
+  //     single = exactly 1 A4 page (scaled to fit if too tall)
+  //     multi  = multi-page A4, last page trimmed to content
+  //     long   = single page with custom height = content height
+  // }
   const runHtml2Pdf = useCallback((options) => {
     return new Promise((resolve, reject) => {
       const el = document.getElementById("cv-print");
@@ -3176,24 +3190,23 @@ export default function App() {
       const originalCv = cv;
       setCV_(cleanedCv);
 
-      // 3. Find the parent wrapper that has minHeight:1123 - will be stripped below
+      // 3. Find the parent wrapper that has minHeight:1123
       const wrapper = el.closest('[data-cvf="cv"]');
 
       const stripMinHeights = () => {
         const stripped = [];
-        // Strip the data-cvf wrapper (1123px enforced)
+        // Strip wrapper
         if (wrapper) {
-          stripped.push({ node: wrapper, prev: wrapper.style.minHeight, key: "minHeight" });
+          stripped.push({ node: wrapper, prev: wrapper.style.minHeight });
           wrapper.style.minHeight = "0";
         }
-        // Strip the #cv-print container itself
-        stripped.push({ node: el, prev: el.style.minHeight, key: "minHeight" });
+        // Strip #cv-print itself
+        stripped.push({ node: el, prev: el.style.minHeight });
         el.style.minHeight = "0";
-        // Strip ALL descendants that have minHeight (inline style)
-        const allDescendants = el.querySelectorAll("*");
-        allDescendants.forEach(node => {
+        // Strip ALL descendants
+        el.querySelectorAll("*").forEach(node => {
           if (node.style && node.style.minHeight) {
-            stripped.push({ node, prev: node.style.minHeight, key: "minHeight" });
+            stripped.push({ node, prev: node.style.minHeight });
             node.style.minHeight = "0";
           }
         });
@@ -3206,70 +3219,159 @@ export default function App() {
         stripped.forEach(({ node, prev }) => {
           if (node && node.style) node.style.minHeight = prev || "";
         });
-        // Restore the original CV
         setCV_(originalCv);
       };
 
+      const notifyCleanup = () => {
+        if (removed.sections.length > 0 || removed.items > 0) {
+          const sum = getRemovedSummary(removed, locale);
+          if (sum) {
+            setTimeout(() => {
+              notify(locale === "en"
+                ? "Hidden for clean export : " + sum
+                : "Masque pour un export propre : " + sum);
+            }, 600);
+          }
+        }
+      };
+
       const doExport = async () => {
-        // Wait for React to flush the cleaned CV to the DOM
+        // Wait for React to flush
         await new Promise(r => setTimeout(r, 80));
-        // Now strip minHeights after the DOM is up to date
         stripped = stripMinHeights();
-        // Force a layout reflow so heights settle
+        // Force reflow
         // eslint-disable-next-line no-unused-expressions
         el.offsetHeight;
-        // Wait a tick so layout is committed
-        await new Promise(r => setTimeout(r, 20));
-
-        // Measure the real content height (the inner CV layout, not the wrapper)
-        // We pick the FIRST child of #cv-print which is the actual CVSidebar/CVAts root
-        const innerCv = el.firstElementChild || el;
-        const realHeight = innerCv.scrollHeight || innerCv.offsetHeight || el.scrollHeight;
-        const realWidth = innerCv.scrollWidth || innerCv.offsetWidth || el.scrollWidth;
-
-        // Force html2canvas to use the exact content height (no blank band)
-        // We override the html2canvas options to clip exactly to content
-        const tightOptions = {
-          ...options,
-          html2canvas: {
-            ...(options.html2canvas || {}),
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            height: realHeight,
-            width: realWidth,
-            windowHeight: realHeight,
-            windowWidth: realWidth,
-            scrollY: 0,
-            scrollX: 0,
-          },
-        };
+        await new Promise(r => setTimeout(r, 30));
 
         try {
           if (document.fonts && document.fonts.ready) await document.fonts.ready;
         } catch {}
+
+        // Pick the INNER element (first child of #cv-print = CVSidebar or CVAts root)
+        // This bypasses any wrapper height issues.
+        const target = el.firstElementChild || el;
+        // Real content height (without any minHeight tricks)
+        const targetH = target.scrollHeight;
+        const targetW = target.scrollWidth;
+
         try {
-          await window.html2pdf().set(tightOptions).from(el).save();
-          restore();
-          // Tiny notif of what was hidden (only if anything was removed)
-          if (removed.sections.length > 0 || removed.items > 0) {
-            const sum = getRemovedSummary(removed, locale);
-            if (sum) {
-              setTimeout(() => {
-                notify(locale === "en"
-                  ? "Hidden for clean export : " + sum
-                  : "Masque pour un export propre : " + sum);
-              }, 600);
-            }
+          // Use html2canvas (available globally after html2pdf bundle loads)
+          const canvas = await window.html2canvas(target, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#ffffff",
+            width: targetW,
+            height: targetH,
+            windowWidth: targetW,
+            windowHeight: targetH,
+            scrollX: 0,
+            scrollY: 0,
+          });
+
+          const imgData = canvas.toDataURL("image/jpeg", 0.95);
+          const canvasW = canvas.width;
+          const canvasH = canvas.height;
+
+          // jsPDF is exposed as window.jspdf.jsPDF after html2pdf bundle loads
+          const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+          if (!jsPDFCtor) {
+            throw new Error("jsPDF not available");
           }
+
+          const mode = options.mode || "single";
+          const fname = options.filename || "CV.pdf";
+
+          // A4 in mm : 210 x 297. We compute the mm height that matches our CV width.
+          const A4_W_MM = 210;
+          const A4_H_MM = 297;
+
+          // The CV is rendered at targetW px wide. We map that to A4 width in mm.
+          // So our "page" in mm units :
+          const pageWmm = A4_W_MM;
+          // Total CV height in mm if scaled to A4 width :
+          const totalHmm = (canvasH / canvasW) * pageWmm;
+
+          if (mode === "long") {
+            // === Long page : 1 page custom height = totalHmm ===
+            const customH = Math.max(A4_H_MM, totalHmm);
+            const pdf = new jsPDFCtor({
+              unit: "mm",
+              format: [pageWmm, customH],
+              orientation: "portrait",
+            });
+            pdf.addImage(imgData, "JPEG", 0, 0, pageWmm, totalHmm, undefined, "FAST");
+            pdf.save(fname);
+          } else if (mode === "multi" && totalHmm > A4_H_MM * 1.02) {
+            // === Multi-page A4 : slice the canvas into A4-height chunks ===
+            // Each A4 page covers A4_H_MM in our mm system, which corresponds to
+            // (A4_H_MM / pageWmm) * canvasW pixels of canvas height.
+            const pxPerMm = canvasW / pageWmm;
+            const pageHpx = A4_H_MM * pxPerMm;
+            const pdf = new jsPDFCtor({
+              unit: "mm",
+              format: "a4",
+              orientation: "portrait",
+            });
+
+            let currentY = 0;
+            let pageNum = 0;
+            while (currentY < canvasH) {
+              const chunkH = Math.min(pageHpx, canvasH - currentY);
+              // Create a temporary canvas with just this slice
+              const sliceCanvas = document.createElement("canvas");
+              sliceCanvas.width = canvasW;
+              sliceCanvas.height = chunkH;
+              const sliceCtx = sliceCanvas.getContext("2d");
+              // Fill background white in case of partial last page
+              sliceCtx.fillStyle = "#ffffff";
+              sliceCtx.fillRect(0, 0, canvasW, chunkH);
+              sliceCtx.drawImage(canvas, 0, -currentY);
+              const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.95);
+
+              if (pageNum > 0) pdf.addPage();
+              // Render this slice at correct mm height (last page may be shorter)
+              const sliceHmm = (chunkH / canvasW) * pageWmm;
+              pdf.addImage(sliceData, "JPEG", 0, 0, pageWmm, sliceHmm, undefined, "FAST");
+              currentY += chunkH;
+              pageNum++;
+            }
+            pdf.save(fname);
+          } else {
+            // === Single page : format custom = exactement la hauteur du CV ===
+            // Avant : on forcait format "a4" qui creait une page de 297mm meme
+            // si le CV ne faisait que 180mm -> bande blanche de 117mm en bas.
+            // Maintenant : la page fait pile la hauteur du CV. Zero blanc.
+            //
+            // Cas particulier : si le CV est tres court (< 1/3 de A4), on garde
+            // un minimum (proche A4) pour que l'impression reste pro. Sinon le
+            // PDF aurait l'air d'une petite affichette.
+            const MIN_RATIO = 0.55; // au moins 55% de A4
+            const minHmm = A4_H_MM * MIN_RATIO;
+            const finalHmm = Math.max(totalHmm, minHmm);
+            const pdf = new jsPDFCtor({
+              unit: "mm",
+              format: [pageWmm, finalHmm],
+              orientation: "portrait",
+            });
+            // L'image du CV est placee tout en haut, a sa taille reelle
+            pdf.addImage(imgData, "JPEG", 0, 0, pageWmm, totalHmm, undefined, "FAST");
+            pdf.save(fname);
+          }
+
+          restore();
+          notifyCleanup();
           resolve();
         } catch (err) {
+          console.error("[PDF export]", err);
           restore();
           reject(err);
         }
       };
 
-      if (window.html2pdf) {
+      // html2pdf bundle exposes html2canvas + jsPDF globally
+      if (window.html2pdf && window.html2canvas) {
         doExport();
       } else {
         const s = document.createElement("script");
@@ -3281,72 +3383,39 @@ export default function App() {
     });
   }, [cv, notify, locale]);
 
-  // [Deploy B+] Export PDF en 2 pages A4 avec coupure entre sections
-  // html2pdf supporte pagebreak.mode = ["css", "legacy"] qui respecte les
-  // class CSS "html2pdf__page-break-avoid" pour ne pas couper certains elements.
+  // [Bande blanche v3] Export PDF en multi-pages A4 avec coupure intelligente
+  // La derniere page est rognee exactement a la hauteur du contenu (pas de bande)
   const exportPDFTwoPages = useCallback(async () => {
     const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
     try {
-      await runHtml2Pdf({
-        margin: 0,
-        filename: fname,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        pagebreak: {
-          mode: ["css", "legacy"],
-          // Ne JAMAIS couper au milieu de ces elements
-          avoid: [".cv-section-no-break", ".cv-exp-item", ".cv-edu-item"],
-        },
-      });
+      await runHtml2Pdf({ filename: fname, mode: "multi" });
       notify(T.okp + ": " + fname);
       if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
     } catch (err) {
-      console.error("[exportPDF 2 pages]", err);
+      console.error("[exportPDF multi]", err);
       notify("Erreur export PDF");
     }
   }, [cv.name, T, notify, runHtml2Pdf]);
 
-  // [Deploy B+] Export PDF en 1 page longue (hauteur custom)
-  // On utilise un format custom : [210mm, X mm] ou X = hauteur reelle du CV
+  // [Bande blanche v3] Export PDF en 1 page longue (hauteur custom)
   const exportPDFLongPage = useCallback(async () => {
     const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
-    const heightPx = measureCVHeight();
-    // Convert px to mm (96 DPI : 1px = 0.2645mm)
-    const heightMm = Math.max(297, Math.ceil(heightPx * 0.2645));
     try {
-      await runHtml2Pdf({
-        margin: 0,
-        filename: fname,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: {
-          unit: "mm",
-          format: [210, heightMm],
-          orientation: "portrait",
-        },
-      });
+      await runHtml2Pdf({ filename: fname, mode: "long" });
       notify(T.okp + ": " + fname);
       if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
     } catch (err) {
-      console.error("[exportPDF long page]", err);
+      console.error("[exportPDF long]", err);
       notify("Erreur export PDF");
     }
-  }, [cv.name, T, notify, measureCVHeight, runHtml2Pdf]);
+  }, [cv.name, T, notify, runHtml2Pdf]);
 
-  // [Deploy B+] Export PDF "smart" : mesure d'abord, route vers modale si overflow
-  // Sinon export direct en 1 page A4 (comportement v17 prserve).
+  // [Bande blanche v3] Export PDF "smart" : si CV tient sur 1 page, on l'envoie direct
+  // Sinon ouvre la modale.
   const exportPDFSinglePage = useCallback(async () => {
     const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
     try {
-      await runHtml2Pdf({
-        margin: 0,
-        filename: fname,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, logging: false },
-        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        // No pagebreak rules - tight fit in single A4 page
-      });
+      await runHtml2Pdf({ filename: fname, mode: "single" });
       notify(T.okp + ": " + fname);
       if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
     } catch (err) {
