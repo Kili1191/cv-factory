@@ -2,28 +2,24 @@
 
 // Nuvi v3 - CoachModal (compagnon proactif)
 //
-// [Nuvi v3 redesign] : Coach n'est plus un menu de parcours statiques.
-// C'est un compagnon qui :
-//   1. Analyse le CV en local (instant, sans API) au mount
-//   2. Genere un message d'accueil PERSONNALISE selon ce qu'il voit
-//      (CV vide / accroche manquante / bullets sans chiffres / trou / etc.)
-//   3. Propose des quick replies = boutons de FEATURES (Audit, Match, Score, etc.)
-//   4. Mentionne les features au fil de la conversation (proactif)
-//   5. Garde le chat libre pour conversations ouvertes
+// [Glass Coach v2] Updates :
+//   - data-nv-coach-sheet="true" sur la sheet pour glass mode propre depuis page.jsx
+//   - Nouveau prop coachStatus = 'reading' | 'analyzing' | 'applying' | 'done' | null
+//   - Le status s'affiche en discret en bas du dernier message Nuvi (police naturelle)
+//   - Le "done" persiste tant qu'un nouveau message n'est pas envoye (cleanup dans page.jsx)
 //
 // Props :
 //   T              : i18n
 //   cv             : CV actuel
 //   apiKey         : string
 //   loading        : bool
+//   coachStatus    : 'reading' | 'analyzing' | 'applying' | 'done' | null  (NEW)
 //   messages       : tableau de messages [{role, content, ts, adopt?, quickReplies?}]
 //   onSend(text)   : envoie un message utilisateur
 //   onClear()      : efface la conversation
 //   onAdopt(kind, value) : applique une suggestion au CV
 //   onClose()      : ferme la modale
-//   onAction(action) : NOUVEAU - dispatch des actions feature
-//                      ex: { type: "open_modal", modal: "audit" }
-//                      ex: { type: "send_text", text: "Aide-moi avec mon accroche" }
+//   onAction(action) : dispatch des actions feature
 
 import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
@@ -35,14 +31,9 @@ import {
   GradPurple, B,
 } from "./tokens";
 
-// [Nuvi v3] NuviLogo en dynamic pour eviter mismatch hydratation
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
-
-// [Nuvi v3] NuviCompanion : oeil anime du compagnon, utilise comme avatar
-// devant chaque message du coach (mode "speaking" quand il parle, "idle" sinon).
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
-// SVG icons line-style 1.6px stroke
 const Icons = {
   audit: (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -109,7 +100,6 @@ const Icons = {
   ),
 };
 
-// Analyse locale du CV pour generer le message d'accueil
 function analyzeCv(cv, T, lang) {
   const empty = !cv.name && !cv.title && !cv.summary
     && (cv.experience || []).every(e => !e.title && !e.company)
@@ -267,7 +257,6 @@ function withOpacity(hex, opacity) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-// QuickReplyButton : bouton de feature dans un message
 function QuickReplyButton({ qr, onAction, primary = false }) {
   const [hovered, setHovered] = useState(false);
   const accent = qr.accent || InkMuted;
@@ -330,7 +319,64 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
   );
 }
 
-// Bubble : bulle de message (user / nuvi)
+// [Glass Coach v2] Mini status discret affiche sous le dernier message Nuvi.
+// Police naturelle (Sans, meme que le chat), juste un dot anime + texte petit.
+function CoachInlineStatus({ status, lang }) {
+  if (!status) return null;
+
+  const isDone = status === "done";
+  const text =
+    status === "reading"   ? (lang === "en" ? "Reading your CV..."           : "Je lis ton CV...")
+  : status === "analyzing" ? (lang === "en" ? "Analyzing your background..." : "J'analyse ton parcours...")
+  : status === "applying"  ? (lang === "en" ? "Applying changes..."          : "J'applique les changements...")
+  : status === "done"      ? (lang === "en" ? "Done"                          : "Fait")
+  : "";
+
+  return (
+    <div style={{
+      // Aligne sous la bulle du dernier message Nuvi (apres l'avatar 48px + gap 10px = 58px)
+      marginLeft: 58,
+      marginTop: -4,
+      marginBottom: 12,
+      display: "flex", alignItems: "center", gap: 8,
+      fontSize: 12,
+      fontFamily: Sans,
+      color: isDone ? Green : InkMuted,
+      fontWeight: isDone ? 600 : 400,
+      lineHeight: 1.4,
+    }}>
+      {isDone ? (
+        <span style={{
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          width: 14, height: 14, borderRadius: "50%",
+          background: Green, color: "#fff",
+          fontSize: 9, fontWeight: 700, flexShrink: 0,
+        }}>
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="3.5"
+            strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </span>
+      ) : (
+        <span style={{
+          width: 6, height: 6, borderRadius: "50%",
+          background: Purple,
+          animation: "nvStatusDot 1.2s ease-in-out infinite",
+          flexShrink: 0,
+        }} />
+      )}
+      <span>{text}</span>
+      <style>{`
+        @keyframes nvStatusDot {
+          0%, 100% { opacity: 0.35; transform: scale(0.85); }
+          50%      { opacity: 1;    transform: scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function Bubble({ T, msg, onAdopt, onAction }) {
   const isUser = msg.role === "user";
 
@@ -355,8 +401,6 @@ function Bubble({ T, msg, onAdopt, onAction }) {
       display: "flex", justifyContent: "flex-start", marginBottom: 12,
       gap: 10, alignItems: "flex-start",
     }}>
-      {/* [Nuvi v3] Avatar = NuviCompanion (oeil anime) en mode speaking.
-          C'est le visage du compagnon dans le chat. */}
       <div style={{
         width: 48, height: 48, flexShrink: 0,
         marginTop: 2,
@@ -417,10 +461,11 @@ function Bubble({ T, msg, onAdopt, onAction }) {
   );
 }
 
-// CoachModal v3
+// CoachModal v4
 export default function CoachModal({
   T, cv, apiKey, lang = "fr",
   loading, messages,
+  coachStatus,  // [Glass Coach v2] NEW prop
   onSend, onClear, onAdopt, onClose, onAction,
 }) {
   const [input, setInput] = useState("");
@@ -428,7 +473,6 @@ export default function CoachModal({
   const inputRef = useRef(null);
   const [welcomeMsg, setWelcomeMsg] = useState(null);
 
-  // Genere le welcome contextuel SEULEMENT si pas de messages existants
   useEffect(() => {
     if ((!messages || messages.length === 0) && cv) {
       const analysis = analyzeCv(cv, T, lang);
@@ -463,7 +507,7 @@ export default function CoachModal({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, loading, welcomeMsg]);
+  }, [messages, loading, welcomeMsg, coachStatus]);
 
   const hasMessages = messages && messages.length > 0;
 
@@ -502,8 +546,11 @@ export default function CoachModal({
         animation: "cvfFadeIn 200ms ease-out",
       }} onClick={() => { if (!loading) onClose(); }} />
 
-      {/* Sheet */}
-      <div style={{
+      {/* [Glass Coach v2] Sheet : data-nv-coach-sheet permet a page.jsx
+          de cibler ce panneau pour le mode glass quand Nuvi bosse. */}
+      <div
+        data-nv-coach-sheet="true"
+        style={{
         position: "relative", background: CreamSoft,
         borderRadius: "32px 32px 0 0",
         height: "94vh", display: "flex", flexDirection: "column",
@@ -511,15 +558,14 @@ export default function CoachModal({
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
         width: "100%", maxWidth: 840,
         marginLeft: "auto", marginRight: "auto",
+        transition: "background-color 0.35s ease, backdrop-filter 0.35s ease",
       }}>
-        {/* iOS handle */}
         <div style={{
           width: 40, height: 4, background: Hairline,
           borderRadius: RadiusPill,
           margin: "10px auto 6px", flexShrink: 0,
         }} />
 
-        {/* [Nuvi v3] NuviLogo wordmark anime en haut a gauche */}
         <div style={{
           padding: "8px 24px 0",
           display: "flex", alignItems: "center",
@@ -528,7 +574,6 @@ export default function CoachModal({
           <NuviLogo size={28} inkColor={Ink} />
         </div>
 
-        {/* Header */}
         <div style={{
           padding: "10px 24px 14px",
           borderBottom: "0.5px solid " + Hairline, flexShrink: 0,
@@ -560,7 +605,6 @@ export default function CoachModal({
             }}>{T.co_sub}</div>
           </div>
 
-          {/* Bouton clear si conversation en cours */}
           {hasMessages && (
             <button
               onClick={onClear}
@@ -587,7 +631,6 @@ export default function CoachModal({
             </button>
           )}
 
-          {/* Close button */}
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
               background: Paper, borderRadius: "50%",
@@ -608,13 +651,11 @@ export default function CoachModal({
           </button>
         </div>
 
-        {/* Body */}
         <div ref={scrollRef} style={{
           flex: 1,
           overflowY: "auto",
           padding: "18px 24px",
         }}>
-          {/* [Nuvi v3] Welcome message contextuel */}
           {!hasMessages && welcomeMsg && (
             <Bubble
               T={T}
@@ -624,7 +665,6 @@ export default function CoachModal({
             />
           )}
 
-          {/* Conversation */}
           {hasMessages && messages.map((msg, i) => (
             <Bubble
               key={i}
@@ -635,14 +675,18 @@ export default function CoachModal({
             />
           ))}
 
+          {/* [Glass Coach v2] Status discret sous le dernier message Nuvi.
+              S'affiche seulement quand pas de loading bubble (sinon redondant). */}
+          {coachStatus && !loading && (
+            <CoachInlineStatus status={coachStatus} lang={lang} />
+          )}
+
           {/* Loading bubble */}
           {loading && (
             <div style={{
-              display: "flex", justifyContent: "flex-start", marginBottom: 12,
+              display: "flex", justifyContent: "flex-start", marginBottom: 4,
               gap: 10, alignItems: "flex-start",
             }}>
-              {/* [Nuvi v3] Avatar loading = NuviCompanion en mode loading
-                  (3D spin synchronise avec saccades de pupille) */}
               <div style={{
                 width: 48, height: 48, flexShrink: 0,
                 marginTop: 2,
@@ -673,6 +717,11 @@ export default function CoachModal({
             </div>
           )}
 
+          {/* [Glass Coach v2] Quand loading, le status est sous le loading bubble */}
+          {coachStatus && loading && (
+            <CoachInlineStatus status={coachStatus} lang={lang} />
+          )}
+
           <style>{`
             @keyframes cvfPulse1 { 0%, 60%, 100% { opacity:.3; } 30% { opacity:1; } }
             @keyframes cvfPulse2 {
@@ -686,7 +735,6 @@ export default function CoachModal({
           `}</style>
         </div>
 
-        {/* Input zone */}
         <div style={{
           padding: "12px 24px 18px",
           borderTop: "0.5px solid " + Hairline,
@@ -759,7 +807,6 @@ export default function CoachModal({
   );
 }
 
-// CoachFAB : bouton flottant persistant (preserve)
 export function CoachFAB({ T, onOpen, hidden }) {
   if (hidden) return null;
   return (
