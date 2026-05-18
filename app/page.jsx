@@ -3183,27 +3183,24 @@ export default function App() {
       const el = document.getElementById("cv-print");
       if (!el) { reject(new Error("CV element not found")); return; }
 
-      // 1. Clean the CV : produces a copy without empty sections/items
+      // 1. Clean CV (remove empty sections/items for clean PDF)
       const { cleanedCv, removed } = cleanCVForExport(cv);
 
       // 2. Backup original CV and swap to cleaned version
       const originalCv = cv;
       setCV_(cleanedCv);
 
-      // 3. Find the parent wrapper that has minHeight:1123
+      // 3. Find wrapper for minHeight stripping
       const wrapper = el.closest('[data-cvf="cv"]');
 
       const stripMinHeights = () => {
         const stripped = [];
-        // Strip wrapper
         if (wrapper) {
           stripped.push({ node: wrapper, prev: wrapper.style.minHeight });
           wrapper.style.minHeight = "0";
         }
-        // Strip #cv-print itself
         stripped.push({ node: el, prev: el.style.minHeight });
         el.style.minHeight = "0";
-        // Strip ALL descendants
         el.querySelectorAll("*").forEach(node => {
           if (node.style && node.style.minHeight) {
             stripped.push({ node, prev: node.style.minHeight });
@@ -3236,130 +3233,83 @@ export default function App() {
       };
 
       const doExport = async () => {
-        // Wait for React to flush
+        // Wait for React flush + strip minHeights
         await new Promise(r => setTimeout(r, 80));
         stripped = stripMinHeights();
-        // Force reflow
         // eslint-disable-next-line no-unused-expressions
-        el.offsetHeight;
+        el.offsetHeight; // force reflow
         await new Promise(r => setTimeout(r, 30));
 
         try {
           if (document.fonts && document.fonts.ready) await document.fonts.ready;
         } catch {}
 
-        // Pick the INNER element (first child of #cv-print = CVSidebar or CVAts root)
-        // This bypasses any wrapper height issues.
+        // Measure REAL content (the actual CV inside, not the wrapper)
         const target = el.firstElementChild || el;
-        // Real content height (without any minHeight tricks)
-        const targetH = target.scrollHeight;
-        const targetW = target.scrollWidth;
+        const contentH = target.scrollHeight || el.scrollHeight;
+        const contentW = target.scrollWidth || el.scrollWidth || 794;
 
-        try {
-          // Use html2canvas (available globally after html2pdf bundle loads)
-          const canvas = await window.html2canvas(target, {
+        // Convert content height to mm
+        // CV preview is 794px wide which maps to 210mm (A4 width)
+        const PX_TO_MM = 210 / 794;
+        const contentHmm = contentH * PX_TO_MM;
+
+        const A4_W_MM = 210;
+        const A4_H_MM = 297;
+
+        const mode = options.mode || "single";
+        const fname = options.filename || "CV.pdf";
+
+        // Build html2pdf config based on mode
+        let pdfFormat;
+        let pageBreakMode;
+
+        if (mode === "long") {
+          // Single very-long page, custom height
+          pdfFormat = [A4_W_MM, Math.max(A4_H_MM, contentHmm)];
+          pageBreakMode = ["css"];
+        } else if (mode === "multi") {
+          // Multi-page A4, html2pdf will paginate automatically
+          pdfFormat = "a4";
+          pageBreakMode = ["css", "legacy"];
+        } else {
+          // SINGLE mode : custom format = exact content height (NO blank band)
+          // If CV is super short (< 55% A4), keep min height to avoid postcard-look
+          const MIN_RATIO = 0.55;
+          const finalHmm = Math.max(contentHmm, A4_H_MM * MIN_RATIO);
+          pdfFormat = [A4_W_MM, finalHmm];
+          pageBreakMode = ["css"];
+        }
+
+        const html2pdfOptions = {
+          margin: 0,
+          filename: fname,
+          image: { type: "jpeg", quality: 0.96 },
+          html2canvas: {
             scale: 2,
             useCORS: true,
             logging: false,
             backgroundColor: "#ffffff",
-            width: targetW,
-            height: targetH,
-            windowWidth: targetW,
-            windowHeight: targetH,
+            height: contentH,
+            width: contentW,
+            windowHeight: contentH,
+            windowWidth: contentW,
             scrollX: 0,
             scrollY: 0,
-          });
+          },
+          jsPDF: {
+            unit: "mm",
+            format: pdfFormat,
+            orientation: "portrait",
+          },
+          pagebreak: {
+            mode: pageBreakMode,
+            avoid: [".cv-exp-item", ".cv-edu-item", ".cv-section-no-break"],
+          },
+        };
 
-          const imgData = canvas.toDataURL("image/jpeg", 0.95);
-          const canvasW = canvas.width;
-          const canvasH = canvas.height;
-
-          // jsPDF is exposed as window.jspdf.jsPDF after html2pdf bundle loads
-          const jsPDFCtor = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-          if (!jsPDFCtor) {
-            throw new Error("jsPDF not available");
-          }
-
-          const mode = options.mode || "single";
-          const fname = options.filename || "CV.pdf";
-
-          // A4 in mm : 210 x 297. We compute the mm height that matches our CV width.
-          const A4_W_MM = 210;
-          const A4_H_MM = 297;
-
-          // The CV is rendered at targetW px wide. We map that to A4 width in mm.
-          // So our "page" in mm units :
-          const pageWmm = A4_W_MM;
-          // Total CV height in mm if scaled to A4 width :
-          const totalHmm = (canvasH / canvasW) * pageWmm;
-
-          if (mode === "long") {
-            // === Long page : 1 page custom height = totalHmm ===
-            const customH = Math.max(A4_H_MM, totalHmm);
-            const pdf = new jsPDFCtor({
-              unit: "mm",
-              format: [pageWmm, customH],
-              orientation: "portrait",
-            });
-            pdf.addImage(imgData, "JPEG", 0, 0, pageWmm, totalHmm, undefined, "FAST");
-            pdf.save(fname);
-          } else if (mode === "multi" && totalHmm > A4_H_MM * 1.02) {
-            // === Multi-page A4 : slice the canvas into A4-height chunks ===
-            // Each A4 page covers A4_H_MM in our mm system, which corresponds to
-            // (A4_H_MM / pageWmm) * canvasW pixels of canvas height.
-            const pxPerMm = canvasW / pageWmm;
-            const pageHpx = A4_H_MM * pxPerMm;
-            const pdf = new jsPDFCtor({
-              unit: "mm",
-              format: "a4",
-              orientation: "portrait",
-            });
-
-            let currentY = 0;
-            let pageNum = 0;
-            while (currentY < canvasH) {
-              const chunkH = Math.min(pageHpx, canvasH - currentY);
-              // Create a temporary canvas with just this slice
-              const sliceCanvas = document.createElement("canvas");
-              sliceCanvas.width = canvasW;
-              sliceCanvas.height = chunkH;
-              const sliceCtx = sliceCanvas.getContext("2d");
-              // Fill background white in case of partial last page
-              sliceCtx.fillStyle = "#ffffff";
-              sliceCtx.fillRect(0, 0, canvasW, chunkH);
-              sliceCtx.drawImage(canvas, 0, -currentY);
-              const sliceData = sliceCanvas.toDataURL("image/jpeg", 0.95);
-
-              if (pageNum > 0) pdf.addPage();
-              // Render this slice at correct mm height (last page may be shorter)
-              const sliceHmm = (chunkH / canvasW) * pageWmm;
-              pdf.addImage(sliceData, "JPEG", 0, 0, pageWmm, sliceHmm, undefined, "FAST");
-              currentY += chunkH;
-              pageNum++;
-            }
-            pdf.save(fname);
-          } else {
-            // === Single page : format custom = exactement la hauteur du CV ===
-            // Avant : on forcait format "a4" qui creait une page de 297mm meme
-            // si le CV ne faisait que 180mm -> bande blanche de 117mm en bas.
-            // Maintenant : la page fait pile la hauteur du CV. Zero blanc.
-            //
-            // Cas particulier : si le CV est tres court (< 1/3 de A4), on garde
-            // un minimum (proche A4) pour que l'impression reste pro. Sinon le
-            // PDF aurait l'air d'une petite affichette.
-            const MIN_RATIO = 0.55; // au moins 55% de A4
-            const minHmm = A4_H_MM * MIN_RATIO;
-            const finalHmm = Math.max(totalHmm, minHmm);
-            const pdf = new jsPDFCtor({
-              unit: "mm",
-              format: [pageWmm, finalHmm],
-              orientation: "portrait",
-            });
-            // L'image du CV est placee tout en haut, a sa taille reelle
-            pdf.addImage(imgData, "JPEG", 0, 0, pageWmm, totalHmm, undefined, "FAST");
-            pdf.save(fname);
-          }
-
+        try {
+          await window.html2pdf().set(html2pdfOptions).from(target).save();
           restore();
           notifyCleanup();
           resolve();
@@ -3370,8 +3320,8 @@ export default function App() {
         }
       };
 
-      // html2pdf bundle exposes html2canvas + jsPDF globally
-      if (window.html2pdf && window.html2canvas) {
+      // Load html2pdf bundle if not already loaded
+      if (window.html2pdf) {
         doExport();
       } else {
         const s = document.createElement("script");
