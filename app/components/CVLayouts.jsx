@@ -265,7 +265,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         {/* Experiences */}
         {MS("experience", T.cv_e)}
         {cv.experience.map(ex => (
-          <div key={ex.id} style={{marginBottom:12}}>
+          <div key={ex.id} className="cv-exp-item" style={{marginBottom:12}}>
             <div style={{
               display:"flex", justifyContent:"space-between", gap:8,
             }}>
@@ -303,7 +303,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         {/* Formations */}
         {MS("education", T.cv_ed)}
         {cv.education.map(ed => (
-          <div key={ed.id} style={{
+          <div key={ed.id} className="cv-edu-item" style={{
             marginBottom:7, display:"flex",
             justifyContent:"space-between", gap:8,
           }}>
@@ -389,7 +389,7 @@ export function CVAts({ cv, set, T, locale }) {
       {/* Experiences */}
       {S("experience", T.cv_el)}
       {cv.experience.map(ex => (
-        <div key={ex.id} style={{marginBottom:12}}>
+        <div key={ex.id} className="cv-exp-item" style={{marginBottom:12}}>
           <div style={{display:"flex", justifyContent:"space-between"}}>
             <div style={{fontWeight:700, fontSize:11}}>
               <E value={ex.title} onChange={v=>ux(ex.id, "title", v)}
@@ -423,7 +423,7 @@ export function CVAts({ cv, set, T, locale }) {
       {/* Formations */}
       {S("education", T.cv_ed)}
       {cv.education.map(ed => (
-        <div key={ed.id} style={{
+        <div key={ed.id} className="cv-edu-item" style={{
           marginBottom:7, display:"flex", justifyContent:"space-between",
         }}>
           <div>
