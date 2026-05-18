@@ -6096,21 +6096,22 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v1] Styles injectes pour rendre le CoachModal glass
-            quand Nuvi travaille, et flash les sections CV modifiees. */}
-        {/* [Glass Coach v2] Glass mode quand Nuvi travaille : cible la sheet
-            via data-nv-coach-sheet. Le status discret est maintenant in-flow
-            dans le CoachModal (prop coachStatus), plus d'overlay externe. */}
+        {/* [Glass Coach v3] Mode glass agressif : sheet quasi-transparente +
+            backdrop quasi-supprime pour voir le CV en direct a travers.
+            On garde un leger blur+saturation pour que le chat reste lisible. */}
         <style>{`
+          /* Sheet : tres transparente, blur plus fort */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            background-color: rgba(246, 242, 232, 0.55) !important;
-            backdrop-filter: blur(14px) saturate(1.2);
-            -webkit-backdrop-filter: blur(14px) saturate(1.2);
+            background-color: rgba(246, 242, 232, 0.18) !important;
+            backdrop-filter: blur(18px) saturate(1.3);
+            -webkit-backdrop-filter: blur(18px) saturate(1.3);
           }
-          /* Reduit l'opacite du backdrop quand glass, pour mieux voir le CV */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] + div,
-          body[data-coach-busy="true"] [aria-label="close"] {
-            /* placeholder */
+          /* Backdrop : on enleve quasiment toute la couleur noire et le blur,
+             pour que le CV derriere soit clairement visible */
+          body[data-coach-busy="true"] [data-nv-coach-backdrop="true"] {
+            background-color: rgba(10, 10, 10, 0.08) !important;
+            backdrop-filter: blur(0px) !important;
+            -webkit-backdrop-filter: blur(0px) !important;
           }
         `}</style>
 
