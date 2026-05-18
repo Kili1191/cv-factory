@@ -53,6 +53,7 @@ const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: fal
 const ResetCVModal = dynamic(() => import("./components/ResetCVModal"), { ssr: false });
 const AccountSoonModal = dynamic(() => import("./components/AccountSoonModal"), { ssr: false });
 const SavedIndicator = dynamic(() => import("./components/SavedIndicator"), { ssr: false });
+const ExportPDFModal = dynamic(() => import("./components/ExportPDFModal"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -150,6 +151,14 @@ body.cvf-dark [data-cvf="cv"]{color-scheme:light;}
   animation:cvfFadeIn 220ms ease-out;
   box-shadow:0 4px 14px rgba(22,163,74,.3);
   pointer-events:none;
+}
+
+/* [Deploy B+] Page-break rules for html2pdf multi-page export.
+   Ces classes sont declarees dans CVLayouts.jsx sur chaque experience/education.
+   html2pdf respecte 'page-break-inside: avoid' pour ne pas couper au milieu. */
+.cv-exp-item, .cv-edu-item, .cv-section-no-break {
+  page-break-inside: avoid;
+  break-inside: avoid;
 }
 `;
 
@@ -2773,6 +2782,9 @@ export default function App() {
   const [lastSavedAt, setLastSavedAt] = useState(null);
   const [showResetModal, setShowResetModal] = useState(false);
   const [showAccountSoon, setShowAccountSoon] = useState(false);
+  // [Deploy B+] Smart PDF export modal (when CV overflows A4)
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [cvPageCount, setCvPageCount] = useState(1);
   // v17 : Customize CV (couleurs + polices)
   // cvCustom = custom global (applique partout par defaut).
   // versionCustom est lu depuis cv.custom (par-version) si present.
@@ -3072,31 +3084,116 @@ export default function App() {
     setLoad(false);
   }, [apiKey, T, pushH, setCVFn, notify]);
 
-  const exportPDF = useCallback(() => {
+  // [Deploy B+] Hauteur d'une page A4 en pixels a 96 DPI : 297mm = 1123px
+  // Tolerance pour considerer "1 page" : 1.1 page (= un peu de debordement OK)
+  const A4_HEIGHT_PX = 1123;
+  const A4_TOLERANCE = 1.10;
+
+  // Mesure la hauteur reelle du CV preview en pixels
+  const measureCVHeight = useCallback(() => {
     const el = document.getElementById("cv-print");
-    if (!el) return;
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    s.onerror = () => notify("Erreur chargement PDF");
-    s.onload = async () => {
-      // v17 : attend que les Google Fonts custom soient chargees avant snapshot.
-      try {
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
+    if (!el) return 0;
+    // Use scrollHeight to get the FULL content height even if scrolled or clipped
+    return el.scrollHeight || el.getBoundingClientRect().height || 0;
+  }, []);
+
+  // [Deploy B+] Helper : run html2pdf with given options
+  const runHtml2Pdf = useCallback((options) => {
+    return new Promise((resolve, reject) => {
+      const el = document.getElementById("cv-print");
+      if (!el) { reject(new Error("CV element not found")); return; }
+      const s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      s.onerror = () => { notify("Erreur chargement PDF"); reject(new Error("script load failed")); };
+      s.onload = async () => {
+        try {
+          if (document.fonts && document.fonts.ready) await document.fonts.ready;
+        } catch {}
+        try {
+          await window.html2pdf().set(options).from(el).save();
+          resolve();
+        } catch (err) {
+          reject(err);
         }
-      } catch {}
-      const fname = "CV_" + cv.name.split(" ").join("_") + ".pdf";
-      window.html2pdf().set({
-        margin:0, filename:fname,
-        image:{type:"jpeg", quality:.98},
-        html2canvas:{scale:2, useCORS:true, logging:false},
-        jsPDF:{unit:"mm", format:"a4", orientation:"portrait"},
-      }).from(el).save();
-      notify(T.okp+": "+fname);
-      if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
-    };
-    document.head.appendChild(s);
-  }, [cv.name, T, notify]);
+      };
+      // Reuse already-loaded script if any
+      if (window.html2pdf) {
+        s.onload();
+      } else {
+        document.head.appendChild(s);
+      }
+    });
+  }, [notify]);
+
+  // [Deploy B+] Export PDF en 2 pages A4 avec coupure entre sections
+  // html2pdf supporte pagebreak.mode = ["css", "legacy"] qui respecte les
+  // class CSS "html2pdf__page-break-avoid" pour ne pas couper certains elements.
+  const exportPDFTwoPages = useCallback(async () => {
+    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
+    try {
+      await runHtml2Pdf({
+        margin: 0,
+        filename: fname,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        pagebreak: {
+          mode: ["css", "legacy"],
+          // Ne JAMAIS couper au milieu de ces elements
+          avoid: [".cv-section-no-break", ".cv-exp-item", ".cv-edu-item"],
+        },
+      });
+      notify(T.okp + ": " + fname);
+      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
+    } catch (err) {
+      console.error("[exportPDF 2 pages]", err);
+      notify("Erreur export PDF");
+    }
+  }, [cv.name, T, notify, runHtml2Pdf]);
+
+  // [Deploy B+] Export PDF en 1 page longue (hauteur custom)
+  // On utilise un format custom : [210mm, X mm] ou X = hauteur reelle du CV
+  const exportPDFLongPage = useCallback(async () => {
+    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
+    const heightPx = measureCVHeight();
+    // Convert px to mm (96 DPI : 1px = 0.2645mm)
+    const heightMm = Math.max(297, Math.ceil(heightPx * 0.2645));
+    try {
+      await runHtml2Pdf({
+        margin: 0,
+        filename: fname,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: {
+          unit: "mm",
+          format: [210, heightMm],
+          orientation: "portrait",
+        },
+      });
+      notify(T.okp + ": " + fname);
+      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
+    } catch (err) {
+      console.error("[exportPDF long page]", err);
+      notify("Erreur export PDF");
+    }
+  }, [cv.name, T, notify, measureCVHeight, runHtml2Pdf]);
+
+  // [Deploy B+] Export PDF "smart" : mesure d'abord, route vers modale si overflow
+  // Sinon export direct en 1 page A4 (comportement v17 prserve).
+  const exportPDF = useCallback(() => {
+    const heightPx = measureCVHeight();
+    const pageCount = heightPx / A4_HEIGHT_PX;
+
+    if (pageCount <= A4_TOLERANCE) {
+      // CV tient sur 1 page A4 (ou tres peu de debordement) -> export simple
+      exportPDFTwoPages();
+      return;
+    }
+
+    // CV deborde : ouvre la modale de choix
+    setCvPageCount(pageCount);
+    setShowExportModal(true);
+  }, [measureCVHeight, exportPDFTwoPages]);
 
   const doReset = useCallback(() => {
     if (!window.confirm(T.conf)) return;
@@ -5851,6 +5948,21 @@ export default function App() {
         <AccountSoonModal
           open={showAccountSoon}
           onClose={() => setShowAccountSoon(false)}
+          T={T}
+          lang={locale}
+          mob={mob}
+        />
+        </Suspense>
+      )}
+      {/* [Deploy B+] Export PDF choice modal (when CV > 1.1 page A4) */}
+      {showExportModal && (
+        <Suspense fallback={null}>
+        <ExportPDFModal
+          open={showExportModal}
+          onClose={() => setShowExportModal(false)}
+          onTwoPages={exportPDFTwoPages}
+          onLongPage={exportPDFLongPage}
+          pageCount={cvPageCount}
           T={T}
           lang={locale}
           mob={mob}
