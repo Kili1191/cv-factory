@@ -538,12 +538,15 @@ export default function CoachModal({
       fontFamily: Sans,
     }}>
       {/* Backdrop */}
-      <div style={{
+      <div
+        data-nv-coach-backdrop="true"
+        style={{
         position: "absolute", inset: 0,
         background: "rgba(10,10,10,.55)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
         animation: "cvfFadeIn 200ms ease-out",
+        transition: "background-color 0.35s ease, backdrop-filter 0.35s ease",
       }} onClick={() => { if (!loading) onClose(); }} />
 
       {/* [Glass Coach v2] Sheet : data-nv-coach-sheet permet a page.jsx
