@@ -6096,69 +6096,29 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v6] ZERO BLUR. Sheet quasi-transparente.
-            Bulles user : restent purple (origine).
-            Bulles Nuvi : cream + texte fonce pour lisibilite. */}
+        {/* [Glass Coach v7] Permanent transparent : la sheet est toujours
+            translucide, les textes du chat passent en blanc pour rester lisibles.
+            Pas de toggle - le glass est l'etat normal. */}
         <style>{`
-          /* Sheet : quasi-transparente sombre, AUCUN blur */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            background-color: rgba(10, 10, 10, 0.15) !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            box-shadow: 0 -20px 60px rgba(0,0,0,.08) !important;
-          }
-          /* Backdrop : transparent total */
-          body[data-coach-busy="true"] [data-nv-coach-backdrop="true"] {
-            background-color: transparent !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-          }
-
-          /* Transitions fluides */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"],
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] * {
-            transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease;
-          }
-
-          /* Bulle Nuvi (border-radius 4px 18px 18px 18px) : reste creme + texte fonce */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 4px 18px 18px 18px"] {
-            background-color: #faf8f3 !important;
-            color: #0a0a0a !important;
-            border-color: #e8e3d6 !important;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
-          }
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 4px 18px 18px 18px"] * {
-            color: #0a0a0a !important;
-          }
-
-          /* Bulle User (border-radius 18px 18px 4px 18px) : LAISSE PURPLE D'ORIGINE.
-             Pas d'override. */
-
-          /* Headers/labels du chat (titre, sous-titre, eyebrow) : blanc avec ombre */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] > div:not([style*="border-radius: 4px 18px"]):not([style*="border-radius: 18px 18px"]) {
-            color: #fff !important;
-            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-          }
-
-          /* Boutons close/clear de la sheet : icones blanches sur fond noir transparent */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"],
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title]:not([style*="border-radius: 999px"]) {
+          /* Boutons close/clear : fond noir transparent + icone blanche */
+          [data-nv-coach-sheet="true"] button[aria-label="close"],
+          [data-nv-coach-sheet="true"] button[title]:not([style*="border-radius: 999px"]) {
             background-color: rgba(0, 0, 0, 0.35) !important;
             border-color: rgba(255, 255, 255, 0.25) !important;
             color: #fff !important;
           }
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"] svg,
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title] svg {
+          [data-nv-coach-sheet="true"] button[aria-label="close"] svg,
+          [data-nv-coach-sheet="true"] button[title] svg {
             color: #fff !important;
           }
 
-          /* Input : noir transparent avec texte blanc */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea {
-            background-color: rgba(0, 0, 0, 0.4) !important;
+          /* Input textarea : noir transparent avec texte blanc */
+          [data-nv-coach-sheet="true"] textarea {
+            background-color: rgba(0, 0, 0, 0.45) !important;
             border-color: rgba(255, 255, 255, 0.3) !important;
             color: #fff !important;
           }
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea::placeholder {
+          [data-nv-coach-sheet="true"] textarea::placeholder {
             color: rgba(255, 255, 255, 0.7) !important;
           }
         `}</style>
