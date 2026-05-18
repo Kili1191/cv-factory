@@ -6096,29 +6096,72 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v4] Glass maximum : sheet quasi-invisible, backdrop nu.
-            On vise un effet "vitrine teintee" : le CV est clairement visible
-            a travers, le chat reste lisible grace au blur+saturation. */}
+        {/* [Glass Coach v5] Glass clair : peu de blur (on doit voir le CV nettement),
+            sheet quasi-transparente, et tous les textes du chat passent en blanc
+            pour rester lisibles sur le fond CV. */}
         <style>{`
-          /* Sheet : 8% d'opacite seulement = quasi-vitre, blur tres fort pour la lisibilite */
+          /* Sheet : 10% d'opacite + blur tres leger (juste pour adoucir, pas occulter) */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            background-color: rgba(246, 242, 232, 0.08) !important;
-            backdrop-filter: blur(22px) saturate(1.4);
-            -webkit-backdrop-filter: blur(22px) saturate(1.4);
+            background-color: rgba(10, 10, 10, 0.18) !important;
+            backdrop-filter: blur(4px) saturate(1.05);
+            -webkit-backdrop-filter: blur(4px) saturate(1.05);
             box-shadow: 0 -20px 60px rgba(0,0,0,.08) !important;
           }
-          /* Backdrop : transparent total - on voit le CV directement */
+          /* Backdrop : transparent total */
           body[data-coach-busy="true"] [data-nv-coach-backdrop="true"] {
             background-color: transparent !important;
             backdrop-filter: none !important;
             -webkit-backdrop-filter: none !important;
           }
-          /* Renforce la lisibilite : bulles de chat avec un fond legerement opaque
-             pour que le texte reste lisible meme sur CV chargee derriere */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="background: rgb(255, 255, 255)"],
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="background: #fff"] {
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+
+          /* === TEXTES EN BLANC PENDANT LE GLASS === */
+          /* Tous les textes de la sheet passent en blanc avec une ombre subtile
+             pour rester lisibles sur le CV en arriere-plan. Animation fluide. */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"],
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] * {
+            transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease;
+          }
+          /* Headers et labels : blanc avec ombre */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
+            color: #fff !important;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+          }
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] * {
+            color: #fff !important;
+          }
+          /* Bulle Nuvi (Paper / fond blanc) : on garde sa lisibilite avec un fond
+             leger semi-opaque sombre pour le contraste */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 4px 18px 18px 18px"] {
+            background-color: rgba(0, 0, 0, 0.35) !important;
+            border-color: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+          }
+          /* Bulle User : garde le purple mais ajoute un blur+ombre pour lisibilite */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 18px 18px 4px 18px"] {
+            background-color: rgba(91, 61, 245, 0.65) !important;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          }
+          /* Input zone : reste lisible avec fond noir transparent */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea {
+            background-color: rgba(0, 0, 0, 0.4) !important;
+            border-color: rgba(255, 255, 255, 0.3) !important;
+            color: #fff !important;
+          }
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6) !important;
+          }
+          /* Boutons close/clear : icones blanches */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"],
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title] {
+            background-color: rgba(0, 0, 0, 0.3) !important;
+            border-color: rgba(255, 255, 255, 0.25) !important;
+          }
+          /* Quick reply buttons : ajustes pour glass */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 999px"] {
+            background-color: rgba(0, 0, 0, 0.35) !important;
           }
         `}</style>
 
