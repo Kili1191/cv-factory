@@ -5364,65 +5364,6 @@ export default function App() {
         }}>{T.dats}</div>
       )}
 
-      {/* [Deploy A] === Mon CV actuel === */}
-      <div style={finEyebrow}>{locale === "en" ? "MY CURRENT CV" : "MON CV ACTUEL"}</div>
-      <div style={{
-        display: "flex", gap: 8, marginBottom: 16,
-      }}>
-        <button
-          onClick={quickSaveVersion}
-          disabled={cvIsEmpty}
-          style={{
-            ...B({
-              flex: 1, padding: "11px 12px", borderRadius: RadiusMd,
-              background: cvIsEmpty ? Gray100 : Paper,
-              color: cvIsEmpty ? Gray400 : Ink,
-              border: "0.5px solid " + Gray200,
-              boxShadow: cvIsEmpty ? "none" : ShadowSm,
-              fontSize: 12, fontWeight: 600, fontFamily: Sans,
-              display: "flex", alignItems: "center", gap: 8,
-              cursor: cvIsEmpty ? "not-allowed" : "pointer",
-              transition: "all 200ms ease",
-            })
-          }}
-          title={locale === "en" ? "Save a snapshot of this CV" : "Sauvegarder un snapshot"}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-            <polyline points="17 21 17 13 7 13 7 21"/>
-            <polyline points="7 3 7 8 15 8"/>
-          </svg>
-          <span>{locale === "en" ? "Save version" : "Sauvegarder"}</span>
-        </button>
-        <button
-          onClick={() => setShowResetModal(true)}
-          style={{
-            ...B({
-              flex: 1, padding: "11px 12px", borderRadius: RadiusMd,
-              background: Paper, color: Ink,
-              border: "0.5px solid " + Gray200,
-              boxShadow: ShadowSm,
-              fontSize: 12, fontWeight: 600, fontFamily: Sans,
-              display: "flex", alignItems: "center", gap: 8,
-              transition: "all 200ms ease",
-            })
-          }}
-          title={locale === "en" ? "Start a fresh CV" : "Commencer un nouveau CV"}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <line x1="9" y1="15" x2="15" y2="15"/>
-          </svg>
-          <span>{locale === "en" ? "New CV" : "Nouveau CV"}</span>
-        </button>
-      </div>
-
       {/* Templates */}
       <div style={{
         fontSize:11, fontWeight:600,
@@ -6152,22 +6093,48 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-        {/* [Deploy A] Persistent saved indicator (replaces the 1.5s flash) */}
-        {lastSavedAt && !cvIsEmpty && (
-          <div style={{
-            position: "fixed",
-            top: 14,
-            right: 14,
-            zIndex: 9990,
-            pointerEvents: "none",
-            opacity: 0.95,
-          }}>
-            <SavedIndicator
-              lastSavedAt={lastSavedAt}
-              lang={locale}
-              compact={false}
-            />
-          </div>
+        {/* [Deploy A] Single circular Reset button - always visible on CV page */}
+        {hydrated && !cvIsEmpty && (
+          <button
+            onClick={() => setShowResetModal(true)}
+            title={locale === "en" ? "Start a fresh CV" : "Commencer un nouveau CV"}
+            aria-label={locale === "en" ? "New CV" : "Nouveau CV"}
+            style={{
+              position: "fixed",
+              top: 14,
+              right: 14,
+              zIndex: 9990,
+              background: "var(--nuvi-paper)",
+              border: "0.5px solid var(--nuvi-hairline)",
+              borderRadius: "50%",
+              width: 36,
+              height: 36,
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "var(--nuvi-ink-muted)",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              transition: "all 150ms ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = "var(--nuvi-coral-soft)";
+              e.currentTarget.style.borderColor = "var(--nuvi-coral)";
+              e.currentTarget.style.color = "#993C1D";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = "var(--nuvi-paper)";
+              e.currentTarget.style.borderColor = "var(--nuvi-hairline)";
+              e.currentTarget.style.color = "var(--nuvi-ink-muted)";
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+          </button>
         )}
         {Modals}
         {Onboard}
@@ -6546,22 +6513,36 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-      {/* [Deploy A] Persistent saved indicator (mobile) */}
-      {lastSavedAt && !cvIsEmpty && (
-        <div style={{
-          position: "fixed",
-          top: 8,
-          right: 8,
-          zIndex: 9990,
-          pointerEvents: "none",
-          opacity: 0.95,
-        }}>
-          <SavedIndicator
-            lastSavedAt={lastSavedAt}
-            lang={locale}
-            compact={true}
-          />
-        </div>
+      {/* [Deploy A] Single circular Reset button (mobile) */}
+      {hydrated && !cvIsEmpty && (
+        <button
+          onClick={() => setShowResetModal(true)}
+          aria-label={locale === "en" ? "New CV" : "Nouveau CV"}
+          style={{
+            position: "fixed",
+            top: 8,
+            right: 8,
+            zIndex: 9990,
+            background: "var(--nuvi-paper)",
+            border: "0.5px solid var(--nuvi-hairline)",
+            borderRadius: "50%",
+            width: 34,
+            height: 34,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            color: "var(--nuvi-ink-muted)",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+            <path d="M3 3v5h5"/>
+          </svg>
+        </button>
       )}
       {Modals}
       {Onboard}
