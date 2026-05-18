@@ -739,9 +739,71 @@ async function aiCall(prompt, options = {}) {
 }
 
 function parseJSON(txt) {
-  const clean = txt.split("```json").join("").split("```").join("").trim();
-  const parsed = JSON.parse(clean);
-  return sanDeep(parsed);
+  if (typeof txt !== "string" || !txt.trim()) {
+    throw new Error("Empty response");
+  }
+  // 1. Strip markdown code fences
+  let clean = txt.split("```json").join("").split("```").join("").trim();
+
+  // 2. Try direct parse first
+  try {
+    return sanDeep(JSON.parse(clean));
+  } catch (e1) {
+    // 3. Extract the largest balanced JSON object/array from the text
+    //    This handles cases where Claude adds prose before/after the JSON.
+    const extracted = extractBalancedJson(clean);
+    if (extracted) {
+      try {
+        return sanDeep(JSON.parse(extracted));
+      } catch (e2) {
+        // Fall through to throw original error
+      }
+    }
+    throw e1;
+  }
+}
+
+// Find the largest balanced { ... } or [ ... ] block in the text.
+// Useful when Claude adds prose before or after the JSON.
+function extractBalancedJson(text) {
+  let bestStart = -1;
+  let bestEnd = -1;
+  let bestLen = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (c !== "{" && c !== "[") continue;
+    const opener = c;
+    const closer = c === "{" ? "}" : "]";
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let j = i; j < text.length; j++) {
+      const cc = text[j];
+      if (escape) { escape = false; continue; }
+      if (cc === "\\") { escape = true; continue; }
+      if (cc === '"') { inString = !inString; continue; }
+      if (inString) continue;
+      if (cc === opener) depth++;
+      else if (cc === closer) {
+        depth--;
+        if (depth === 0) {
+          const len = j - i + 1;
+          if (len > bestLen) {
+            bestLen = len;
+            bestStart = i;
+            bestEnd = j;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  if (bestStart >= 0 && bestEnd > bestStart) {
+    return text.substring(bestStart, bestEnd + 1);
+  }
+  return null;
 }
 
 function normCV(raw, base=EMPTY) {
@@ -4513,14 +4575,28 @@ export default function App() {
     setCoachLoading(true);
 
     try {
-      // Index explicite des experiences pour que Claude cible par exp_idx
-      const expIndex = (cv.experience || []).map((e, i) =>
-        "  exp_idx=" + i
-        + " : " + (e.title || "(no title)")
-        + " @ " + (e.company || "(no company)")
-        + " [" + (e.period || "no period") + "]"
-        + " (" + ((e.bullets || []).filter(b => b).length) + " bullets)"
-      ).join("\n");
+      // [Coach v5] Index complet avec bullets numerotees pour cibler precisement.
+      // Permet a Claude de faire replace_bullet bullet_idx=N au lieu d'add_bullet.
+      const expIndex = (cv.experience || []).map((e, i) => {
+        let block = "exp_idx=" + i
+          + " : " + (e.title || "(sans titre)")
+          + " @ " + (e.company || "(sans entreprise)")
+          + " [" + (e.period || "?") + "]";
+        const bullets = Array.isArray(e.bullets) ? e.bullets : [];
+        if (bullets.length > 0) {
+          bullets.forEach((b, bi) => {
+            if (b && b.trim()) {
+              block += '\n  bullet_idx=' + bi + ' : "' + b.replace(/"/g, '\\"').slice(0, 140) + '"';
+            }
+          });
+        }
+        return block;
+      }).join("\n");
+
+      // Summary + title visibles pour update_summary / update_title precis
+      const cvHeader = "name=\"" + (cv.name || "") + "\""
+        + " | title=\"" + (cv.title || "") + "\""
+        + ' | summary="' + (cv.summary || "").slice(0, 200).replace(/"/g, '\\"') + (cv.summary && cv.summary.length > 200 ? '...' : '') + '"';
 
       // Historique conversationnel (10 derniers tours, exclut le message courant)
       const recentHistory = (nextMessages || [])
@@ -4531,45 +4607,72 @@ export default function App() {
 
       const langLine = locale === "en"
         ? "Reply STRICTLY in English. "
-        : "Reply STRICTLY in French. ";
+        : "Reponds STRICTEMENT en francais. ";
 
-      // Prompt v4 : direct, action-oriented, anti-repetition
-      const p = "You are Nuvi, a senior career coach with 20 years of experience."
-        + " The candidate's COMPLETE CV is in your context (cv_context system block)."
-        + " You don't need to ask for info that's already in the CV : read it."
-        + "\n\nEXPERIENCE INDEX (use exp_idx to target a specific job):"
-        + "\n" + (expIndex || "  (no experience)")
-        + (recentHistory ? "\n\nCONVERSATION HISTORY:\n" + recentHistory : "")
-        + "\n\nLATEST USER MESSAGE: " + userText.trim()
-        + "\n\nCORE BEHAVIOR :"
-        + "\n- You APPLY changes directly via actions. You DON'T propose, you DO."
-        + "\n- When user says 'do it' / 'fais-le' / 'go' : return the actions, don't re-propose."
-        + "\n- When user gives info, ask a SHORT follow-up OR apply if you have enough."
-        + "\n- Reply is conversational, 1 to 3 sentences max. Never a wall of text."
-        + "\n- You NEVER invent experiences, companies, dates, or diplomas."
-        + "\n- " + NO_DASH + " " + langLine
-        + "\n\nACTION TYPES YOU CAN RETURN :"
-        + "\n  replace_bullet : {type, exp_idx, bullet_idx, new_text}"
-        + "\n  delete_bullet  : {type, exp_idx, bullet_idx}"
-        + "\n  add_bullet     : {type, exp_idx, text}"
-        + "\n  update_summary : {type, new_text}"
-        + "\n  update_title   : {type, new_text}"
-        + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks) :"
-        + '\n{"reply": "your short conversational reply", "actions": [...]}'
-        + '\n\nIf you need more info before acting, return empty actions :'
-        + '\n{"reply": "your follow-up question", "actions": []}';
+      // [Coach v5] Prompt refonte : expertise reelle + coherence stricte reply/actions
+      const p = "Tu es Nuvi, coach carriere senior (20 ans d'experience RH+coaching cadres+ATS)."
+        + " Tu connais : frameworks STAR/CAR, standards par secteur (Tech aime metriques produit/MRR/users ; Finance aime montants M EUR/AUM/PnL ; Conseil aime impact client/equipes ; Vente aime % atteinte/CA/portefeuille)."
+        + " Tu corriges les anti-patterns : 'responsable de' -> verbes d'action ('pilote', 'deploie', 'orchestre') ;"
+        + " 'participe a' -> action precise + resultat ; tâches descriptives -> impact mesurable."
+        + "\n\n=== CV HEADER ==="
+        + "\n" + cvHeader
+        + "\n\n=== EXPERIENCES (avec bullets numerotees) ==="
+        + "\n" + (expIndex || "(aucune experience)")
+        + (recentHistory ? "\n\n=== HISTORIQUE CONVERSATION ===\n" + recentHistory : "")
+        + "\n\n=== MESSAGE USER ==="
+        + "\n" + userText.trim()
+        + "\n\n=== REGLE ABSOLUE DE COHERENCE ==="
+        + "\nSi ta reply dit 'C'est fait' / 'Voici tes...' / 'Corrige' / 'Modifie' / 'Mis a jour'"
+        + " ALORS tu DOIS retourner des actions non-vides qui appliquent reellement le changement."
+        + " Si tu ne peux PAS appliquer (info manquante, demande ambigue, action impossible),"
+        + " DIS-LE clairement : 'Je n'ai pas pu modifier X parce que [raison]. Peux-tu preciser ?'"
+        + " et retourne actions=[] sans mentir."
+        + "\n\n=== CIBLAGE PRECIS ==="
+        + "\n- Pour MODIFIER un bullet existant -> replace_bullet (exp_idx, bullet_idx, new_text)."
+        + "\n  Les bullets sont numerotes ci-dessus, utilise leur bullet_idx exact."
+        + "\n- Pour SUPPRIMER un bullet -> delete_bullet (exp_idx, bullet_idx)."
+        + "\n- Pour AJOUTER un nouveau bullet -> add_bullet (exp_idx, text)."
+        + "\n  N'AJOUTE QUE si l'user demande explicitement 'ajoute' ou 's'il manque qqch'."
+        + "\n  Si l'user dit 'corrige X' ou 'reformule Y', utilise replace_bullet, pas add_bullet."
+        + "\n- update_summary / update_title : pour le resume ou titre du CV (pas d'idx)."
+        + "\n\n=== EXPERTISE PAR DEFAUT ==="
+        + "\nQuand tu reformules un bullet, applique STAR/CAR :"
+        + "\n  S(ituation) + T(ache) + A(ction) + R(esultat chiffre)"
+        + "\nExemples concrets :"
+        + "\n  AVANT : 'Responsable des clients'"
+        + "\n  APRES : 'Pilote portefeuille de 60 clients PME, encours 1,5M EUR par client'"
+        + "\n  AVANT : 'Participe au developpement commercial'"
+        + "\n  APRES : 'Ouvre 12 nouveaux comptes B2B, +35% CA secteur fintech sur 2 ans'"
+        + "\n\n=== STYLE DE REPONSE ==="
+        + "\n- " + langLine
+        + "\n- Reply courte (1 a 3 phrases max), conversationnelle, sharp, pas de bla-bla."
+        + "\n- Pas d'em-dash. Utilise : , . ( ) ou - simple."
+        + "\n- N'invente JAMAIS d'experience, entreprise, date, diplome non present dans le CV."
+        + "\n\n=== FORMAT DE SORTIE (JSON STRICT, RIEN APRES) ==="
+        + '\n{"reply": "ta reponse courte", "actions": [...]}'
+        + "\nRetourne UNIQUEMENT ce JSON, AUCUN texte avant ou apres, AUCUN markdown.";
 
       // Passe le CV complet via options.cv (cache ephemeral cote route.js)
       const txt = await aiCall(p, { cv, task_name: "coach_chat" });
       const parsed = parseJSON(txt);
 
-      const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
+      let reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
       const actions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
 
       // Retro-compat : ancien format {adopt: {kind, value}}
       const legacyAdopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
         ? { kind: String(parsed.adopt.kind), value: String(parsed.adopt.value) }
         : null;
+
+      // [Coach v5] Detection coherence reply/actions :
+      // Si Claude dit "c'est fait" mais actions vides, on remplace par message honnete.
+      const claimsDone = /\b(c'est fait|voici|corrig[ée]|modifi[ée]|appliqu[ée]|mis a jour|done|here are|corrected|updated|applied|modified)\b/i.test(reply);
+      if (claimsDone && actions.length === 0 && !legacyAdopt) {
+        console.warn("[Coach v5] Reply incoherente : dit 'fait' mais actions vides");
+        reply = locale === "en"
+          ? "I tried but couldn't apply that. Can you tell me more specifically what to change ? (which bullet, which experience)"
+          : "Je n'ai pas pu appliquer ce changement. Tu peux preciser quel bullet ou quelle experience modifier ?";
+      }
 
       // Applique les actions structurees automatiquement
       let applySummary = "";
@@ -4580,10 +4683,10 @@ export default function App() {
           setCVFn(() => result.newCv);
           applySummary = result.summary;
           if (result.failed.length > 0) {
-            console.warn("[Coach v4] Some actions failed:", result.failed);
+            console.warn("[Coach v5] Some actions failed:", result.failed);
           }
         } else if (result.failed.length > 0) {
-          console.warn("[Coach v4] All actions failed:", result.failed);
+          console.warn("[Coach v5] All actions failed:", result.failed);
         }
       }
 
@@ -4606,6 +4709,7 @@ export default function App() {
         notify((locale === "en" ? "Applied : " : "Applique : ") + applySummary);
       }
     } catch (err) {
+      console.error("[Coach v5] error:", err);
       const errMsg = {
         role:"assistant",
         content: T.ea + (err && err.message ? ": " + err.message : ""),
