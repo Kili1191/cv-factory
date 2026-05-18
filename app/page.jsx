@@ -65,6 +65,7 @@ import {
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
+import { cleanCVForExport, getRemovedSummary } from "../lib/cvCleaner";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
@@ -3098,32 +3099,87 @@ export default function App() {
   }, []);
 
   // [Deploy B+] Helper : run html2pdf with given options
+  // Cleans the CV (removes empty sections/items) BEFORE snapshot for a homogeneous
+  // PDF, then restores the original CV. Also strips wrapper minHeight to avoid
+  // blank bottom band. Returns the cleanup report so we can notify the user.
   const runHtml2Pdf = useCallback((options) => {
     return new Promise((resolve, reject) => {
       const el = document.getElementById("cv-print");
       if (!el) { reject(new Error("CV element not found")); return; }
-      const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      s.onerror = () => { notify("Erreur chargement PDF"); reject(new Error("script load failed")); };
-      s.onload = async () => {
+
+      // 1. Clean the CV : produces a copy without empty sections/items
+      const { cleanedCv, removed } = cleanCVForExport(cv);
+
+      // 2. Backup original CV and swap to cleaned version
+      const originalCv = cv;
+      setCV_(cleanedCv);
+
+      // 3. Find the parent wrapper that has minHeight:1123 and temporarily strip it
+      const wrapper = el.closest('[data-cvf="cv"]');
+      const originalMinHeight = wrapper ? wrapper.style.minHeight : null;
+
+      const stripMinHeights = () => {
+        if (wrapper) wrapper.style.minHeight = "0";
+        const sidebarRoots = el.querySelectorAll('[style*="minHeight"]');
+        const stripped = [];
+        sidebarRoots.forEach(node => {
+          if (node.style.minHeight === "100%") {
+            stripped.push({ node, prev: node.style.minHeight });
+            node.style.minHeight = "auto";
+          }
+        });
+        return stripped;
+      };
+
+      let stripped = [];
+
+      const restore = () => {
+        if (wrapper) wrapper.style.minHeight = originalMinHeight || "1123px";
+        stripped.forEach(({ node, prev }) => { node.style.minHeight = prev; });
+        // Restore the original CV
+        setCV_(originalCv);
+      };
+
+      const doExport = async () => {
+        // Wait for React to flush the cleaned CV to the DOM
+        await new Promise(r => setTimeout(r, 80));
+        // Now strip minHeights after the DOM is up to date
+        stripped = stripMinHeights();
         try {
           if (document.fonts && document.fonts.ready) await document.fonts.ready;
         } catch {}
         try {
           await window.html2pdf().set(options).from(el).save();
+          restore();
+          // Tiny notif of what was hidden (only if anything was removed)
+          if (removed.sections.length > 0 || removed.items > 0) {
+            const sum = getRemovedSummary(removed, locale);
+            if (sum) {
+              setTimeout(() => {
+                notify(locale === "en"
+                  ? "Hidden for clean export : " + sum
+                  : "Masque pour un export propre : " + sum);
+              }, 600);
+            }
+          }
           resolve();
         } catch (err) {
+          restore();
           reject(err);
         }
       };
-      // Reuse already-loaded script if any
+
       if (window.html2pdf) {
-        s.onload();
+        doExport();
       } else {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+        s.onerror = () => { restore(); notify("Erreur chargement PDF"); reject(new Error("script load failed")); };
+        s.onload = doExport;
         document.head.appendChild(s);
       }
     });
-  }, [notify]);
+  }, [cv, notify, locale]);
 
   // [Deploy B+] Export PDF en 2 pages A4 avec coupure entre sections
   // html2pdf supporte pagebreak.mode = ["css", "legacy"] qui respecte les
@@ -3180,20 +3236,46 @@ export default function App() {
 
   // [Deploy B+] Export PDF "smart" : mesure d'abord, route vers modale si overflow
   // Sinon export direct en 1 page A4 (comportement v17 prserve).
+  const exportPDFSinglePage = useCallback(async () => {
+    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
+    try {
+      await runHtml2Pdf({
+        margin: 0,
+        filename: fname,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        // No pagebreak rules - tight fit in single A4 page
+      });
+      notify(T.okp + ": " + fname);
+      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
+    } catch (err) {
+      console.error("[exportPDF single]", err);
+      notify("Erreur export PDF");
+    }
+  }, [cv.name, T, notify, runHtml2Pdf]);
+
   const exportPDF = useCallback(() => {
+    // Measure raw height first (current state of DOM)
     const heightPx = measureCVHeight();
-    const pageCount = heightPx / A4_HEIGHT_PX;
+
+    // Estimate height reduction from cleaning (each empty section saves ~80px,
+    // each empty item saves ~25px). Rough heuristic for the decision.
+    const { removed } = cleanCVForExport(cv);
+    const estimatedCleaning = removed.sections.length * 80 + removed.items * 25;
+    const estimatedCleanedHeight = Math.max(0, heightPx - estimatedCleaning);
+    const pageCount = estimatedCleanedHeight / A4_HEIGHT_PX;
 
     if (pageCount <= A4_TOLERANCE) {
       // CV tient sur 1 page A4 (ou tres peu de debordement) -> export simple
-      exportPDFTwoPages();
+      exportPDFSinglePage();
       return;
     }
 
     // CV deborde : ouvre la modale de choix
     setCvPageCount(pageCount);
     setShowExportModal(true);
-  }, [measureCVHeight, exportPDFTwoPages]);
+  }, [measureCVHeight, exportPDFSinglePage, cv]);
 
   const doReset = useCallback(() => {
     if (!window.confirm(T.conf)) return;
