@@ -50,6 +50,9 @@ const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr:
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
 const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
+const ResetCVModal = dynamic(() => import("./components/ResetCVModal"), { ssr: false });
+const AccountSoonModal = dynamic(() => import("./components/AccountSoonModal"), { ssr: false });
+const SavedIndicator = dynamic(() => import("./components/SavedIndicator"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
@@ -2763,6 +2766,10 @@ export default function App() {
   const [navSection, setNavSection] = useState("home");
   // v17 chantier 15 : Auto-save indicator
   const [autoSaved, setAutoSaved] = useState(false);
+  // [Deploy A] Reset CV + Auto-save indicator
+  const [lastSavedAt, setLastSavedAt] = useState(null);
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [showAccountSoon, setShowAccountSoon] = useState(false);
   // v17 : Customize CV (couleurs + polices)
   // cvCustom = custom global (applique partout par defaut).
   // versionCustom est lu depuis cv.custom (par-version) si present.
@@ -2836,6 +2843,9 @@ export default function App() {
     if (Array.isArray(savedCo) && savedCo.length) {
       setCoachMessages(savedCo.slice(-50));
     }
+    // [Deploy A] Hydrate lastSavedAt for "Saved Xs ago" indicator
+    const savedLastSaved = lsG("nv-last-saved", null);
+    if (typeof savedLastSaved === "number") setLastSavedAt(savedLastSaved);
     // Load coach button position custom (drag persistance)
     const savedCp = lsG("nv-coach-pos", null);
     if (savedCp && typeof savedCp === "object" && typeof savedCp.x === "number" && typeof savedCp.y === "number") {
@@ -2877,8 +2887,12 @@ export default function App() {
   const setCVFn = useCallback(fn => setCV_(p => {
     const n = typeof fn==="function" ? fn(p) : fn;
     lsS(SK.CV, n);
-    // v17 : auto-save indicator
+    // v17 : auto-save indicator (legacy boolean, kept for compat)
     setAutoSaved(true);
+    // [Deploy A] Timestamp for "saved Xs ago" indicator
+    const now = Date.now();
+    setLastSavedAt(now);
+    try { lsS("nv-last-saved", now); } catch (e) {}
     return n;
   }), []);
 
@@ -3475,11 +3489,76 @@ export default function App() {
     notify(locale==="en" ? "Version saved" : "Version sauvegardee");
   }, [cv, notify, locale]);
 
+  // [Deploy A] Quick save sans prompt - auto-name avec date courante
+  // Utile pour le bouton "Sauvegarder cette version" dans le header
+  const quickSaveVersion = useCallback(() => {
+    if (cvIsEmpty) {
+      notify(locale === "en" ? "Nothing to save" : "Rien a sauvegarder");
+      return null;
+    }
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, "0");
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mi = String(now.getMinutes()).padStart(2, "0");
+    const autoName = locale === "en"
+      ? "Snapshot " + dd + "/" + mm + " " + hh + "h" + mi
+      : "Snapshot du " + dd + "/" + mm + " a " + hh + "h" + mi;
+    const v = {
+      id: Date.now(),
+      name: autoName,
+      cv: cv,
+      created: new Date().toISOString(),
+    };
+    setVersions(vs => {
+      const next = [...vs, v];
+      lsS(SK.VS, next);
+      return next;
+    });
+    notify(locale === "en"
+      ? "Saved as : " + autoName
+      : "Sauvegarde : " + autoName);
+    return v.id;
+  }, [cv, cvIsEmpty, notify, locale]);
+
+  // [Deploy A] Reset CV - vide tout et retourne au OnboardScreen
+  const resetCV = useCallback(() => {
+    pushH(cv); // snapshot Undo au cas ou
+    setCVFn(() => ({
+      ...EMPTY,
+      // Deep clone des arrays pour eviter shared refs
+      experience: [{id: Date.now(), title: "", company: "", period: "", location: "", bullets: ["", ""]}],
+      education:  [{id: Date.now() + 1, degree: "", school: "", period: ""}],
+      skills:     ["", "", "", "", "", "", "", ""],
+      languages:  [{lang: "", level: ""}, {lang: "", level: ""}],
+      certifications: [""],
+      labels: {},
+    }));
+    // Clear coach history aussi - nouveau CV = nouveau contexte
+    setCoachMessages([]);
+    lsS(SK.CO, []);
+    // Notification
+    notify(locale === "en"
+      ? "Started fresh. Your new CV awaits."
+      : "Tout est vide. Ton nouveau CV t'attend.");
+  }, [cv, pushH, setCVFn, notify, locale]);
+
+  // [Deploy A] Save current CV as snapshot then reset
+  const saveAndReset = useCallback(() => {
+    const savedId = quickSaveVersion();
+    if (savedId) {
+      // Small delay so user sees the "Saved" notif before reset
+      setTimeout(() => resetCV(), 250);
+    } else {
+      resetCV();
+    }
+  }, [quickSaveVersion, resetCV]);
+
   const loadVersion = useCallback((id) => {
     const v = versions.find(x => x.id === id);
     if (!v) return;
     if (!window.confirm(
-      locale==="en" ? "Load this version? Current CV will be replaced (history will allow undo)." 
+      locale==="en" ? "Load this version? Current CV will be replaced (history will allow undo)."
                     : "Charger cette version? Le CV actuel sera remplace (annulable via Historique)."
     )) return;
     pushH();
@@ -5285,6 +5364,65 @@ export default function App() {
         }}>{T.dats}</div>
       )}
 
+      {/* [Deploy A] === Mon CV actuel === */}
+      <div style={finEyebrow}>{locale === "en" ? "MY CURRENT CV" : "MON CV ACTUEL"}</div>
+      <div style={{
+        display: "flex", gap: 8, marginBottom: 16,
+      }}>
+        <button
+          onClick={quickSaveVersion}
+          disabled={cvIsEmpty}
+          style={{
+            ...B({
+              flex: 1, padding: "11px 12px", borderRadius: RadiusMd,
+              background: cvIsEmpty ? Gray100 : Paper,
+              color: cvIsEmpty ? Gray400 : Ink,
+              border: "0.5px solid " + Gray200,
+              boxShadow: cvIsEmpty ? "none" : ShadowSm,
+              fontSize: 12, fontWeight: 600, fontFamily: Sans,
+              display: "flex", alignItems: "center", gap: 8,
+              cursor: cvIsEmpty ? "not-allowed" : "pointer",
+              transition: "all 200ms ease",
+            })
+          }}
+          title={locale === "en" ? "Save a snapshot of this CV" : "Sauvegarder un snapshot"}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+            <polyline points="17 21 17 13 7 13 7 21"/>
+            <polyline points="7 3 7 8 15 8"/>
+          </svg>
+          <span>{locale === "en" ? "Save version" : "Sauvegarder"}</span>
+        </button>
+        <button
+          onClick={() => setShowResetModal(true)}
+          style={{
+            ...B({
+              flex: 1, padding: "11px 12px", borderRadius: RadiusMd,
+              background: Paper, color: Ink,
+              border: "0.5px solid " + Gray200,
+              boxShadow: ShadowSm,
+              fontSize: 12, fontWeight: 600, fontFamily: Sans,
+              display: "flex", alignItems: "center", gap: 8,
+              transition: "all 200ms ease",
+            })
+          }}
+          title={locale === "en" ? "Start a fresh CV" : "Commencer un nouveau CV"}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2"
+            strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="12" y1="18" x2="12" y2="12"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+          <span>{locale === "en" ? "New CV" : "Nouveau CV"}</span>
+        </button>
+      </div>
+
       {/* Templates */}
       <div style={{
         fontSize:11, fontWeight:600,
@@ -5741,7 +5879,35 @@ export default function App() {
           onToggleDark={toggleDarkMode}
           onRelaunchTutorial={relaunchTutorial}
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
+          onResetCV={() => { setShowSettings(false); setShowResetModal(true); }}
           onClose={()=>setShowSettings(false)}
+        />
+        </Suspense>
+      )}
+      {/* [Deploy A] Reset CV confirmation modal */}
+      {showResetModal && (
+        <Suspense fallback={null}>
+        <ResetCVModal
+          open={showResetModal}
+          onClose={() => setShowResetModal(false)}
+          onSaveAndReset={saveAndReset}
+          onAccountStub={() => { setShowResetModal(false); setShowAccountSoon(true); }}
+          onResetWithoutSave={resetCV}
+          T={T}
+          lang={locale}
+          mob={mob}
+        />
+        </Suspense>
+      )}
+      {/* [Deploy A] Account waitlist stub (placeholder for future auth) */}
+      {showAccountSoon && (
+        <Suspense fallback={null}>
+        <AccountSoonModal
+          open={showAccountSoon}
+          onClose={() => setShowAccountSoon(false)}
+          T={T}
+          lang={locale}
+          mob={mob}
         />
         </Suspense>
       )}
@@ -5986,14 +6152,21 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-        {autoSaved && (
-          <div className="cvf-saved-pill">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="3.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 6L9 17l-5-5"/>
-            </svg>
-            {T.as_saved || "Saved"}
+        {/* [Deploy A] Persistent saved indicator (replaces the 1.5s flash) */}
+        {lastSavedAt && !cvIsEmpty && (
+          <div style={{
+            position: "fixed",
+            top: 14,
+            right: 14,
+            zIndex: 9990,
+            pointerEvents: "none",
+            opacity: 0.95,
+          }}>
+            <SavedIndicator
+              lastSavedAt={lastSavedAt}
+              lang={locale}
+              compact={false}
+            />
           </div>
         )}
         {Modals}
@@ -6373,14 +6546,21 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-      {autoSaved && (
-        <div className="cvf-saved-pill">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="3.2"
-            strokeLinecap="round" strokeLinejoin="round">
-            <path d="M20 6L9 17l-5-5"/>
-          </svg>
-          {T.as_saved || "Saved"}
+      {/* [Deploy A] Persistent saved indicator (mobile) */}
+      {lastSavedAt && !cvIsEmpty && (
+        <div style={{
+          position: "fixed",
+          top: 8,
+          right: 8,
+          zIndex: 9990,
+          pointerEvents: "none",
+          opacity: 0.95,
+        }}>
+          <SavedIndicator
+            lastSavedAt={lastSavedAt}
+            lang={locale}
+            compact={true}
+          />
         </div>
       )}
       {Modals}
