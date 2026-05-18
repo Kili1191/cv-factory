@@ -413,6 +413,9 @@ const EMPTY = {
   languages:[{lang:"",level:""},{lang:"",level:""}],
   certifications:[""],
   labels: {},
+  // [Deploy B] Photo CV : 3 modes - "upload" | "initials" | "none"
+  // src optionnel (base64 thumbnail) si mode === "upload"
+  photo: { mode: "initials" },
 };
 
 // === Labels par défaut pour les sections du CV (éditables par l'utilisateur) ===
@@ -3533,6 +3536,8 @@ export default function App() {
       languages:  [{lang: "", level: ""}, {lang: "", level: ""}],
       certifications: [""],
       labels: {},
+      // [Deploy B] Reset photo to default mode "initials"
+      photo: { mode: "initials" },
     }));
     // Clear coach history aussi - nouveau CV = nouveau contexte
     setCoachMessages([]);
