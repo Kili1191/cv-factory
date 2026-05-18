@@ -6096,22 +6096,29 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v3] Mode glass agressif : sheet quasi-transparente +
-            backdrop quasi-supprime pour voir le CV en direct a travers.
-            On garde un leger blur+saturation pour que le chat reste lisible. */}
+        {/* [Glass Coach v4] Glass maximum : sheet quasi-invisible, backdrop nu.
+            On vise un effet "vitrine teintee" : le CV est clairement visible
+            a travers, le chat reste lisible grace au blur+saturation. */}
         <style>{`
-          /* Sheet : tres transparente, blur plus fort */
+          /* Sheet : 8% d'opacite seulement = quasi-vitre, blur tres fort pour la lisibilite */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            background-color: rgba(246, 242, 232, 0.18) !important;
-            backdrop-filter: blur(18px) saturate(1.3);
-            -webkit-backdrop-filter: blur(18px) saturate(1.3);
+            background-color: rgba(246, 242, 232, 0.08) !important;
+            backdrop-filter: blur(22px) saturate(1.4);
+            -webkit-backdrop-filter: blur(22px) saturate(1.4);
+            box-shadow: 0 -20px 60px rgba(0,0,0,.08) !important;
           }
-          /* Backdrop : on enleve quasiment toute la couleur noire et le blur,
-             pour que le CV derriere soit clairement visible */
+          /* Backdrop : transparent total - on voit le CV directement */
           body[data-coach-busy="true"] [data-nv-coach-backdrop="true"] {
-            background-color: rgba(10, 10, 10, 0.08) !important;
-            backdrop-filter: blur(0px) !important;
-            -webkit-backdrop-filter: blur(0px) !important;
+            background-color: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+          }
+          /* Renforce la lisibilite : bulles de chat avec un fond legerement opaque
+             pour que le texte reste lisible meme sur CV chargee derriere */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="background: rgb(255, 255, 255)"],
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="background: #fff"] {
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
           }
         `}</style>
 
