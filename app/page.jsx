@@ -3114,18 +3114,25 @@ export default function App() {
       const originalCv = cv;
       setCV_(cleanedCv);
 
-      // 3. Find the parent wrapper that has minHeight:1123 and temporarily strip it
+      // 3. Find the parent wrapper that has minHeight:1123 - will be stripped below
       const wrapper = el.closest('[data-cvf="cv"]');
-      const originalMinHeight = wrapper ? wrapper.style.minHeight : null;
 
       const stripMinHeights = () => {
-        if (wrapper) wrapper.style.minHeight = "0";
-        const sidebarRoots = el.querySelectorAll('[style*="minHeight"]');
         const stripped = [];
-        sidebarRoots.forEach(node => {
-          if (node.style.minHeight === "100%") {
-            stripped.push({ node, prev: node.style.minHeight });
-            node.style.minHeight = "auto";
+        // Strip the data-cvf wrapper (1123px enforced)
+        if (wrapper) {
+          stripped.push({ node: wrapper, prev: wrapper.style.minHeight, key: "minHeight" });
+          wrapper.style.minHeight = "0";
+        }
+        // Strip the #cv-print container itself
+        stripped.push({ node: el, prev: el.style.minHeight, key: "minHeight" });
+        el.style.minHeight = "0";
+        // Strip ALL descendants that have minHeight (inline style)
+        const allDescendants = el.querySelectorAll("*");
+        allDescendants.forEach(node => {
+          if (node.style && node.style.minHeight) {
+            stripped.push({ node, prev: node.style.minHeight, key: "minHeight" });
+            node.style.minHeight = "0";
           }
         });
         return stripped;
@@ -3134,8 +3141,9 @@ export default function App() {
       let stripped = [];
 
       const restore = () => {
-        if (wrapper) wrapper.style.minHeight = originalMinHeight || "1123px";
-        stripped.forEach(({ node, prev }) => { node.style.minHeight = prev; });
+        stripped.forEach(({ node, prev }) => {
+          if (node && node.style) node.style.minHeight = prev || "";
+        });
         // Restore the original CV
         setCV_(originalCv);
       };
@@ -3145,11 +3153,41 @@ export default function App() {
         await new Promise(r => setTimeout(r, 80));
         // Now strip minHeights after the DOM is up to date
         stripped = stripMinHeights();
+        // Force a layout reflow so heights settle
+        // eslint-disable-next-line no-unused-expressions
+        el.offsetHeight;
+        // Wait a tick so layout is committed
+        await new Promise(r => setTimeout(r, 20));
+
+        // Measure the real content height (the inner CV layout, not the wrapper)
+        // We pick the FIRST child of #cv-print which is the actual CVSidebar/CVAts root
+        const innerCv = el.firstElementChild || el;
+        const realHeight = innerCv.scrollHeight || innerCv.offsetHeight || el.scrollHeight;
+        const realWidth = innerCv.scrollWidth || innerCv.offsetWidth || el.scrollWidth;
+
+        // Force html2canvas to use the exact content height (no blank band)
+        // We override the html2canvas options to clip exactly to content
+        const tightOptions = {
+          ...options,
+          html2canvas: {
+            ...(options.html2canvas || {}),
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            height: realHeight,
+            width: realWidth,
+            windowHeight: realHeight,
+            windowWidth: realWidth,
+            scrollY: 0,
+            scrollX: 0,
+          },
+        };
+
         try {
           if (document.fonts && document.fonts.ready) await document.fonts.ready;
         } catch {}
         try {
-          await window.html2pdf().set(options).from(el).save();
+          await window.html2pdf().set(tightOptions).from(el).save();
           restore();
           // Tiny notif of what was hidden (only if anything was removed)
           if (removed.sections.length > 0 || removed.items > 0) {
