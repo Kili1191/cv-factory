@@ -6096,15 +6096,15 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v5] Glass clair : peu de blur (on doit voir le CV nettement),
-            sheet quasi-transparente, et tous les textes du chat passent en blanc
-            pour rester lisibles sur le fond CV. */}
+        {/* [Glass Coach v6] ZERO BLUR. Sheet quasi-transparente.
+            Bulles user : restent purple (origine).
+            Bulles Nuvi : cream + texte fonce pour lisibilite. */}
         <style>{`
-          /* Sheet : 10% d'opacite + blur tres leger (juste pour adoucir, pas occulter) */
+          /* Sheet : quasi-transparente sombre, AUCUN blur */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            background-color: rgba(10, 10, 10, 0.18) !important;
-            backdrop-filter: blur(4px) saturate(1.05);
-            -webkit-backdrop-filter: blur(4px) saturate(1.05);
+            background-color: rgba(10, 10, 10, 0.15) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
             box-shadow: 0 -20px 60px rgba(0,0,0,.08) !important;
           }
           /* Backdrop : transparent total */
@@ -6114,54 +6114,52 @@ export default function App() {
             -webkit-backdrop-filter: none !important;
           }
 
-          /* === TEXTES EN BLANC PENDANT LE GLASS === */
-          /* Tous les textes de la sheet passent en blanc avec une ombre subtile
-             pour rester lisibles sur le CV en arriere-plan. Animation fluide. */
+          /* Transitions fluides */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"],
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] * {
             transition: color 0.35s ease, background-color 0.35s ease, border-color 0.35s ease;
           }
-          /* Headers et labels : blanc avec ombre */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] {
-            color: #fff !important;
-            text-shadow: 0 1px 3px rgba(0,0,0,0.4);
-          }
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] * {
-            color: #fff !important;
-          }
-          /* Bulle Nuvi (Paper / fond blanc) : on garde sa lisibilite avec un fond
-             leger semi-opaque sombre pour le contraste */
+
+          /* Bulle Nuvi (border-radius 4px 18px 18px 18px) : reste creme + texte fonce */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 4px 18px 18px 18px"] {
+            background-color: #faf8f3 !important;
+            color: #0a0a0a !important;
+            border-color: #e8e3d6 !important;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18) !important;
+          }
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 4px 18px 18px 18px"] * {
+            color: #0a0a0a !important;
+          }
+
+          /* Bulle User (border-radius 18px 18px 4px 18px) : LAISSE PURPLE D'ORIGINE.
+             Pas d'override. */
+
+          /* Headers/labels du chat (titre, sous-titre, eyebrow) : blanc avec ombre */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] > div:not([style*="border-radius: 4px 18px"]):not([style*="border-radius: 18px 18px"]) {
+            color: #fff !important;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+          }
+
+          /* Boutons close/clear de la sheet : icones blanches sur fond noir transparent */
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"],
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title]:not([style*="border-radius: 999px"]) {
             background-color: rgba(0, 0, 0, 0.35) !important;
-            border-color: rgba(255, 255, 255, 0.2) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            border-color: rgba(255, 255, 255, 0.25) !important;
+            color: #fff !important;
           }
-          /* Bulle User : garde le purple mais ajoute un blur+ombre pour lisibilite */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 18px 18px 4px 18px"] {
-            background-color: rgba(91, 61, 245, 0.65) !important;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"] svg,
+          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title] svg {
+            color: #fff !important;
           }
-          /* Input zone : reste lisible avec fond noir transparent */
+
+          /* Input : noir transparent avec texte blanc */
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea {
             background-color: rgba(0, 0, 0, 0.4) !important;
             border-color: rgba(255, 255, 255, 0.3) !important;
             color: #fff !important;
           }
           body[data-coach-busy="true"] [data-nv-coach-sheet="true"] textarea::placeholder {
-            color: rgba(255, 255, 255, 0.6) !important;
-          }
-          /* Boutons close/clear : icones blanches */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[aria-label="close"],
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] button[title] {
-            background-color: rgba(0, 0, 0, 0.3) !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-          }
-          /* Quick reply buttons : ajustes pour glass */
-          body[data-coach-busy="true"] [data-nv-coach-sheet="true"] [style*="border-radius: 999px"] {
-            background-color: rgba(0, 0, 0, 0.35) !important;
+            color: rgba(255, 255, 255, 0.7) !important;
           }
         `}</style>
 
