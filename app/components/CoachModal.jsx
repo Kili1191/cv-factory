@@ -537,31 +537,31 @@ export default function CoachModal({
       display: "flex", flexDirection: "column", justifyContent: "flex-end",
       fontFamily: Sans,
     }}>
-      {/* Backdrop */}
+      {/* [Glass Coach v7] Backdrop transparent en permanence - on voit le CV
+          a travers tout le temps, plus juste pendant le travail. */}
       <div
         data-nv-coach-backdrop="true"
         style={{
         position: "absolute", inset: 0,
-        background: "rgba(10,10,10,.55)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        background: "transparent",
         animation: "cvfFadeIn 200ms ease-out",
-        transition: "background-color 0.35s ease, backdrop-filter 0.35s ease",
       }} onClick={() => { if (!loading) onClose(); }} />
 
-      {/* [Glass Coach v2] Sheet : data-nv-coach-sheet permet a page.jsx
-          de cibler ce panneau pour le mode glass quand Nuvi bosse. */}
+      {/* [Glass Coach v7] Sheet : glass permanent avec bordure cream pour
+          delimiter le panneau visuellement, sans bloquer la vue du CV. */}
       <div
         data-nv-coach-sheet="true"
         style={{
-        position: "relative", background: CreamSoft,
+        position: "relative",
+        background: "rgba(10, 10, 10, 0.15)",
+        border: "1.5px solid rgba(250, 248, 243, 0.35)",
+        borderBottom: "none",
         borderRadius: "32px 32px 0 0",
         height: "94vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 -20px 60px rgba(0,0,0,.2)",
+        boxShadow: "0 -20px 60px rgba(0,0,0,.12)",
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
         width: "100%", maxWidth: 840,
         marginLeft: "auto", marginRight: "auto",
-        transition: "background-color 0.35s ease, backdrop-filter 0.35s ease",
       }}>
         <div style={{
           width: 40, height: 4, background: Hairline,
@@ -579,7 +579,7 @@ export default function CoachModal({
 
         <div style={{
           padding: "10px 24px 14px",
-          borderBottom: "0.5px solid " + Hairline, flexShrink: 0,
+          borderBottom: "0.5px solid rgba(250, 248, 243, 0.25)", flexShrink: 0,
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between", gap: 12,
         }}>
@@ -587,11 +587,13 @@ export default function CoachModal({
             <div style={{
               fontSize: 11, fontWeight: 600,
               letterSpacing: "0.12em", textTransform: "uppercase",
-              color: Purple, marginBottom: 4,
+              color: "#fff", marginBottom: 4,
+              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
             }}>{T.co_eyebrow}</div>
             <div style={{
               fontFamily: Serif, fontWeight: 400, fontSize: 24,
-              letterSpacing: "-0.02em", color: Ink, lineHeight: 1.15,
+              letterSpacing: "-0.02em", color: "#fff", lineHeight: 1.15,
+              textShadow: "0 1px 4px rgba(0,0,0,0.5)",
             }}>
               {T.co_title_a}
               {" "}<em style={{
@@ -604,7 +606,8 @@ export default function CoachModal({
               {" "}{T.co_title_b}
             </div>
             <div style={{
-              fontSize: 12, color: InkMuted, marginTop: 4, lineHeight: 1.5,
+              fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 1.5,
+              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
             }}>{T.co_sub}</div>
           </div>
 
@@ -740,9 +743,9 @@ export default function CoachModal({
 
         <div style={{
           padding: "12px 24px 18px",
-          borderTop: "0.5px solid " + Hairline,
+          borderTop: "0.5px solid rgba(250, 248, 243, 0.25)",
           flexShrink: 0,
-          background: CreamSoft,
+          background: "transparent",
         }}>
           <div style={{
             display: "flex", gap: 8, alignItems: "flex-end",
