@@ -34,6 +34,9 @@ import {
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 const LiquidGlassPanel = dynamic(() => import("./LiquidGlassPanel"), { ssr: false });
+// Pour les sub-exports (text glass, logo anime) on charge non-dynamiquement
+// car ils n'ont pas de dependance SSR-incompatible.
+import { NuviTextGlass, NuviTextGlassCoral, NuviLogoAnimated } from "./LiquidGlassPanel";
 
 const Icons = {
   audit: (
@@ -580,17 +583,8 @@ export default function CoachModal({
           display: "flex", alignItems: "center",
           flexShrink: 0,
         }}>
-          {/* [Liquid Glass v1] Wordmark statique propre (NuviLogo anime
-              s'affichait casse sur fond glass). Serif italic Coral. */}
-          <div style={{
-            fontFamily: Serif,
-            fontSize: 22,
-            fontWeight: 400,
-            fontStyle: "italic",
-            color: Coral,
-            letterSpacing: "-0.02em",
-            textShadow: "0 1px 8px rgba(0,0,0,0.3)",
-          }}>Nuvi</div>
+          {/* Logo Nuvi hyper cool : gradient flow + shimmer + glow pulse */}
+          <NuviLogoAnimated size={26} />
         </div>
 
         <div style={{
@@ -600,16 +594,17 @@ export default function CoachModal({
           justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
+            {/* Eyebrow Coral avec shadow universelle - lisible partout */}
+            <NuviTextGlassCoral style={{
               fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
-              color: Coral, marginBottom: 4,
-              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-            }}>{T.co_eyebrow}</div>
-            <div style={{
+              marginBottom: 4,
+            }}>{T.co_eyebrow}</NuviTextGlassCoral>
+
+            {/* Titre blanc avec shadow universelle - lisible partout */}
+            <NuviTextGlass style={{
               fontFamily: Serif, fontWeight: 400, fontSize: 24,
-              letterSpacing: "-0.02em", color: "#fff", lineHeight: 1.15,
-              textShadow: "0 1px 4px rgba(0,0,0,0.5)",
+              letterSpacing: "-0.02em", lineHeight: 1.15,
             }}>
               {T.co_title_a}
               {" "}<em style={{
@@ -618,13 +613,15 @@ export default function CoachModal({
                 WebkitBackgroundClip: "text",
                 backgroundClip: "text",
                 color: "transparent",
+                WebkitTextStroke: "0px",
               }}>{T.co_title_em}</em>
               {" "}{T.co_title_b}
-            </div>
-            <div style={{
-              fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4, lineHeight: 1.5,
-              textShadow: "0 1px 3px rgba(0,0,0,0.4)",
-            }}>{T.co_sub}</div>
+            </NuviTextGlass>
+
+            {/* Sous-titre blanc avec shadow universelle */}
+            <NuviTextGlass style={{
+              fontSize: 12, marginTop: 4, lineHeight: 1.5,
+            }}>{T.co_sub}</NuviTextGlass>
           </div>
 
           {hasMessages && (
