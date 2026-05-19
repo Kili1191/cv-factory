@@ -33,6 +33,7 @@ import {
 
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
+const LiquidGlassPanel = dynamic(() => import("./LiquidGlassPanel"), { ssr: false });
 
 const Icons = {
   audit: (
@@ -554,59 +555,19 @@ export default function CoachModal({
         animation: "cvfFadeIn 200ms ease-out",
       }} onClick={() => { if (!loading) onClose(); }} />
 
-      {/* [Liquid Glass v1] Sheet avec effet iOS 26 :
-          - Background quasi-transparent (centre 100% visible sur le CV)
-          - ::before = layer blur avec mask radial -> blur uniquement sur les bords
-          - ::after = highlight inner top (reflet de lumiere) + inner shadow bord
-          - Bordure Coral 1.5px solide */}
-      <style>{`
-        .nv-liquid-glass {
-          position: relative;
-          isolation: isolate;
-        }
-        /* Layer blur sur bords uniquement (mask radial = trou au centre) */
-        .nv-liquid-glass::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          backdrop-filter: blur(40px) saturate(1.4);
-          -webkit-backdrop-filter: blur(40px) saturate(1.4);
-          background: rgba(20, 15, 12, 0.18);
-          -webkit-mask-image: radial-gradient(ellipse 70% 60% at center, transparent 0%, transparent 30%, black 100%);
-          mask-image: radial-gradient(ellipse 70% 60% at center, transparent 0%, transparent 30%, black 100%);
-          pointer-events: none;
-          z-index: -1;
-        }
-        /* Inner highlight (reflet de lumiere iOS en haut) + ombre bordure */
-        .nv-liquid-glass::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          pointer-events: none;
-          box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.25),
-            inset 0 0 60px rgba(217, 119, 87, 0.06),
-            inset 0 -1px 0 rgba(217, 119, 87, 0.15);
-          z-index: -1;
-        }
-      `}</style>
-      <div
-        data-nv-coach-sheet="true"
-        className="nv-liquid-glass"
-        style={{
-        position: "relative",
-        background: "transparent",
-        border: "1.5px solid " + Coral,
-        borderBottom: "none",
-        borderRadius: "32px 32px 0 0",
-        height: "94vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 -20px 60px rgba(0,0,0,.20), 0 0 0 1px rgba(217,119,87,0.20)",
-        animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
-        width: "100%", maxWidth: 840,
-        marginLeft: "auto", marginRight: "auto",
-      }}>
+      {/* [Liquid Glass v2] Sheet avec wrapper LiquidGlassPanel propre :
+          - SVG feTurbulence + feDisplacementMap (distorsion REELLE iOS 26)
+          - Animation seed 12s (verre vivant)
+          - Tint cream chaud + specular highlight + bordure Coral */}
+      <LiquidGlassPanel
+        height="94vh"
+        maxWidth={840}
+        borderRadius="32px 32px 0 0"
+        borderColor={Coral}
+        distortion={30}
+        tintColor="rgba(250, 248, 243, 0.10)"
+        animate={true}
+      >
         <div style={{
           width: 40, height: 4, background: Coral,
           borderRadius: RadiusPill,
@@ -869,7 +830,7 @@ export default function CoachModal({
             </button>
           </div>
         </div>
-      </div>
+      </LiquidGlassPanel>
     </div>
   );
 }
