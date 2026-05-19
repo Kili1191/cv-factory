@@ -538,10 +538,11 @@ export default function LiquidGlassPanel({
         {/* Outer glow halo */}
         <div className={`${id}-outer-glow`} aria-hidden="true" />
 
-        {/* Container des blobs CONTENU DANS le panel (pas debordant).
-            overflow:hidden + border-radius pour respecter les bords du chat.
-            Les keyframes ont ete recalibres avec des scale plus moderes
-            pour eviter le bug des rectangles aux positions extremes. */}
+        {/* Container des blobs - ISOLATED pour creer un stacking context propre
+            qui empeche le mix-blend-mode de "percoler" sur le contenu du chat.
+            C'est la cause des bugs "elements qui apparaissent/disparaissent" :
+            sans isolation, le mix-blend-mode des blobs interferait visuellement
+            avec les boutons, l'oeil mascot, les bulles, etc. */}
         <div
           aria-hidden="true"
           style={{
@@ -551,8 +552,18 @@ export default function LiquidGlassPanel({
             zIndex: 0,
             overflow: "hidden",
             borderRadius,
+            isolation: "isolate",
           }}
         >
+          {/* Backdrop sombre subtil pour donner un substrat aux blobs.
+              Avec mix-blend-mode: screen, les blobs ont besoin d'un fond
+              non-transparent pour blend correctement (sinon comportement
+              imprevisible selon les navigateurs). */}
+          <div style={{
+            position: "absolute", inset: 0,
+            background: "rgba(20, 18, 30, 0.15)",
+            pointerEvents: "none",
+          }} />
           <div className={`${id}-blob ${id}-coral-1`} />
           <div className={`${id}-blob ${id}-coral-2`} />
           <div className={`${id}-blob ${id}-purple-1`} />
