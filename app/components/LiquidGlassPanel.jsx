@@ -214,7 +214,6 @@ export function NuviLogoAnimated({ size = 26, style = {} }) {
       <div className={`${id}-block`} style={style}>
         <div className={`${id}-wrap`}>
           <span className={`${id}-text`}>Nuvi</span>
-          <div className={`${id}-drop`} aria-hidden="true" />
           <div className={`${id}-mirror`} aria-hidden="true">Nuvi</div>
         </div>
       </div>
@@ -244,14 +243,16 @@ export default function LiquidGlassPanel({
     <>
       <style>{`
         /* ============ BLOBS MOVES ============ */
-        @keyframes ${id}-move-a { 0%,100% { transform: translate3d(-15%,-10%,0) scale(1.1); } 50% { transform: translate3d(45%,30%,0) scale(1.3); } }
-        @keyframes ${id}-move-b { 0%,100% { transform: translate3d(40%,35%,0) scale(1.2); } 50% { transform: translate3d(-5%,-10%,0) scale(1.0); } }
-        @keyframes ${id}-move-c { 0%,100% { transform: translate3d(60%,-10%,0) scale(1.0); } 50% { transform: translate3d(-10%,40%,0) scale(1.3); } }
-        @keyframes ${id}-move-d { 0%,100% { transform: translate3d(20%,45%,0) scale(1.15); } 50% { transform: translate3d(55%,-5%,0) scale(1.0); } }
-        @keyframes ${id}-move-e { 0%,100% { transform: translate3d(-25%,25%,0) scale(1.2); } 50% { transform: translate3d(40%,-5%,0) scale(0.95); } }
-        @keyframes ${id}-move-f { 0%,100% { transform: translate3d(55%,-25%,0) scale(1.1); } 50% { transform: translate3d(-5%,50%,0) scale(1.25); } }
-        @keyframes ${id}-move-g { 0%,100% { transform: translate3d(35%,55%,0) scale(1.0); } 50% { transform: translate3d(60%,15%,0) scale(1.3); } }
-        @keyframes ${id}-move-h { 0%,100% { transform: translate3d(-5%,-25%,0) scale(1.15); } 50% { transform: translate3d(30%,35%,0) scale(1.05); } }
+        /* Mouvements MODERES pour rester dans le cadre (blobs DANS le panel).
+           Translate max +/- 30% (avant: +/-60%). Scale 1.0-1.25. */
+        @keyframes ${id}-move-a { 0%,100% { transform: translate3d(10%,15%,0) scale(1.1); } 50% { transform: translate3d(30%,25%,0) scale(1.2); } }
+        @keyframes ${id}-move-b { 0%,100% { transform: translate3d(25%,20%,0) scale(1.15); } 50% { transform: translate3d(10%,30%,0) scale(1.05); } }
+        @keyframes ${id}-move-c { 0%,100% { transform: translate3d(35%,10%,0) scale(1.0); } 50% { transform: translate3d(15%,25%,0) scale(1.2); } }
+        @keyframes ${id}-move-d { 0%,100% { transform: translate3d(15%,25%,0) scale(1.1); } 50% { transform: translate3d(30%,15%,0) scale(1.0); } }
+        @keyframes ${id}-move-e { 0%,100% { transform: translate3d(5%,15%,0) scale(1.15); } 50% { transform: translate3d(25%,5%,0) scale(1.0); } }
+        @keyframes ${id}-move-f { 0%,100% { transform: translate3d(30%,5%,0) scale(1.1); } 50% { transform: translate3d(10%,30%,0) scale(1.2); } }
+        @keyframes ${id}-move-g { 0%,100% { transform: translate3d(20%,30%,0) scale(1.0); } 50% { transform: translate3d(35%,15%,0) scale(1.2); } }
+        @keyframes ${id}-move-h { 0%,100% { transform: translate3d(10%,5%,0) scale(1.15); } 50% { transform: translate3d(25%,25%,0) scale(1.05); } }
 
         /* ============ OPACITY PULSES desync ============ */
         /* Tous les pulses ont un FLOOR minimum (pas 0) pour eviter stroboscope.
@@ -331,14 +332,16 @@ export default function LiquidGlassPanel({
           pointer-events: none;
           will-change: transform, opacity;
         }
-        .${id}-coral-1 { background: radial-gradient(circle, ${COLORS.coral} 0%, transparent 65%); ${animate ? `animation: ${id}-move-a 70s ease-in-out infinite, ${id}-pulse-1 55s ease-in-out infinite;` : `opacity: ${opMax};`} }
-        .${id}-coral-2 { background: radial-gradient(circle, ${COLORS.coral} 0%, transparent 65%); ${animate ? `animation: ${id}-move-e 90s ease-in-out infinite, ${id}-pulse-2 68s ease-in-out infinite -20s;` : `opacity: ${opMax};`} }
-        .${id}-purple-1 { background: radial-gradient(circle, ${COLORS.purple} 0%, transparent 65%); ${animate ? `animation: ${id}-move-b 85s ease-in-out infinite, ${id}-pulse-3 62s ease-in-out infinite -10s;` : `opacity: ${opMax};`} }
-        .${id}-purple-2 { background: radial-gradient(circle, ${COLORS.purple} 0%, transparent 65%); ${animate ? `animation: ${id}-move-f 100s ease-in-out infinite, ${id}-pulse-4 50s ease-in-out infinite -30s;` : `opacity: ${opMax};`} }
-        .${id}-magenta-1 { background: radial-gradient(circle, ${COLORS.magenta} 0%, transparent 65%); ${animate ? `animation: ${id}-move-c 95s ease-in-out infinite, ${id}-pulse-2 58s ease-in-out infinite -15s;` : `opacity: ${opMax};`} }
-        .${id}-magenta-2 { background: radial-gradient(circle, ${COLORS.magenta} 0%, transparent 65%); ${animate ? `animation: ${id}-move-g 110s ease-in-out infinite, ${id}-pulse-1 75s ease-in-out infinite -35s;` : `opacity: ${opMax};`} }
-        .${id}-gold-1 { background: radial-gradient(circle, ${COLORS.gold} 0%, transparent 65%); ${animate ? `animation: ${id}-move-d 80s ease-in-out infinite, ${id}-pulse-3 65s ease-in-out infinite -25s;` : `opacity: ${opMax};`} }
-        .${id}-gold-2 { background: radial-gradient(circle, ${COLORS.gold} 0%, transparent 65%); ${animate ? `animation: ${id}-move-h 105s ease-in-out infinite, ${id}-pulse-4 72s ease-in-out infinite -45s;` : `opacity: ${opMax};`} }
+        /* Blobs avec opacite FIXE (plus de pulse qui faisait disparaitre)
+           et mouvements PLUS RAPIDES (35-55s au lieu de 70-110s) */
+        .${id}-coral-1 { background: radial-gradient(circle, ${COLORS.coral} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-a 35s ease-in-out infinite;` : ""} }
+        .${id}-coral-2 { background: radial-gradient(circle, ${COLORS.coral} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-e 45s ease-in-out infinite -12s;` : ""} }
+        .${id}-purple-1 { background: radial-gradient(circle, ${COLORS.purple} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-b 40s ease-in-out infinite -6s;` : ""} }
+        .${id}-purple-2 { background: radial-gradient(circle, ${COLORS.purple} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-f 50s ease-in-out infinite -18s;` : ""} }
+        .${id}-magenta-1 { background: radial-gradient(circle, ${COLORS.magenta} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-c 42s ease-in-out infinite -9s;` : ""} }
+        .${id}-magenta-2 { background: radial-gradient(circle, ${COLORS.magenta} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-g 55s ease-in-out infinite -22s;` : ""} }
+        .${id}-gold-1 { background: radial-gradient(circle, ${COLORS.gold} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-d 38s ease-in-out infinite -15s;` : ""} }
+        .${id}-gold-2 { background: radial-gradient(circle, ${COLORS.gold} 0%, transparent 65%); opacity: ${opMax}; ${animate ? `animation: ${id}-move-h 52s ease-in-out infinite -28s;` : ""} }
 
         /* ============ REFLET PULSANT MOUVANT ============ */
         .${id}-reflect-pulse {
@@ -456,10 +459,10 @@ export default function LiquidGlassPanel({
             var(--c1-${id}, ${COLORS.coral})
           );
           ${animate ? `animation:
-            ${id}-border-colors 50s ease-in-out infinite,
-            ${id}-border-angle 71s ease-in-out infinite,
-            ${id}-border-opacity 53s ease-in-out infinite,
-            ${id}-border-glow 37s ease-in-out infinite;` : "opacity: 0.55;"}
+            ${id}-border-colors 23s ease-in-out infinite,
+            ${id}-border-angle 31s ease-in-out infinite,
+            ${id}-border-opacity 19s ease-in-out infinite,
+            ${id}-border-glow 17s ease-in-out infinite;` : "opacity: 0.55;"}
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -508,19 +511,19 @@ export default function LiquidGlassPanel({
         {/* Outer glow halo */}
         <div className={`${id}-outer-glow`} aria-hidden="true" />
 
-        {/* 8 blobs auroraux qui debordent.
-            PAS d'overflow: hidden ici sinon les blobs sont clippes
-            en rectangles aux positions extremes des keyframes. */}
+        {/* Container des blobs CONTENU DANS le panel (pas debordant).
+            overflow:hidden + border-radius pour respecter les bords du chat.
+            Les keyframes ont ete recalibres avec des scale plus moderes
+            pour eviter le bug des rectangles aux positions extremes. */}
         <div
           aria-hidden="true"
           style={{
             position: "absolute",
-            top: "-40%",
-            left: "-40%",
-            right: "-40%",
-            bottom: "-40%",
+            inset: 0,
             pointerEvents: "none",
             zIndex: 0,
+            overflow: "hidden",
+            borderRadius,
           }}
         >
           <div className={`${id}-blob ${id}-coral-1`} />

@@ -594,18 +594,18 @@ export default function CoachModal({
           justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Eyebrow gradient Purple->Magenta - rappelle le brand CTA.
-                Triple text-shadow universelle pour lisibilite partout. */}
+            {/* Eyebrow gradient Purple->Magenta VIFS + glow lumineux derriere
+                pour pop sur fond clair OU sombre sans assombrir le texte. */}
             <div style={{
               fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
               marginBottom: 4,
-              background: `linear-gradient(135deg, ${Purple} 0%, ${Magenta} 100%)`,
+              background: `linear-gradient(135deg, #8b6dff 0%, #e547bf 100%)`,
               WebkitBackgroundClip: "text",
               backgroundClip: "text",
               color: "transparent",
               WebkitTextFillColor: "transparent",
-              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(0,0,0,0.5))",
+              filter: "drop-shadow(0 0 6px rgba(139,109,255,0.6)) drop-shadow(0 0 12px rgba(229,71,191,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.5))",
             }}>{T.co_eyebrow}</div>
 
             {/* Titre blanc avec shadow universelle - lisible partout */}
