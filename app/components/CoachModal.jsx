@@ -547,26 +547,27 @@ export default function CoachModal({
         animation: "cvfFadeIn 200ms ease-out",
       }} onClick={() => { if (!loading) onClose(); }} />
 
-      {/* [Glass Coach v7] Sheet : glass permanent avec bordure cream pour
-          delimiter le panneau visuellement, sans bloquer la vue du CV. */}
+      {/* [Glass Coach v8] Glass leger 10% + bordure rouille Coral.
+          La sheet flotte sur le CV qui reste lisible derriere. */}
       <div
         data-nv-coach-sheet="true"
         style={{
         position: "relative",
-        background: "rgba(10, 10, 10, 0.15)",
-        border: "1.5px solid rgba(250, 248, 243, 0.35)",
+        background: "rgba(10, 10, 10, 0.10)",
+        border: "1.5px solid " + Coral,
         borderBottom: "none",
         borderRadius: "32px 32px 0 0",
         height: "94vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 -20px 60px rgba(0,0,0,.12)",
+        boxShadow: "0 -20px 60px rgba(0,0,0,.15), 0 0 0 1px rgba(217,119,87,0.15)",
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
         width: "100%", maxWidth: 840,
         marginLeft: "auto", marginRight: "auto",
       }}>
         <div style={{
-          width: 40, height: 4, background: Hairline,
+          width: 40, height: 4, background: Coral,
           borderRadius: RadiusPill,
           margin: "10px auto 6px", flexShrink: 0,
+          opacity: 0.7,
         }} />
 
         <div style={{
@@ -574,20 +575,20 @@ export default function CoachModal({
           display: "flex", alignItems: "center",
           flexShrink: 0,
         }}>
-          <NuviLogo size={28} inkColor={Ink} />
+          <NuviLogo size={28} inkColor={Cream} />
         </div>
 
         <div style={{
           padding: "10px 24px 14px",
-          borderBottom: "0.5px solid rgba(250, 248, 243, 0.25)", flexShrink: 0,
+          borderBottom: "0.5px solid rgba(217, 119, 87, 0.25)", flexShrink: 0,
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{
-              fontSize: 11, fontWeight: 600,
+              fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
-              color: "#fff", marginBottom: 4,
+              color: Coral, marginBottom: 4,
               textShadow: "0 1px 3px rgba(0,0,0,0.4)",
             }}>{T.co_eyebrow}</div>
             <div style={{
@@ -743,7 +744,7 @@ export default function CoachModal({
 
         <div style={{
           padding: "12px 24px 18px",
-          borderTop: "0.5px solid rgba(250, 248, 243, 0.25)",
+          borderTop: "0.5px solid rgba(217, 119, 87, 0.25)",
           flexShrink: 0,
           background: "transparent",
         }}>
