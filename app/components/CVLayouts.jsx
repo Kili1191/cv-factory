@@ -329,6 +329,780 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 }
 
 // ============================================================
+// CVClassic : layout traditionnel sobre, 1 colonne, accents couleurs
+// Inspiration : Newcast/Resume.io Classic - le plus polyvalent
+// Photo facultative en haut a gauche
+// ============================================================
+export function CVClassic({ cv, set, t, T, locale }) {
+  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+
+  const S = (labelKey, fallback) => (
+    <div style={{
+      fontSize: 10, fontWeight: 700,
+      letterSpacing: 2, textTransform: "uppercase",
+      color: t.ac, margin: "18px 0 8px",
+      paddingBottom: 4,
+      borderBottom: "1.5px solid " + t.ac,
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
+  );
+
+  return (
+    <div style={{
+      fontFamily: t.bf, background: t.bg, color: t.ti,
+      padding: "32px 40px", minHeight: "100%",
+    }}>
+      {/* Header avec photo facultative a gauche */}
+      <div style={{
+        display: "flex", gap: 20, alignItems: "center",
+        marginBottom: 16, paddingBottom: 14,
+        borderBottom: "0.5px solid " + t.ac + "55",
+      }}>
+        <CVPhoto cv={cv} set={set} t={t} variant="round" size={80}
+          T={T} locale={locale}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 22, fontWeight: 700, color: t.ti,
+            lineHeight: 1.1, marginBottom: 4,
+          }}>
+            <E value={cv.name} onChange={u("name")}
+              style={{ fontSize: 22, fontWeight: 700 }}/>
+          </div>
+          <div style={{
+            fontSize: 12, color: t.ac, fontWeight: 600,
+            letterSpacing: 1, textTransform: "uppercase",
+            marginBottom: 6,
+          }}>
+            <E value={cv.title} onChange={u("title")}
+              style={{ fontSize: 12, fontWeight: 600 }}/>
+          </div>
+          <div style={{
+            fontSize: 10, color: t.ti, opacity: 0.7,
+            display: "flex", gap: 12, flexWrap: "wrap",
+          }}>
+            {["email", "phone", "location", "linkedin"].map(f => (
+              cv[f] ? <span key={f}>
+                <E value={cv[f]} onChange={u(f)} style={{ fontSize: 10 }}/>
+              </span> : null
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* PROFIL */}
+      {S("profile", T.cv_p)}
+      <p style={{
+        fontSize: 11, lineHeight: 1.55, margin: 0,
+        color: t.ti, opacity: 0.92,
+      }}>
+        <E value={cv.summary} onChange={u("summary")} multi
+          style={{ fontSize: 11 }}/>
+      </p>
+
+      {/* EXPERIENCE */}
+      {S("experience", T.cv_el)}
+      {cv.experience.map(ex => (
+        <div key={ex.id} className="cv-exp-item" style={{ marginBottom: 14 }}>
+          <div style={{
+            display: "flex", justifyContent: "space-between",
+            alignItems: "baseline", marginBottom: 2,
+          }}>
+            <div style={{ fontWeight: 700, fontSize: 12, color: t.ti }}>
+              <E value={ex.title} onChange={v => ux(ex.id, "title", v)}
+                style={{ fontWeight: 700, fontSize: 12 }}/>
+            </div>
+            <div style={{ fontSize: 10, color: t.ac, fontWeight: 600 }}>
+              <E value={ex.period} onChange={v => ux(ex.id, "period", v)}
+                style={{ fontSize: 10 }}/>
+            </div>
+          </div>
+          <div style={{
+            fontSize: 11, color: t.ac, fontStyle: "italic",
+            marginBottom: 5,
+          }}>
+            <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
+            {ex.company && ex.location ? " — " : ""}
+            <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
+          </div>
+          <ul style={{ margin: "0 0 0 18px", padding: 0, listStyleType: "disc" }}>
+            {ex.bullets.map((b, i) => (
+              <li key={i} style={{
+                fontSize: 11, color: t.ti, opacity: 0.92,
+                marginBottom: 2, lineHeight: 1.5,
+              }}>
+                <E value={b} onChange={v => ub(ex.id, i, v)}
+                  style={{ fontSize: 11 }}/>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
+
+      {/* FORMATION */}
+      {S("education", T.cv_ed)}
+      {cv.education.map(ed => (
+        <div key={ed.id} className="cv-edu-item" style={{
+          marginBottom: 8,
+          display: "flex", justifyContent: "space-between",
+          alignItems: "baseline",
+        }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 11, color: t.ti }}>
+              <E value={ed.degree} onChange={v => ue(ed.id, "degree", v)}
+                style={{ fontWeight: 700, fontSize: 11 }}/>
+            </div>
+            <div style={{ fontSize: 10, color: t.ac, fontStyle: "italic" }}>
+              <E value={ed.school} onChange={v => ue(ed.id, "school", v)}/>
+            </div>
+          </div>
+          <div style={{ fontSize: 10, color: t.ac, fontWeight: 600 }}>
+            <E value={ed.period} onChange={v => ue(ed.id, "period", v)}
+              style={{ fontSize: 10 }}/>
+          </div>
+        </div>
+      ))}
+
+      {/* COMPETENCES */}
+      {S("skills", T.cv_s)}
+      <p style={{ fontSize: 11, margin: 0, lineHeight: 1.7, color: t.ti }}>
+        {cv.skills.map((s, i) => (
+          <span key={i}>
+            <E value={s} onChange={v => us(i, v)} style={{ fontSize: 11 }}/>
+            {i < cv.skills.length - 1
+              ? <span style={{ color: t.ac, margin: "0 6px" }}>•</span>
+              : null}
+          </span>
+        ))}
+      </p>
+
+      {/* LANGUES */}
+      {S("languages", T.cv_l)}
+      <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {cv.languages.map((l, i) => (
+          <div key={i} style={{ fontSize: 11, color: t.ti }}>
+            <E value={l.lang} onChange={v => ul(i, "lang", v)}
+              style={{ fontWeight: 700, fontSize: 11 }}/>
+            <span style={{ color: t.ac }}> — </span>
+            <E value={l.level} onChange={v => ul(i, "level", v)}
+              style={{ fontSize: 11 }}/>
+          </div>
+        ))}
+      </div>
+
+      {/* CERTIFICATIONS (si non vide) */}
+      {cv.certifications.filter(c => c).length > 0 && (
+        <>
+          {S("certifications", T.cv_c)}
+          <ul style={{ margin: "0 0 0 18px", padding: 0, listStyleType: "disc" }}>
+            {cv.certifications.map((c, i) => (
+              <li key={i} style={{
+                fontSize: 11, color: t.ti, marginBottom: 2, lineHeight: 1.5,
+              }}>
+                <E value={c} onChange={v => uc(i, v)} style={{ fontSize: 11 }}/>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CVTimeline : layout avec timeline visuelle a gauche
+// Inspiration : Diamond de Zety - parfait pour montrer progression
+// ============================================================
+export function CVTimeline({ cv, set, t, T, locale }) {
+  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+
+  return (
+    <div style={{
+      fontFamily: t.bf, background: t.bg, color: t.ti,
+      minHeight: "100%",
+    }}>
+      {/* Header sombre contraste */}
+      <div style={{
+        background: t.sb, color: t.st,
+        padding: "30px 40px",
+        display: "flex", gap: 18, alignItems: "center",
+      }}>
+        <CVPhoto cv={cv} set={set} t={t} variant="round" size={90}
+          T={T} locale={locale}/>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            fontSize: 24, fontWeight: 400, color: t.st,
+            fontFamily: t.tf || t.bf, lineHeight: 1.1, marginBottom: 4,
+          }}>
+            <E value={cv.name} onChange={u("name")}
+              style={{ fontSize: 24, color: t.st }}/>
+          </div>
+          <div style={{
+            fontSize: 12, color: t.ac, fontWeight: 600,
+            letterSpacing: 1.5, textTransform: "uppercase",
+            marginBottom: 8,
+          }}>
+            <E value={cv.title} onChange={u("title")}
+              style={{ fontSize: 12, color: t.ac }}/>
+          </div>
+          <div style={{
+            fontSize: 10, color: t.st, opacity: 0.75,
+            display: "flex", gap: 14, flexWrap: "wrap",
+          }}>
+            {["email", "phone", "location", "linkedin"].map(f => (
+              cv[f] ? <span key={f}>
+                <E value={cv[f]} onChange={u(f)}
+                  style={{ fontSize: 10, color: t.st }}/>
+              </span> : null
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Body avec timeline */}
+      <div style={{ padding: "28px 40px" }}>
+        {/* PROFIL */}
+        <div style={{ marginBottom: 22 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            textTransform: "uppercase", color: t.ac, marginBottom: 8,
+          }}>
+            <EditableTitle cv={cv} set={set} labelKey="profile"
+              locale={locale} fallback={T.cv_p}/>
+          </div>
+          <p style={{ fontSize: 11, lineHeight: 1.6, margin: 0, color: t.ti }}>
+            <E value={cv.summary} onChange={u("summary")} multi
+              style={{ fontSize: 11 }}/>
+          </p>
+        </div>
+
+        {/* EXPERIENCE avec timeline */}
+        <div style={{ marginBottom: 22 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            textTransform: "uppercase", color: t.ac, marginBottom: 14,
+          }}>
+            <EditableTitle cv={cv} set={set} labelKey="experience"
+              locale={locale} fallback={T.cv_el}/>
+          </div>
+          <div style={{ position: "relative", paddingLeft: 28 }}>
+            {/* Ligne verticale timeline */}
+            <div style={{
+              position: "absolute", left: 7, top: 6, bottom: 6,
+              width: 1, background: t.ac, opacity: 0.4,
+            }}/>
+            {cv.experience.map(ex => (
+              <div key={ex.id} style={{
+                marginBottom: 16, position: "relative",
+              }}>
+                {/* Diamant timeline */}
+                <div style={{
+                  position: "absolute", left: -25, top: 4,
+                  width: 8, height: 8,
+                  background: t.ac, transform: "rotate(45deg)",
+                }}/>
+                <div style={{
+                  display: "flex", justifyContent: "space-between",
+                  alignItems: "baseline", marginBottom: 2,
+                }}>
+                  <div style={{ fontWeight: 700, fontSize: 12, color: t.ti }}>
+                    <E value={ex.title} onChange={v => ux(ex.id, "title", v)}
+                      style={{ fontWeight: 700, fontSize: 12 }}/>
+                  </div>
+                  <div style={{ fontSize: 10, color: t.ac, fontWeight: 600 }}>
+                    <E value={ex.period} onChange={v => ux(ex.id, "period", v)}
+                      style={{ fontSize: 10 }}/>
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: 11, color: t.ac, fontStyle: "italic",
+                  marginBottom: 6,
+                }}>
+                  <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
+                  {ex.company && ex.location ? " · " : ""}
+                  <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
+                </div>
+                <ul style={{ margin: "0 0 0 16px", padding: 0, listStyleType: "disc" }}>
+                  {ex.bullets.map((b, i) => (
+                    <li key={i} style={{
+                      fontSize: 11, color: t.ti, opacity: 0.92,
+                      marginBottom: 2, lineHeight: 1.5,
+                    }}>
+                      <E value={b} onChange={v => ub(ex.id, i, v)}
+                        style={{ fontSize: 11 }}/>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* FORMATION en timeline aussi */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            textTransform: "uppercase", color: t.ac, marginBottom: 12,
+          }}>
+            <EditableTitle cv={cv} set={set} labelKey="education"
+              locale={locale} fallback={T.cv_ed}/>
+          </div>
+          {cv.education.map(ed => (
+            <div key={ed.id} style={{
+              marginBottom: 8, display: "flex",
+              justifyContent: "space-between", alignItems: "baseline",
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 11, color: t.ti }}>
+                  <E value={ed.degree} onChange={v => ue(ed.id, "degree", v)}
+                    style={{ fontWeight: 700, fontSize: 11 }}/>
+                </div>
+                <div style={{ fontSize: 10, color: t.ac, fontStyle: "italic" }}>
+                  <E value={ed.school} onChange={v => ue(ed.id, "school", v)}/>
+                </div>
+              </div>
+              <div style={{ fontSize: 10, color: t.ac, fontWeight: 600 }}>
+                <E value={ed.period} onChange={v => ue(ed.id, "period", v)}
+                  style={{ fontSize: 10 }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* COMPETENCES */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, letterSpacing: 2,
+            textTransform: "uppercase", color: t.ac, marginBottom: 8,
+          }}>
+            <EditableTitle cv={cv} set={set} labelKey="skills"
+              locale={locale} fallback={T.cv_s}/>
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {cv.skills.map((s, i) => (
+              <span key={i} style={{
+                fontSize: 10, color: t.ti,
+                background: t.ac + "22",
+                padding: "3px 8px", borderRadius: 3,
+              }}>
+                <E value={s} onChange={v => us(i, v)} style={{ fontSize: 10 }}/>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* LANGUES + CERTIFICATIONS */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div>
+            <div style={{
+              fontSize: 10, fontWeight: 700, letterSpacing: 2,
+              textTransform: "uppercase", color: t.ac, marginBottom: 6,
+            }}>
+              <EditableTitle cv={cv} set={set} labelKey="languages"
+                locale={locale} fallback={T.cv_l}/>
+            </div>
+            {cv.languages.map((l, i) => (
+              <div key={i} style={{ fontSize: 11, color: t.ti, marginBottom: 3 }}>
+                <E value={l.lang} onChange={v => ul(i, "lang", v)}
+                  style={{ fontWeight: 700, fontSize: 11 }}/>
+                <span style={{ color: t.ac }}> · </span>
+                <E value={l.level} onChange={v => ul(i, "level", v)}
+                  style={{ fontSize: 11 }}/>
+              </div>
+            ))}
+          </div>
+          {cv.certifications.filter(c => c).length > 0 && (
+            <div>
+              <div style={{
+                fontSize: 10, fontWeight: 700, letterSpacing: 2,
+                textTransform: "uppercase", color: t.ac, marginBottom: 6,
+              }}>
+                <EditableTitle cv={cv} set={set} labelKey="certifications"
+                  locale={locale} fallback={T.cv_c}/>
+              </div>
+              {cv.certifications.map((c, i) => (
+                <div key={i} style={{
+                  fontSize: 11, color: t.ti, marginBottom: 3, lineHeight: 1.4,
+                }}>
+                  <E value={c} onChange={v => uc(i, v)} style={{ fontSize: 11 }}/>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// CVSwiss : layout minimaliste suisse, ultra-sobre
+// Inspiration : Dieter Rams - moins c'est plus
+// PAS d'icones, PAS de couleurs sauf 1 accent, focus contenu
+// ============================================================
+export function CVSwiss({ cv, set, t, T, locale }) {
+  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+
+  const S = (labelKey, fallback) => (
+    <div style={{
+      fontSize: 9, fontWeight: 700,
+      letterSpacing: 3, textTransform: "uppercase",
+      color: t.ac, margin: "22px 0 10px",
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
+  );
+
+  return (
+    <div style={{
+      fontFamily: t.bf, background: t.bg, color: t.ti,
+      padding: "40px 48px", minHeight: "100%",
+      maxWidth: 800,
+    }}>
+      {/* Header epure */}
+      <div style={{ marginBottom: 28 }}>
+        <CVPhoto cv={cv} set={set} t={t} variant="square" size={70}
+          T={T} locale={locale}/>
+        <div style={{ marginTop: 18 }}>
+          <div style={{
+            fontSize: 28, fontWeight: 300, color: t.ti,
+            lineHeight: 1, letterSpacing: -0.5, marginBottom: 8,
+            fontFamily: t.tf || t.bf,
+          }}>
+            <E value={cv.name} onChange={u("name")}
+              style={{ fontSize: 28, fontWeight: 300 }}/>
+          </div>
+          <div style={{
+            fontSize: 11, color: t.ti, opacity: 0.7,
+            fontWeight: 400, letterSpacing: 0.5,
+            marginBottom: 12,
+          }}>
+            <E value={cv.title} onChange={u("title")}
+              style={{ fontSize: 11 }}/>
+          </div>
+          <div style={{
+            fontSize: 10, color: t.ti, opacity: 0.55,
+            display: "flex", gap: 14, flexWrap: "wrap",
+          }}>
+            {["email", "phone", "location", "linkedin"].map(f => (
+              cv[f] ? <span key={f}>
+                <E value={cv[f]} onChange={u(f)} style={{ fontSize: 10 }}/>
+              </span> : null
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* PROFIL */}
+      {S("profile", T.cv_p)}
+      <p style={{
+        fontSize: 11, lineHeight: 1.65, margin: 0, color: t.ti,
+        maxWidth: 680,
+      }}>
+        <E value={cv.summary} onChange={u("summary")} multi
+          style={{ fontSize: 11 }}/>
+      </p>
+
+      {/* EXPERIENCE */}
+      {S("experience", T.cv_el)}
+      {cv.experience.map(ex => (
+        <div key={ex.id} className="cv-exp-item" style={{
+          marginBottom: 18, display: "grid",
+          gridTemplateColumns: "100px 1fr", gap: 20,
+        }}>
+          <div style={{
+            fontSize: 10, color: t.ac, fontWeight: 600,
+            letterSpacing: 0.3, paddingTop: 1,
+          }}>
+            <E value={ex.period} onChange={v => ux(ex.id, "period", v)}
+              style={{ fontSize: 10 }}/>
+          </div>
+          <div>
+            <div style={{
+              fontSize: 12, fontWeight: 600, color: t.ti, marginBottom: 2,
+            }}>
+              <E value={ex.title} onChange={v => ux(ex.id, "title", v)}
+                style={{ fontWeight: 600, fontSize: 12 }}/>
+            </div>
+            <div style={{
+              fontSize: 11, color: t.ti, opacity: 0.7,
+              marginBottom: 6,
+            }}>
+              <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
+              {ex.company && ex.location ? ", " : ""}
+              <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
+            </div>
+            {ex.bullets.map((b, i) => (
+              <div key={i} style={{
+                fontSize: 11, color: t.ti, opacity: 0.88,
+                marginBottom: 3, lineHeight: 1.5,
+              }}>
+                <E value={b} onChange={v => ub(ex.id, i, v)}
+                  style={{ fontSize: 11 }}/>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {/* FORMATION */}
+      {S("education", T.cv_ed)}
+      {cv.education.map(ed => (
+        <div key={ed.id} style={{
+          marginBottom: 10, display: "grid",
+          gridTemplateColumns: "100px 1fr", gap: 20,
+        }}>
+          <div style={{
+            fontSize: 10, color: t.ac, fontWeight: 600, paddingTop: 1,
+          }}>
+            <E value={ed.period} onChange={v => ue(ed.id, "period", v)}
+              style={{ fontSize: 10 }}/>
+          </div>
+          <div>
+            <div style={{
+              fontSize: 11, fontWeight: 600, color: t.ti,
+            }}>
+              <E value={ed.degree} onChange={v => ue(ed.id, "degree", v)}
+                style={{ fontWeight: 600, fontSize: 11 }}/>
+            </div>
+            <div style={{ fontSize: 10, color: t.ti, opacity: 0.7 }}>
+              <E value={ed.school} onChange={v => ue(ed.id, "school", v)}/>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* COMPETENCES + LANGUES en grid */}
+      <div style={{
+        marginTop: 22, display: "grid",
+        gridTemplateColumns: "1fr 1fr", gap: 32,
+      }}>
+        <div>
+          {S("skills", T.cv_s)}
+          <div style={{ fontSize: 11, color: t.ti, lineHeight: 1.7 }}>
+            {cv.skills.map((s, i) => (
+              <span key={i}>
+                <E value={s} onChange={v => us(i, v)} style={{ fontSize: 11 }}/>
+                {i < cv.skills.length - 1 ? ", " : ""}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div>
+          {S("languages", T.cv_l)}
+          {cv.languages.map((l, i) => (
+            <div key={i} style={{ fontSize: 11, color: t.ti, marginBottom: 3 }}>
+              <E value={l.lang} onChange={v => ul(i, "lang", v)}
+                style={{ fontWeight: 600, fontSize: 11 }}/>
+              <span style={{ color: t.ti, opacity: 0.5 }}> — </span>
+              <E value={l.level} onChange={v => ul(i, "level", v)}
+                style={{ fontSize: 11, opacity: 0.7 }}/>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {cv.certifications.filter(c => c).length > 0 && (
+        <>
+          {S("certifications", T.cv_c)}
+          {cv.certifications.map((c, i) => (
+            <div key={i} style={{
+              fontSize: 11, color: t.ti, marginBottom: 3, lineHeight: 1.5,
+            }}>
+              <E value={c} onChange={v => uc(i, v)} style={{ fontSize: 11 }}/>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// CVCompact : layout dense 2 colonnes pour tenir sur 1 page
+// Inspiration : Crisp/Cubic 1-page de Zety - junior/stages
+// ============================================================
+export function CVCompact({ cv, set, t, T, locale }) {
+  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+
+  const S = (labelKey, fallback) => (
+    <div style={{
+      fontSize: 9, fontWeight: 700,
+      letterSpacing: 1.5, textTransform: "uppercase",
+      color: t.ac, margin: "12px 0 6px",
+      paddingBottom: 2, borderBottom: "1px solid " + t.ac + "44",
+    }}>
+      <EditableTitle cv={cv} set={set} labelKey={labelKey}
+        locale={locale} fallback={fallback}/>
+    </div>
+  );
+
+  return (
+    <div style={{
+      fontFamily: t.bf, background: t.bg, color: t.ti,
+      padding: "20px 28px", minHeight: "100%",
+    }}>
+      {/* Header compact */}
+      <div style={{
+        display: "flex", gap: 14, alignItems: "center",
+        marginBottom: 12, paddingBottom: 10,
+        borderBottom: "1.5px solid " + t.ac,
+      }}>
+        <CVPhoto cv={cv} set={set} t={t} variant="round" size={58}
+          T={T} locale={locale}/>
+        <div style={{ flex: 1 }}>
+          <div style={{
+            fontSize: 17, fontWeight: 700, color: t.ti,
+            lineHeight: 1.1, marginBottom: 2,
+          }}>
+            <E value={cv.name} onChange={u("name")}
+              style={{ fontSize: 17, fontWeight: 700 }}/>
+          </div>
+          <div style={{
+            fontSize: 10, color: t.ac, fontWeight: 600,
+            letterSpacing: 0.8, textTransform: "uppercase",
+            marginBottom: 3,
+          }}>
+            <E value={cv.title} onChange={u("title")}
+              style={{ fontSize: 10, fontWeight: 600 }}/>
+          </div>
+          <div style={{
+            fontSize: 9, color: t.ti, opacity: 0.75,
+            display: "flex", gap: 10, flexWrap: "wrap",
+          }}>
+            {["email", "phone", "location", "linkedin"].map(f => (
+              cv[f] ? <span key={f}>
+                <E value={cv[f]} onChange={u(f)} style={{ fontSize: 9 }}/>
+              </span> : null
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* PROFIL pleine largeur */}
+      <p style={{
+        fontSize: 10, lineHeight: 1.5, margin: "0 0 8px",
+        color: t.ti, opacity: 0.92,
+      }}>
+        <E value={cv.summary} onChange={u("summary")} multi
+          style={{ fontSize: 10 }}/>
+      </p>
+
+      {/* Body 2 colonnes */}
+      <div style={{
+        display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 18,
+      }}>
+        {/* Colonne gauche : Experience + Education */}
+        <div>
+          {S("experience", T.cv_el)}
+          {cv.experience.map(ex => (
+            <div key={ex.id} className="cv-exp-item" style={{ marginBottom: 8 }}>
+              <div style={{
+                display: "flex", justifyContent: "space-between",
+                alignItems: "baseline",
+              }}>
+                <div style={{ fontWeight: 700, fontSize: 10.5, color: t.ti }}>
+                  <E value={ex.title} onChange={v => ux(ex.id, "title", v)}
+                    style={{ fontWeight: 700, fontSize: 10.5 }}/>
+                </div>
+                <div style={{ fontSize: 9, color: t.ac, fontWeight: 600 }}>
+                  <E value={ex.period} onChange={v => ux(ex.id, "period", v)}
+                    style={{ fontSize: 9 }}/>
+                </div>
+              </div>
+              <div style={{
+                fontSize: 9.5, color: t.ac, fontStyle: "italic",
+                marginBottom: 3,
+              }}>
+                <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
+                {ex.company && ex.location ? " · " : ""}
+                <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
+              </div>
+              <ul style={{
+                margin: "0 0 0 14px", padding: 0, listStyleType: "disc",
+              }}>
+                {ex.bullets.map((b, i) => (
+                  <li key={i} style={{
+                    fontSize: 9.5, color: t.ti, opacity: 0.9,
+                    marginBottom: 1, lineHeight: 1.4,
+                  }}>
+                    <E value={b} onChange={v => ub(ex.id, i, v)}
+                      style={{ fontSize: 9.5 }}/>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+
+          {S("education", T.cv_ed)}
+          {cv.education.map(ed => (
+            <div key={ed.id} style={{
+              marginBottom: 5, display: "flex",
+              justifyContent: "space-between", alignItems: "baseline",
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 10, color: t.ti }}>
+                  <E value={ed.degree} onChange={v => ue(ed.id, "degree", v)}
+                    style={{ fontWeight: 700, fontSize: 10 }}/>
+                </div>
+                <div style={{ fontSize: 9, color: t.ac, fontStyle: "italic" }}>
+                  <E value={ed.school} onChange={v => ue(ed.id, "school", v)}/>
+                </div>
+              </div>
+              <div style={{ fontSize: 9, color: t.ac, fontWeight: 600 }}>
+                <E value={ed.period} onChange={v => ue(ed.id, "period", v)}
+                  style={{ fontSize: 9 }}/>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Colonne droite : Skills + Languages + Certifs */}
+        <div>
+          {S("skills", T.cv_s)}
+          <div style={{ fontSize: 9.5, color: t.ti, lineHeight: 1.7 }}>
+            {cv.skills.map((s, i) => (
+              <div key={i} style={{ marginBottom: 1 }}>
+                <span style={{ color: t.ac }}>• </span>
+                <E value={s} onChange={v => us(i, v)} style={{ fontSize: 9.5 }}/>
+              </div>
+            ))}
+          </div>
+
+          {S("languages", T.cv_l)}
+          {cv.languages.map((l, i) => (
+            <div key={i} style={{ fontSize: 9.5, color: t.ti, marginBottom: 2 }}>
+              <E value={l.lang} onChange={v => ul(i, "lang", v)}
+                style={{ fontWeight: 700, fontSize: 9.5 }}/>
+              <span style={{ color: t.ac }}> : </span>
+              <E value={l.level} onChange={v => ul(i, "level", v)}
+                style={{ fontSize: 9.5, opacity: 0.8 }}/>
+            </div>
+          ))}
+
+          {cv.certifications.filter(c => c).length > 0 && (
+            <>
+              {S("certifications", T.cv_c)}
+              {cv.certifications.map((c, i) => (
+                <div key={i} style={{
+                  fontSize: 9.5, color: t.ti, marginBottom: 2, lineHeight: 1.4,
+                }}>
+                  <span style={{ color: t.ac }}>• </span>
+                  <E value={c} onChange={v => uc(i, v)}
+                    style={{ fontSize: 9.5 }}/>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 // CVAts : layout ATS-Safe v2 (REWRITE 2026-05-19)
 // ============================================================
 // Optimise pour passer TOUS les ATS (Workday, Greenhouse, Lever,
