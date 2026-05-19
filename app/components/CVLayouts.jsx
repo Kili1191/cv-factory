@@ -329,155 +329,209 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 }
 
 // ============================================================
-// CVAts : layout ATS-Safe (sobre, robot-friendly, PAS de photo par convention)
+// CVAts : layout ATS-Safe v2 (REWRITE 2026-05-19)
 // ============================================================
+// Optimise pour passer TOUS les ATS (Workday, Greenhouse, Lever,
+// Taleo, SAP SuccessFactors, iCIMS, Bullhorn, Jobscan, Rezi).
+//
+// REGLES ATS strictes appliquees :
+// - 1 seule colonne (les colonnes/sidebar cassent le parsing)
+// - Police Calibri (native Word + supportee partout) puis Arial fallback
+// - PAS de border-bottom sur sections (cree du bruit dans le parsing)
+// - PAS de bordure decorative sous le header
+// - PAS de photo (la plupart des ATS US/UK l'ignorent ou crashent)
+// - PAS d'emojis, icones, caracteres speciaux
+// - Bullets en caractere standard U+2022 (•)
+// - Sections en MAJUSCULES bold (les ATS detectent les titres)
+// - Dates a droite alignees avec flex (parse OK)
+// - Skills separes par virgules (standard) au lieu de "|"
+// - Contact info en ligne avec bullet separators (parse OK)
+// - Tirets remplaces par bullets dans certifications
+// - Couleurs : que du noir/gris fonce (#000 et #333)
 export function CVAts({ cv, set, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
+  // Titre de section : MAJUSCULES bold, PAS de border-bottom.
+  // Les ATS modernes detectent les sections via le formatting (caps + bold).
   const S = (labelKey, fallback) => (
     <div style={{
-      fontWeight:700, fontSize:11, color:"#000",
-      borderBottom:"1.5px solid #000",
-      paddingBottom:3, marginBottom:8, marginTop:16,
-      letterSpacing:.5, textTransform:"uppercase",
+      fontWeight: 700, fontSize: 11.5, color: "#000",
+      marginTop: 18, marginBottom: 6,
+      letterSpacing: 0.6, textTransform: "uppercase",
     }}>
       <EditableTitle cv={cv} set={set} labelKey={labelKey}
         locale={locale} fallback={fallback}/>
     </div>
   );
 
+  // Helper pour join contact info avec bullet separator (• standard)
+  const contactItems = ["email", "phone", "location", "linkedin"]
+    .map(f => ({ field: f, value: cv[f] }))
+    .filter(item => item.value);
+
   return (
     <div style={{
-      fontFamily:"Arial,sans-serif", background:"#fff",
-      padding:"28px 36px", color:"#111",
+      fontFamily: "Calibri, Arial, Helvetica, sans-serif",
+      background: "#fff",
+      padding: "32px 40px",
+      color: "#111",
+      fontSize: 11,
+      lineHeight: 1.45,
     }}>
-      {/* Header */}
-      <div style={{
-        marginBottom:12, paddingBottom:10,
-        borderBottom:"2px solid #000",
-      }}>
-        <div style={{fontSize:20, fontWeight:700}}>
+      {/* HEADER : nom + titre + contact, AUCUNE bordure decorative */}
+      <div style={{ marginBottom: 14 }}>
+        <div style={{
+          fontSize: 22, fontWeight: 700, color: "#000",
+          lineHeight: 1.1, marginBottom: 2,
+        }}>
           <E value={cv.name} onChange={u("name")}
-            style={{fontSize:20, fontWeight:700}}/>
+            style={{ fontSize: 22, fontWeight: 700 }}/>
         </div>
         <div style={{
-          fontSize:11, fontWeight:600, color:"#333", marginTop:2,
+          fontSize: 12, fontWeight: 600, color: "#333",
+          marginBottom: 6,
         }}>
-          <E value={cv.title} onChange={u("title")}/>
+          <E value={cv.title} onChange={u("title")}
+            style={{ fontSize: 12, fontWeight: 600 }}/>
         </div>
+        {/* Contact en ligne, bullets separators */}
         <div style={{
-          fontSize:9.5, color:"#444", marginTop:5,
-          display:"flex", gap:12, flexWrap:"wrap",
+          fontSize: 10.5, color: "#333",
+          display: "flex", gap: 0, flexWrap: "wrap",
+          alignItems: "center",
         }}>
-          {["email","phone","location","linkedin"].map(f => (
-            <span key={f}>
-              <E value={cv[f]} onChange={u(f)} style={{fontSize:9.5}}/>
+          {["email", "phone", "location", "linkedin"].map((f, idx) => (
+            <span key={f} style={{ display: "inline-flex", alignItems: "center" }}>
+              <E value={cv[f]} onChange={u(f)} style={{ fontSize: 10.5 }}/>
+              {idx < 3 && cv[f] && (
+                <span style={{ margin: "0 8px", color: "#666" }}>•</span>
+              )}
             </span>
           ))}
         </div>
       </div>
 
-      {/* Summary */}
+      {/* PROFIL */}
       {S("profile", T.cv_p)}
       <p style={{
-        fontSize:10, color:"#222", lineHeight:1.7, margin:"0 0 3px",
+        fontSize: 11, color: "#222", lineHeight: 1.5,
+        margin: 0, textAlign: "justify",
       }}>
         <E value={cv.summary} onChange={u("summary")} multi
-          style={{fontSize:10}}/>
+          style={{ fontSize: 11 }}/>
       </p>
 
-      {/* Experiences */}
+      {/* EXPERIENCE PROFESSIONNELLE */}
       {S("experience", T.cv_el)}
       {cv.experience.map(ex => (
-        <div key={ex.id} className="cv-exp-item" style={{marginBottom:12}}>
-          <div style={{display:"flex", justifyContent:"space-between"}}>
-            <div style={{fontWeight:700, fontSize:11}}>
-              <E value={ex.title} onChange={v=>ux(ex.id, "title", v)}
-                style={{fontWeight:700, fontSize:11}}/>
-            </div>
-            <div style={{fontSize:9.5, color:"#555"}}>
-              <E value={ex.period} onChange={v=>ux(ex.id, "period", v)}
-                style={{fontSize:9.5}}/>
-            </div>
-          </div>
+        <div key={ex.id} className="cv-exp-item" style={{ marginBottom: 12 }}>
+          {/* Titre + dates sur meme ligne, flex space-between */}
           <div style={{
-            fontSize:10, fontStyle:"italic", color:"#444", marginBottom:2,
+            display: "flex", justifyContent: "space-between",
+            alignItems: "baseline", marginBottom: 1,
           }}>
-            <E value={ex.company} onChange={v=>ux(ex.id, "company", v)}/>
-            {" - "}
-            <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}/>
+            <div style={{ fontWeight: 700, fontSize: 11.5, color: "#000" }}>
+              <E value={ex.title} onChange={v => ux(ex.id, "title", v)}
+                style={{ fontWeight: 700, fontSize: 11.5 }}/>
+            </div>
+            <div style={{ fontSize: 10.5, color: "#333", fontWeight: 600 }}>
+              <E value={ex.period} onChange={v => ux(ex.id, "period", v)}
+                style={{ fontSize: 10.5 }}/>
+            </div>
           </div>
-          <ul style={{margin:"0 0 0 14px", padding:0}}>
+          {/* Company + location sur ligne 2 */}
+          <div style={{
+            fontSize: 11, fontStyle: "italic", color: "#333",
+            marginBottom: 4,
+          }}>
+            <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
+            {ex.company && ex.location ? ", " : ""}
+            <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
+          </div>
+          {/* Bullets avec • standard, indentation simple */}
+          <ul style={{
+            margin: "0 0 0 18px", padding: 0,
+            listStyleType: "disc",
+          }}>
             {ex.bullets.map((b, i) => (
               <li key={i} style={{
-                fontSize:10, color:"#222", marginBottom:2, lineHeight:1.5,
+                fontSize: 11, color: "#222",
+                marginBottom: 2, lineHeight: 1.5,
               }}>
-                <E value={b} onChange={v=>ub(ex.id, i, v)}
-                  style={{fontSize:10}}/>
+                <E value={b} onChange={v => ub(ex.id, i, v)}
+                  style={{ fontSize: 11 }}/>
               </li>
             ))}
           </ul>
         </div>
       ))}
 
-      {/* Formations */}
+      {/* FORMATION */}
       {S("education", T.cv_ed)}
       {cv.education.map(ed => (
         <div key={ed.id} className="cv-edu-item" style={{
-          marginBottom:7, display:"flex", justifyContent:"space-between",
+          marginBottom: 8,
+          display: "flex", justifyContent: "space-between",
+          alignItems: "baseline",
         }}>
-          <div>
-            <div style={{fontWeight:700, fontSize:10.5}}>
-              <E value={ed.degree} onChange={v=>ue(ed.id, "degree", v)}
-                style={{fontWeight:700, fontSize:10.5}}/>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 700, fontSize: 11, color: "#000" }}>
+              <E value={ed.degree} onChange={v => ue(ed.id, "degree", v)}
+                style={{ fontWeight: 700, fontSize: 11 }}/>
             </div>
-            <div style={{fontSize:9.5, color:"#555"}}>
-              <E value={ed.school} onChange={v=>ue(ed.id, "school", v)}/>
+            <div style={{ fontSize: 10.5, color: "#333", fontStyle: "italic" }}>
+              <E value={ed.school} onChange={v => ue(ed.id, "school", v)}/>
             </div>
           </div>
-          <div style={{fontSize:9.5, color:"#555"}}>
-            <E value={ed.period} onChange={v=>ue(ed.id, "period", v)}
-              style={{fontSize:9.5}}/>
+          <div style={{ fontSize: 10.5, color: "#333", fontWeight: 600 }}>
+            <E value={ed.period} onChange={v => ue(ed.id, "period", v)}
+              style={{ fontSize: 10.5 }}/>
           </div>
         </div>
       ))}
 
-      {/* Skills */}
+      {/* COMPETENCES : virgules (standard ATS) au lieu de "|" */}
       {S("skills", T.cv_s)}
       <p style={{
-        fontSize:10, margin:0, lineHeight:1.7, color:"#222",
+        fontSize: 11, margin: 0, lineHeight: 1.6, color: "#222",
       }}>
         {cv.skills.map((s, i) => (
           <span key={i}>
-            <E value={s} onChange={v=>us(i, v)} style={{fontSize:10}}/>
-            {i < cv.skills.length - 1
-              ? <span style={{color:"#888"}}> | </span>
-              : null}
+            <E value={s} onChange={v => us(i, v)} style={{ fontSize: 11 }}/>
+            {i < cv.skills.length - 1 ? ", " : ""}
           </span>
         ))}
       </p>
 
-      {/* Languages */}
+      {/* LANGUES : format Langue : Niveau, ligne par ligne */}
       {S("languages", T.cv_l)}
       {cv.languages.map((l, i) => (
-        <div key={i} style={{fontSize:10, marginBottom:2}}>
-          <E value={l.lang} onChange={v=>ul(i, "lang", v)}
-            style={{fontWeight:600, fontSize:10}}/>
+        <div key={i} style={{ fontSize: 11, marginBottom: 2, color: "#222" }}>
+          <E value={l.lang} onChange={v => ul(i, "lang", v)}
+            style={{ fontWeight: 600, fontSize: 11 }}/>
           {" : "}
-          <E value={l.level} onChange={v=>ul(i, "level", v)} style={{fontSize:10}}/>
+          <E value={l.level} onChange={v => ul(i, "level", v)}
+            style={{ fontSize: 11 }}/>
         </div>
       ))}
 
-      {/* Certifications (seulement si non vide) */}
+      {/* CERTIFICATIONS (seulement si non vide) - bullets standards */}
       {cv.certifications.filter(c => c).length > 0 && (
         <>
           {S("certifications", T.cv_c)}
-          {cv.certifications.map((c, i) => (
-            <div key={i} style={{fontSize:10, marginBottom:2}}>
-              {"- "}
-              <E value={c} onChange={v=>uc(i, v)} style={{fontSize:10}}/>
-            </div>
-          ))}
+          <ul style={{
+            margin: "0 0 0 18px", padding: 0,
+            listStyleType: "disc",
+          }}>
+            {cv.certifications.map((c, i) => (
+              <li key={i} style={{
+                fontSize: 11, color: "#222",
+                marginBottom: 2, lineHeight: 1.5,
+              }}>
+                <E value={c} onChange={v => uc(i, v)} style={{ fontSize: 11 }}/>
+              </li>
+            ))}
+          </ul>
         </>
       )}
     </div>
