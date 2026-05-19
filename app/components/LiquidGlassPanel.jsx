@@ -102,14 +102,17 @@ export function NuviLogoAnimated({ size = 26, style = {} }) {
           0%   { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
+        /* Glow logo : shadow GENTLE qui met en valeur le logo sans agressivite.
+           - Drop-shadow doux constant (decalage 0 2px, blur 8px, noir 35%)
+           - Glow Coral subtil qui respire (4px <-> 10px) */
         @keyframes ${id}-glow-pulse {
           0%, 100% {
-            filter: drop-shadow(0 0 6px rgba(217,119,87,0.25))
-                    drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+            filter: drop-shadow(0 2px 6px rgba(0,0,0,0.35))
+                    drop-shadow(0 0 8px rgba(217,119,87,0.30));
           }
           50% {
-            filter: drop-shadow(0 0 14px rgba(217,119,87,0.45))
-                    drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.40))
+                    drop-shadow(0 0 14px rgba(217,119,87,0.45));
           }
         }
 
@@ -242,38 +245,59 @@ export default function LiquidGlassPanel({
   return (
     <>
       <style>{`
-        /* ============ BLOBS MOVES ============ */
-        /* Mouvements MODERES pour rester dans le cadre (blobs DANS le panel).
-           Translate max +/- 30% (avant: +/-60%). Scale 1.0-1.25. */
-        @keyframes ${id}-move-a { 0%,100% { transform: translate3d(10%,15%,0) scale(1.1); } 50% { transform: translate3d(30%,25%,0) scale(1.2); } }
-        @keyframes ${id}-move-b { 0%,100% { transform: translate3d(25%,20%,0) scale(1.15); } 50% { transform: translate3d(10%,30%,0) scale(1.05); } }
-        @keyframes ${id}-move-c { 0%,100% { transform: translate3d(35%,10%,0) scale(1.0); } 50% { transform: translate3d(15%,25%,0) scale(1.2); } }
-        @keyframes ${id}-move-d { 0%,100% { transform: translate3d(15%,25%,0) scale(1.1); } 50% { transform: translate3d(30%,15%,0) scale(1.0); } }
-        @keyframes ${id}-move-e { 0%,100% { transform: translate3d(5%,15%,0) scale(1.15); } 50% { transform: translate3d(25%,5%,0) scale(1.0); } }
-        @keyframes ${id}-move-f { 0%,100% { transform: translate3d(30%,5%,0) scale(1.1); } 50% { transform: translate3d(10%,30%,0) scale(1.2); } }
-        @keyframes ${id}-move-g { 0%,100% { transform: translate3d(20%,30%,0) scale(1.0); } 50% { transform: translate3d(35%,15%,0) scale(1.2); } }
-        @keyframes ${id}-move-h { 0%,100% { transform: translate3d(10%,5%,0) scale(1.15); } 50% { transform: translate3d(25%,25%,0) scale(1.05); } }
+        /* ============ BLOBS MOVES - SE BALADENT PARTOUT ============ */
+        /* Blobs taille 60% du panel -> ils peuvent se balader de translate(0,0)
+           (coin haut-gauche) a translate(65%, 65%) (coin bas-droite) pour
+           couvrir TOUT le panel. */
+        @keyframes ${id}-move-a {
+          0%   { transform: translate3d(0%,0%,0) scale(1.1); }
+          25%  { transform: translate3d(60%,5%,0) scale(1.3); }
+          50%  { transform: translate3d(65%,60%,0) scale(0.9); }
+          75%  { transform: translate3d(5%,55%,0) scale(1.2); }
+          100% { transform: translate3d(0%,0%,0) scale(1.1); }
+        }
+        @keyframes ${id}-move-b {
+          0%   { transform: translate3d(60%,0%,0) scale(1.15); }
+          33%  { transform: translate3d(20%,30%,0) scale(1.3); }
+          66%  { transform: translate3d(50%,60%,0) scale(0.95); }
+          100% { transform: translate3d(60%,0%,0) scale(1.15); }
+        }
+        @keyframes ${id}-move-c {
+          0%   { transform: translate3d(0%,60%,0) scale(1.1); }
+          33%  { transform: translate3d(30%,30%,0) scale(1.25); }
+          66%  { transform: translate3d(60%,0%,0) scale(1.0); }
+          100% { transform: translate3d(0%,60%,0) scale(1.1); }
+        }
+        @keyframes ${id}-move-d {
+          0%   { transform: translate3d(55%,60%,0) scale(1.15); }
+          25%  { transform: translate3d(60%,15%,0) scale(1.0); }
+          50%  { transform: translate3d(0%,5%,0) scale(1.3); }
+          75%  { transform: translate3d(5%,45%,0) scale(1.1); }
+          100% { transform: translate3d(55%,60%,0) scale(1.15); }
+        }
+        @keyframes ${id}-move-e {
+          0%   { transform: translate3d(5%,55%,0) scale(1.2); }
+          50%  { transform: translate3d(50%,5%,0) scale(1.0); }
+          100% { transform: translate3d(5%,55%,0) scale(1.2); }
+        }
+        @keyframes ${id}-move-f {
+          0%   { transform: translate3d(60%,30%,0) scale(1.1); }
+          50%  { transform: translate3d(0%,20%,0) scale(1.3); }
+          100% { transform: translate3d(60%,30%,0) scale(1.1); }
+        }
+        @keyframes ${id}-move-g {
+          0%   { transform: translate3d(0%,0%,0) scale(1.0); }
+          50%  { transform: translate3d(60%,60%,0) scale(1.25); }
+          100% { transform: translate3d(0%,0%,0) scale(1.0); }
+        }
+        @keyframes ${id}-move-h {
+          0%   { transform: translate3d(60%,0%,0) scale(1.2); }
+          50%  { transform: translate3d(0%,60%,0) scale(1.05); }
+          100% { transform: translate3d(60%,0%,0) scale(1.2); }
+        }
 
-        /* ============ OPACITY PULSES desync ============ */
-        /* Tous les pulses ont un FLOOR minimum (pas 0) pour eviter stroboscope.
-           Floor = 35% du max, donc l'opacite oscille entre 0.063 et 0.18
-           -> les blobs sont TOUJOURS visibles, juste plus ou moins forts. */
-        @keyframes ${id}-pulse-1 {
-          0%,100% { opacity: ${(opMax * 0.35).toFixed(3)}; }
-          50%     { opacity: ${opMax}; }
-        }
-        @keyframes ${id}-pulse-2 {
-          0%,100% { opacity: ${opMax}; }
-          50%     { opacity: ${(opMax * 0.35).toFixed(3)}; }
-        }
-        @keyframes ${id}-pulse-3 {
-          0%,100% { opacity: ${(opMax * 0.4).toFixed(3)}; }
-          30%,70% { opacity: ${opMax}; }
-        }
-        @keyframes ${id}-pulse-4 {
-          0%,100% { opacity: ${(opMax * 0.7).toFixed(3)}; }
-          50%     { opacity: ${(opMax * 0.3).toFixed(3)}; }
-        }
+        /* Note : les keyframes pulse-1/2/3/4 ont ete supprimes
+           (les blobs ont maintenant opacity fixe). */
 
         /* ============ BORDER COLOR TRANSITIONS ============ */
         @property --c1-${id} { syntax: '<color>'; initial-value: ${COLORS.coral};   inherits: false; }
@@ -298,18 +322,19 @@ export default function LiquidGlassPanel({
           100% { --bg-from-${id}: 360deg; }
         }
         @keyframes ${id}-border-opacity {
-          0%, 100% { opacity: 0.5; }
-          17%      { opacity: 0.85; }
-          43%      { opacity: 0.4; }
-          71%      { opacity: 0.95; }
-          88%      { opacity: 0.6; }
+          0%, 100% { opacity: 0.7; }
+          17%      { opacity: 0.95; }
+          43%      { opacity: 0.6; }
+          71%      { opacity: 1; }
+          88%      { opacity: 0.75; }
         }
+        /* Border glow : amplitude reduite (8-14px au lieu de 8-22px)
+           pour eviter les repaints visibles qui font flicker. */
         @keyframes ${id}-border-glow {
-          0%, 100% { filter: drop-shadow(0 0 8px rgba(217,119,87,0.6)) drop-shadow(0 0 20px rgba(217,119,87,0.3)); }
-          22%      { filter: drop-shadow(0 0 18px rgba(217,119,87,0.85)) drop-shadow(0 0 30px rgba(217,119,87,0.5)); }
-          47%      { filter: drop-shadow(0 0 12px rgba(185,28,140,0.8)) drop-shadow(0 0 24px rgba(185,28,140,0.4)); }
-          73%      { filter: drop-shadow(0 0 22px rgba(91,61,245,0.85)) drop-shadow(0 0 32px rgba(91,61,245,0.5)); }
-          91%      { filter: drop-shadow(0 0 14px rgba(200,169,106,0.7)) drop-shadow(0 0 26px rgba(200,169,106,0.4)); }
+          0%, 100% { filter: drop-shadow(0 0 10px rgba(217,119,87,0.6)) drop-shadow(0 0 18px rgba(217,119,87,0.3)); }
+          25%      { filter: drop-shadow(0 0 12px rgba(217,119,87,0.7)) drop-shadow(0 0 20px rgba(217,119,87,0.4)); }
+          50%      { filter: drop-shadow(0 0 12px rgba(185,28,140,0.7)) drop-shadow(0 0 20px rgba(185,28,140,0.35)); }
+          75%      { filter: drop-shadow(0 0 14px rgba(91,61,245,0.7)) drop-shadow(0 0 22px rgba(91,61,245,0.4)); }
         }
 
         /* ============ REFLET PULSANT ============ */
@@ -321,14 +346,16 @@ export default function LiquidGlassPanel({
         }
 
         /* ============ BLOBS STYLES ============ */
+        /* Taille 60% (au lieu de 85%) pour laisser de l'espace de balade
+           sans toucher les bords + blur 90px (etait 75px) pour fondu propre. */
         .${id}-blob {
           position: absolute;
           top: 0; left: 0;
-          width: 85%;
-          height: 85%;
+          width: 60%;
+          height: 60%;
           border-radius: 50%;
           mix-blend-mode: screen;
-          filter: blur(75px);
+          filter: blur(90px);
           pointer-events: none;
           will-change: transform, opacity;
         }
@@ -459,10 +486,10 @@ export default function LiquidGlassPanel({
             var(--c1-${id}, ${COLORS.coral})
           );
           ${animate ? `animation:
-            ${id}-border-colors 23s ease-in-out infinite,
-            ${id}-border-angle 31s ease-in-out infinite,
-            ${id}-border-opacity 19s ease-in-out infinite,
-            ${id}-border-glow 17s ease-in-out infinite;` : "opacity: 0.55;"}
+            ${id}-border-colors 12s ease-in-out infinite,
+            ${id}-border-angle 18s ease-in-out infinite,
+            ${id}-border-opacity 11s ease-in-out infinite,
+            ${id}-border-glow 9s ease-in-out infinite;` : "opacity: 0.55;"}
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
