@@ -594,12 +594,19 @@ export default function CoachModal({
           justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Eyebrow Coral avec shadow universelle - lisible partout */}
-            <NuviTextGlassCoral style={{
+            {/* Eyebrow gradient Purple->Magenta - rappelle le brand CTA.
+                Triple text-shadow universelle pour lisibilite partout. */}
+            <div style={{
               fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
               marginBottom: 4,
-            }}>{T.co_eyebrow}</NuviTextGlassCoral>
+              background: `linear-gradient(135deg, ${Purple} 0%, ${Magenta} 100%)`,
+              WebkitBackgroundClip: "text",
+              backgroundClip: "text",
+              color: "transparent",
+              WebkitTextFillColor: "transparent",
+              filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.7)) drop-shadow(0 0 6px rgba(0,0,0,0.5))",
+            }}>{T.co_eyebrow}</div>
 
             {/* Titre blanc avec shadow universelle - lisible partout */}
             <NuviTextGlass style={{

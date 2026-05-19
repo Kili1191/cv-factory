@@ -82,8 +82,13 @@ export function NuviTextGlassCoral({ children, style = {}, as: Tag = "div", ...r
 }
 
 // ============================================
-// EXPORT : NuviLogoAnimated - logo "hyper cool"
-// Combo : gradient flow + shimmer + glow pulse Coral
+// EXPORT : NuviLogoAnimated v8 - logo "relax & surprise"
+// Base continue : gradient flow + glow pulse Coral
+// Cycle 50s : 3 surprises desynchronisees qui apparaissent puis se reposent
+//   - Liquid morph (8s) : lettres ondulent doucement
+//   - Drop ink (5s) : goutte tombe sur le mot puis se diffuse et fade
+//   - Mirror reflection (15s) : reflet en bas qui ondule comme dans l'eau
+// Entre les surprises : repos -> jamais stressant, toujours relaxant
 // ============================================
 export function NuviLogoAnimated({ size = 26, style = {} }) {
   const rawId = useId();
@@ -92,26 +97,60 @@ export function NuviLogoAnimated({ size = 26, style = {} }) {
   return (
     <>
       <style>{`
+        /* Base : gradient des 4 couleurs qui glisse + glow Coral pulse */
         @keyframes ${id}-gradient-flow {
           0%   { background-position: 0% 50%; }
           100% { background-position: 200% 50%; }
         }
-        @keyframes ${id}-shimmer {
-          0%   { transform: translateX(-100%) skewX(-20deg); opacity: 0; }
-          20%  { opacity: 0.9; }
-          60%  { opacity: 0.9; }
-          100% { transform: translateX(220%) skewX(-20deg); opacity: 0; }
-        }
         @keyframes ${id}-glow-pulse {
           0%, 100% {
-            filter: drop-shadow(0 0 8px rgba(217,119,87,0.3))
+            filter: drop-shadow(0 0 6px rgba(217,119,87,0.25))
                     drop-shadow(0 1px 3px rgba(0,0,0,0.4));
           }
           50% {
-            filter: drop-shadow(0 0 16px rgba(217,119,87,0.5))
+            filter: drop-shadow(0 0 14px rgba(217,119,87,0.45))
                     drop-shadow(0 1px 3px rgba(0,0,0,0.4));
           }
         }
+
+        /* Surprise 1 : LIQUID MORPH - cycle 50s
+           Plage active : 10% -> 26% (5s -> 13s) = 8s d'ondulation douce
+           Repos : 0% -> 10%, 26% -> 100% */
+        @keyframes ${id}-morph {
+          0%, 10%, 26%, 100% { transform: scaleY(1) scaleX(1) skewX(0); }
+          14% { transform: scaleY(1.04) scaleX(0.99) skewX(-1deg); }
+          18% { transform: scaleY(0.98) scaleX(1.01) skewX(1deg); }
+          22% { transform: scaleY(1.05) scaleX(0.98) skewX(-0.5deg); }
+        }
+
+        /* Surprise 2 : DROP INK - cycle 50s
+           Plage active : 50% -> 60% (25s -> 30s) = 5s
+           La goutte tombe du haut, atterrit, eclate et fade */
+        @keyframes ${id}-drop {
+          0%, 50%, 62%, 100% { opacity: 0; transform: translateY(-30px) scale(0.5); }
+          52% { opacity: 1; transform: translateY(0px) scale(0.8); }
+          55% { opacity: 1; transform: translateY(8px) scale(1); }
+          58% { opacity: 0.7; transform: translateY(12px) scale(1.5); }
+          61% { opacity: 0; transform: translateY(14px) scale(2.3); }
+        }
+
+        /* Surprise 3 : MIRROR REFLECTION - cycle 50s
+           Plage active : 75% -> 96% (37.5s -> 48s) = 10.5s
+           Reflet en bas qui apparait, ondule comme eau, et fade */
+        @keyframes ${id}-mirror {
+          0%, 75%, 96%, 100% { opacity: 0; transform: scaleY(-1) translateY(0); }
+          78% { opacity: 0.35; transform: scaleY(-1) translateY(0); }
+          83% { opacity: 0.30; transform: scaleY(-1) translateY(2%) skewX(2deg); }
+          88% { opacity: 0.40; transform: scaleY(-1) translateY(0) skewX(0); }
+          92% { opacity: 0.25; transform: scaleY(-1) translateY(3%) skewX(-2deg); }
+        }
+
+        .${id}-block {
+          position: relative;
+          display: inline-block;
+          padding-bottom: ${Math.round(size * 0.5)}px;
+        }
+
         .${id}-wrap {
           position: relative;
           display: inline-block;
@@ -120,9 +159,11 @@ export function NuviLogoAnimated({ size = 26, style = {} }) {
           font-size: ${size}px;
           font-weight: 400;
           letter-spacing: -0.02em;
-          overflow: hidden;
-          animation: ${id}-glow-pulse 4s ease-in-out infinite;
           line-height: 1;
+          transform-origin: center bottom;
+          animation:
+            ${id}-glow-pulse 5s ease-in-out infinite,
+            ${id}-morph 50s ease-in-out infinite;
         }
         .${id}-text {
           background: linear-gradient(90deg,
@@ -133,27 +174,49 @@ export function NuviLogoAnimated({ size = 26, style = {} }) {
           background-clip: text;
           -webkit-text-fill-color: transparent;
           color: transparent;
-          animation: ${id}-gradient-flow 6s linear infinite;
+          animation: ${id}-gradient-flow 8s linear infinite;
           display: inline-block;
         }
-        .${id}-shimmer {
+
+        /* Mirror reflection : copie du texte retournee sous le logo */
+        .${id}-mirror {
           position: absolute;
-          top: 0; left: 0;
-          width: 40%; height: 100%;
-          background: linear-gradient(90deg,
-            transparent 0%,
-            rgba(255,255,255,0.6) 50%,
-            transparent 100%
-          );
-          mix-blend-mode: overlay;
-          animation: ${id}-shimmer 4s ease-in-out infinite;
-          animation-delay: 2s;
+          top: 100%;
+          left: 0;
+          font-family: Georgia, "Times New Roman", serif;
+          font-style: italic;
+          font-size: ${size}px;
+          font-weight: 400;
+          letter-spacing: -0.02em;
+          line-height: 1;
+          color: rgba(217, 119, 87, 0.75);
+          filter: blur(2.5px);
+          -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
+          mask-image: linear-gradient(180deg, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 60%);
+          animation: ${id}-mirror 50s ease-in-out infinite;
           pointer-events: none;
         }
+
+        /* Drop ink : petite goutte coloree qui tombe sur le logo */
+        .${id}-drop {
+          position: absolute;
+          top: -${Math.round(size * 1.2)}px;
+          left: 35%;
+          width: ${Math.round(size * 0.5)}px;
+          height: ${Math.round(size * 0.5)}px;
+          border-radius: 50% 50% 60% 40% / 70% 70% 30% 30%;
+          background: radial-gradient(circle at 30% 30%, ${COLORS.coral}, ${COLORS.magenta});
+          animation: ${id}-drop 50s ease-in-out infinite;
+          pointer-events: none;
+          filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+        }
       `}</style>
-      <div className={`${id}-wrap`} style={style}>
-        <span className={`${id}-text`}>Nuvi</span>
-        <div className={`${id}-shimmer`} />
+      <div className={`${id}-block`} style={style}>
+        <div className={`${id}-wrap`}>
+          <span className={`${id}-text`}>Nuvi</span>
+          <div className={`${id}-drop`} aria-hidden="true" />
+          <div className={`${id}-mirror`} aria-hidden="true">Nuvi</div>
+        </div>
       </div>
     </>
   );
@@ -201,12 +264,36 @@ export default function LiquidGlassPanel({
         @property --c2-${id} { syntax: '<color>'; initial-value: ${COLORS.gold};    inherits: false; }
         @property --c3-${id} { syntax: '<color>'; initial-value: ${COLORS.magenta}; inherits: false; }
         @property --c4-${id} { syntax: '<color>'; initial-value: ${COLORS.purple};  inherits: false; }
+        @property --bg-from-${id} { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
         @keyframes ${id}-border-colors {
           0%   { --c1-${id}: ${COLORS.coral};   --c2-${id}: ${COLORS.gold};    --c3-${id}: ${COLORS.magenta}; --c4-${id}: ${COLORS.purple}; }
           25%  { --c1-${id}: ${COLORS.gold};    --c2-${id}: ${COLORS.magenta}; --c3-${id}: ${COLORS.purple};  --c4-${id}: ${COLORS.coral}; }
           50%  { --c1-${id}: ${COLORS.magenta}; --c2-${id}: ${COLORS.purple};  --c3-${id}: ${COLORS.coral};   --c4-${id}: ${COLORS.gold}; }
           75%  { --c1-${id}: ${COLORS.purple};  --c2-${id}: ${COLORS.coral};   --c3-${id}: ${COLORS.gold};    --c4-${id}: ${COLORS.magenta}; }
           100% { --c1-${id}: ${COLORS.coral};   --c2-${id}: ${COLORS.gold};    --c3-${id}: ${COLORS.magenta}; --c4-${id}: ${COLORS.purple}; }
+        }
+        /* Bordure scintillement aleatoire : 3 animations independantes
+           avec durees premieres entre elles (37s, 53s, 71s) ->
+           jamais le meme etat 2 fois. */
+        @keyframes ${id}-border-angle {
+          0%   { --bg-from-${id}: 0deg; }
+          33%  { --bg-from-${id}: 137deg; }
+          66%  { --bg-from-${id}: 251deg; }
+          100% { --bg-from-${id}: 360deg; }
+        }
+        @keyframes ${id}-border-opacity {
+          0%, 100% { opacity: 0.5; }
+          17%      { opacity: 0.85; }
+          43%      { opacity: 0.4; }
+          71%      { opacity: 0.95; }
+          88%      { opacity: 0.6; }
+        }
+        @keyframes ${id}-border-glow {
+          0%, 100% { filter: drop-shadow(0 0 4px rgba(217,119,87,0.4)); }
+          22%      { filter: drop-shadow(0 0 14px rgba(217,119,87,0.7)); }
+          47%      { filter: drop-shadow(0 0 8px rgba(185,28,140,0.6)); }
+          73%      { filter: drop-shadow(0 0 18px rgba(91,61,245,0.7)); }
+          91%      { filter: drop-shadow(0 0 10px rgba(200,169,106,0.5)); }
         }
 
         /* ============ REFLET PULSANT ============ */
@@ -348,26 +435,59 @@ export default function LiquidGlassPanel({
           z-index: 6;
         }
 
-        /* ============ BORDER + SPECULAR ============ */
+        /* ============ BORDER GLOWY + SPECULAR ============ */
+        /* Bordure visible + EPAISSEUR (2.5px) + drop-shadow rayonnante
+           + 3 animations independantes desynchronisees (37s/53s/71s)
+           pour rotation angle, opacite, et glow color */
         .${id}-border {
           position: absolute; inset: 0;
           border-radius: inherit;
           pointer-events: none;
-          padding: 1.5px;
-          background: conic-gradient(from 0deg,
+          padding: 2.5px;
+          background: conic-gradient(from var(--bg-from-${id}, 0deg),
             var(--c1-${id}, ${COLORS.coral}),
             var(--c2-${id}, ${COLORS.gold}),
             var(--c3-${id}, ${COLORS.magenta}),
             var(--c4-${id}, ${COLORS.purple}),
             var(--c1-${id}, ${COLORS.coral})
           );
-          opacity: 0.55;
-          ${animate ? `animation: ${id}-border-colors 50s ease-in-out infinite;` : ""}
+          ${animate ? `animation:
+            ${id}-border-colors 50s ease-in-out infinite,
+            ${id}-border-angle 71s ease-in-out infinite,
+            ${id}-border-opacity 53s ease-in-out infinite,
+            ${id}-border-glow 37s ease-in-out infinite;` : "opacity: 0.55;"}
           -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           -webkit-mask-composite: xor;
           mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
           mask-composite: exclude;
           z-index: 8;
+        }
+        /* Halo rayonnant exterieur (visible AUSSI hors du panel)
+           - Couche separee pour pouvoir deborder + blur */
+        .${id}-border-halo {
+          position: absolute;
+          inset: -8px;
+          border-radius: 40px 40px 8px 8px;
+          pointer-events: none;
+          padding: 12px;
+          background: conic-gradient(from var(--bg-from-${id}, 0deg),
+            var(--c1-${id}, ${COLORS.coral}),
+            var(--c2-${id}, ${COLORS.gold}),
+            var(--c3-${id}, ${COLORS.magenta}),
+            var(--c4-${id}, ${COLORS.purple}),
+            var(--c1-${id}, ${COLORS.coral})
+          );
+          ${animate ? `animation:
+            ${id}-border-colors 50s ease-in-out infinite,
+            ${id}-border-angle 71s ease-in-out infinite,
+            ${id}-border-opacity 53s ease-in-out infinite;` : "opacity: 0.55;"}
+          filter: blur(8px);
+          opacity: 0.4;
+          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+          mask-composite: exclude;
+          z-index: 0;
         }
         .${id}-specular {
           position: absolute; inset: 0;
@@ -407,6 +527,10 @@ export default function LiquidGlassPanel({
       >
         {/* Outer glow halo */}
         <div className={`${id}-outer-glow`} aria-hidden="true" />
+
+        {/* Border halo rayonnant - dehors du panel isolated pour pouvoir
+            deborder de -8px sur tous les cotes (vraie glow exterieure) */}
+        <div className={`${id}-border-halo`} aria-hidden="true" />
 
         {/* 8 blobs auroraux qui debordent */}
         <div
