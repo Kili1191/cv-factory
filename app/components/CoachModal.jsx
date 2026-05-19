@@ -594,18 +594,15 @@ export default function CoachModal({
           justifyContent: "space-between", gap: 12,
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            {/* Eyebrow gradient Purple->Magenta VIFS + glow lumineux derriere
-                pour pop sur fond clair OU sombre sans assombrir le texte. */}
+            {/* Eyebrow COACH NUVI : couleur violet vif solide (Magenta).
+                Pas de gradient text-clip car certains browsers/contextes
+                rendaient le texte en noir. Couleur unie = aucun risque. */}
             <div style={{
               fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
               marginBottom: 4,
-              background: `linear-gradient(135deg, #8b6dff 0%, #e547bf 100%)`,
-              WebkitBackgroundClip: "text",
-              backgroundClip: "text",
-              color: "transparent",
-              WebkitTextFillColor: "transparent",
-              filter: "drop-shadow(0 0 6px rgba(139,109,255,0.6)) drop-shadow(0 0 12px rgba(229,71,191,0.4)) drop-shadow(0 1px 2px rgba(0,0,0,0.5))",
+              color: "#e547bf",
+              textShadow: "0 0 10px rgba(229,71,191,0.6), 0 0 20px rgba(139,109,255,0.4), 0 1px 3px rgba(0,0,0,0.4)",
             }}>{T.co_eyebrow}</div>
 
             {/* Titre blanc avec shadow universelle - lisible partout */}
@@ -616,11 +613,8 @@ export default function CoachModal({
               {T.co_title_a}
               {" "}<em style={{
                 fontStyle: "italic",
-                background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
-                WebkitBackgroundClip: "text",
-                backgroundClip: "text",
-                color: "transparent",
-                WebkitTextStroke: "0px",
+                color: "#e547bf",
+                textShadow: "0 0 12px rgba(229,71,191,0.5), 0 1px 3px rgba(0,0,0,0.4)",
               }}>{T.co_title_em}</em>
               {" "}{T.co_title_b}
             </NuviTextGlass>
