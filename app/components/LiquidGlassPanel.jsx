@@ -96,7 +96,7 @@ export default function LiquidGlassPanel({
   borderRadius = "32px 32px 0 0",
   borderColor = "#d97757",
   distortion = 30,
-  tintColor = "rgba(20, 18, 30, 0.85)",
+  tintColor = "rgba(255, 255, 255, 0.0)",
   animate = true,
 }) {
   // ID unique pour eviter conflits CSS si plusieurs panels
@@ -121,62 +121,94 @@ export default function LiquidGlassPanel({
     >
       <style>{`
         /* ============================================================
-           AURORA BACKGROUND - 4 blobs en gradients radials
-           Pas de mix-blend-mode, pas de DOM elements multiples.
-           Tout est en BACKGROUND-IMAGE = ZERO flicker possible.
+           AURORA v3 - 6 blobs DIFFORMES qui morphent
+           Chaque keyframe combine transform + border-radius pour que
+           les blobs aient des shapes ORGANIQUES qui changent (comme
+           du slime liquide), pas des cercles parfaits qui glissent.
+           Pas de mix-blend-mode, juste superposition + blur + opacity.
            ============================================================ */
-        @keyframes lgp-${id}-aurora {
-          0% {
-            background-position:
-              15% 20%,
-              80% 30%,
-              60% 75%,
-              25% 80%;
-          }
-          25% {
-            background-position:
-              70% 35%,
-              30% 60%,
-              15% 50%,
-              80% 25%;
-          }
-          50% {
-            background-position:
-              85% 75%,
-              20% 80%,
-              75% 25%,
-              40% 60%;
-          }
-          75% {
-            background-position:
-              30% 65%,
-              65% 20%,
-              40% 80%,
-              70% 50%;
-          }
-          100% {
-            background-position:
-              15% 20%,
-              80% 30%,
-              60% 75%,
-              25% 80%;
-          }
+        @keyframes lgp-${id}-blob-a {
+          0%   { transform: translate3d(0%, 0%, 0)    scale(1);    border-radius: 60% 40% 30% 70% / 50% 60% 40% 50%; }
+          20%  { transform: translate3d(40%, 20%, 0)  scale(1.15); border-radius: 30% 70% 60% 40% / 40% 50% 50% 60%; }
+          40%  { transform: translate3d(60%, 50%, 0)  scale(0.95); border-radius: 50% 50% 70% 30% / 60% 40% 60% 40%; }
+          60%  { transform: translate3d(30%, 70%, 0)  scale(1.1);  border-radius: 40% 60% 50% 50% / 30% 70% 50% 50%; }
+          80%  { transform: translate3d(-10%, 40%, 0) scale(1.05); border-radius: 70% 30% 40% 60% / 50% 60% 30% 70%; }
+          100% { transform: translate3d(0%, 0%, 0)    scale(1);    border-radius: 60% 40% 30% 70% / 50% 60% 40% 50%; }
+        }
+        @keyframes lgp-${id}-blob-b {
+          0%   { transform: translate3d(50%, 0%, 0)   scale(1.1); border-radius: 40% 60% 70% 30% / 60% 40% 50% 50%; }
+          25%  { transform: translate3d(20%, 30%, 0)  scale(0.9); border-radius: 60% 40% 30% 70% / 30% 70% 60% 40%; }
+          50%  { transform: translate3d(50%, 60%, 0)  scale(1.2); border-radius: 30% 70% 50% 50% / 50% 50% 70% 30%; }
+          75%  { transform: translate3d(80%, 30%, 0)  scale(1);   border-radius: 50% 50% 60% 40% / 70% 30% 40% 60%; }
+          100% { transform: translate3d(50%, 0%, 0)   scale(1.1); border-radius: 40% 60% 70% 30% / 60% 40% 50% 50%; }
+        }
+        @keyframes lgp-${id}-blob-c {
+          0%   { transform: translate3d(20%, 60%, 0)  scale(1);    border-radius: 50% 50% 40% 60% / 60% 50% 50% 40%; }
+          33%  { transform: translate3d(60%, 30%, 0)  scale(1.15); border-radius: 70% 30% 60% 40% / 40% 60% 30% 70%; }
+          66%  { transform: translate3d(40%, 80%, 0)  scale(0.95); border-radius: 30% 70% 50% 50% / 50% 30% 70% 50%; }
+          100% { transform: translate3d(20%, 60%, 0)  scale(1);    border-radius: 50% 50% 40% 60% / 60% 50% 50% 40%; }
+        }
+        @keyframes lgp-${id}-blob-d {
+          0%   { transform: translate3d(70%, 70%, 0)  scale(1.1); border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%; }
+          30%  { transform: translate3d(40%, 40%, 0)  scale(1);   border-radius: 40% 60% 70% 30% / 70% 40% 50% 30%; }
+          60%  { transform: translate3d(10%, 70%, 0)  scale(1.2); border-radius: 50% 50% 30% 70% / 30% 60% 70% 40%; }
+          100% { transform: translate3d(70%, 70%, 0)  scale(1.1); border-radius: 60% 40% 50% 50% / 50% 60% 40% 50%; }
+        }
+        @keyframes lgp-${id}-blob-e {
+          0%   { transform: translate3d(40%, 30%, 0)  scale(1.05); border-radius: 50% 50% 60% 40% / 40% 60% 50% 50%; }
+          50%  { transform: translate3d(60%, 50%, 0)  scale(0.9);  border-radius: 70% 30% 40% 60% / 60% 40% 70% 30%; }
+          100% { transform: translate3d(40%, 30%, 0)  scale(1.05); border-radius: 50% 50% 60% 40% / 40% 60% 50% 50%; }
+        }
+        @keyframes lgp-${id}-blob-f {
+          0%   { transform: translate3d(10%, 50%, 0)  scale(1);    border-radius: 40% 60% 50% 50% / 50% 40% 60% 50%; }
+          50%  { transform: translate3d(70%, 20%, 0)  scale(1.15); border-radius: 60% 40% 30% 70% / 40% 70% 30% 60%; }
+          100% { transform: translate3d(10%, 50%, 0)  scale(1);    border-radius: 40% 60% 50% 50% / 50% 40% 60% 50%; }
         }
 
-        .lgp-${id}-aurora {
+        .lgp-${id}-aurora-bg {
           position: absolute;
           inset: 0;
           z-index: 0;
           pointer-events: none;
           background-color: ${tintColor};
-          background-image:
-            radial-gradient(circle 400px at 15% 20%, rgba(217, 119, 87, 0.55) 0%, transparent 60%),
-            radial-gradient(circle 450px at 80% 30%, rgba(91, 61, 245, 0.55) 0%, transparent 60%),
-            radial-gradient(circle 380px at 60% 75%, rgba(185, 28, 140, 0.50) 0%, transparent 60%),
-            radial-gradient(circle 420px at 25% 80%, rgba(200, 169, 106, 0.40) 0%, transparent 60%);
-          background-size: 100% 100%;
-          background-repeat: no-repeat;
-          ${animate ? `animation: lgp-${id}-aurora 32s ease-in-out infinite;` : ""}
+          overflow: hidden;
+        }
+
+        .lgp-${id}-blob {
+          position: absolute;
+          top: 0; left: 0;
+          width: 55%;
+          height: 55%;
+          /* border-radius initial sera override par les keyframes */
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.55;
+          will-change: transform, border-radius;
+        }
+
+        .lgp-${id}-blob.coral-1 {
+          background: radial-gradient(circle, rgba(217, 119, 87, 0.95) 0%, rgba(217, 119, 87, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-a 38s ease-in-out infinite;` : ""}
+        }
+        .lgp-${id}-blob.coral-2 {
+          background: radial-gradient(circle, rgba(217, 119, 87, 0.80) 0%, rgba(217, 119, 87, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-e 47s ease-in-out infinite;` : ""}
+        }
+        .lgp-${id}-blob.purple-1 {
+          background: radial-gradient(circle, rgba(91, 61, 245, 0.85) 0%, rgba(91, 61, 245, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-b 43s ease-in-out infinite;` : ""}
+        }
+        .lgp-${id}-blob.purple-2 {
+          background: radial-gradient(circle, rgba(91, 61, 245, 0.75) 0%, rgba(91, 61, 245, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-f 41s ease-in-out infinite;` : ""}
+        }
+        .lgp-${id}-blob.magenta-1 {
+          background: radial-gradient(circle, rgba(185, 28, 140, 0.85) 0%, rgba(185, 28, 140, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-c 53s ease-in-out infinite;` : ""}
+        }
+        .lgp-${id}-blob.gold-1 {
+          background: radial-gradient(circle, rgba(200, 169, 106, 0.70) 0%, rgba(200, 169, 106, 0) 70%);
+          ${animate ? `animation: lgp-${id}-blob-d 49s ease-in-out infinite;` : ""}
         }
 
         /* ============================================================
@@ -243,8 +275,15 @@ export default function LiquidGlassPanel({
         }
       `}</style>
 
-      {/* Layer 0 : Aurora background */}
-      <div className={`lgp-${id}-aurora`} aria-hidden="true" />
+      {/* Layer 0 : Aurora background - 6 blobs flottants */}
+      <div className={`lgp-${id}-aurora-bg`} aria-hidden="true">
+        <div className={`lgp-${id}-blob coral-1`} />
+        <div className={`lgp-${id}-blob coral-2`} />
+        <div className={`lgp-${id}-blob purple-1`} />
+        <div className={`lgp-${id}-blob purple-2`} />
+        <div className={`lgp-${id}-blob magenta-1`} />
+        <div className={`lgp-${id}-blob gold-1`} />
+      </div>
 
       {/* Layer 4 : Reflet du haut */}
       <div className={`lgp-${id}-shine`} aria-hidden="true" />
