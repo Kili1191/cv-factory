@@ -50,14 +50,10 @@ const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr:
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
 const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
-const ResetCVModal = dynamic(() => import("./components/ResetCVModal"), { ssr: false });
-const AccountSoonModal = dynamic(() => import("./components/AccountSoonModal"), { ssr: false });
-const SavedIndicator = dynamic(() => import("./components/SavedIndicator"), { ssr: false });
-const ExportPDFModal = dynamic(() => import("./components/ExportPDFModal"), { ssr: false });
 
 import { E, FR, SaveBtn, MK } from "./components/EditHelpers";
 import { SheetId, SheetEx, SheetEd, SheetSk } from "./components/EditSheets";
-import { CVSidebar, CVAts } from "./components/CVLayouts";
+import { CVSidebar, CVClassic, CVTimeline, CVSwiss, CVCompact, CVAts } from "./components/CVLayouts";
 import {
   detectGaps, analyzeYearOnlyStrategy, findGroupingOpportunities,
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
@@ -65,7 +61,6 @@ import {
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
-import { cleanCVForExport, getRemovedSummary } from "../lib/cvCleaner";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
@@ -153,14 +148,6 @@ body.cvf-dark [data-cvf="cv"]{color-scheme:light;}
   box-shadow:0 4px 14px rgba(22,163,74,.3);
   pointer-events:none;
 }
-
-/* [Deploy B+] Page-break rules for html2pdf multi-page export.
-   Ces classes sont declarees dans CVLayouts.jsx sur chaque experience/education.
-   html2pdf respecte 'page-break-inside: avoid' pour ne pas couper au milieu. */
-.cv-exp-item, .cv-edu-item, .cv-section-no-break {
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
 `;
 
 // REGLE TIRETS - duplicated in every AI prompt for maximum compliance
@@ -213,7 +200,17 @@ const THEMES = {
   },
 };
 
-const LAYOUTS = ["sidebar","classic","ats"];
+const LAYOUTS = ["sidebar","classic","timeline","swiss","compact","ats"];
+
+// Metadata pour chaque layout (label affiche + description courte)
+const LAYOUT_META = {
+  sidebar:  { label: "Sidebar Pro",  desc: "Premium - Conseil, Direction" },
+  classic:  { label: "Classic",      desc: "Polyvalent - Tous secteurs" },
+  timeline: { label: "Timeline",     desc: "Visuel - Career progression" },
+  swiss:    { label: "Swiss",        desc: "Minimaliste - Design, Tech" },
+  compact:  { label: "Compact",      desc: "Dense - Junior, 1 page" },
+  ats:      { label: "ATS-Safe",     desc: "Robot-friendly - Candidatures online" },
+};
 
 // ============================================================
 // v17 Custom : librairies cur\u00e9es (couleurs + polices) + merge theme
@@ -423,9 +420,6 @@ const EMPTY = {
   languages:[{lang:"",level:""},{lang:"",level:""}],
   certifications:[""],
   labels: {},
-  // [Deploy B] Photo CV : 3 modes - "upload" | "initials" | "none"
-  // src optionnel (base64 thumbnail) si mode === "upload"
-  photo: { mode: "initials" },
 };
 
 // === Labels par défaut pour les sections du CV (éditables par l'utilisateur) ===
@@ -739,71 +733,9 @@ async function aiCall(prompt, options = {}) {
 }
 
 function parseJSON(txt) {
-  if (typeof txt !== "string" || !txt.trim()) {
-    throw new Error("Empty response");
-  }
-  // 1. Strip markdown code fences
-  let clean = txt.split("```json").join("").split("```").join("").trim();
-
-  // 2. Try direct parse first
-  try {
-    return sanDeep(JSON.parse(clean));
-  } catch (e1) {
-    // 3. Extract the largest balanced JSON object/array from the text
-    //    This handles cases where Claude adds prose before/after the JSON.
-    const extracted = extractBalancedJson(clean);
-    if (extracted) {
-      try {
-        return sanDeep(JSON.parse(extracted));
-      } catch (e2) {
-        // Fall through to throw original error
-      }
-    }
-    throw e1;
-  }
-}
-
-// Find the largest balanced { ... } or [ ... ] block in the text.
-// Useful when Claude adds prose before or after the JSON.
-function extractBalancedJson(text) {
-  let bestStart = -1;
-  let bestEnd = -1;
-  let bestLen = 0;
-
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (c !== "{" && c !== "[") continue;
-    const opener = c;
-    const closer = c === "{" ? "}" : "]";
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-    for (let j = i; j < text.length; j++) {
-      const cc = text[j];
-      if (escape) { escape = false; continue; }
-      if (cc === "\\") { escape = true; continue; }
-      if (cc === '"') { inString = !inString; continue; }
-      if (inString) continue;
-      if (cc === opener) depth++;
-      else if (cc === closer) {
-        depth--;
-        if (depth === 0) {
-          const len = j - i + 1;
-          if (len > bestLen) {
-            bestLen = len;
-            bestStart = i;
-            bestEnd = j;
-          }
-          break;
-        }
-      }
-    }
-  }
-
-  if (bestStart >= 0 && bestEnd > bestStart) {
-    return text.substring(bestStart, bestEnd + 1);
-  }
-  return null;
+  const clean = txt.split("```json").join("").split("```").join("").trim();
+  const parsed = JSON.parse(clean);
+  return sanDeep(parsed);
 }
 
 function normCV(raw, base=EMPTY) {
@@ -2492,18 +2424,234 @@ function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopt
 }
 
 // ============================================================
+// LayoutTab : selection visuelle du layout CV dans Apparence.
+// Affiche les 6 layouts avec aper-cu miniature + label + description.
+// ============================================================
+function LayoutTab({ T, layout, setLy }) {
+  return (
+    <div style={{ paddingBottom: 24 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600,
+        letterSpacing: "0.12em", textTransform: "uppercase",
+        color: Coral, marginBottom: 14,
+      }}>
+        Choisis ton layout
+      </div>
+
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
+        gap: 12,
+      }}>
+        {LAYOUTS.map(k => {
+          const meta = LAYOUT_META[k] || { label: k, desc: "" };
+          const active = layout === k;
+          return (
+            <button
+              key={k}
+              onClick={() => setLy(k)}
+              style={{
+                ...B({
+                  padding: 0,
+                  borderRadius: RadiusMd,
+                  background: active ? CreamSoft : Paper,
+                  border: active ? "2px solid " + Purple : "0.5px solid " + Gray200,
+                  boxShadow: active ? "0 4px 14px rgba(91, 61, 245, 0.18)" : ShadowSm,
+                  textAlign: "left",
+                  cursor: "pointer",
+                  overflow: "hidden",
+                  transition: "all 180ms ease-out",
+                  position: "relative",
+                })
+              }}
+            >
+              {/* Aper-cu miniature du layout */}
+              <LayoutPreview kind={k} active={active} />
+
+              {/* Label + desc */}
+              <div style={{ padding: "10px 12px" }}>
+                <div style={{
+                  fontSize: 13, fontWeight: 600,
+                  color: active ? Purple : Ink,
+                  fontFamily: Sans,
+                  marginBottom: 2,
+                }}>
+                  {meta.label}
+                </div>
+                <div style={{
+                  fontSize: 11, color: Gray600,
+                  fontFamily: Sans, lineHeight: 1.4,
+                }}>
+                  {meta.desc}
+                </div>
+              </div>
+
+              {/* Badge "selected" */}
+              {active && (
+                <div style={{
+                  position: "absolute", top: 8, right: 8,
+                  width: 22, height: 22, borderRadius: "50%",
+                  background: Purple, color: "#fff",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  boxShadow: "0 2px 6px rgba(91, 61, 245, 0.4)",
+                }}>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="3"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </div>
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Mini preview SVG pour chaque layout (donne un apercu visuel)
+function LayoutPreview({ kind, active }) {
+  const accent = active ? Purple : "#c9a96e";
+  const ink = "#2a2a2e";
+  const muted = "#9ca3af";
+  const bg = "#fafafa";
+
+  // Wrapper commun
+  const W = ({ children }) => (
+    <div style={{
+      height: 120, background: bg, padding: 8,
+      borderBottom: "0.5px solid " + Gray200,
+    }}>
+      <svg viewBox="0 0 160 100" width="100%" height="100%"
+        style={{ display: "block" }}>
+        {children}
+      </svg>
+    </div>
+  );
+
+  if (kind === "sidebar") {
+    return (
+      <W>
+        <rect x="0" y="0" width="55" height="100" fill={ink} />
+        <circle cx="27" cy="22" r="10" fill={accent} opacity="0.4"/>
+        <rect x="8" y="42" width="40" height="3" fill={accent} opacity="0.5"/>
+        <rect x="8" y="50" width="35" height="2" fill="#fff" opacity="0.3"/>
+        <rect x="8" y="55" width="38" height="2" fill="#fff" opacity="0.3"/>
+        <rect x="65" y="10" width="50" height="5" fill={ink} />
+        <rect x="65" y="20" width="35" height="3" fill={accent} />
+        <rect x="65" y="32" width="20" height="2" fill={accent} />
+        <rect x="65" y="38" width="80" height="2" fill={muted}/>
+        <rect x="65" y="42" width="75" height="2" fill={muted}/>
+        <rect x="65" y="55" width="20" height="2" fill={accent} />
+        <rect x="65" y="61" width="80" height="2" fill={muted}/>
+      </W>
+    );
+  }
+  if (kind === "classic") {
+    return (
+      <W>
+        <rect x="10" y="8" width="60" height="6" fill={ink}/>
+        <rect x="10" y="18" width="40" height="3" fill={accent}/>
+        <rect x="10" y="24" width="90" height="0.5" fill={muted}/>
+        <rect x="10" y="32" width="18" height="2" fill={accent}/>
+        <rect x="10" y="38" width="140" height="2" fill={muted}/>
+        <rect x="10" y="42" width="135" height="2" fill={muted}/>
+        <rect x="10" y="55" width="20" height="2" fill={accent}/>
+        <rect x="10" y="61" width="140" height="2" fill={muted}/>
+        <rect x="10" y="65" width="135" height="2" fill={muted}/>
+        <rect x="10" y="78" width="20" height="2" fill={accent}/>
+        <rect x="10" y="84" width="140" height="2" fill={muted}/>
+      </W>
+    );
+  }
+  if (kind === "timeline") {
+    return (
+      <W>
+        <rect x="10" y="8" width="60" height="6" fill={ink}/>
+        <rect x="10" y="18" width="40" height="3" fill={accent}/>
+        <line x1="20" y1="32" x2="20" y2="92" stroke={accent} strokeWidth="1"/>
+        <circle cx="20" cy="38" r="3" fill={accent}/>
+        <rect x="30" y="36" width="100" height="3" fill={ink}/>
+        <rect x="30" y="42" width="80" height="2" fill={muted}/>
+        <circle cx="20" cy="58" r="3" fill={accent}/>
+        <rect x="30" y="56" width="100" height="3" fill={ink}/>
+        <rect x="30" y="62" width="80" height="2" fill={muted}/>
+        <circle cx="20" cy="78" r="3" fill={accent}/>
+        <rect x="30" y="76" width="100" height="3" fill={ink}/>
+        <rect x="30" y="82" width="80" height="2" fill={muted}/>
+      </W>
+    );
+  }
+  if (kind === "swiss") {
+    return (
+      <W>
+        <rect x="10" y="10" width="50" height="5" fill={ink}/>
+        <rect x="10" y="22" width="35" height="2" fill={muted}/>
+        <rect x="10" y="40" width="14" height="1.5" fill={ink}/>
+        <rect x="10" y="46" width="120" height="1.5" fill={muted}/>
+        <rect x="10" y="50" width="115" height="1.5" fill={muted}/>
+        <rect x="10" y="62" width="14" height="1.5" fill={ink}/>
+        <rect x="10" y="68" width="120" height="1.5" fill={muted}/>
+        <rect x="10" y="72" width="115" height="1.5" fill={muted}/>
+        <rect x="10" y="84" width="14" height="1.5" fill={ink}/>
+        <rect x="10" y="90" width="120" height="1.5" fill={muted}/>
+      </W>
+    );
+  }
+  if (kind === "compact") {
+    return (
+      <W>
+        <rect x="10" y="8" width="60" height="5" fill={ink}/>
+        <rect x="10" y="16" width="40" height="2" fill={accent}/>
+        <rect x="10" y="26" width="60" height="2" fill={accent}/>
+        <rect x="10" y="32" width="60" height="2" fill={muted}/>
+        <rect x="10" y="36" width="55" height="2" fill={muted}/>
+        <rect x="10" y="46" width="60" height="2" fill={accent}/>
+        <rect x="10" y="52" width="60" height="2" fill={muted}/>
+        <rect x="80" y="26" width="60" height="2" fill={accent}/>
+        <rect x="80" y="32" width="60" height="2" fill={muted}/>
+        <rect x="80" y="36" width="55" height="2" fill={muted}/>
+        <rect x="80" y="46" width="60" height="2" fill={accent}/>
+        <rect x="80" y="52" width="60" height="2" fill={muted}/>
+        <rect x="10" y="70" width="130" height="2" fill={muted}/>
+        <rect x="10" y="76" width="125" height="2" fill={muted}/>
+        <rect x="10" y="82" width="130" height="2" fill={muted}/>
+      </W>
+    );
+  }
+  if (kind === "ats") {
+    return (
+      <W>
+        <rect x="10" y="8" width="50" height="5" fill={ink}/>
+        <rect x="10" y="16" width="35" height="2" fill={muted}/>
+        <rect x="10" y="22" width="80" height="1.5" fill={muted}/>
+        <rect x="10" y="34" width="20" height="2" fill={ink}/>
+        <rect x="10" y="40" width="140" height="1.5" fill={muted}/>
+        <rect x="10" y="44" width="135" height="1.5" fill={muted}/>
+        <rect x="10" y="54" width="20" height="2" fill={ink}/>
+        <rect x="10" y="60" width="140" height="1.5" fill={muted}/>
+        <rect x="10" y="64" width="135" height="1.5" fill={muted}/>
+        <rect x="10" y="68" width="138" height="1.5" fill={muted}/>
+        <rect x="10" y="78" width="20" height="2" fill={ink}/>
+        <rect x="10" y="84" width="140" height="1.5" fill={muted}/>
+      </W>
+    );
+  }
+  return <W><rect x="10" y="40" width="140" height="2" fill={muted}/></W>;
+}
+
+// ============================================================
 // CustomizeSheet v17 : sheet bottom iOS-native pour la personnalisation
 // du CV rendu (couleurs + polices + suggestions IA).
 //
 // Architecture :
-// - Tabs pills : Couleurs / Polices / Suggestions IA
+// - Tabs pills : Couleurs / Polices / Layout / Suggestions IA
 // - Toggle scope : Style par defaut (global) / Cette version (override)
 // - Reset au theme en bas
-//
-// Etape 1 : skeleton (tabs vides). Les contenus arrivent en etapes 2-4.
 // ============================================================
 function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
-  apiKey, notify, locale, onClose }) {
+  apiKey, notify, locale, onClose, layout, setLy }) {
 
   // Scope : "global" ou "version" - quel custom on edite.
   const [scope, setScope] = useState("global");
@@ -2607,6 +2755,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
       }}>
         {[["colors", T.cust_tab_colors],
           ["fonts",  T.cust_tab_fonts],
+          ["layout", "Mise en page"],
           ["suggest",T.cust_tab_suggest]].map(([k, label]) => (
             <button key={k} onClick={()=>setTab(k)} style={{...B(pill(tab===k))}}>
               {label}
@@ -2628,6 +2777,9 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
           cvCustom={cvCustom} versionCustom={versionCustom}
           writeCustom={writeCustom}
         />
+      )}
+      {tab === "layout" && (
+        <LayoutTab T={T} layout={layout} setLy={setLy}/>
       )}
       {tab === "suggest" && (
         <SuggestTab
@@ -2743,9 +2895,6 @@ export default function App() {
   const [showCoach, setShowCoach] = useState(false);
   const [coachLoading, setCoachLoading] = useState(false);
   const [coachMessages, setCoachMessages] = useState([]);
-  // [Glass Coach v1] Status live affiche pendant le travail de Nuvi.
-  // Cycle: 'reading' -> 'analyzing' -> 'applying' -> 'done' -> null
-  const [coachStatus, setCoachStatus] = useState(null);
   // Coach button : position custom, count d'usage, drag mode, scroll detection
   const [coachPos, setCoachPos] = useState(null); // {x, y} ou null = position par défaut
   const [coachUsageCount, setCoachUsageCount] = useState(0);
@@ -2844,13 +2993,6 @@ export default function App() {
   const [navSection, setNavSection] = useState("home");
   // v17 chantier 15 : Auto-save indicator
   const [autoSaved, setAutoSaved] = useState(false);
-  // [Deploy A] Reset CV + Auto-save indicator
-  const [lastSavedAt, setLastSavedAt] = useState(null);
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [showAccountSoon, setShowAccountSoon] = useState(false);
-  // [Deploy B+] Smart PDF export modal (when CV overflows A4)
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [cvPageCount, setCvPageCount] = useState(1);
   // v17 : Customize CV (couleurs + polices)
   // cvCustom = custom global (applique partout par defaut).
   // versionCustom est lu depuis cv.custom (par-version) si present.
@@ -2924,9 +3066,6 @@ export default function App() {
     if (Array.isArray(savedCo) && savedCo.length) {
       setCoachMessages(savedCo.slice(-50));
     }
-    // [Deploy A] Hydrate lastSavedAt for "Saved Xs ago" indicator
-    const savedLastSaved = lsG("nv-last-saved", null);
-    if (typeof savedLastSaved === "number") setLastSavedAt(savedLastSaved);
     // Load coach button position custom (drag persistance)
     const savedCp = lsG("nv-coach-pos", null);
     if (savedCp && typeof savedCp === "object" && typeof savedCp.x === "number" && typeof savedCp.y === "number") {
@@ -2968,12 +3107,8 @@ export default function App() {
   const setCVFn = useCallback(fn => setCV_(p => {
     const n = typeof fn==="function" ? fn(p) : fn;
     lsS(SK.CV, n);
-    // v17 : auto-save indicator (legacy boolean, kept for compat)
+    // v17 : auto-save indicator
     setAutoSaved(true);
-    // [Deploy A] Timestamp for "saved Xs ago" indicator
-    const now = Date.now();
-    setLastSavedAt(now);
-    try { lsS("nv-last-saved", now); } catch (e) {}
     return n;
   }), []);
 
@@ -3150,255 +3285,31 @@ export default function App() {
     setLoad(false);
   }, [apiKey, T, pushH, setCVFn, notify]);
 
-  // [Deploy B+] Hauteur d'une page A4 en pixels a 96 DPI : 297mm = 1123px
-  // Tolerance pour considerer "1 page" : 1.1 page (= un peu de debordement OK)
-  const A4_HEIGHT_PX = 1123;
-  const A4_TOLERANCE = 1.10;
-
-  // Mesure la hauteur reelle du CV preview en pixels
-  const measureCVHeight = useCallback(() => {
-    const el = document.getElementById("cv-print");
-    if (!el) return 0;
-    // Use scrollHeight to get the FULL content height even if scrolled or clipped
-    return el.scrollHeight || el.getBoundingClientRect().height || 0;
-  }, []);
-
-  // [Deploy B+] Helper : run html2pdf with given options
-  // Cleans the CV (removes empty sections/items) BEFORE snapshot for a homogeneous
-  // PDF, then restores the original CV. Also strips wrapper minHeight to avoid
-  // blank bottom band. Returns the cleanup report so we can notify the user.
-  // [Bande blanche fix v3] Direct html2canvas + jsPDF approach.
-  // Bypass html2pdf's auto-page logic which forces A4 height. Instead :
-  //   1. Capture the CV inner element (not the wrapper) with html2canvas at real height
-  //   2. Calculate how many A4 pages fit
-  //   3. Slice the canvas into A4-sized images and append to jsPDF
-  //   4. Last page gets trimmed to actual content height (NO blank band)
-  //
-  // options : {
-  //   filename : string,
-  //   mode     : "single" | "multi" | "long",
-  //     single = exactly 1 A4 page (scaled to fit if too tall)
-  //     multi  = multi-page A4, last page trimmed to content
-  //     long   = single page with custom height = content height
-  // }
-  const runHtml2Pdf = useCallback((options) => {
-    return new Promise((resolve, reject) => {
-      const el = document.getElementById("cv-print");
-      if (!el) { reject(new Error("CV element not found")); return; }
-
-      // 1. Clean CV (remove empty sections/items for clean PDF)
-      const { cleanedCv, removed } = cleanCVForExport(cv);
-
-      // 2. Backup original CV and swap to cleaned version
-      const originalCv = cv;
-      setCV_(cleanedCv);
-
-      // 3. Find wrapper for minHeight stripping
-      const wrapper = el.closest('[data-cvf="cv"]');
-
-      const stripMinHeights = () => {
-        const stripped = [];
-        if (wrapper) {
-          stripped.push({ node: wrapper, prev: wrapper.style.minHeight });
-          wrapper.style.minHeight = "0";
-        }
-        stripped.push({ node: el, prev: el.style.minHeight });
-        el.style.minHeight = "0";
-        el.querySelectorAll("*").forEach(node => {
-          if (node.style && node.style.minHeight) {
-            stripped.push({ node, prev: node.style.minHeight });
-            node.style.minHeight = "0";
-          }
-        });
-        return stripped;
-      };
-
-      let stripped = [];
-
-      const restore = () => {
-        stripped.forEach(({ node, prev }) => {
-          if (node && node.style) node.style.minHeight = prev || "";
-        });
-        setCV_(originalCv);
-      };
-
-      const notifyCleanup = () => {
-        if (removed.sections.length > 0 || removed.items > 0) {
-          const sum = getRemovedSummary(removed, locale);
-          if (sum) {
-            setTimeout(() => {
-              notify(locale === "en"
-                ? "Hidden for clean export : " + sum
-                : "Masque pour un export propre : " + sum);
-            }, 600);
-          }
-        }
-      };
-
-      const doExport = async () => {
-        // Wait for React flush + strip minHeights
-        await new Promise(r => setTimeout(r, 80));
-        stripped = stripMinHeights();
-        // eslint-disable-next-line no-unused-expressions
-        el.offsetHeight; // force reflow
-        await new Promise(r => setTimeout(r, 30));
-
-        try {
-          if (document.fonts && document.fonts.ready) await document.fonts.ready;
-        } catch {}
-
-        // [v5 fix] Use the FULL #cv-print element, NOT firstElementChild.
-        // The CV is a flex container with sidebar + content. Using firstElementChild
-        // captures only the sidebar (or only the content), losing half the CV.
-        // We measure the FULL element instead.
-        const target = el;
-        const contentH = target.scrollHeight;
-        const contentW = target.scrollWidth || target.offsetWidth || 794;
-
-        // Convert content height to mm
-        // CV preview is 794px wide which maps to 210mm (A4 width)
-        const PX_TO_MM = 210 / 794;
-        const contentHmm = contentH * PX_TO_MM;
-
-        const A4_W_MM = 210;
-        const A4_H_MM = 297;
-
-        const mode = options.mode || "single";
-        const fname = options.filename || "CV.pdf";
-
-        // Build html2pdf config based on mode
-        let pdfFormat;
-        let pageBreakMode;
-
-        if (mode === "long") {
-          // Single very-long page, custom height
-          pdfFormat = [A4_W_MM, Math.max(A4_H_MM, contentHmm)];
-          pageBreakMode = ["css"];
-        } else if (mode === "multi") {
-          // Multi-page A4, html2pdf will paginate automatically
-          pdfFormat = "a4";
-          pageBreakMode = ["css", "legacy"];
-        } else {
-          // SINGLE mode : custom format = exact content height (NO blank band)
-          // If CV is super short (< 55% A4), keep min height to avoid postcard-look
-          const MIN_RATIO = 0.55;
-          const finalHmm = Math.max(contentHmm, A4_H_MM * MIN_RATIO);
-          pdfFormat = [A4_W_MM, finalHmm];
-          pageBreakMode = ["css"];
-        }
-
-        const html2pdfOptions = {
-          margin: 0,
-          filename: fname,
-          image: { type: "jpeg", quality: 0.96 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-            // Don't force width — let html2canvas use the natural element width
-            // (forcing windowWidth breaks flex layouts and crops sidebar)
-            scrollX: 0,
-            scrollY: 0,
-          },
-          jsPDF: {
-            unit: "mm",
-            format: pdfFormat,
-            orientation: "portrait",
-          },
-          pagebreak: {
-            mode: pageBreakMode,
-            avoid: [".cv-exp-item", ".cv-edu-item", ".cv-section-no-break"],
-          },
-        };
-
-        try {
-          await window.html2pdf().set(html2pdfOptions).from(target).save();
-          restore();
-          notifyCleanup();
-          resolve();
-        } catch (err) {
-          console.error("[PDF export]", err);
-          restore();
-          reject(err);
-        }
-      };
-
-      // Load html2pdf bundle if not already loaded
-      if (window.html2pdf) {
-        doExport();
-      } else {
-        const s = document.createElement("script");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        s.onerror = () => { restore(); notify("Erreur chargement PDF"); reject(new Error("script load failed")); };
-        s.onload = doExport;
-        document.head.appendChild(s);
-      }
-    });
-  }, [cv, notify, locale]);
-
-  // [Bande blanche v3] Export PDF en multi-pages A4 avec coupure intelligente
-  // La derniere page est rognee exactement a la hauteur du contenu (pas de bande)
-  const exportPDFTwoPages = useCallback(async () => {
-    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
-    try {
-      await runHtml2Pdf({ filename: fname, mode: "multi" });
-      notify(T.okp + ": " + fname);
-      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
-    } catch (err) {
-      console.error("[exportPDF multi]", err);
-      notify("Erreur export PDF");
-    }
-  }, [cv.name, T, notify, runHtml2Pdf]);
-
-  // [Bande blanche v3] Export PDF en 1 page longue (hauteur custom)
-  const exportPDFLongPage = useCallback(async () => {
-    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
-    try {
-      await runHtml2Pdf({ filename: fname, mode: "long" });
-      notify(T.okp + ": " + fname);
-      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
-    } catch (err) {
-      console.error("[exportPDF long]", err);
-      notify("Erreur export PDF");
-    }
-  }, [cv.name, T, notify, runHtml2Pdf]);
-
-  // [Bande blanche v3] Export PDF "smart" : si CV tient sur 1 page, on l'envoie direct
-  // Sinon ouvre la modale.
-  const exportPDFSinglePage = useCallback(async () => {
-    const fname = "CV_" + (cv.name || "Nuvi").split(" ").join("_") + ".pdf";
-    try {
-      await runHtml2Pdf({ filename: fname, mode: "single" });
-      notify(T.okp + ": " + fname);
-      if (typeof nuviTrigger === "function") nuviTrigger("cv-exported");
-    } catch (err) {
-      console.error("[exportPDF single]", err);
-      notify("Erreur export PDF");
-    }
-  }, [cv.name, T, notify, runHtml2Pdf]);
-
   const exportPDF = useCallback(() => {
-    // Measure raw height first (current state of DOM)
-    const heightPx = measureCVHeight();
-
-    // Estimate height reduction from cleaning (each empty section saves ~80px,
-    // each empty item saves ~25px). Rough heuristic for the decision.
-    const { removed } = cleanCVForExport(cv);
-    const estimatedCleaning = removed.sections.length * 80 + removed.items * 25;
-    const estimatedCleanedHeight = Math.max(0, heightPx - estimatedCleaning);
-    const pageCount = estimatedCleanedHeight / A4_HEIGHT_PX;
-
-    if (pageCount <= A4_TOLERANCE) {
-      // CV tient sur 1 page A4 (ou tres peu de debordement) -> export simple
-      exportPDFSinglePage();
-      return;
-    }
-
-    // CV deborde : ouvre la modale de choix
-    setCvPageCount(pageCount);
-    setShowExportModal(true);
-  }, [measureCVHeight, exportPDFSinglePage, cv]);
+    const el = document.getElementById("cv-print");
+    if (!el) return;
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+    s.onerror = () => notify("Erreur chargement PDF");
+    s.onload = async () => {
+      // v17 : attend que les Google Fonts custom soient chargees avant snapshot.
+      try {
+        if (document.fonts && document.fonts.ready) {
+          await document.fonts.ready;
+        }
+      } catch {}
+      const fname = "CV_" + cv.name.split(" ").join("_") + ".pdf";
+      window.html2pdf().set({
+        margin:0, filename:fname,
+        image:{type:"jpeg", quality:.98},
+        html2canvas:{scale:2, useCORS:true, logging:false},
+        jsPDF:{unit:"mm", format:"a4", orientation:"portrait"},
+      }).from(el).save();
+      notify(T.okp+": "+fname);
+      if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+    };
+    document.head.appendChild(s);
+  }, [cv.name, T, notify]);
 
   const doReset = useCallback(() => {
     if (!window.confirm(T.conf)) return;
@@ -3794,78 +3705,11 @@ export default function App() {
     notify(locale==="en" ? "Version saved" : "Version sauvegardee");
   }, [cv, notify, locale]);
 
-  // [Deploy A] Quick save sans prompt - auto-name avec date courante
-  // Utile pour le bouton "Sauvegarder cette version" dans le header
-  const quickSaveVersion = useCallback(() => {
-    if (cvIsEmpty) {
-      notify(locale === "en" ? "Nothing to save" : "Rien a sauvegarder");
-      return null;
-    }
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, "0");
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const hh = String(now.getHours()).padStart(2, "0");
-    const mi = String(now.getMinutes()).padStart(2, "0");
-    const autoName = locale === "en"
-      ? "Snapshot " + dd + "/" + mm + " " + hh + "h" + mi
-      : "Snapshot du " + dd + "/" + mm + " a " + hh + "h" + mi;
-    const v = {
-      id: Date.now(),
-      name: autoName,
-      cv: cv,
-      created: new Date().toISOString(),
-    };
-    setVersions(vs => {
-      const next = [...vs, v];
-      lsS(SK.VS, next);
-      return next;
-    });
-    notify(locale === "en"
-      ? "Saved as : " + autoName
-      : "Sauvegarde : " + autoName);
-    return v.id;
-  }, [cv, cvIsEmpty, notify, locale]);
-
-  // [Deploy A] Reset CV - vide tout et retourne au OnboardScreen
-  const resetCV = useCallback(() => {
-    pushH(cv); // snapshot Undo au cas ou
-    setCVFn(() => ({
-      ...EMPTY,
-      // Deep clone des arrays pour eviter shared refs
-      experience: [{id: Date.now(), title: "", company: "", period: "", location: "", bullets: ["", ""]}],
-      education:  [{id: Date.now() + 1, degree: "", school: "", period: ""}],
-      skills:     ["", "", "", "", "", "", "", ""],
-      languages:  [{lang: "", level: ""}, {lang: "", level: ""}],
-      certifications: [""],
-      labels: {},
-      // [Deploy B] Reset photo to default mode "initials"
-      photo: { mode: "initials" },
-    }));
-    // Clear coach history aussi - nouveau CV = nouveau contexte
-    setCoachMessages([]);
-    lsS(SK.CO, []);
-    // Notification
-    notify(locale === "en"
-      ? "Started fresh. Your new CV awaits."
-      : "Tout est vide. Ton nouveau CV t'attend.");
-  }, [cv, pushH, setCVFn, notify, locale]);
-
-  // [Deploy A] Save current CV as snapshot then reset
-  const saveAndReset = useCallback(() => {
-    const savedId = quickSaveVersion();
-    if (savedId) {
-      // Small delay so user sees the "Saved" notif before reset
-      setTimeout(() => resetCV(), 250);
-    } else {
-      resetCV();
-    }
-  }, [quickSaveVersion, resetCV]);
-
   const loadVersion = useCallback((id) => {
     const v = versions.find(x => x.id === id);
     if (!v) return;
     if (!window.confirm(
-      locale==="en" ? "Load this version? Current CV will be replaced (history will allow undo)."
+      locale==="en" ? "Load this version? Current CV will be replaced (history will allow undo)." 
                     : "Charger cette version? Le CV actuel sera remplace (annulable via Historique)."
     )) return;
     pushH();
@@ -4567,23 +4411,6 @@ export default function App() {
     }
   }, [showInterview, offerResult, interviewOffer]);
 
-  // [Glass Coach v1] Pose data-coach-busy="true" sur body pendant que Nuvi
-  // travaille. Permet au CSS injecte de rendre le CoachModal semi-transparent
-  // pour que l'user voie son CV a travers en temps reel.
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    if (coachLoading) {
-      document.body.setAttribute("data-coach-busy", "true");
-    } else {
-      document.body.removeAttribute("data-coach-busy");
-    }
-    return () => {
-      if (typeof document !== "undefined") {
-        document.body.removeAttribute("data-coach-busy");
-      }
-    };
-  }, [coachLoading]);
-
   // v17 chantier 7 : Coach IA conversationnel.
   //
   // Persiste l'historique en localStorage (cap a 50 derniers messages).
@@ -4614,36 +4441,15 @@ export default function App() {
     });
     setCoachLoading(true);
 
-    // [Glass Coach v1] Cycle des status pendant le travail.
-    // Etapes psychologiques (pas reellement lies a l'API) pour montrer
-    // a l'user que Nuvi est en train de bosser sur SON CV en temps reel.
-    setCoachStatus("reading");
-    const statusTimer1 = setTimeout(() => setCoachStatus("analyzing"), 1200);
-    const statusTimer2 = setTimeout(() => setCoachStatus("applying"), 3500);
-
     try {
-      // [Coach v5] Index complet avec bullets numerotees pour cibler precisement.
-      // Permet a Claude de faire replace_bullet bullet_idx=N au lieu d'add_bullet.
-      const expIndex = (cv.experience || []).map((e, i) => {
-        let block = "exp_idx=" + i
-          + " : " + (e.title || "(sans titre)")
-          + " @ " + (e.company || "(sans entreprise)")
-          + " [" + (e.period || "?") + "]";
-        const bullets = Array.isArray(e.bullets) ? e.bullets : [];
-        if (bullets.length > 0) {
-          bullets.forEach((b, bi) => {
-            if (b && b.trim()) {
-              block += '\n  bullet_idx=' + bi + ' : "' + b.replace(/"/g, '\\"').slice(0, 140) + '"';
-            }
-          });
-        }
-        return block;
-      }).join("\n");
-
-      // Summary + title visibles pour update_summary / update_title precis
-      const cvHeader = "name=\"" + (cv.name || "") + "\""
-        + " | title=\"" + (cv.title || "") + "\""
-        + ' | summary="' + (cv.summary || "").slice(0, 200).replace(/"/g, '\\"') + (cv.summary && cv.summary.length > 200 ? '...' : '') + '"';
+      // Index explicite des experiences pour que Claude cible par exp_idx
+      const expIndex = (cv.experience || []).map((e, i) =>
+        "  exp_idx=" + i
+        + " : " + (e.title || "(no title)")
+        + " @ " + (e.company || "(no company)")
+        + " [" + (e.period || "no period") + "]"
+        + " (" + ((e.bullets || []).filter(b => b).length) + " bullets)"
+      ).join("\n");
 
       // Historique conversationnel (10 derniers tours, exclut le message courant)
       const recentHistory = (nextMessages || [])
@@ -4654,72 +4460,45 @@ export default function App() {
 
       const langLine = locale === "en"
         ? "Reply STRICTLY in English. "
-        : "Reponds STRICTEMENT en francais. ";
+        : "Reply STRICTLY in French. ";
 
-      // [Coach v5] Prompt refonte : expertise reelle + coherence stricte reply/actions
-      const p = "Tu es Nuvi, coach carriere senior (20 ans d'experience RH+coaching cadres+ATS)."
-        + " Tu connais : frameworks STAR/CAR, standards par secteur (Tech aime metriques produit/MRR/users ; Finance aime montants M EUR/AUM/PnL ; Conseil aime impact client/equipes ; Vente aime % atteinte/CA/portefeuille)."
-        + " Tu corriges les anti-patterns : 'responsable de' -> verbes d'action ('pilote', 'deploie', 'orchestre') ;"
-        + " 'participe a' -> action precise + resultat ; tâches descriptives -> impact mesurable."
-        + "\n\n=== CV HEADER ==="
-        + "\n" + cvHeader
-        + "\n\n=== EXPERIENCES (avec bullets numerotees) ==="
-        + "\n" + (expIndex || "(aucune experience)")
-        + (recentHistory ? "\n\n=== HISTORIQUE CONVERSATION ===\n" + recentHistory : "")
-        + "\n\n=== MESSAGE USER ==="
-        + "\n" + userText.trim()
-        + "\n\n=== REGLE ABSOLUE DE COHERENCE ==="
-        + "\nSi ta reply dit 'C'est fait' / 'Voici tes...' / 'Corrige' / 'Modifie' / 'Mis a jour'"
-        + " ALORS tu DOIS retourner des actions non-vides qui appliquent reellement le changement."
-        + " Si tu ne peux PAS appliquer (info manquante, demande ambigue, action impossible),"
-        + " DIS-LE clairement : 'Je n'ai pas pu modifier X parce que [raison]. Peux-tu preciser ?'"
-        + " et retourne actions=[] sans mentir."
-        + "\n\n=== CIBLAGE PRECIS ==="
-        + "\n- Pour MODIFIER un bullet existant -> replace_bullet (exp_idx, bullet_idx, new_text)."
-        + "\n  Les bullets sont numerotes ci-dessus, utilise leur bullet_idx exact."
-        + "\n- Pour SUPPRIMER un bullet -> delete_bullet (exp_idx, bullet_idx)."
-        + "\n- Pour AJOUTER un nouveau bullet -> add_bullet (exp_idx, text)."
-        + "\n  N'AJOUTE QUE si l'user demande explicitement 'ajoute' ou 's'il manque qqch'."
-        + "\n  Si l'user dit 'corrige X' ou 'reformule Y', utilise replace_bullet, pas add_bullet."
-        + "\n- update_summary / update_title : pour le resume ou titre du CV (pas d'idx)."
-        + "\n\n=== EXPERTISE PAR DEFAUT ==="
-        + "\nQuand tu reformules un bullet, applique STAR/CAR :"
-        + "\n  S(ituation) + T(ache) + A(ction) + R(esultat chiffre)"
-        + "\nExemples concrets :"
-        + "\n  AVANT : 'Responsable des clients'"
-        + "\n  APRES : 'Pilote portefeuille de 60 clients PME, encours 1,5M EUR par client'"
-        + "\n  AVANT : 'Participe au developpement commercial'"
-        + "\n  APRES : 'Ouvre 12 nouveaux comptes B2B, +35% CA secteur fintech sur 2 ans'"
-        + "\n\n=== STYLE DE REPONSE ==="
-        + "\n- " + langLine
-        + "\n- Reply courte (1 a 3 phrases max), conversationnelle, sharp, pas de bla-bla."
-        + "\n- Pas d'em-dash. Utilise : , . ( ) ou - simple."
-        + "\n- N'invente JAMAIS d'experience, entreprise, date, diplome non present dans le CV."
-        + "\n\n=== FORMAT DE SORTIE (JSON STRICT, RIEN APRES) ==="
-        + '\n{"reply": "ta reponse courte", "actions": [...]}'
-        + "\nRetourne UNIQUEMENT ce JSON, AUCUN texte avant ou apres, AUCUN markdown.";
+      // Prompt v4 : direct, action-oriented, anti-repetition
+      const p = "You are Nuvi, a senior career coach with 20 years of experience."
+        + " The candidate's COMPLETE CV is in your context (cv_context system block)."
+        + " You don't need to ask for info that's already in the CV : read it."
+        + "\n\nEXPERIENCE INDEX (use exp_idx to target a specific job):"
+        + "\n" + (expIndex || "  (no experience)")
+        + (recentHistory ? "\n\nCONVERSATION HISTORY:\n" + recentHistory : "")
+        + "\n\nLATEST USER MESSAGE: " + userText.trim()
+        + "\n\nCORE BEHAVIOR :"
+        + "\n- You APPLY changes directly via actions. You DON'T propose, you DO."
+        + "\n- When user says 'do it' / 'fais-le' / 'go' : return the actions, don't re-propose."
+        + "\n- When user gives info, ask a SHORT follow-up OR apply if you have enough."
+        + "\n- Reply is conversational, 1 to 3 sentences max. Never a wall of text."
+        + "\n- You NEVER invent experiences, companies, dates, or diplomas."
+        + "\n- " + NO_DASH + " " + langLine
+        + "\n\nACTION TYPES YOU CAN RETURN :"
+        + "\n  replace_bullet : {type, exp_idx, bullet_idx, new_text}"
+        + "\n  delete_bullet  : {type, exp_idx, bullet_idx}"
+        + "\n  add_bullet     : {type, exp_idx, text}"
+        + "\n  update_summary : {type, new_text}"
+        + "\n  update_title   : {type, new_text}"
+        + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks) :"
+        + '\n{"reply": "your short conversational reply", "actions": [...]}'
+        + '\n\nIf you need more info before acting, return empty actions :'
+        + '\n{"reply": "your follow-up question", "actions": []}';
 
       // Passe le CV complet via options.cv (cache ephemeral cote route.js)
       const txt = await aiCall(p, { cv, task_name: "coach_chat" });
       const parsed = parseJSON(txt);
 
-      let reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
+      const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
       const actions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
 
       // Retro-compat : ancien format {adopt: {kind, value}}
       const legacyAdopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
         ? { kind: String(parsed.adopt.kind), value: String(parsed.adopt.value) }
         : null;
-
-      // [Coach v5] Detection coherence reply/actions :
-      // Si Claude dit "c'est fait" mais actions vides, on remplace par message honnete.
-      const claimsDone = /\b(c'est fait|voici|corrig[ée]|modifi[ée]|appliqu[ée]|mis a jour|done|here are|corrected|updated|applied|modified)\b/i.test(reply);
-      if (claimsDone && actions.length === 0 && !legacyAdopt) {
-        console.warn("[Coach v5] Reply incoherente : dit 'fait' mais actions vides");
-        reply = locale === "en"
-          ? "I tried but couldn't apply that. Can you tell me more specifically what to change ? (which bullet, which experience)"
-          : "Je n'ai pas pu appliquer ce changement. Tu peux preciser quel bullet ou quelle experience modifier ?";
-      }
 
       // Applique les actions structurees automatiquement
       let applySummary = "";
@@ -4730,10 +4509,10 @@ export default function App() {
           setCVFn(() => result.newCv);
           applySummary = result.summary;
           if (result.failed.length > 0) {
-            console.warn("[Coach v5] Some actions failed:", result.failed);
+            console.warn("[Coach v4] Some actions failed:", result.failed);
           }
         } else if (result.failed.length > 0) {
-          console.warn("[Coach v5] All actions failed:", result.failed);
+          console.warn("[Coach v4] All actions failed:", result.failed);
         }
       }
 
@@ -4751,27 +4530,11 @@ export default function App() {
         return next;
       });
 
-      // [Glass Coach v2] Si une action a ete appliquee, montre "done" et le
-      // LAISSE affiche. Il sera reset au prochain envoi de message ou close.
-      // Si juste reply (pas d'action), reset direct.
-      clearTimeout(statusTimer1);
-      clearTimeout(statusTimer2);
-      if (applySummary) {
-        setCoachStatus("done");
-        // Pas de timeout : le "done" reste tant que l'user n'envoie pas un nouveau message
-      } else {
-        setCoachStatus(null);
-      }
-
       // Notif visible des changements appliques
       if (applySummary) {
         notify((locale === "en" ? "Applied : " : "Applique : ") + applySummary);
       }
     } catch (err) {
-      console.error("[Coach v5] error:", err);
-      clearTimeout(statusTimer1);
-      clearTimeout(statusTimer2);
-      setCoachStatus(null);
       const errMsg = {
         role:"assistant",
         content: T.ea + (err && err.message ? ": " + err.message : ""),
@@ -5371,9 +5134,12 @@ export default function App() {
   const CVEl = (
     <div id="cv-print" style={{position:"relative"}}>
       {load && <Shimmer/>}
-      {layout==="sidebar" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
-      {layout==="classic" && <CVSidebar cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
-      {layout==="ats"     && <CVAts     cv={cv} set={setCVFn} T={T} locale={locale}/>}
+      {layout==="sidebar"  && <CVSidebar  cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="classic"  && <CVClassic  cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="timeline" && <CVTimeline cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="swiss"    && <CVSwiss    cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="compact"  && <CVCompact  cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
+      {layout==="ats"      && <CVAts      cv={cv} set={setCVFn} T={T} locale={locale}/>}
     </div>
   );
 
@@ -6033,6 +5799,7 @@ export default function App() {
           setCvFn={setCVFn}
           apiKey={apiKey} notify={notify} locale={locale}
           onClose={()=>setShowCustomize(false)}
+          layout={layout} setLy={setLy}
         />
       )}
       {showGapRepair && (
@@ -6096,43 +5863,15 @@ export default function App() {
       )}
       {showCoach && (
         <Suspense fallback={null}>
-        {/* [Glass Coach v7] Permanent transparent : la sheet est toujours
-            translucide, les textes du chat passent en blanc pour rester lisibles.
-            Pas de toggle - le glass est l'etat normal. */}
-        <style>{`
-          /* Boutons close/clear : fond noir transparent + icone blanche */
-          [data-nv-coach-sheet="true"] button[aria-label="close"],
-          [data-nv-coach-sheet="true"] button[title]:not([style*="border-radius: 999px"]) {
-            background-color: rgba(0, 0, 0, 0.35) !important;
-            border-color: rgba(255, 255, 255, 0.25) !important;
-            color: #fff !important;
-          }
-          [data-nv-coach-sheet="true"] button[aria-label="close"] svg,
-          [data-nv-coach-sheet="true"] button[title] svg {
-            color: #fff !important;
-          }
-
-          /* Input textarea : noir transparent avec texte blanc */
-          [data-nv-coach-sheet="true"] textarea {
-            background-color: rgba(0, 0, 0, 0.45) !important;
-            border-color: rgba(255, 255, 255, 0.3) !important;
-            color: #fff !important;
-          }
-          [data-nv-coach-sheet="true"] textarea::placeholder {
-            color: rgba(255, 255, 255, 0.7) !important;
-          }
-        `}</style>
-
         <CoachModal
           T={T} cv={cv} apiKey={apiKey}
           lang={locale}
           loading={coachLoading}
-          coachStatus={coachStatus}
           messages={coachMessages}
           onSend={runCoachMessage}
           onClear={clearCoach}
           onAdopt={adoptCoachSuggestion}
-          onClose={() => { setShowCoach(false); setCoachStatus(null); }}
+          onClose={()=>setShowCoach(false)}
           onAction={(action) => {
             // [Nuvi v3] Coach proactif : dispatch des actions feature.
             // Le coach peut proposer des boutons qui ouvrent les modales directement.
@@ -6236,50 +5975,7 @@ export default function App() {
           onToggleDark={toggleDarkMode}
           onRelaunchTutorial={relaunchTutorial}
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
-          onResetCV={() => { setShowSettings(false); setShowResetModal(true); }}
           onClose={()=>setShowSettings(false)}
-        />
-        </Suspense>
-      )}
-      {/* [Deploy A] Reset CV confirmation modal */}
-      {showResetModal && (
-        <Suspense fallback={null}>
-        <ResetCVModal
-          open={showResetModal}
-          onClose={() => setShowResetModal(false)}
-          onSaveAndReset={saveAndReset}
-          onAccountStub={() => { setShowResetModal(false); setShowAccountSoon(true); }}
-          onResetWithoutSave={resetCV}
-          T={T}
-          lang={locale}
-          mob={mob}
-        />
-        </Suspense>
-      )}
-      {/* [Deploy A] Account waitlist stub (placeholder for future auth) */}
-      {showAccountSoon && (
-        <Suspense fallback={null}>
-        <AccountSoonModal
-          open={showAccountSoon}
-          onClose={() => setShowAccountSoon(false)}
-          T={T}
-          lang={locale}
-          mob={mob}
-        />
-        </Suspense>
-      )}
-      {/* [Deploy B+] Export PDF choice modal (when CV > 1.1 page A4) */}
-      {showExportModal && (
-        <Suspense fallback={null}>
-        <ExportPDFModal
-          open={showExportModal}
-          onClose={() => setShowExportModal(false)}
-          onTwoPages={exportPDFTwoPages}
-          onLongPage={exportPDFLongPage}
-          pageCount={cvPageCount}
-          T={T}
-          lang={locale}
-          mob={mob}
         />
         </Suspense>
       )}
@@ -6524,48 +6220,15 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-        {/* [Deploy A] Single circular Reset button - always visible on CV page */}
-        {hydrated && !cvIsEmpty && (
-          <button
-            onClick={() => setShowResetModal(true)}
-            title={locale === "en" ? "Start a fresh CV" : "Commencer un nouveau CV"}
-            aria-label={locale === "en" ? "New CV" : "Nouveau CV"}
-            style={{
-              position: "fixed",
-              top: 14,
-              right: 14,
-              zIndex: 9990,
-              background: "var(--nuvi-paper)",
-              border: "0.5px solid var(--nuvi-hairline)",
-              borderRadius: "50%",
-              width: 36,
-              height: 36,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "var(--nuvi-ink-muted)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-              transition: "all 150ms ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "var(--nuvi-coral-soft)";
-              e.currentTarget.style.borderColor = "var(--nuvi-coral)";
-              e.currentTarget.style.color = "#993C1D";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "var(--nuvi-paper)";
-              e.currentTarget.style.borderColor = "var(--nuvi-hairline)";
-              e.currentTarget.style.color = "var(--nuvi-ink-muted)";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2"
+        {autoSaved && (
+          <div className="cvf-saved-pill">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="3.2"
               strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
-              <path d="M3 3v5h5"/>
+              <path d="M20 6L9 17l-5-5"/>
             </svg>
-          </button>
+            {T.as_saved || "Saved"}
+          </div>
         )}
         {Modals}
         {Onboard}
@@ -6944,36 +6607,15 @@ export default function App() {
             animation: "pasteFlashFade 200ms ease-out forwards",
           }} />
         )}
-      {/* [Deploy A] Single circular Reset button (mobile) */}
-      {hydrated && !cvIsEmpty && (
-        <button
-          onClick={() => setShowResetModal(true)}
-          aria-label={locale === "en" ? "New CV" : "Nouveau CV"}
-          style={{
-            position: "fixed",
-            top: 8,
-            right: 8,
-            zIndex: 9990,
-            background: "var(--nuvi-paper)",
-            border: "0.5px solid var(--nuvi-hairline)",
-            borderRadius: "50%",
-            width: 34,
-            height: 34,
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-            color: "var(--nuvi-ink-muted)",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="2"
+      {autoSaved && (
+        <div className="cvf-saved-pill">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="3.2"
             strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
-            <path d="M3 3v5h5"/>
+            <path d="M20 6L9 17l-5-5"/>
           </svg>
-        </button>
+          {T.as_saved || "Saved"}
+        </div>
       )}
       {Modals}
       {Onboard}
