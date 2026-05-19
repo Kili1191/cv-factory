@@ -300,12 +300,19 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
         ...B({
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "7px 12px", borderRadius: 999,
-          background: hovered ? withOpacity(accent, 0.06) : Paper,
+          background: hovered
+            ? "rgba(250, 248, 243, 0.95)"
+            : "rgba(250, 248, 243, 0.85)",
           color: Ink,
-          border: "0.5px solid " + (hovered ? accent : Hairline),
+          border: "0.5px solid " + (hovered ? accent : "rgba(217, 119, 87, 0.35)"),
           fontSize: 12, fontWeight: 500,
           fontFamily: Sans,
           letterSpacing: "0.01em",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+          boxShadow: hovered
+            ? "0 4px 14px rgba(217, 119, 87, 0.18)"
+            : "0 2px 8px rgba(0, 0, 0, 0.08)",
           transition: "all 150ms ease",
         })
       }}>
@@ -547,18 +554,55 @@ export default function CoachModal({
         animation: "cvfFadeIn 200ms ease-out",
       }} onClick={() => { if (!loading) onClose(); }} />
 
-      {/* [Glass Coach v8] Glass leger 10% + bordure rouille Coral.
-          La sheet flotte sur le CV qui reste lisible derriere. */}
+      {/* [Liquid Glass v1] Sheet avec effet iOS 26 :
+          - Background quasi-transparent (centre 100% visible sur le CV)
+          - ::before = layer blur avec mask radial -> blur uniquement sur les bords
+          - ::after = highlight inner top (reflet de lumiere) + inner shadow bord
+          - Bordure Coral 1.5px solide */}
+      <style>{`
+        .nv-liquid-glass {
+          position: relative;
+          isolation: isolate;
+        }
+        /* Layer blur sur bords uniquement (mask radial = trou au centre) */
+        .nv-liquid-glass::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          backdrop-filter: blur(40px) saturate(1.4);
+          -webkit-backdrop-filter: blur(40px) saturate(1.4);
+          background: rgba(20, 15, 12, 0.18);
+          -webkit-mask-image: radial-gradient(ellipse 70% 60% at center, transparent 0%, transparent 30%, black 100%);
+          mask-image: radial-gradient(ellipse 70% 60% at center, transparent 0%, transparent 30%, black 100%);
+          pointer-events: none;
+          z-index: -1;
+        }
+        /* Inner highlight (reflet de lumiere iOS en haut) + ombre bordure */
+        .nv-liquid-glass::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          border-radius: inherit;
+          pointer-events: none;
+          box-shadow:
+            inset 0 1px 0 rgba(255, 255, 255, 0.25),
+            inset 0 0 60px rgba(217, 119, 87, 0.06),
+            inset 0 -1px 0 rgba(217, 119, 87, 0.15);
+          z-index: -1;
+        }
+      `}</style>
       <div
         data-nv-coach-sheet="true"
+        className="nv-liquid-glass"
         style={{
         position: "relative",
-        background: "rgba(10, 10, 10, 0.10)",
+        background: "transparent",
         border: "1.5px solid " + Coral,
         borderBottom: "none",
         borderRadius: "32px 32px 0 0",
         height: "94vh", display: "flex", flexDirection: "column",
-        boxShadow: "0 -20px 60px rgba(0,0,0,.15), 0 0 0 1px rgba(217,119,87,0.15)",
+        boxShadow: "0 -20px 60px rgba(0,0,0,.20), 0 0 0 1px rgba(217,119,87,0.20)",
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
         width: "100%", maxWidth: 840,
         marginLeft: "auto", marginRight: "auto",
@@ -575,7 +619,17 @@ export default function CoachModal({
           display: "flex", alignItems: "center",
           flexShrink: 0,
         }}>
-          <NuviLogo size={28} inkColor={Cream} />
+          {/* [Liquid Glass v1] Wordmark statique propre (NuviLogo anime
+              s'affichait casse sur fond glass). Serif italic Coral. */}
+          <div style={{
+            fontFamily: Serif,
+            fontSize: 22,
+            fontWeight: 400,
+            fontStyle: "italic",
+            color: Coral,
+            letterSpacing: "-0.02em",
+            textShadow: "0 1px 8px rgba(0,0,0,0.3)",
+          }}>Nuvi</div>
         </div>
 
         <div style={{
@@ -619,12 +673,15 @@ export default function CoachModal({
               title={T.co_clear}
               style={{
                 ...B({
-                  background: Paper, borderRadius: "50%",
-                  width: 32, height: 32, color: InkMuted,
-                  border: "0.5px solid " + Hairline,
+                  background: "rgba(250, 248, 243, 0.85)", borderRadius: "50%",
+                  width: 32, height: 32, color: Ink,
+                  border: "0.5px solid rgba(217, 119, 87, 0.4)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   opacity: loading ? 0.4 : 1,
+                  backdropFilter: "blur(6px)",
+                  WebkitBackdropFilter: "blur(6px)",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
                   transition: "all 150ms ease",
                 })
               }}>
@@ -640,12 +697,15 @@ export default function CoachModal({
 
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
-              background: Paper, borderRadius: "50%",
-              width: 32, height: 32, color: InkMuted,
-              border: "0.5px solid " + Hairline,
+              background: "rgba(250, 248, 243, 0.85)", borderRadius: "50%",
+              width: 32, height: 32, color: Ink,
+              border: "0.5px solid rgba(217, 119, 87, 0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
               opacity: loading ? 0.4 : 1,
+              backdropFilter: "blur(6px)",
+              WebkitBackdropFilter: "blur(6px)",
+              boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
               transition: "all 150ms ease",
             })
           }}>
