@@ -254,10 +254,25 @@ export default function LiquidGlassPanel({
         @keyframes ${id}-move-h { 0%,100% { transform: translate3d(-5%,-25%,0) scale(1.15); } 50% { transform: translate3d(30%,35%,0) scale(1.05); } }
 
         /* ============ OPACITY PULSES desync ============ */
-        @keyframes ${id}-pulse-1 { 0%,100% { opacity: 0; } 50% { opacity: ${opMax}; } }
-        @keyframes ${id}-pulse-2 { 0%,100% { opacity: ${opMax}; } 50% { opacity: 0; } }
-        @keyframes ${id}-pulse-3 { 0%,100% { opacity: 0; } 30%,70% { opacity: ${opMax}; } }
-        @keyframes ${id}-pulse-4 { 0%,100% { opacity: ${(opMax * 0.7).toFixed(3)}; } 50% { opacity: 0; } }
+        /* Tous les pulses ont un FLOOR minimum (pas 0) pour eviter stroboscope.
+           Floor = 35% du max, donc l'opacite oscille entre 0.063 et 0.18
+           -> les blobs sont TOUJOURS visibles, juste plus ou moins forts. */
+        @keyframes ${id}-pulse-1 {
+          0%,100% { opacity: ${(opMax * 0.35).toFixed(3)}; }
+          50%     { opacity: ${opMax}; }
+        }
+        @keyframes ${id}-pulse-2 {
+          0%,100% { opacity: ${opMax}; }
+          50%     { opacity: ${(opMax * 0.35).toFixed(3)}; }
+        }
+        @keyframes ${id}-pulse-3 {
+          0%,100% { opacity: ${(opMax * 0.4).toFixed(3)}; }
+          30%,70% { opacity: ${opMax}; }
+        }
+        @keyframes ${id}-pulse-4 {
+          0%,100% { opacity: ${(opMax * 0.7).toFixed(3)}; }
+          50%     { opacity: ${(opMax * 0.3).toFixed(3)}; }
+        }
 
         /* ============ BORDER COLOR TRANSITIONS ============ */
         @property --c1-${id} { syntax: '<color>'; initial-value: ${COLORS.coral};   inherits: false; }
@@ -289,11 +304,11 @@ export default function LiquidGlassPanel({
           88%      { opacity: 0.6; }
         }
         @keyframes ${id}-border-glow {
-          0%, 100% { filter: drop-shadow(0 0 4px rgba(217,119,87,0.4)); }
-          22%      { filter: drop-shadow(0 0 14px rgba(217,119,87,0.7)); }
-          47%      { filter: drop-shadow(0 0 8px rgba(185,28,140,0.6)); }
-          73%      { filter: drop-shadow(0 0 18px rgba(91,61,245,0.7)); }
-          91%      { filter: drop-shadow(0 0 10px rgba(200,169,106,0.5)); }
+          0%, 100% { filter: drop-shadow(0 0 8px rgba(217,119,87,0.6)) drop-shadow(0 0 20px rgba(217,119,87,0.3)); }
+          22%      { filter: drop-shadow(0 0 18px rgba(217,119,87,0.85)) drop-shadow(0 0 30px rgba(217,119,87,0.5)); }
+          47%      { filter: drop-shadow(0 0 12px rgba(185,28,140,0.8)) drop-shadow(0 0 24px rgba(185,28,140,0.4)); }
+          73%      { filter: drop-shadow(0 0 22px rgba(91,61,245,0.85)) drop-shadow(0 0 32px rgba(91,61,245,0.5)); }
+          91%      { filter: drop-shadow(0 0 14px rgba(200,169,106,0.7)) drop-shadow(0 0 26px rgba(200,169,106,0.4)); }
         }
 
         /* ============ REFLET PULSANT ============ */
@@ -379,21 +394,10 @@ export default function LiquidGlassPanel({
           z-index: 9;
           pointer-events: none;
         }
+        /* Gloss diagonal sharp : DESACTIVE - causait une trace blanche
+           diagonale moche sur le panel. */
         .${id}-gloss {
-          position: absolute;
-          inset: 0;
-          border-radius: inherit;
-          pointer-events: none;
-          background: linear-gradient(115deg,
-            transparent 0%,
-            transparent 25%,
-            rgba(255,255,255,0.22) 28%,
-            rgba(255,255,255,0.30) 30%,
-            rgba(255,255,255,0.22) 32%,
-            transparent 35%,
-            transparent 100%
-          );
-          z-index: 3;
+          display: none;
         }
         .${id}-edge-bottom {
           position: absolute;
@@ -462,33 +466,9 @@ export default function LiquidGlassPanel({
           mask-composite: exclude;
           z-index: 8;
         }
-        /* Halo rayonnant exterieur (visible AUSSI hors du panel)
-           - Couche separee pour pouvoir deborder + blur */
-        .${id}-border-halo {
-          position: absolute;
-          inset: -8px;
-          border-radius: 40px 40px 8px 8px;
-          pointer-events: none;
-          padding: 12px;
-          background: conic-gradient(from var(--bg-from-${id}, 0deg),
-            var(--c1-${id}, ${COLORS.coral}),
-            var(--c2-${id}, ${COLORS.gold}),
-            var(--c3-${id}, ${COLORS.magenta}),
-            var(--c4-${id}, ${COLORS.purple}),
-            var(--c1-${id}, ${COLORS.coral})
-          );
-          ${animate ? `animation:
-            ${id}-border-colors 50s ease-in-out infinite,
-            ${id}-border-angle 71s ease-in-out infinite,
-            ${id}-border-opacity 53s ease-in-out infinite;` : "opacity: 0.55;"}
-          filter: blur(8px);
-          opacity: 0.4;
-          -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          -webkit-mask-composite: xor;
-          mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-          mask-composite: exclude;
-          z-index: 0;
-        }
+        /* Halo rayonnant : SUPPRIME (etait problematique - masquait le contenu).
+           Le glow rayonnant est maintenant fait directement par le filter
+           drop-shadow sur la bordure principale (.${id}-border via border-glow). */
         .${id}-specular {
           position: absolute; inset: 0;
           border-radius: inherit;
@@ -528,11 +508,9 @@ export default function LiquidGlassPanel({
         {/* Outer glow halo */}
         <div className={`${id}-outer-glow`} aria-hidden="true" />
 
-        {/* Border halo rayonnant - dehors du panel isolated pour pouvoir
-            deborder de -8px sur tous les cotes (vraie glow exterieure) */}
-        <div className={`${id}-border-halo`} aria-hidden="true" />
-
-        {/* 8 blobs auroraux qui debordent */}
+        {/* 8 blobs auroraux qui debordent.
+            PAS d'overflow: hidden ici sinon les blobs sont clippes
+            en rectangles aux positions extremes des keyframes. */}
         <div
           aria-hidden="true"
           style={{
@@ -543,7 +521,6 @@ export default function LiquidGlassPanel({
             bottom: "-40%",
             pointerEvents: "none",
             zIndex: 0,
-            overflow: "hidden",
           }}
         >
           <div className={`${id}-blob ${id}-coral-1`} />
@@ -556,7 +533,9 @@ export default function LiquidGlassPanel({
           <div className={`${id}-blob ${id}-gold-2`} />
         </div>
 
-        {/* Inner panel - isolated pour les reflets */}
+        {/* Inner panel - isolated pour les reflets.
+            Box-shadow multi-couleur rayonnante : le glow Coral+Purple+Magenta
+            qui deborde du panel (box-shadow n'est PAS clip par overflow hidden). */}
         <div
           style={{
             position: "relative",
@@ -566,9 +545,13 @@ export default function LiquidGlassPanel({
             width: "100%",
             borderRadius,
             overflow: "hidden",
-            boxShadow:
-              "0 -20px 60px rgba(0,0,0,.18), " +
+            boxShadow: [
+              "0 -20px 60px rgba(0,0,0,.18)",
               "0 0 0 1px rgba(255,255,255,0.08)",
+              "0 0 30px rgba(217,119,87,0.25)",
+              "0 0 50px rgba(91,61,245,0.18)",
+              "0 0 70px rgba(185,28,140,0.15)",
+            ].join(", "),
             animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
           }}
         >
