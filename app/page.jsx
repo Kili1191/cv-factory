@@ -3503,26 +3503,42 @@ export default function App() {
     const fname = "CV_" + cv.name.split(" ").join("_")
                 + (format !== "a4" ? "_" + format : "") + ".pdf";
 
-    // Charge html2pdf si pas deja charge
-    const loadHtml2pdf = () => new Promise((resolve, reject) => {
-      if (window.html2pdf) return resolve();
-      const existing = document.querySelector('script[data-html2pdf]');
+    // Charge un script et attend qu'il soit pret
+    const loadScript = (src, attr) => new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[${attr}]`);
       if (existing) {
+        if (existing.getAttribute("data-loaded") === "1") return resolve();
         existing.addEventListener("load", () => resolve());
-        existing.addEventListener("error", () => reject());
+        existing.addEventListener("error", () => reject(new Error("load fail " + src)));
         return;
       }
       const s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-      s.setAttribute("data-html2pdf", "1");
-      s.onload = () => resolve();
-      s.onerror = () => reject();
+      s.src = src;
+      s.setAttribute(attr, "1");
+      s.onload = () => { s.setAttribute("data-loaded", "1"); resolve(); };
+      s.onerror = () => reject(new Error("load fail " + src));
       document.head.appendChild(s);
     });
 
+    // Charge html2canvas + jsPDF SEPAREMENT (exposition fiable sur window)
+    const loadLibs = async () => {
+      if (!window.html2canvas) {
+        await loadScript(
+          "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
+          "data-h2c"
+        );
+      }
+      if (!(window.jspdf && window.jspdf.jsPDF)) {
+        await loadScript(
+          "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
+          "data-jspdf"
+        );
+      }
+    };
+
     (async () => {
       try {
-        await loadHtml2pdf();
+        await loadLibs();
 
         // Attend que les Google Fonts custom soient chargees
         try {
@@ -3580,30 +3596,12 @@ export default function App() {
         }
         // CAS 2 : Le contenu deborde -> pas de CSS force, multi-pages naturel
 
-        // [CAPTURE MANUELLE 2026-05-20]
-        // On capture le CV (force a 297mm) avec html2canvas, puis on construit
-        // le PDF manuellement avec UNE SEULE page A4. Controle total : jamais
-        // de page 2 vide possible.
-
-        // html2pdf.bundle expose html2canvas et jsPDF en interne
-        const h2c = window.html2canvas
-                  || (window.html2pdf && window.html2pdf.html2canvas);
-        const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+        // Libs chargees directement (exposition fiable)
+        const h2c = window.html2canvas;
+        const jsPDFLib = window.jspdf && window.jspdf.jsPDF;
 
         if (!h2c || !jsPDFLib) {
-          // Fallback html2pdf classique si les libs internes pas accessibles
-          const tempStyle0 = document.getElementById("cvf-pdf-design-fills");
-          await window.html2pdf().set({
-            margin: 0, filename: fname,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#faf8f3" },
-            jsPDF: { unit: "mm", format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"), orientation: "portrait", compress: true },
-            pagebreak: { mode: ["avoid-all"] },
-          }).from(el).save();
-          if (tempStyle0) tempStyle0.remove();
-          notify(T.okp + ": " + fname);
-          if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
-          return;
+          throw new Error("Librairies PDF non chargees (html2canvas/jsPDF)");
         }
 
         // Capture le CV
@@ -3620,63 +3618,49 @@ export default function App() {
 
         console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
 
+        // ============================================================
+        // [SOLUTION PANEL EXPERTS 2026-05-20 v5]
+        // Le PDF est cree avec les DIMENSIONS EXACTES de l'image capturee.
+        // 1 image = 1 page de SA taille. Page 2 structurellement impossible.
+        //
+        // - On convertit les pixels du canvas en mm (a 96 dpi standard).
+        // - Le format PDF = [largeur_mm, hauteur_mm] de l'image.
+        // - L'image remplit 100% de la page. Aucun debordement possible.
+        // - Ratio A4 conserve (210/297) grace au CSS "design fills page"
+        //   qui force le CV a 297mm quand le contenu tient.
+        // - S'imprime nickel sur une feuille A4 (meme ratio).
+        // ============================================================
+        const PX_TO_MM = 25.4 / 96; // 1px = 0.2645mm a 96dpi
+        // canvas.width/height sont a scale 2, donc on divise par le scale
+        const CAPTURE_SCALE = 2;
+        const imgWidthMm = (canvas.width / CAPTURE_SCALE) * PX_TO_MM;
+        const imgHeightMm = (canvas.height / CAPTURE_SCALE) * PX_TO_MM;
+
+        console.log("[exportPDF] PDF dimensions:",
+                    imgWidthMm.toFixed(1) + "x" + imgHeightMm.toFixed(1) + "mm");
+
+        // PDF au format EXACT de l'image (orientation auto selon ratio)
         const pdf = new jsPDFLib({
           unit: "mm",
-          format: format === "a4" ? "a4"
-                : (format === "letter" ? "letter" : "legal"),
-          orientation: "portrait",
+          format: [imgWidthMm, imgHeightMm],
+          orientation: imgHeightMm >= imgWidthMm ? "portrait" : "landscape",
           compress: true,
         });
 
-        const pdfW = pdf.internal.pageSize.getWidth();
-        const pdfH = pdf.internal.pageSize.getHeight();
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        const canvasRatioDbg = (canvas.height / canvas.width).toFixed(4);
-        console.log("[exportPDF] pdfW/H:", pdfW.toFixed(1), pdfH.toFixed(1),
-                    "| canvas ratio:", canvasRatioDbg,
-                    "| shouldFillPage:", shouldFillPage);
+        // L'image remplit EXACTEMENT la page (0,0 -> pleine taille)
+        pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, imgHeightMm);
 
-        // [ANTI PHANTOM-PAGE 2026-05-20 v4]
-        // jsPDF cree parfois une 2e page vide a cause d'arrondis quand
-        // l'image fait pile la hauteur de page. On place donc l'image avec
-        // une hauteur LEGEREMENT inferieure (-0.5mm) pour garantir 1 page.
-        const SAFE_H = pdfH - 0.5;
-
-        if (shouldFillPage) {
-          // Le CV (force a 297mm) remplit la page A4 (largeur pleine,
-          // hauteur SAFE pour eviter le debordement d'arrondi)
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, SAFE_H);
-          console.log("[exportPDF] 1 page A4 (design fills)");
-        } else {
-          // Le CV deborde : scale-to-fit dans 1 page A4, centre horizontalement
-          const canvasRatio = canvas.height / canvas.width;
-          const widthIfFullHeight = SAFE_H / canvasRatio;
-
-          let drawW, drawH, offsetX;
-          if (widthIfFullHeight <= pdfW) {
-            drawH = SAFE_H;
-            drawW = widthIfFullHeight;
-            offsetX = (pdfW - drawW) / 2;
-          } else {
-            drawW = pdfW;
-            drawH = pdfW * canvasRatio;
-            offsetX = 0;
-          }
-          pdf.addImage(imgData, "JPEG", offsetX, 0, drawW, drawH);
-          console.log("[exportPDF] 1 page A4 (scale-to-fit, CV long)");
-        }
-
-        // [GARANTIE 1 PAGE] Supprime toute page surnumeraire eventuelle
-        const pageCount = pdf.internal.getNumberOfPages
-          ? pdf.internal.getNumberOfPages()
-          : (pdf.getNumberOfPages ? pdf.getNumberOfPages() : 1);
-        console.log("[exportPDF] Pages avant cleanup:", pageCount);
-        for (let p = pageCount; p > 1; p--) {
-          pdf.deletePage(p);
-        }
-        if (pageCount > 1) {
-          console.log("[exportPDF] Pages surnumeraires supprimees -> 1 page");
+        // [GARANTIE BETON] Supprime toute page surnumeraire (ceinture+bretelles)
+        try {
+          const pageCount = pdf.internal.getNumberOfPages
+            ? pdf.internal.getNumberOfPages()
+            : 1;
+          for (let p = pageCount; p > 1; p--) pdf.deletePage(p);
+          console.log("[exportPDF] Pages finales: 1 (etait", pageCount + ")");
+        } catch (cleanupErr) {
+          console.warn("[exportPDF] Cleanup pages skip:", cleanupErr.message);
         }
 
         pdf.save(fname);
