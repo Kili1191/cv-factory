@@ -228,18 +228,18 @@ export function CVSidebar({ cv, set, t, T, locale }) {
       display:"flex",
       // [FIX bande blanche 2026-05-20] minHeight 100% pour que le gradient
       // sidebar s'etende sur toute la hauteur du conteneur cv-print (297mm)
-      minHeight:"297mm",
+      minHeight:"auto",
       fontFamily: t.bf,
       // Background gradient split :
       // gauche = couleur sidebar (185px = width sidebar)
       // droite = couleur fond CV
       // Garantit que la sidebar visuelle va jusqu'en bas meme si son contenu s'arrete plus tot
-      background: `linear-gradient(to right, ${t.sb} 0, ${t.sb} 185px, ${t.bg} 185px, ${t.bg} 100%)`,
+      background: `linear-gradient(to right, ${t.sb} 0, ${t.sb} 200px, ${t.bg} 200px, ${t.bg} 100%)`,
     }}>
       {/* Colonne sidebar - le background transparent laisse voir le gradient parent */}
       <div style={{
-        width:185, color: t.st,
-        padding:"22px 15px", flexShrink:0,
+        width:200, color: t.st,
+        padding:"26px 18px", flexShrink:0,
         // [FIX overflow text 2026-05-20] Garantit qu'aucun texte ne deborde
         overflow:"hidden",
         wordBreak:"break-word",
@@ -258,28 +258,39 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         />
 
         {SS("contact", T.cv_ct)}
-        {["email","phone","location","linkedin"].map(f => (
-          <div key={f} style={{
-            marginBottom:4,
-            wordBreak:"break-word", overflowWrap:"anywhere",
-          }}>
-            <E value={cv[f]} onChange={u(f)}
-              style={{color: t.st, fontSize:9, lineHeight:1.5}}/>
-          </div>
-        ))}
+        {["email","phone","location","linkedin"].map(f => {
+          const value = cv[f];
+          // [FIX 2026-05-20] Ne render que si valeur non-vide
+          // Evite l'affichage de "..." placeholder sous Lyon
+          if (!value || !String(value).trim()) return null;
+          return (
+            <div key={f} style={{
+              marginBottom:6,
+              wordBreak:"break-word", overflowWrap:"anywhere",
+            }}>
+              <E value={value} onChange={u(f)}
+                style={{
+                  color: t.st, fontSize:9.5, lineHeight:1.55,
+                  opacity:0.92,
+                }}/>
+            </div>
+          );
+        })}
 
         {SS("skills", T.cv_s)}
         {cv.skills.map((s, i) => (
           <div key={i} style={{
-            display:"flex", gap:4, marginBottom:3, alignItems:"flex-start",
+            // [Refonte premium 2026-05-20] : Sans pipe |, plus aere
+            marginBottom:5, paddingLeft:0,
           }}>
-            <span style={{color: t.ac, fontSize:8, flexShrink:0, marginTop:2}}>|</span>
             <div style={{
-              flex:1, minWidth:0,
               wordBreak:"break-word", overflowWrap:"anywhere",
             }}>
               <E value={s} onChange={v=>us(i, v)}
-                style={{color: t.st, fontSize:9}}/>
+                style={{
+                  color: t.st, fontSize:9.5, lineHeight:1.5,
+                  opacity:0.92,
+                }}/>
             </div>
           </div>
         ))}
@@ -287,26 +298,31 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         {SS("languages", T.cv_l)}
         {cv.languages.map((l, i) => (
           <div key={i} style={{
-            marginBottom:4, wordBreak:"break-word", overflowWrap:"anywhere",
+            // [Refonte premium 2026-05-20] : marge 6px (vs 4), avec hairline
+            marginBottom:6, wordBreak:"break-word", overflowWrap:"anywhere",
           }}>
             <E value={l.lang} onChange={v=>ul(i, "lang", v)}
-              style={{color: t.st, fontWeight:600, fontSize:9, display:"block"}}/>
+              style={{color: t.st, fontWeight:600, fontSize:10, display:"block", lineHeight:1.4}}/>
             <E value={l.level} onChange={v=>ul(i, "level", v)}
-              style={{color: t.st + "88", fontSize:8, display:"block"}}/>
+              style={{color: t.st, opacity:0.65, fontSize:8.5, display:"block", lineHeight:1.4, marginTop:1}}/>
           </div>
         ))}
 
         {SS("certifications", T.cv_c)}
-        {cv.certifications.map((c, i) => (
-          <div key={i} style={{
-            fontSize:8, marginBottom:3, lineHeight:1.4,
-            wordBreak:"break-word", overflowWrap:"anywhere",
-          }}>
-            <span style={{color: t.ac}}>v </span>
-            <E value={c} onChange={v=>uc(i, v)}
-              style={{color: t.st, fontSize:8}}/>
-          </div>
-        ))}
+        {cv.certifications.map((c, i) => {
+          if (!c || !String(c).trim()) return null;
+          return (
+            <div key={i} style={{
+              // [Refonte premium 2026-05-20] : font 9 (vs 8), sans pipe
+              fontSize:9, marginBottom:5, lineHeight:1.5,
+              wordBreak:"break-word", overflowWrap:"anywhere",
+              opacity:0.9,
+            }}>
+              <E value={c} onChange={v=>uc(i, v)}
+                style={{color: t.st, fontSize:9}}/>
+            </div>
+          );
+        })}
       </div>
 
       {/* Colonne principale */}
@@ -427,7 +443,7 @@ export function CVClassic({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "32px 40px", minHeight: "297mm",
+      padding: "32px 40px", minHeight: "auto",
     }}>
       {/* Header avec photo facultative a gauche */}
       <div style={{
@@ -595,7 +611,7 @@ export function CVTimeline({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      minHeight: "297mm",
+      minHeight: "auto",
     }}>
       {/* Header sombre contraste */}
       <div style={{
@@ -836,7 +852,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "40px 48px", minHeight: "297mm",
+      padding: "40px 48px", minHeight: "auto",
       maxWidth: 800,
     }}>
       {/* Header epure */}
@@ -1023,7 +1039,7 @@ export function CVCompact({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "20px 28px", minHeight: "297mm",
+      padding: "20px 28px", minHeight: "auto",
     }}>
       {/* Header compact */}
       <div style={{
