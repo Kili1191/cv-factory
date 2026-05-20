@@ -49,7 +49,7 @@ export default function NuviSidebar({
   lang = "fr",
   onCoachOpen,
   onSettingsOpen,
-  onReplayIntro,
+  onReset,
   hasNotification = {},
 }) {
   const [expanded, setExpanded] = useState(false);
@@ -101,7 +101,7 @@ export default function NuviSidebar({
       target: "Match offre", pack: "Pack candidature",
       audits: "Score & Audits", cvs: "Mes CV", design: "Design",
       tracking: "Candidatures", settings: "Reglages",
-      replay: "Revoir la presentation",
+      replay: "Reset",
       edit_id: "Identite", edit_exp: "Experiences", edit_edu: "Formation", edit_sk: "Competences",
       audits_score: "Score recruteur", audits_pos: "Positionnement",
       audits_truth: "Truth Check", audits_gap: "Lisser le parcours",
@@ -114,7 +114,7 @@ export default function NuviSidebar({
       target: "Match", pack: "Application Pack",
       audits: "Score & Audits", cvs: "My CVs", design: "Design",
       tracking: "Applications", settings: "Settings",
-      replay: "Replay presentation",
+      replay: "Reset",
       edit_id: "Identity", edit_exp: "Experience", edit_edu: "Education", edit_sk: "Skills",
       audits_score: "Recruiter score", audits_pos: "Positioning",
       audits_truth: "Truth Check", audits_gap: "Gap repair",
@@ -140,7 +140,7 @@ export default function NuviSidebar({
     design: <DesignPaletteIcon size={20} />,
     tracking: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>),
     settings: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>),
-    replay: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 109-9 9 9 0 00-6.36 2.64L3 8"/><path d="M3 3v5h5"/><path d="M10 9l5 3-5 3z" fill="currentColor" stroke="none"/></svg>),
+    replay: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 2v6h6"/><path d="M3 13a9 9 0 103-7.7L3 8"/></svg>),
   };
 
   const SubIcons = {
@@ -410,16 +410,17 @@ export default function NuviSidebar({
         </div>
 
         <div style={{ borderTop: "1px solid " + Hairline, padding: "8px 0" }}>
-          {/* [Replay presentation 2026-05-20] Bouton pour revoir l'intro Nuvi */}
-          {onReplayIntro && (
+          {/* [Reset CV 2026-05-20] Bouton pour reinitialiser le CV (avec
+              confirmation geree cote parent). Icone seule + "Reset" au hover. */}
+          {onReset && (
             <div
               role="button"
               tabIndex={0}
-              onClick={() => onReplayIntro()}
+              onClick={() => onReset()}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
-                  onReplayIntro();
+                  onReset();
                 }
               }}
               onMouseEnter={(e) => {
@@ -431,8 +432,9 @@ export default function NuviSidebar({
                 e.currentTarget.style.color = InkMuted;
               }}
               style={itemStyle(false, InkMuted)}
-              data-nv-nav="replay"
+              data-nv-nav="reset"
               aria-label={L.replay}
+              title={L.replay}
             >
               <span style={{
                 display: "flex",
