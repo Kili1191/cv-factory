@@ -7092,7 +7092,7 @@ export default function App() {
             lang={locale}
             onCoachOpen={() => openCoach()}
             onSettingsOpen={() => setShowSettings(true)}
-            onReplayIntro={() => replayIntro()}
+            onReset={() => doReset()}
           />
           {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
               accessibles via NuviSidebar v2 + ses sub-items + AdjustModal */}
