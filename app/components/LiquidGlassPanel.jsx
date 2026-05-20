@@ -1,25 +1,14 @@
 "use client";
 
-// LiquidGlassPanel v10 - REWRITE PROPRE
+// LiquidGlassPanel v11 - tokens centralises (verdict panel 2026-05-21)
 //
-// Approche simplifiee qui evite TOUS les bugs precedents :
-// - PAS de mix-blend-mode (cause des elements qui disparaissent)
-// - PAS d'animation sur filter:drop-shadow (cause les repaints/flickers)
-// - PAS d'isolation chaotique
-// - 4 blobs SEULEMENT (pas 8) en background-image (pas en DOM elements)
-// - Bordure SIMPLE qui change de couleur via background-image animation
-// - Logo Nuvi avec shadow gentle (text-shadow, pas filter)
-//
-// Sub-exports :
-//   - NuviLogoAnimated : logo "Nuvi" en gradient anime avec shadow gentle
-//   - NuviTextGlass    : texte blanc avec text-shadow universelle
-//   - NuviTextGlassCoral : texte Coral avec text-shadow
+// CHANGEMENT v11 : les valeurs de verre codees en dur sont remplacees par
+// les variables centrales --nuvi-glass-* (definies dans page.jsx). Les effets
+// riches (aurora 6 blobs, 6 couches de lumiere) sont CONSERVES. Resultat :
+// memes couleurs/teinte que les barres/sidebar, mais niveau de verre plus
+// substantiel (role "panneau" vs role "controle"). Hierarchie Apple.
 
 import React from "react";
-
-// ============================================================================
-// LOGO ANIME NUVI
-// ============================================================================
 
 export function NuviLogoAnimated({ size = 26 }) {
   return (
@@ -45,10 +34,6 @@ export function NuviLogoAnimated({ size = 26 }) {
     </div>
   );
 }
-
-// ============================================================================
-// TEXTE GLASS (titre + sous-titre)
-// ============================================================================
 
 export function NuviTextGlass({ children, style = {} }) {
   return (
@@ -85,10 +70,6 @@ export function NuviTextGlassCoral({ children, style = {} }) {
   );
 }
 
-// ============================================================================
-// PANEL PRINCIPAL
-// ============================================================================
-
 export default function LiquidGlassPanel({
   children,
   height = "94vh",
@@ -99,7 +80,6 @@ export default function LiquidGlassPanel({
   tintColor = "rgba(255, 255, 255, 0.0)",
   animate = true,
 }) {
-  // ID unique pour eviter conflits CSS si plusieurs panels
   const id = React.useId().replace(/:/g, "");
 
   return (
@@ -113,11 +93,12 @@ export default function LiquidGlassPanel({
         height,
         borderRadius,
         overflow: "hidden",
-        // [Fix 2026-05-20] Backdrop blur TRES LEGER global (juste un soupcon
-        // d'effet glass). Le vrai blur est sur chaque bulle de chat individuellement
-        // (frosted glass per-bubble) pour que le CV reste visible entre les bulles.
-        backdropFilter: "blur(2px) saturate(120%)",
-        WebkitBackdropFilter: "blur(2px) saturate(120%)",
+        // [v11] Le panneau utilise le verre PANNEAU centralise : plus
+        // substantiel que les barres (role "panneau"), meme teinte cream.
+        // Le fond cream translucide vient d'ici (avant : header/footer gradients).
+        background: "var(--nuvi-glass-panel, rgba(250,248,243,0.62))",
+        backdropFilter: "var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
+        WebkitBackdropFilter: "var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
         boxShadow: `
           0 -8px 32px rgba(0, 0, 0, 0.25),
           0 -2px 8px rgba(0, 0, 0, 0.15)
@@ -125,13 +106,6 @@ export default function LiquidGlassPanel({
       }}
     >
       <style>{`
-        /* ============================================================
-           AURORA v3 - 6 blobs DIFFORMES qui morphent
-           Chaque keyframe combine transform + border-radius pour que
-           les blobs aient des shapes ORGANIQUES qui changent (comme
-           du slime liquide), pas des cercles parfaits qui glissent.
-           Pas de mix-blend-mode, juste superposition + blur + opacity.
-           ============================================================ */
         @keyframes lgp-${id}-blob-a {
           0%   { transform: translate3d(0%, 0%, 0)    scale(1);    border-radius: 60% 40% 30% 70% / 50% 60% 40% 50%; }
           20%  { transform: translate3d(40%, 20%, 0)  scale(1.15); border-radius: 30% 70% 60% 40% / 40% 50% 50% 60%; }
@@ -184,7 +158,6 @@ export default function LiquidGlassPanel({
           top: 0; left: 0;
           width: 80%;
           height: 80%;
-          /* border-radius initial sera override par les keyframes */
           border-radius: 50%;
           filter: blur(100px);
           opacity: 0.22;
@@ -216,11 +189,6 @@ export default function LiquidGlassPanel({
           ${animate ? `animation: lgp-${id}-blob-d 49s ease-in-out infinite;` : ""}
         }
 
-        /* ============================================================
-           BORDURE ANIMEE - couleur qui change doucement
-           Utilise box-shadow inset (pas de filter, pas de drop-shadow)
-           = ZERO repaint extreme, ZERO flicker.
-           ============================================================ */
         @keyframes lgp-${id}-border {
           0%, 100% {
             box-shadow:
@@ -248,17 +216,6 @@ export default function LiquidGlassPanel({
           ${animate ? `animation: lgp-${id}-border 18s ease-in-out infinite;` : `box-shadow: inset 0 0 0 1.5px ${borderColor};`}
         }
 
-        /* ============================================================
-           GLASS LIGHTING v3 - effet "soleil tape sur le verre" Apple-style
-           ============================================================
-           - Top edge : bord superieur lumineux comme un vrai bord de verre
-           - Specular highlight : zone claire diagonale (reflet du soleil)
-           - Edge light : bord exterieur lumineux (style widget iOS 26)
-           - Glass refraction : gradient interne qui suggere l'epaisseur
-        */
-
-        /* 1. TOP EDGE LIGHT - bord superieur tres net et lumineux
-              Simule la lumiere qui frappe le haut du verre */
         .lgp-${id}-top-edge {
           position: absolute;
           top: 0;
@@ -277,8 +234,6 @@ export default function LiquidGlassPanel({
           border-radius: ${typeof borderRadius === "string" ? borderRadius : borderRadius + "px"} ${typeof borderRadius === "string" ? borderRadius : borderRadius + "px"} 0 0;
         }
 
-        /* 2. TOP GRADIENT SHINE - zone claire douce sous le top edge
-              Comme la lumiere qui filtre a travers le verre */
         .lgp-${id}-shine {
           position: absolute;
           top: 0;
@@ -296,8 +251,6 @@ export default function LiquidGlassPanel({
           border-radius: ${typeof borderRadius === "string" ? borderRadius : borderRadius + "px"};
         }
 
-        /* 3. SPECULAR HIGHLIGHT - reflet du soleil en diagonale
-              Style "verre poli vu de l'angle ou la lumiere arrive" */
         .lgp-${id}-specular {
           position: absolute;
           top: -10%;
@@ -319,8 +272,6 @@ export default function LiquidGlassPanel({
           filter: blur(8px);
         }
 
-        /* 4. SECONDARY HIGHLIGHT - 2eme reflet plus petit cote droit
-              Pour donner la profondeur du verre */
         .lgp-${id}-specular-2 {
           position: absolute;
           top: 15%;
@@ -337,8 +288,6 @@ export default function LiquidGlassPanel({
           filter: blur(6px);
         }
 
-        /* 5. EDGE LIGHTING APPLE STYLE - halo lumineux blanc cote droit + bas
-              C'est ce qu'Apple fait sur les widgets iOS 26 / Sonoma */
         .lgp-${id}-edge-light {
           position: absolute;
           inset: 0;
@@ -351,8 +300,6 @@ export default function LiquidGlassPanel({
             inset 0 0 30px rgba(255, 255, 255, 0.04);
         }
 
-        /* 6. GLASS REFRACTION - tres subtil gradient interne
-              Suggere que le verre a une epaisseur */
         .lgp-${id}-refraction {
           position: absolute;
           inset: 0;
@@ -367,9 +314,6 @@ export default function LiquidGlassPanel({
           );
         }
 
-        /* ============================================================
-           CONTENT WRAPPER - z-index eleve pour etre AU-DESSUS de tout
-           ============================================================ */
         .lgp-${id}-content {
           position: relative;
           z-index: 10;
@@ -380,7 +324,6 @@ export default function LiquidGlassPanel({
         }
       `}</style>
 
-      {/* Layer 0 : Aurora background - 6 blobs flottants */}
       <div className={`lgp-${id}-aurora-bg`} aria-hidden="true">
         <div className={`lgp-${id}-blob coral-1`} />
         <div className={`lgp-${id}-blob coral-2`} />
@@ -390,26 +333,14 @@ export default function LiquidGlassPanel({
         <div className={`lgp-${id}-blob gold-1`} />
       </div>
 
-      {/* Layer 3 : Glass refraction (gradient interne) */}
       <div className={`lgp-${id}-refraction`} aria-hidden="true" />
-
-      {/* Layer 4 : Top gradient shine */}
       <div className={`lgp-${id}-shine`} aria-hidden="true" />
-
-      {/* Layer 5 : Specular highlights (reflets soleil) */}
       <div className={`lgp-${id}-specular`} aria-hidden="true" />
       <div className={`lgp-${id}-specular-2`} aria-hidden="true" />
-
-      {/* Layer 5 : Bordure animee */}
       <div className={`lgp-${id}-border`} aria-hidden="true" />
-
-      {/* Layer 6 : Top edge light (bord superieur lumineux) */}
       <div className={`lgp-${id}-top-edge`} aria-hidden="true" />
-
-      {/* Layer 7 : Edge lighting Apple-style (halo bordure) */}
       <div className={`lgp-${id}-edge-light`} aria-hidden="true" />
 
-      {/* Layer 10 : Contenu */}
       <div className={`lgp-${id}-content`}>
         {children}
       </div>

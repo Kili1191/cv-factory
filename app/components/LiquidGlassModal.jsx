@@ -1,28 +1,11 @@
 "use client";
 
-// LiquidGlassModal v1 (2026-05-20)
+// LiquidGlassModal v2 - tokens centralises (verdict panel 2026-05-21)
 //
-// Wrapper reutilisable pour transformer n'importe quelle modale en
-// Liquid Glass coherent. Geste 2 layouts :
-//
-//   layout="side"   -> Side panel droite, full-height (style Notion/Cursor)
-//                       Ideal pour : Adjust, Design, Match, Audit, Truth,
-//                       Positioning. CV reste visible 60% a gauche.
-//
-//   layout="bottom" -> Bottom sheet hauteur adaptative (style iOS)
-//                       Ideal pour : Translation et modales courtes.
-//
-//   layout="auto"   -> side desktop (>900px), bottom mobile
-//
-// Architecture pointer-events : le CV en background reste scrollable et
-// interactif dans les zones hors panel. C'est ce qui differencie ce
-// LiquidGlassModal d'une modale classique.
-//
-// Composants helpers exportes :
-//   GlassCard     -> Bulle frosted glass (auto blur 20px + tint 0.55)
-//   GlassButton   -> Bouton frosted glass coherent
-//   GlassInput    -> Input frosted glass coherent
-//   GlassSelect   -> Select frosted glass coherent
+// CHANGEMENT v2 : header/footer gradients allegés (le verre vient maintenant
+// du LiquidGlassPanel via --nuvi-glass-panel, plus besoin d'une couche cream
+// opaque par-dessus). Helpers GlassCard/Button/Input alignes sur les memes
+// tokens. Memes couleurs partout, niveau "panneau".
 
 import { useEffect, useState } from "react";
 import LiquidGlassPanel from "./LiquidGlassPanel";
@@ -37,27 +20,28 @@ const Hairline  = "var(--nuvi-hairline)";
 const Sans  = "'Inter', -apple-system, sans-serif";
 const Serif = "'Fraunces', Georgia, serif";
 
-// ============================================================================
-// LiquidGlassModal - wrapper principal
-// ============================================================================
+// Verre "carte" interne (bulles, cards) : un cran plus transparent que le
+// panneau pour la profondeur, mais coherent. Centralise ici.
+const CARD_BG   = "var(--nuvi-glass-card, rgba(255,255,255,0.5))";
+const CARD_BLUR = "var(--nuvi-glass-card-blur, blur(20px) saturate(180%))";
+
 export default function LiquidGlassModal({
   open = true,
   onClose,
-  layout = "auto",        // "side" | "bottom" | "auto"
-  width = 480,            // largeur en px pour mode side
-  height,                 // hauteur pour mode bottom (par defaut "auto")
-  maxHeight = "85vh",     // limite pour mode bottom
-  eyebrow,                // ex: "NUVI ADJUST" (sera affiche en Coral upper)
-  title,                  // ex: "Ajuster" (Fraunces)
-  titleAccent,            // ex: "ton CV" (partie en gradient Purple->Magenta)
-  subtitle,               // ex: "Affine bullet par bullet"
-  headerActions,          // React node : boutons cote droit du header
-  footer,                 // React node : contenu du footer (input, CTA...)
-  children,               // contenu du body
+  layout = "auto",
+  width = 480,
+  height,
+  maxHeight = "85vh",
+  eyebrow,
+  title,
+  titleAccent,
+  subtitle,
+  headerActions,
+  footer,
+  children,
   closeOnEscape = true,
-  noPadding = false,      // si true, pas de padding sur le body
+  noPadding = false,
 }) {
-  // [Auto] Detection mobile pour layout="auto"
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -67,11 +51,9 @@ export default function LiquidGlassModal({
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  // [Effective layout] Si "auto", on choisit selon viewport
   const effectiveLayout =
     layout === "auto" ? (isMobile ? "bottom" : "side") : layout;
 
-  // [Escape key] Fermeture par Escape
   useEffect(() => {
     if (!closeOnEscape || !onClose) return;
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -83,13 +65,10 @@ export default function LiquidGlassModal({
 
   if (!open) return null;
 
-  // ============ MODE SIDE (panel droite, full-height) ============
   if (effectiveLayout === "side") {
     return (
       <div
         style={{
-          // Wrapper : couvre QUE la zone du panel droit (pas tout l'ecran)
-          // pour laisser le CV scrollable a gauche.
           position: "fixed",
           top: 0,
           right: 0,
@@ -98,7 +77,6 @@ export default function LiquidGlassModal({
           zIndex: 99998,
           fontFamily: Sans,
           pointerEvents: "none",
-          // Animation slide-in droite
           animation: "lgm-slide-side 280ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
@@ -109,7 +87,6 @@ export default function LiquidGlassModal({
           }
         `}</style>
 
-        {/* Wrapper interne avec pointer-events actif sur la largeur panel */}
         <div style={{ pointerEvents: "auto", width: "100%", height: "100%" }}>
           <LiquidGlassPanel
             height="100vh"
@@ -139,7 +116,6 @@ export default function LiquidGlassModal({
     );
   }
 
-  // ============ MODE BOTTOM (sheet bas, hauteur adaptative) ============
   return (
     <div
       style={{
@@ -177,7 +153,6 @@ export default function LiquidGlassModal({
           tintColor="rgba(250, 248, 243, 0.04)"
           animate={true}
         >
-          {/* Handle pill en haut (style iOS bottom sheet) */}
           <div style={{
             width: 40, height: 4, background: Coral,
             borderRadius: 999,
@@ -204,9 +179,6 @@ export default function LiquidGlassModal({
   );
 }
 
-// ============================================================================
-// ModalContent - structure interne (header + body + footer)
-// ============================================================================
 function ModalContent({
   eyebrow, title, titleAccent, subtitle,
   headerActions, footer, onClose, children, layout, noPadding,
@@ -216,13 +188,12 @@ function ModalContent({
       display: "flex", flexDirection: "column",
       height: "100%", overflow: "hidden",
     }}>
-      {/* ===== HEADER : fond cream + fade gradient en bas (pas de border) ===== */}
+      {/* HEADER : fade leger (le verre vient du panel maintenant, plus besoin
+          d'une couche cream 0.82 opaque). Juste un voile pour lisibilite titre. */}
       <div style={{
         padding: "16px 24px 28px",
         flexShrink: 0,
-        background: "linear-gradient(180deg, rgba(250, 248, 243, 0.82) 0%, rgba(250, 248, 243, 0.65) 65%, rgba(250, 248, 243, 0.0) 100%)",
-        backdropFilter: "blur(16px) saturate(160%)",
-        WebkitBackdropFilter: "blur(16px) saturate(160%)",
+        background: "linear-gradient(180deg, rgba(250,248,243,0.45) 0%, rgba(250,248,243,0.25) 65%, rgba(250,248,243,0.0) 100%)",
         display: "flex", alignItems: "flex-start",
         justifyContent: "space-between", gap: 12,
         position: "relative",
@@ -280,23 +251,17 @@ function ModalContent({
               onClick={onClose}
               aria-label="Fermer"
               style={{
-                background: "rgba(255, 255, 255, 0.55)",
+                background: CARD_BG,
                 borderRadius: "50%",
                 width: 32, height: 32, color: Ink,
                 border: "0.5px solid rgba(255, 255, 255, 0.6)",
                 cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 flexShrink: 0,
-                backdropFilter: "blur(18px) saturate(170%)",
-                WebkitBackdropFilter: "blur(18px) saturate(170%)",
+                backdropFilter: CARD_BLUR,
+                WebkitBackdropFilter: CARD_BLUR,
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
                 transition: "all 150ms ease",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.75)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "rgba(255, 255, 255, 0.55)";
               }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2"
@@ -308,29 +273,23 @@ function ModalContent({
         </div>
       </div>
 
-      {/* ===== BODY : scrollable, padding ajustable ===== */}
       <div style={{
         flex: 1,
         overflowY: "auto",
         padding: noPadding ? 0 : "0 24px",
         position: "relative",
         zIndex: 1,
-        // Le padding-top negatif permet au contenu de "remonter" sous le fade
-        // gradient du header pour un effet plus immersif
         marginTop: -16,
         paddingTop: 16,
       }}>
         {children}
       </div>
 
-      {/* ===== FOOTER : fade gradient en haut + content ===== */}
       {footer && (
         <div style={{
           padding: "28px 24px 18px",
           flexShrink: 0,
-          background: "linear-gradient(180deg, rgba(250, 248, 243, 0.0) 0%, rgba(250, 248, 243, 0.65) 40%, rgba(250, 248, 243, 0.82) 100%)",
-          backdropFilter: "blur(16px) saturate(160%)",
-          WebkitBackdropFilter: "blur(16px) saturate(160%)",
+          background: "linear-gradient(180deg, rgba(250,248,243,0.0) 0%, rgba(250,248,243,0.25) 40%, rgba(250,248,243,0.45) 100%)",
           position: "relative",
           zIndex: 2,
         }}>
@@ -341,19 +300,10 @@ function ModalContent({
   );
 }
 
-// ============================================================================
-// HELPERS - composants frosted glass coherents
-// ============================================================================
-
-/**
- * GlassCard - card frosted glass
- * Usage : <GlassCard>contenu</GlassCard>
- *         <GlassCard padding="16px 20px" tint="rgba(255,255,255,0.6)">...</GlassCard>
- */
 export function GlassCard({
   children,
   padding = "14px 18px",
-  tint = "rgba(255, 255, 255, 0.55)",
+  tint,
   borderRadius = 16,
   marginBottom = 12,
   onClick,
@@ -363,9 +313,9 @@ export function GlassCard({
     <div
       onClick={onClick}
       style={{
-        background: tint,
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: tint || CARD_BG,
+        backdropFilter: CARD_BLUR,
+        WebkitBackdropFilter: CARD_BLUR,
         border: "0.5px solid rgba(255, 255, 255, 0.6)",
         borderRadius: borderRadius,
         boxShadow: "0 4px 16px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
@@ -387,13 +337,6 @@ export function GlassCard({
   );
 }
 
-/**
- * GlassButton - bouton frosted glass
- * Variants :
- *   - default : transparent, hover plus opaque
- *   - primary : gradient Purple->Magenta solide
- *   - ghost   : sans background, juste un border light
- */
 export function GlassButton({
   children,
   onClick,
@@ -417,7 +360,7 @@ export function GlassButton({
     border = "0.5px solid rgba(0,0,0,0.15)";
     shadow = "none";
   } else {
-    bg = hovered ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.55)";
+    bg = hovered ? "rgba(255, 255, 255, 0.7)" : CARD_BG;
     color = Ink;
     border = "0.5px solid rgba(255, 255, 255, 0.6)";
     shadow = "0 2px 8px rgba(0,0,0,0.06)";
@@ -436,8 +379,8 @@ export function GlassButton({
         background: bg,
         color: color,
         border: border,
-        backdropFilter: variant === "default" ? "blur(18px) saturate(170%)" : undefined,
-        WebkitBackdropFilter: variant === "default" ? "blur(18px) saturate(170%)" : undefined,
+        backdropFilter: variant === "default" ? CARD_BLUR : undefined,
+        WebkitBackdropFilter: variant === "default" ? CARD_BLUR : undefined,
         boxShadow: shadow,
         fontSize: 13, fontWeight: 500,
         fontFamily: Sans,
@@ -453,9 +396,6 @@ export function GlassButton({
   );
 }
 
-/**
- * GlassInput - input frosted glass
- */
 export function GlassInput({
   value, onChange, placeholder, disabled, type = "text",
   multiline = false, rows = 3,
@@ -477,9 +417,9 @@ export function GlassInput({
         padding: "11px 16px",
         borderRadius: multiline ? 16 : 999,
         border: "0.5px solid rgba(255, 255, 255, 0.7)",
-        background: "rgba(255, 255, 255, 0.55)",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        background: CARD_BG,
+        backdropFilter: CARD_BLUR,
+        WebkitBackdropFilter: CARD_BLUR,
         color: Ink, fontSize: 13,
         fontFamily: Sans,
         outline: "none",
@@ -496,9 +436,6 @@ export function GlassInput({
   );
 }
 
-/**
- * GlassDivider - separateur fade qui ne casse pas l'effet glass
- */
 export function GlassDivider({ marginY = 16 }) {
   return (
     <div style={{
@@ -509,10 +446,6 @@ export function GlassDivider({ marginY = 16 }) {
   );
 }
 
-/**
- * GlassSection - section avec titre + content frosted
- * Utile pour les onglets type Customize avec plusieurs sections
- */
 export function GlassSection({ title, children, marginBottom = 20 }) {
   return (
     <div style={{ marginBottom }}>
