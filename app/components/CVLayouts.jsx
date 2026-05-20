@@ -225,9 +225,12 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 
   return (
     <div style={{
-      display:"flex", minHeight:"100%",
+      display:"flex",
+      // [FIX bande blanche 2026-05-20] minHeight 100% pour que le gradient
+      // sidebar s'etende sur toute la hauteur du conteneur cv-print (297mm)
+      minHeight:"297mm",
       fontFamily: t.bf,
-      // [FIX bande blanche 2026-05-20] Background gradient split :
+      // Background gradient split :
       // gauche = couleur sidebar (185px = width sidebar)
       // droite = couleur fond CV
       // Garantit que la sidebar visuelle va jusqu'en bas meme si son contenu s'arrete plus tot
@@ -424,7 +427,7 @@ export function CVClassic({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "32px 40px", minHeight: "100%",
+      padding: "32px 40px", minHeight: "297mm",
     }}>
       {/* Header avec photo facultative a gauche */}
       <div style={{
@@ -592,7 +595,7 @@ export function CVTimeline({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      minHeight: "100%",
+      minHeight: "297mm",
     }}>
       {/* Header sombre contraste */}
       <div style={{
@@ -833,7 +836,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "40px 48px", minHeight: "100%",
+      padding: "40px 48px", minHeight: "297mm",
       maxWidth: 800,
     }}>
       {/* Header epure */}
@@ -1020,7 +1023,7 @@ export function CVCompact({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "20px 28px", minHeight: "100%",
+      padding: "20px 28px", minHeight: "297mm",
     }}>
       {/* Header compact */}
       <div style={{
