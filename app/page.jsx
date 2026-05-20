@@ -3531,32 +3531,51 @@ export default function App() {
           }
         } catch {}
 
-        // [SCALE-TO-FIT 2026-05-20]
-        // Si le CV deborde de moins de 30mm (ex: 305mm pour A4 297mm),
-        // on applique un scale CSS pour faire rentrer exactement dans 297mm.
-        // Garde 1 page A4 propre sans page 2 quasi-vide.
+        // [DESIGN FILLS PAGE 2026-05-20]
+        // Approche premium : le design (sidebar dark + main cream) descend
+        // jusqu'en bas de la page A4 (297mm) MEME si le contenu textuel
+        // s'arrete plus haut. Pas de bande blanche, juste continuite du
+        // design. C'est ce que fait Canva, Resume.io premium, etc.
+
         const MM_TO_PX = 3.7795275591;
         const A4_HEIGHT_MM = 297;
-        const A4_HEIGHT_PX = A4_HEIGHT_MM * MM_TO_PX;
+        const A4_HEIGHT_PX = Math.round(A4_HEIGHT_MM * MM_TO_PX); // 1123px
         const cvHeightPx = el.scrollHeight;
         const cvHeightMm = cvHeightPx / MM_TO_PX;
 
-        let scaleApplied = null;
-        if (cvHeightMm > A4_HEIGHT_MM && cvHeightMm <= A4_HEIGHT_MM + 30) {
-          // Debordement minime : on scale legerement pour rentrer dans 297mm
-          const scale = A4_HEIGHT_MM / cvHeightMm;
-          el.style.transformOrigin = "top left";
-          el.style.transform = `scale(${scale})`;
-          // Compensation de la largeur (scale verticale = scale horizontale)
-          el.style.width = `${794 / scale}px`;
-          scaleApplied = { scale, originalWidth: el.style.width };
-          console.log("[exportPDF] Scale-to-fit applique:", scale.toFixed(3),
-                      "(CV", cvHeightMm.toFixed(1) + "mm -> 297mm)");
+        // CSS temporaire : force le CV a faire EXACTEMENT 297mm de hauteur
+        // avec le design qui s'etend (sidebar dark + main cream continuent)
+        const styleEl = document.createElement("style");
+        styleEl.id = "cvf-pdf-design-fills";
+        styleEl.textContent = `
+          /* [PDF EXPORT - DESIGN FILLS PAGE] */
+          #cv-print {
+            height: ${A4_HEIGHT_MM}mm !important;
+            min-height: ${A4_HEIGHT_MM}mm !important;
+            max-height: ${A4_HEIGHT_MM}mm !important;
+            overflow: hidden !important;
+            box-shadow: none !important;
+            margin: 0 !important;
+            border-radius: 0 !important;
+          }
+          /* Force le wrapper flex (sidebar + main) a faire toute la hauteur */
+          #cv-print > div {
+            min-height: ${A4_HEIGHT_MM}mm !important;
+            height: ${A4_HEIGHT_MM}mm !important;
+          }
+          /* Sidebar et main : tous deux doivent faire toute la hauteur */
+          #cv-print > div > div {
+            min-height: ${A4_HEIGHT_MM}mm !important;
+          }
+        `;
+        document.head.appendChild(styleEl);
 
-          // Force reflow + attend 2 frames
-          void el.offsetHeight;
-          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-        }
+        // Force reflow + 2 frames pour que le CSS soit applique
+        void el.offsetHeight;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        console.log("[exportPDF] CV original:", cvHeightMm.toFixed(1) + "mm");
+        console.log("[exportPDF] PDF cible: A4 strict 297mm (design fills page)");
 
         const opt = {
           margin: 0,
@@ -3581,18 +3600,18 @@ export default function App() {
 
         await window.html2pdf().set(opt).from(el).save();
 
-        // Restore le style original si scale applique
-        if (scaleApplied) {
-          el.style.transform = "";
-          el.style.transformOrigin = "";
-          el.style.width = "210mm";
-        }
+        // Restore : retire le CSS temporaire
+        const tempStyle = document.getElementById("cvf-pdf-design-fills");
+        if (tempStyle) tempStyle.remove();
 
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       } catch (e) {
         console.error("[exportPDF] FAILED:", e);
         notify("Erreur export PDF : " + (e.message || "inconnue"));
+        // Cleanup en cas d'erreur aussi
+        const tempStyle = document.getElementById("cvf-pdf-design-fills");
+        if (tempStyle) tempStyle.remove();
       }
     })();
   }, [cv.name, T, notify]);
