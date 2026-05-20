@@ -3665,8 +3665,10 @@ export default function App() {
         console.log("[exportPDF] Canvas capture:", canvas.width + "x" + canvas.height + "px");
 
         // 3) Construit le PDF avec jsPDF
-        // [APPROCHE DEFINITIVE 2026-05-20]
-        // Calcul direct de la hauteur image en mm via le canvas (largeur fixee 210mm)
+        // [APPROCHE A4 STRICT 2026-05-20]
+        // Format A4/Letter/Legal TOUJOURS standard (210x297mm pour A4)
+        // - Si CV <= 297mm : 1 page A4 avec marge blanche en bas (normal sur papier)
+        // - Si CV > 297mm : multi-pages A4
         const STD_DIMS = {
           a4:     { width: 210,   height: 297 },
           letter: { width: 215.9, height: 279.4 },
@@ -3679,16 +3681,12 @@ export default function App() {
         const imgHeightMm = std.width * canvasAspect;
 
         console.log("[exportPDF] Image en mm:", std.width + "x" + imgHeightMm.toFixed(1) + "mm");
-        console.log("[exportPDF] A4 max:", std.width + "x" + std.height + "mm");
+        console.log("[exportPDF] Format cible:", std.width + "x" + std.height + "mm (strict)");
 
-        // Decision : single page custom ou multi-pages standard ?
-        const fitsOnePage = imgHeightMm <= std.height;
-
+        // PDF TOUJOURS au format standard (A4 / Letter / Legal)
         const pdf = new jsPDFLib({
           unit: "mm",
-          format: fitsOnePage
-            ? [std.width, imgHeightMm]
-            : (format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal")),
+          format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
           orientation: "portrait",
           compress: true,
         });
@@ -3696,27 +3694,28 @@ export default function App() {
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        console.log("[exportPDF] PDF format:", pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm",
-                    "| Mode:", fitsOnePage ? "1 page custom" : "multi-page A4");
+        // Determine si single page ou multi-pages
+        const fitsOnePage = imgHeightMm <= pdfHeight;
+
+        console.log("[exportPDF] PDF:", pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm (A4 strict)",
+                    "| Mode:", fitsOnePage ? "1 page" : "multi-page");
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
         if (fitsOnePage) {
-          // CAS 1 : 1 page, taille = taille image exacte
+          // CAS 1 : 1 page A4 standard
+          // L'image est placee en HAUT avec sa hauteur reelle (pas etiree)
+          // Le reste de la page A4 est blanc (normal, comme une feuille A4 avec marge)
           pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeightMm);
-          console.log("[exportPDF] Single page rendu OK -", imgHeightMm.toFixed(1) + "mm");
+          console.log("[exportPDF] 1 page A4 strict rendu OK - contenu:", imgHeightMm.toFixed(1) + "mm");
         } else {
-          // CAS 2 : Multi-pages
-          // On ne coupe pas l'image, on la place avec offset Y negatif
-          // pour decaler le contenu deja affiche
+          // CAS 2 : Multi-pages A4
           const totalPages = Math.ceil(imgHeightMm / pdfHeight);
           console.log("[exportPDF] Multi-page :", totalPages, "pages prevues");
 
           for (let i = 0; i < totalPages; i++) {
             if (i > 0) pdf.addPage();
             const offsetY = -i * pdfHeight;
-            // addImage(data, format, x, y, width, height)
-            // L'image fait imgHeightMm de haut, on la place avec offset Y
             pdf.addImage(imgData, "JPEG", 0, offsetY, pdfWidth, imgHeightMm);
             console.log("[exportPDF] Page " + (i+1) + " : offset Y = " + offsetY.toFixed(1) + "mm");
           }
