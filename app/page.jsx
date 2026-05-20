@@ -129,8 +129,8 @@ const KEYFRAMES_V17 = `
    Verre uniquement sur les couches qui FLOTTENT (barres, dock, sidebar).
    Le contenu (CV, cartes texte) reste opaque pour la lisibilite. */
 :root{
-  --nuvi-glass-bg: rgba(250,248,243,0.55);
-  --nuvi-glass-blur: blur(28px) saturate(150%);
+  --nuvi-glass-bg: rgba(250,248,243,0.42);
+  --nuvi-glass-blur: blur(24px) saturate(165%);
   --nuvi-glass-border: 0.5px solid rgba(255,255,255,0.7);
   --nuvi-glass-edge: inset 0 1px 1px rgba(255,255,255,0.7);
   --nuvi-glass-shadow: 0 8px 28px rgba(120,90,60,0.12);
@@ -7770,7 +7770,7 @@ export default function App() {
             </div>
           </div>
         )}
-        <div style={{flex:1, overflowY:"auto", padding:"13px 13px 4px", position:"relative", zIndex:1}}>
+        <div style={{flex:1, overflowY:"auto", padding:"13px 13px 96px", position:"relative", zIndex:1}}>
           {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
               Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales
               via NuviBottomNav, donc pas besoin d'afficher leur contenu inline.
