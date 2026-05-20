@@ -3441,6 +3441,43 @@ export default function App() {
   const cvIsEmpty = !cv.name && !cv.title && !cv.summary
     && cv.experience.every(e => !e.title && !e.company);
 
+  // [Dock contextuel mobile 2026-05-20] Logique de suggestion : Nuvi propose
+  // LA prochaine action evidente selon l'etat du CV. L'user reste libre
+  // d'ignorer (dismissable) et d'acceder a tout via la barre + le drawer Plus.
+  const suggestedAction = useMemo(() => {
+    const fr = locale === "fr";
+    // 1. CV vide -> creer
+    if (cvIsEmpty) {
+      return {
+        label: fr ? "Creer mon CV" : "Create my CV",
+        onClick: () => { setObMode("generate"); },
+      };
+    }
+    // 2. Profil court ou absent -> renforcer
+    const summaryLen = (cv.summary || "").trim().length;
+    if (summaryLen < 120) {
+      return {
+        label: fr ? "Renforcer mon profil" : "Strengthen my profile",
+        onClick: () => { setShowAdjust(true); },
+      };
+    }
+    // 3. CV complet mais peu d'experiences detaillees -> ajuster
+    const hasDetailedExp = (cv.experience || []).some(
+      e => e.title && e.bullets && e.bullets.filter(b => b && b.trim()).length >= 2
+    );
+    if (!hasDetailedExp) {
+      return {
+        label: fr ? "Detailler mes experiences" : "Detail my experience",
+        onClick: () => { setShowAdjust(true); },
+      };
+    }
+    // 4. CV solide -> matcher une offre
+    return {
+      label: fr ? "Matcher une offre" : "Match a job",
+      onClick: () => { setShowOffer(true); },
+    };
+  }, [cvIsEmpty, cv.summary, cv.experience, locale]);
+
   // NuviLoadingOverlay : determine quel loading est actif et quelle serie afficher
   const loadingState = useMemo(() => {
     // Generation CV (le plus important - serie "generation")
@@ -7704,6 +7741,8 @@ export default function App() {
           lang={locale}
           onCoachOpen={() => openCoach()}
           onSettingsOpen={() => setShowSettings(true)}
+          onReset={() => doReset()}
+          suggestedAction={suggestedAction}
         />
         {/* Bouton Coach intelligent (mobile + desktop) : drag (long press), shrink, scroll-hide */}
         {!(
