@@ -3517,10 +3517,38 @@ export default function App() {
     };
     const dims = formatDims[format] || formatDims.a4;
 
-    const s = document.createElement("script");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    s.onerror = () => notify("Erreur chargement PDF");
-    s.onload = async () => {
+    // [FIX 2026-05-20] Charge html2canvas + jsPDF separement
+    // html2pdf.bundle merge les deux mais expose mal pour usage direct.
+    // En les chargeant separement, on a un acces propre a chaque API.
+
+    // Helper : charge un script si pas deja present
+    const loadScript = (src) => new Promise((resolve, reject) => {
+      const existing = document.querySelector(`script[src="${src}"]`);
+      if (existing) {
+        if (existing.dataset.loaded === "true") resolve();
+        else existing.addEventListener("load", () => resolve());
+        existing.addEventListener("error", () => reject(new Error("Load failed: " + src)));
+        return;
+      }
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => { s.dataset.loaded = "true"; resolve(); };
+      s.onerror = () => reject(new Error("Load failed: " + src));
+      document.head.appendChild(s);
+    });
+
+    (async () => {
+      try {
+        // Charge en parallele html2canvas + jsPDF
+        await Promise.all([
+          loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+          loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
+        ]);
+      } catch (e) {
+        notify("Erreur chargement PDF : " + e.message);
+        return;
+      }
+
       // Attend que les Google Fonts custom soient chargees avant snapshot
       try {
         if (document.fonts && document.fonts.ready) {
@@ -3530,20 +3558,14 @@ export default function App() {
 
       const fname = "CV_" + cv.name.split(" ").join("_") + (format !== "a4" ? "_" + format : "") + ".pdf";
 
-      // [FIX 2026-05-20 - APPROCHE PROPRE]
-      // On ne touche PAS au DOM original. On le clone hors-ecran avec une
-      // taille exacte 210x297mm, html2canvas capture le clone, on construit
-      // le PDF manuellement avec jsPDF. Approche standard utilisee par
-      // les outils CV pros (Resume.io, Teal, etc.).
-
       try {
-        // Verifie que les deux libs sont disponibles
-        // html2pdf.bundle inclut html2canvas + jspdf en interne
-        if (!window.html2canvas) {
-          // html2pdf bundle expose html2canvas globalement
-          if (window.html2pdf && window.html2pdf.html2canvas) {
-            window.html2canvas = window.html2pdf.html2canvas;
-          }
+        // Verifie disponibilite des libs
+        const html2canvas = window.html2canvas;
+        const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+
+        if (!html2canvas || !jsPDFLib) {
+          notify("Erreur : librairies PDF non disponibles");
+          return;
         }
 
         // 1) Mesure la hauteur reelle du CV en px
@@ -3553,12 +3575,12 @@ export default function App() {
         console.log("[exportPDF] CV dimensions:", cvWidthPx + "x" + cvHeightPx + "px");
 
         // 2) Capture le CV avec html2canvas
-        // On utilise les options minimales necessaires
-        const canvas = await window.html2canvas(el, {
+        // Options minimales et standard
+        const canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: null,
+          backgroundColor: "#faf8f3",  // cream Nuvi (au lieu de transparent)
           width: cvWidthPx,
           height: cvHeightPx,
           windowWidth: cvWidthPx,
@@ -3568,35 +3590,6 @@ export default function App() {
         console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
 
         // 3) Construit le PDF avec jsPDF
-        // html2pdf bundle expose jsPDF via window.jspdf.jsPDF
-        let jsPDFLib = null;
-        if (window.jspdf && window.jspdf.jsPDF) {
-          jsPDFLib = window.jspdf.jsPDF;
-        } else if (window.jsPDF) {
-          jsPDFLib = window.jsPDF;
-        }
-
-        if (!jsPDFLib) {
-          // Fallback : utilise html2pdf si jsPDF pas accessible
-          console.warn("[exportPDF] jsPDF non disponible, fallback html2pdf");
-          await window.html2pdf().set({
-            margin: 0,
-            filename: fname,
-            image: { type: "jpeg", quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true, logging: false },
-            jsPDF: {
-              unit: "mm",
-              format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
-              orientation: "portrait",
-              compress: true,
-            },
-            pagebreak: { mode: ["avoid-all"], avoid: "*" },
-          }).from(el).save();
-          notify(T.okp + ": " + fname);
-          if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
-          return;
-        }
-
         const pdf = new jsPDFLib({
           unit: "mm",
           format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
@@ -3614,12 +3607,12 @@ export default function App() {
         const imgHeightMm = pdfWidth * canvasAspect;
 
         console.log("[exportPDF] PDF:", pdfWidth + "x" + pdfHeight + "mm");
-        console.log("[exportPDF] Image fit:", imgWidthMm + "x" + imgHeightMm + "mm");
+        console.log("[exportPDF] Image fit:", imgWidthMm.toFixed(1) + "x" + imgHeightMm.toFixed(1) + "mm");
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        if (imgHeightMm <= pdfHeight) {
-          // CAS 1 : Le CV tient sur une seule page
+        if (imgHeightMm <= pdfHeight + 5) {
+          // CAS 1 : Le CV tient sur une seule page (+5mm tolerance)
           // On ajoute l'image en haut, la hauteur reelle (pas etiree)
           pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, imgHeightMm);
           console.log("[exportPDF] Single page - height:", imgHeightMm.toFixed(1) + "mm");
@@ -3645,17 +3638,11 @@ export default function App() {
         pdf.save(fname);
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
-        return;
       } catch (e) {
         console.error("[exportPDF] FAILED:", e);
         notify("Erreur export PDF : " + e.message);
-      } finally {
-        // Cleanup : retire le CSS temporaire
-        const tempStyle = document.getElementById("cvf-pdf-pagebreaks");
-        if (tempStyle) tempStyle.remove();
       }
-    };
-    document.head.appendChild(s);
+    })();
   }, [cv.name, T, notify]);
 
   // ============================================================
