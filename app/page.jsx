@@ -4756,6 +4756,17 @@ export default function App() {
         + "\n- Compose multiple operations in one response to do complex changes atomically."
         + "\n- NEVER target a path that doesn't exist. Check the index ranges."
 
+        + "\n\n## EDUCATION vs CERTIFICATIONS (CRITICAL - NEVER DUPLICATE)"
+        + "\n- EDUCATION (/education) = academic degrees ONLY :"
+        + "\n    Bachelor, Master, MBA, Doctorate, PhD, BTS, DUT, Licence, BTEC,"
+        + "\n    OTHM Level 5-8 Diploma, university programs, business school degrees."
+        + "\n- CERTIFICATIONS (/certifications) = professional certs and short courses ONLY :"
+        + "\n    AMF, PMP, Scrum Master, ITIL, CFA, Google Cloud, AWS, Salesforce,"
+        + "\n    HubSpot, Hootsuite, Coaching certifications, NLP, mediation, etc."
+        + "\n- A SINGLE item belongs to EXACTLY ONE section, NEVER BOTH."
+        + "\n- If you see the same item in both : remove it from the WRONG section."
+        + "\n- If in doubt : academic-looking items (Diploma, Level X, Master, etc.) go to /education."
+
         + "\n\n# WHAT YOU NEVER DO"
         + "\n- Invent numbers without asking confirmation"
         + "\n- Repeat a suggestion already accepted or refused"
