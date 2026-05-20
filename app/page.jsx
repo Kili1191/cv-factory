@@ -3531,30 +3531,27 @@ export default function App() {
           }
         } catch {}
 
-        // [DESIGN FILLS PAGE 2026-05-20]
-        // Approche premium : le design (sidebar dark + main cream) descend
-        // jusqu'en bas de la page A4 (297mm) MEME si le contenu textuel
-        // s'arrete plus haut. Pas de bande blanche, juste continuite du
-        // design. C'est ce que fait Canva, Resume.io premium, etc.
+        // [DESIGN FILLS PAGE 2026-05-20 v3]
+        // Strategie : TOUJOURS 1 page A4 (norme recruteur).
+        // 1. Si contenu <= 297mm : force le design a remplir 297mm (sidebar+cream
+        //    descendent jusqu'en bas) puis capture.
+        // 2. Si contenu > 297mm : capture tel quel, puis dans le PDF on place
+        //    l'image en la faisant tenir dans 1 page A4 (scale image, pas DOM).
 
         const MM_TO_PX = 3.7795275591;
         const A4_HEIGHT_MM = 297;
-        const A4_HEIGHT_PX = Math.round(A4_HEIGHT_MM * MM_TO_PX); // 1123px
+        const A4_WIDTH_MM = 210;
 
-        // Mesure la hauteur reelle AVANT d'injecter le CSS
         const realHeightPx = el.scrollHeight;
         const realHeightMm = realHeightPx / MM_TO_PX;
 
-        // Decide : contenu tient sur 1 page (<=297mm) ou deborde ?
-        const fitsOnePage = realHeightMm <= A4_HEIGHT_MM;
+        console.log("[exportPDF] Hauteur reelle:", realHeightMm.toFixed(1) + "mm");
 
-        console.log("[exportPDF] Hauteur reelle:", realHeightMm.toFixed(1) + "mm",
-                    "| Tient 1 page:", fitsOnePage);
+        // Si le contenu tient (ou presque) : force le design a remplir 297mm
+        const shouldFillPage = realHeightMm <= A4_HEIGHT_MM;
 
         let styleEl = null;
-        if (fitsOnePage) {
-          // CAS 1 : Le contenu tient. On FORCE le design a remplir 297mm
-          // (sidebar dark + main cream descendent jusqu'en bas)
+        if (shouldFillPage) {
           styleEl = document.createElement("style");
           styleEl.id = "cvf-pdf-design-fills";
           styleEl.textContent = `
@@ -3576,8 +3573,8 @@ export default function App() {
             }
           `;
           document.head.appendChild(styleEl);
+          console.log("[exportPDF] Design fills page (force 297mm)");
 
-          // Force reflow + 2 frames
           void el.offsetHeight;
           await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
         }
@@ -3635,19 +3632,33 @@ export default function App() {
         const pdfH = pdf.internal.pageSize.getHeight();
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        if (fitsOnePage) {
-          // CAS 1 : Le CV (force a 297mm) remplit EXACTEMENT 1 page A4
+        // [TOUJOURS 1 PAGE 2026-05-20 v3]
+        // Un CV = 1 page A4. JAMAIS de page 2 vide.
+        if (shouldFillPage) {
+          // Le CV (force a 297mm) remplit EXACTEMENT 1 page A4
           pdf.addImage(imgData, "JPEG", 0, 0, pdfW, pdfH);
           console.log("[exportPDF] 1 page A4 (design fills)");
         } else {
-          // CAS 2 : Le CV deborde -> multi-pages
-          const imgHeightMm = pdfW * (canvas.height / canvas.width);
-          const totalPages = Math.ceil(imgHeightMm / pdfH);
-          for (let i = 0; i < totalPages; i++) {
-            if (i > 0) pdf.addPage();
-            pdf.addImage(imgData, "JPEG", 0, -i * pdfH, pdfW, imgHeightMm);
+          // Le CV deborde : on le SCALE pour rentrer dans 1 page A4.
+          // L'image garde son ratio, centree horizontalement, collee en haut.
+          const canvasRatio = canvas.height / canvas.width;
+          // Largeur si on remplit toute la hauteur de la page
+          const widthIfFullHeight = pdfH / canvasRatio;
+
+          let drawW, drawH, offsetX;
+          if (widthIfFullHeight <= pdfW) {
+            // On peut remplir toute la hauteur, largeur centree
+            drawH = pdfH;
+            drawW = widthIfFullHeight;
+            offsetX = (pdfW - drawW) / 2;
+          } else {
+            // Sinon on remplit toute la largeur (rare)
+            drawW = pdfW;
+            drawH = pdfW * canvasRatio;
+            offsetX = 0;
           }
-          console.log("[exportPDF] Multi-page:", totalPages, "pages");
+          pdf.addImage(imgData, "JPEG", offsetX, 0, drawW, drawH);
+          console.log("[exportPDF] 1 page A4 (scale-to-fit, CV long)");
         }
 
         pdf.save(fname);
