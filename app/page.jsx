@@ -3632,33 +3632,51 @@ export default function App() {
         const pdfH = pdf.internal.pageSize.getHeight();
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        // [TOUJOURS 1 PAGE 2026-05-20 v3]
-        // Un CV = 1 page A4. JAMAIS de page 2 vide.
+        const canvasRatioDbg = (canvas.height / canvas.width).toFixed(4);
+        console.log("[exportPDF] pdfW/H:", pdfW.toFixed(1), pdfH.toFixed(1),
+                    "| canvas ratio:", canvasRatioDbg,
+                    "| shouldFillPage:", shouldFillPage);
+
+        // [ANTI PHANTOM-PAGE 2026-05-20 v4]
+        // jsPDF cree parfois une 2e page vide a cause d'arrondis quand
+        // l'image fait pile la hauteur de page. On place donc l'image avec
+        // une hauteur LEGEREMENT inferieure (-0.5mm) pour garantir 1 page.
+        const SAFE_H = pdfH - 0.5;
+
         if (shouldFillPage) {
-          // Le CV (force a 297mm) remplit EXACTEMENT 1 page A4
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, pdfH);
+          // Le CV (force a 297mm) remplit la page A4 (largeur pleine,
+          // hauteur SAFE pour eviter le debordement d'arrondi)
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, SAFE_H);
           console.log("[exportPDF] 1 page A4 (design fills)");
         } else {
-          // Le CV deborde : on le SCALE pour rentrer dans 1 page A4.
-          // L'image garde son ratio, centree horizontalement, collee en haut.
+          // Le CV deborde : scale-to-fit dans 1 page A4, centre horizontalement
           const canvasRatio = canvas.height / canvas.width;
-          // Largeur si on remplit toute la hauteur de la page
-          const widthIfFullHeight = pdfH / canvasRatio;
+          const widthIfFullHeight = SAFE_H / canvasRatio;
 
           let drawW, drawH, offsetX;
           if (widthIfFullHeight <= pdfW) {
-            // On peut remplir toute la hauteur, largeur centree
-            drawH = pdfH;
+            drawH = SAFE_H;
             drawW = widthIfFullHeight;
             offsetX = (pdfW - drawW) / 2;
           } else {
-            // Sinon on remplit toute la largeur (rare)
             drawW = pdfW;
             drawH = pdfW * canvasRatio;
             offsetX = 0;
           }
           pdf.addImage(imgData, "JPEG", offsetX, 0, drawW, drawH);
           console.log("[exportPDF] 1 page A4 (scale-to-fit, CV long)");
+        }
+
+        // [GARANTIE 1 PAGE] Supprime toute page surnumeraire eventuelle
+        const pageCount = pdf.internal.getNumberOfPages
+          ? pdf.internal.getNumberOfPages()
+          : (pdf.getNumberOfPages ? pdf.getNumberOfPages() : 1);
+        console.log("[exportPDF] Pages avant cleanup:", pageCount);
+        for (let p = pageCount; p > 1; p--) {
+          pdf.deletePage(p);
+        }
+        if (pageCount > 1) {
+          console.log("[exportPDF] Pages surnumeraires supprimees -> 1 page");
         }
 
         pdf.save(fname);
