@@ -149,6 +149,57 @@ function analyzeCv(cv, T, lang) {
   const bulletsWeak = bulletsTotal > 0 && (bulletsWithNumbers / bulletsTotal) < 0.4;
   if (bulletsWeak) issues.push("bullets");
 
+  // ============================================================
+  // [Coach v6 - 2026-05-19] Nouvelles detections qualite
+  // ============================================================
+
+  // DETECTION 1 : doublons Formation <-> Certifications
+  // Compare chaque entree de cv.education et cv.certifications.
+  // Si une certif ressemble fort a une formation (mots-cles partages),
+  // on remonte le doublon a l'user.
+  const normalize = (s) => (s || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\sa-uA-U]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const eduList = (cv.education || [])
+    .map(e => normalize((e.degree || "") + " " + (e.school || "")))
+    .filter(Boolean);
+
+  const certList = (cv.certifications || [])
+    .filter(c => c && c.trim())
+    .map(c => normalize(c));
+
+  // Une certif "ressemble" a une formation si elles partagent
+  // au moins 2 mots significatifs (4+ chars) en commun.
+  const duplicates = [];
+  certList.forEach((cert, certIdx) => {
+    eduList.forEach((edu, eduIdx) => {
+      const certWords = new Set(cert.split(" ").filter(w => w.length >= 4));
+      const eduWords = new Set(edu.split(" ").filter(w => w.length >= 4));
+      let overlap = 0;
+      certWords.forEach(w => { if (eduWords.has(w)) overlap++; });
+      if (overlap >= 2) {
+        duplicates.push({
+          certIdx, eduIdx,
+          certText: (cv.certifications || [])[certIdx],
+          eduText: ((cv.education || [])[eduIdx]?.degree || "") + " - " +
+                   ((cv.education || [])[eduIdx]?.school || ""),
+        });
+      }
+    });
+  });
+  if (duplicates.length > 0) issues.push("duplicates");
+
+  // DETECTION 2 : skills en vrac (pas de categorisation)
+  // Si l'user a >= 6 skills tous a plat (string[]) sans structure,
+  // on propose de les organiser en blocs thematiques.
+  const skillsArr = cv.skills || [];
+  const skillsAreFlat = skillsArr.length >= 6 &&
+    skillsArr.every(s => typeof s === "string");
+  if (skillsAreFlat) issues.push("skills_bulk");
+
   const titles = (cv.experience || []).map(e => (e.title || "").toLowerCase());
   const hasSeniorTitles = titles.some(t =>
     t.includes("director") || t.includes("head") || t.includes("vp") ||
@@ -180,6 +231,54 @@ function analyzeCv(cv, T, lang) {
       { label: lang === "fr" ? "Score recruteur" : "Recruiter score",
         icon: "score", accent: Purple,
         action: { type: "open_modal", modal: "score" }
+      },
+    ];
+  } else if (issues.includes("duplicates")) {
+    // [Coach v6] Priorite haute : doublons formation/certifs
+    const example = duplicates[0];
+    observation = lang === "fr"
+      ? `J'ai jete un coup d'oeil. Il y a des doublons entre Formation et Certifications : "${example.certText}" apparait dans les deux sections. Resultat : ton CV a l'air rempli artificiellement.\n\nJe te propose de fusionner en une seule section "FORMATION & CERTIFICATIONS" pour aerer.`
+      : `I had a look. There are duplicates between Education and Certifications: "${example.certText}" appears in both sections. Result: your CV looks artificially padded.\n\nLet me merge into a single "EDUCATION & CERTIFICATIONS" section to clean it up.`;
+    suggestions = [
+      { label: lang === "fr" ? "Fusionner les sections" : "Merge sections",
+        icon: "rewrite", accent: Purple, primary: true,
+        action: { type: "send_text", text: lang === "fr"
+          ? "Fusionne Formation et Certifications en gardant chaque entree une seule fois"
+          : "Merge Education and Certifications, keep each entry only once"
+        }
+      },
+      { label: lang === "fr" ? "Voir les doublons" : "See duplicates",
+        icon: "audit", accent: Purple,
+        action: { type: "send_text", text: lang === "fr"
+          ? "Liste-moi tous les doublons entre Formation et Certifications"
+          : "List all duplicates between Education and Certifications"
+        }
+      },
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: null,
+        action: { type: "open_modal", modal: "audit" }
+      },
+    ];
+  } else if (issues.includes("skills_bulk")) {
+    // [Coach v6] Priorite moyenne : skills en vrac
+    observation = lang === "fr"
+      ? `Ton CV est bon, mais tes ${skillsArr.length} competences sont alignees en vrac. Les recruteurs scannent en 6 sec, ils ont besoin de blocs thematiques.\n\nExemple : "Commercial B2B : negociation, prospection... | Finance : affacturage, KYC... | Outils : Salesforce, HubSpot..."\n\nJe les organise pour toi ?`
+      : `Your CV is good but your ${skillsArr.length} skills are listed in bulk. Recruiters scan in 6s, they need thematic blocks.\n\nExample: "Sales B2B: negotiation, prospecting... | Finance: factoring, KYC... | Tools: Salesforce, HubSpot..."\n\nWant me to organize them?`;
+    suggestions = [
+      { label: lang === "fr" ? "Categoriser mes skills" : "Categorize my skills",
+        icon: "rewrite", accent: Purple, primary: true,
+        action: { type: "send_text", text: lang === "fr"
+          ? "Organise mes competences en blocs thematiques (Commercial, Finance, Outils, etc.) avec des labels clairs"
+          : "Organize my skills into thematic blocks (Sales, Finance, Tools, etc.) with clear labels"
+        }
+      },
+      { label: lang === "fr" ? "Audit complet" : "Full audit",
+        icon: "audit", accent: Purple,
+        action: { type: "open_modal", modal: "audit" }
+      },
+      { label: lang === "fr" ? "Adapter a une offre" : "Match to a job",
+        icon: "match", accent: null,
+        action: { type: "open_modal", modal: "offer" }
       },
     ];
   } else if (issues.includes("summary") && issues.includes("bullets")) {
