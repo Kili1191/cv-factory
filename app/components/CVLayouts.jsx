@@ -32,6 +32,51 @@ import { E, MK } from "./EditHelpers";
 import CVPhoto from "./CVPhoto";
 
 // ============================================================
+// [Lisibilite 2026-05-20] Helpers contraste : garantissent que la
+// couleur d'accent reste lisible sur le fond cream de la colonne main.
+// Si l'accent est trop clair (ex: Or beige sur cream), on l'assombrit
+// automatiquement pour que les titres PROFIL/EXPERIENCE restent visibles.
+// ============================================================
+function hexToRgb(hex) {
+  if (!hex) return { r: 0, g: 0, b: 0 };
+  let h = String(hex).replace("#", "");
+  if (h.length === 3) h = h.split("").map(c => c + c).join("");
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function relLuminance({ r, g, b }) {
+  const f = v => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+}
+function contrastRatioCv(hex1, hex2) {
+  const l1 = relLuminance(hexToRgb(hex1));
+  const l2 = relLuminance(hexToRgb(hex2));
+  const lighter = Math.max(l1, l2), darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+function darkenHex(hex, factor) {
+  const { r, g, b } = hexToRgb(hex);
+  const d = c => Math.max(0, Math.round(c * (1 - factor)));
+  const toHex = c => c.toString(16).padStart(2, "0");
+  return "#" + toHex(d(r)) + toHex(d(g)) + toHex(d(b));
+}
+// Retourne une version de `accent` garantie lisible (ratio >= 4.0) sur `bg`.
+// Si l'accent passe deja, on le garde. Sinon on l'assombrit progressivement.
+function readableAccentOn(accent, bg) {
+  if (!accent || !bg) return accent || "#0a0a0a";
+  let c = accent;
+  let tries = 0;
+  while (contrastRatioCv(c, bg) < 4.0 && tries < 10) {
+    c = darkenHex(c, 0.18);
+    tries++;
+  }
+  return c;
+}
+
+// ============================================================
 // EditableTitle : titre de section editable au double-clic
 // ============================================================
 const DEFAULT_LABELS_FR = {
@@ -193,6 +238,12 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
 export function CVSidebar({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
+  // [Lisibilite 2026-05-20] Accent garanti lisible sur le fond cream (t.bg).
+  // Utilise pour les titres de la colonne main (PROFIL, EXPERIENCE) et le
+  // sous-titre du nom. La sidebar (fond dark) garde t.ac brut car le coral
+  // y ressort bien.
+  const acOnBg = readableAccentOn(t.ac, t.bg);
+
   // SS (sidebar section header) - retourne null si section vide (UX 2026-05-20)
   // [Premium A4 fill 2026-05-20 v2] Calibre pour rentrer dans 297mm
   const SS = (labelKey, fallback) => {
@@ -210,14 +261,14 @@ export function CVSidebar({ cv, set, t, T, locale }) {
   };
 
   // MS (main section header) - retourne null si section vide
-  // [Premium A4 fill 2026-05-20 v2] Calibre pour rentrer dans 297mm
+  // [Lisibilite 2026-05-20] Utilise acOnBg (accent lisible sur cream)
   const MS = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
     return (
       <div style={{
         fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
-        color: t.ac, margin:"16px 0 8px",
-        borderBottom:"2px solid "+t.ac, paddingBottom:3,
+        color: acOnBg, margin:"16px 0 8px",
+        borderBottom:"2px solid "+acOnBg, paddingBottom:3,
       }}>
         <EditableTitle cv={cv} set={set} labelKey={labelKey}
           locale={locale} fallback={fallback}/>
@@ -400,11 +451,11 @@ export function CVSidebar({ cv, set, t, T, locale }) {
             }}/>
         </div>
         <div style={{
-          fontSize:10, color: t.ac, fontWeight:600,
+          fontSize:10, color: acOnBg, fontWeight:600,
           letterSpacing:1.5, textTransform:"uppercase",
         }}>
           <E value={cv.title} onChange={u("title")}
-            style={{color: t.ac, fontSize:10}}/>
+            style={{color: acOnBg, fontSize:10}}/>
         </div>
 
         {/* Summary */}
@@ -425,9 +476,9 @@ export function CVSidebar({ cv, set, t, T, locale }) {
                   <E value={ex.title} onChange={v=>ux(ex.id, "title", v)}
                     style={{fontWeight:700, fontSize:11, color: t.pr}}/>
                 </div>
-                <div style={{fontSize:9.5, color: t.ac, fontWeight:600, marginTop:1}}>
+                <div style={{fontSize:9.5, color: acOnBg, fontWeight:600, marginTop:1}}>
                   <E value={ex.company} onChange={v=>ux(ex.id, "company", v)}
-                    style={{fontSize:9.5, color: t.ac}}/>
+                    style={{fontSize:9.5, color: acOnBg}}/>
                   {ex.location && String(ex.location).trim() ? <>
                     {" - "}
                     <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
