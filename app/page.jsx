@@ -3301,6 +3301,19 @@ export default function App() {
     setLoad(false);
   }, [apiKey, T, pushH, setCVFn, notify]);
 
+  // ============================================================
+  // exportPDF v2 (2026-05-19) : PDF avec TEXTE SELECTIONNABLE
+  //
+  // ANCIEN BUG : html2canvas convertit le DOM en image puis emballe
+  // dans jsPDF -> texte non selectionnable -> mauvais pour ATS.
+  //
+  // FIX : utiliser jsPDF.html() qui rend nativement le HTML en
+  // texte vectoriel selectionnable. Fallback sur html2canvas si echec.
+  //
+  // Page breaks : on injecte temporairement du CSS pour eviter qu'une
+  // section soit coupee entre 2 pages (problem "La Banque Postale" en
+  // haut de page 2 toute seule).
+  // ============================================================
   const exportPDF = useCallback(() => {
     const el = document.getElementById("cv-print");
     if (!el) return;
@@ -3308,23 +3321,104 @@ export default function App() {
     s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
     s.onerror = () => notify("Erreur chargement PDF");
     s.onload = async () => {
-      // v17 : attend que les Google Fonts custom soient chargees avant snapshot.
+      // Attend que les Google Fonts custom soient chargees avant snapshot
       try {
         if (document.fonts && document.fonts.ready) {
           await document.fonts.ready;
         }
       } catch {}
+
       const fname = "CV_" + cv.name.split(" ").join("_") + ".pdf";
-      window.html2pdf().set({
-        margin:0, filename:fname,
-        image:{type:"jpeg", quality:.98},
-        html2canvas:{scale:2, useCORS:true, logging:false},
-        jsPDF:{unit:"mm", format:"a4", orientation:"portrait"},
-      }).from(el).save();
-      notify(T.okp+": "+fname);
-      if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+
+      // === FIX page-break : injecte CSS temporaire pour eviter orphelins ===
+      // Cible les sections principales du CV pour qu'elles ne se coupent pas
+      // entre 2 pages (ex: une formation orpheline en haut de page 2).
+      const styleEl = document.createElement("style");
+      styleEl.id = "cvf-pdf-pagebreaks";
+      styleEl.textContent = `
+        #cv-print .cv-exp-item,
+        #cv-print .cv-edu-item,
+        #cv-print .cv-cert-item,
+        #cv-print .cv-lang-item {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+        #cv-print h1, #cv-print h2, #cv-print h3,
+        #cv-print [data-section-title="true"] {
+          page-break-after: avoid !important;
+          break-after: avoid !important;
+        }
+        #cv-print [data-section="true"] {
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+      `;
+      document.head.appendChild(styleEl);
+
+      try {
+        // === Strategie 1 : jsPDF.html() natif (texte SELECTIONNABLE) ===
+        // C'est la methode preferee : le texte reste vectoriel dans le PDF,
+        // donc selectionnable et indexable par les ATS.
+        if (window.jspdf && window.jspdf.jsPDF) {
+          try {
+            const pdf = new window.jspdf.jsPDF({
+              unit: "mm", format: "a4", orientation: "portrait",
+            });
+            await pdf.html(el, {
+              callback: (doc) => doc.save(fname),
+              margin: [0, 0, 0, 0],
+              autoPaging: "text",     // <- preserve text flow across pages
+              html2canvas: {
+                scale: 0.265,         // mm conversion : 1px = 0.265mm at 96dpi
+                useCORS: true,
+                logging: false,
+              },
+              width: 210,             // A4 width in mm
+              windowWidth: el.offsetWidth || 794,
+            });
+            notify(T.okp + ": " + fname);
+            if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+            return;
+          } catch (e) {
+            console.warn("[exportPDF] jsPDF.html failed, fallback to html2canvas:", e);
+          }
+        }
+
+        // === Strategie 2 : html2pdf avec pagebreak CSS (fallback) ===
+        // Si jsPDF.html() echoue, on tombe sur html2canvas mais avec
+        // pagebreak.mode 'css' qui respecte nos page-break-inside: avoid.
+        await window.html2pdf().set({
+          margin: 0, filename: fname,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2, useCORS: true, logging: false,
+            // foreignObjectRendering garde le texte vectoriel quand supporte
+            foreignObjectRendering: false,
+          },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          pagebreak: {
+            mode: ["css", "legacy"],
+            avoid: [".cv-exp-item", ".cv-edu-item", ".cv-cert-item", ".cv-lang-item"],
+          },
+        }).from(el).save();
+
+        notify(T.okp + ": " + fname);
+        if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+      } finally {
+        // Cleanup : retire le CSS temporaire
+        const tempStyle = document.getElementById("cvf-pdf-pagebreaks");
+        if (tempStyle) tempStyle.remove();
+      }
     };
     document.head.appendChild(s);
+
+    // Charge jsPDF separement pour la strategie 1 (texte selectionnable)
+    if (!window.jspdf) {
+      const sjp = document.createElement("script");
+      sjp.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+      sjp.onerror = () => {}; // silent, fallback prendra le relais
+      document.head.appendChild(sjp);
+    }
   }, [cv.name, T, notify]);
 
   const doReset = useCallback(() => {
