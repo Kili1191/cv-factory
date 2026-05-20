@@ -3588,11 +3588,12 @@ export default function App() {
   }, [cv, auditCountry, locale, notify]);
 
   const applyAuditSuggestion = useCallback((suggestion) => {
+    // [Fix 2026-05-20] Ouvre AdjustModal au lieu d'AdjustPanel.
+    // Un seul systeme Adjust = scores et suggestions coherents partout.
     setShowAudit(false);
     setAuditResult(null);
     setAdjPrefill(suggestion);
-    setTab("ai");
-    setAiMode("adjust");
+    setShowAdjust(true);
     notify(locale==="en" ? "Suggestion sent to Adjust" : "Suggestion envoyee dans Ajuster");
   }, [notify, locale]);
 
@@ -5376,8 +5377,11 @@ export default function App() {
         setTab("target");
         setShowOffer(true);
       } else {
+        // [Fix 2026-05-20] Apres import : revenir a la home (l'user voit son CV).
+        // Plus de setAiMode("adjust") qui rendait AdjustPanel obsolete.
         setTab("ai");
-        setAiMode("adjust");
+        // Pas de setAiMode("adjust") : l'user peut cliquer "Ajuster" dans la sidebar
+        // pour ouvrir AdjustModal quand il veut.
       }
 
       importSucceeded = true;
@@ -5499,13 +5503,15 @@ export default function App() {
       </div>
       {aiMode==="generate" && (
         <AIPanel onGen={handleGen} loading={load} apiKey={apiKey} T={T}
-          cvIsEmpty={cvIsEmpty} onSwitchToAdjust={()=>setAiMode("adjust")}/>
+          cvIsEmpty={cvIsEmpty} onSwitchToAdjust={()=>{
+            // [Fix 2026-05-20] Unifie Adjust : ouvre AdjustModal (chat) au lieu
+            // d'AdjustPanel (panneau bas). Plus de divergence entre les 2 systemes.
+            setShowAdjust(true);
+            setAiMode("generate"); // reset aiMode car on ouvre une modale
+          }}/>
       )}
-      {aiMode==="adjust" && (
-        <AdjustPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
-          prefillInst={adjPrefill}
-          onPrefillConsumed={()=>setAdjPrefill("")}/>
-      )}
+      {/* [Fix 2026-05-20] aiMode "adjust" supprime : on ouvre AdjustModal
+          a la place via le useEffect ci-dessous. Un seul systeme Adjust. */}
       {aiMode==="match" && (
         <Suspense fallback={null}>
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
@@ -6342,6 +6348,8 @@ export default function App() {
           parseJSON={parseJSON}
           notify={notify}
           mob={false}
+          prefillInst={adjPrefill}
+          onPrefillConsumed={() => setAdjPrefill("")}
         />
         </Suspense>
       )}
@@ -6398,12 +6406,12 @@ export default function App() {
           result={truthResult}
           loading={truthLoading}
           onApplyFix={(iss)=>{
+            // [Fix 2026-05-20] Ouvre AdjustModal au lieu d'AdjustPanel
             const inst = "Remplace dans mon CV la phrase: \""+iss.quote+"\" par: \""+iss.fix+"\". Garde tout le reste identique.";
             setShowTruth(false);
             setTruthResult(null);
             setAdjPrefill(inst);
-            setTab("ai");
-            setAiMode("adjust");
+            setShowAdjust(true);
             notify(locale==="en" ? "Fix sent to Adjust" : "Correction envoyee dans Ajuster");
           }}
           onClose={()=>{
