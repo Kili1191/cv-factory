@@ -61,6 +61,8 @@ import {
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
+import { applyJsonPatch } from "../lib/applyJsonPatch";
+import { buildScopeGuard } from "../lib/coachScope";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
@@ -4637,7 +4639,10 @@ export default function App() {
       // Prompt v5 (2026-05-20) : Coach expert avec methodologie complete
       // Integre : 5 personas audit, detection mots a risque, verification
       // chronologique, calibrage marche, format DIAGNOSTIC + PROPOSITION + POURQUOI
-      const p = "You are Nuvi Coach, a senior career coach with 20 years of experience"
+      // + Scope guard (tier "free" pour l'instant, ouvrable selon pricing)
+      const scopeGuard = buildScopeGuard("free", locale);
+      const p = scopeGuard
+        + "\n\n" + "You are Nuvi Coach, a senior career coach with 20 years of experience"
         + " across all sectors and countries. The candidate's COMPLETE CV is in"
         + " your context (cv_context system block). Read it ENTIRELY before replying :"
         + " structure, dates, durations, sectors, gaps, numbers, keywords, coherence."
@@ -4698,91 +4703,115 @@ export default function App() {
         + "\n- You NEVER invent experiences, companies, dates, or diplomas."
         + "\n- " + NO_DASH + " " + langLine
 
-        + "\n\n# ACTION TYPES YOU CAN RETURN (31 types available, use the right one)"
-        + "\n## PERSONAL INFO"
-        + "\n  update_name     : {type, new_text}"
-        + "\n  update_email    : {type, new_text}"
-        + "\n  update_phone    : {type, new_text}"
-        + "\n  update_location : {type, new_text}"
-        + "\n  update_linkedin : {type, new_text}"
-        + "\n## PROFILE & TITLE"
-        + "\n  update_summary  : {type, new_text}"
-        + "\n  clear_summary   : {type}"
-        + "\n  update_title    : {type, new_text}"
-        + "\n  clear_title     : {type}"
-        + "\n## EXPERIENCE BULLETS (target via exp_idx)"
-        + "\n  replace_bullet  : {type, exp_idx, bullet_idx, new_text}"
-        + "\n  delete_bullet   : {type, exp_idx, bullet_idx}"
-        + "\n  add_bullet      : {type, exp_idx, text}"
-        + "\n  reorder_bullets : {type, exp_idx, order: [2,0,1]}"
-        + "\n## EXPERIENCE METADATA"
-        + "\n  update_experience : {type, exp_idx, new_title?, new_company?, new_period?, new_location?}"
-        + "\n  add_experience    : {type, title, company, period, location, bullets:[], insert_at?}"
-        + "\n  delete_experience : {type, exp_idx}"
-        + "\n  reorder_experiences : {type, order: [0,2,1]}"
-        + "\n## EDUCATION"
-        + "\n  update_education : {type, edu_idx, new_degree?, new_school?, new_period?}"
-        + "\n  add_education    : {type, degree, school, period, insert_at?}"
-        + "\n  delete_education : {type, edu_idx}"
-        + "\n  reorder_education : {type, order: [...]}"
-        + "\n## CERTIFICATIONS"
-        + "\n  add_certification    : {type, text, insert_at?}"
-        + "\n  delete_certification : {type, cert_idx}"
-        + "\n  replace_certification : {type, cert_idx, new_text}"
-        + "\n## SKILLS"
-        + "\n  add_skill        : {type, text, insert_at?}"
-        + "\n  delete_skill     : {type, skill_idx}"
-        + "\n  replace_skill    : {type, skill_idx, new_text}"
-        + "\n  replace_all_skills : {type, skills: ['...', '...']}  // for full reorg"
-        + "\n## LANGUAGES"
-        + "\n  add_language     : {type, lang, level}"
-        + "\n  delete_language  : {type, lang_idx}"
-        + "\n  update_language  : {type, lang_idx, new_lang?, new_level?}"
-        + "\n\nGUIDELINES:"
-        + "\n- Prefer replace_bullet to add_bullet (avoid accumulation)."
-        + "\n- Use delete_bullet without hesitation if a bullet adds nothing."
-        + "\n- Use delete_experience to completely remove a job (not just delete each bullet)."
-        + "\n- Use replace_all_skills for full skills reorganization (better than individual ops)."
+        + "\n\n# JSON PATCH OPERATIONS (RFC 6902) - YOU MODIFY THE CV VIA OPERATIONS"
+        + "\nYou return an array of JSON Patch operations. This standard format"
+        + " lets you make ANY modification to the CV. Each operation has an `op`"
+        + " and a `path` (RFC 6901 JSON Pointer)."
+
+        + "\n\n## SIX OPERATIONS AVAILABLE"
+        + "\n  {op: 'add', path: '/<path>', value: <any>}"
+        + "\n     Add a value. For arrays, path ends with index OR '-' to append."
+        + "\n  {op: 'remove', path: '/<path>'}"
+        + "\n     Remove the value at path. For arrays, shifts following elements."
+        + "\n  {op: 'replace', path: '/<path>', value: <any>}"
+        + "\n     Replace the value at path. Path must exist."
+        + "\n  {op: 'move', from: '/<src>', path: '/<dst>'}"
+        + "\n     Move a value from src to dst (reorder, restructure)."
+        + "\n  {op: 'copy', from: '/<src>', path: '/<dst>'}"
+        + "\n     Copy a value from src to dst (duplicate)."
+        + "\n  {op: 'test', path: '/<path>', value: <any>}"
+        + "\n     Test value at path. Fails if mismatch (use for safety checks)."
+
+        + "\n\n## CV STRUCTURE (paths you can target)"
+        + "\n  /name, /title, /email, /phone, /location, /linkedin, /summary"
+        + "\n  /experience       (array)"
+        + "\n  /experience/N     (single job, N = 0-based index)"
+        + "\n  /experience/N/title, /company, /period, /location"
+        + "\n  /experience/N/bullets/M  (single bullet of job N)"
+        + "\n  /experience/N/bullets/-  (append a new bullet to job N)"
+        + "\n  /education, /education/N, /education/N/degree, /school, /period"
+        + "\n  /skills, /skills/N"
+        + "\n  /certifications, /certifications/N"
+        + "\n  /languages, /languages/N, /languages/N/lang, /level"
+
+        + "\n\n## CONCRETE EXAMPLES"
+        + "\n### Replace a bullet :"
+        + '\n  [{op: "replace", path: "/experience/0/bullets/2", value: "Increased revenue by 35%"}]'
+        + "\n### Delete an entire job :"
+        + '\n  [{op: "remove", path: "/experience/2"}]'
+        + "\n### Add a new bullet to job 0 :"
+        + '\n  [{op: "add", path: "/experience/0/bullets/-", value: "Led team of 5 engineers"}]'
+        + "\n### Reorder experiences (move job 2 to position 0) :"
+        + '\n  [{op: "move", from: "/experience/2", path: "/experience/0"}]'
+        + "\n### Multi-op : update title + add skill + remove a bullet :"
+        + '\n  [{op: "replace", path: "/title", value: "Senior Account Manager B2B"},'
+        + '\n   {op: "add", path: "/skills/-", value: "Negotiation"},'
+        + '\n   {op: "remove", path: "/experience/0/bullets/3"}]'
+
+        + "\n\n## GUIDELINES"
+        + "\n- Use replace when a bullet exists but is weak (preferred over add then remove)."
+        + "\n- Use remove without hesitation for empty/cliche bullets."
+        + "\n- Use move to reorder (avoid remove+add when you just want to swap)."
+        + "\n- For full skills reorganization : replace the whole /skills array at once."
+        + "\n- Compose multiple operations in one response to do complex changes atomically."
+        + "\n- NEVER target a path that doesn't exist. Check the index ranges."
 
         + "\n\n# WHAT YOU NEVER DO"
         + "\n- Invent numbers without asking confirmation"
         + "\n- Repeat a suggestion already accepted or refused"
-        + "\n- Add a bullet when a replace is more appropriate"
         + "\n- Modify dates without flagging chronological consequences"
         + "\n- Give moral judgment on user's choices"
         + "\n- Refuse a modification user has confirmed wanting"
         + "\n- Add jargon without value"
 
         + "\n\n# OUTPUT FORMAT (JSON ONLY, no markdown, no backticks)"
-        + '\n{"reply": "your conversational reply (1-3 sentences)", "actions": [...]}'
-        + '\n\nIf you need more info before acting, return empty actions :'
-        + '\n{"reply": "your follow-up question", "actions": []}';
+        + '\n{"reply": "your conversational reply (1-3 sentences)", "operations": [...]}'
+        + '\n\nIf you need more info before acting, return empty operations :'
+        + '\n{"reply": "your follow-up question", "operations": []}'
+        + '\n\nIf the request is OFF-TOPIC (see SCOPE BOUNDARIES above), refuse :'
+        + '\n{"reply": "Je suis Nuvi... [refusal message per scope rules]", "operations": []}';
 
       // Passe le CV complet via options.cv (cache ephemeral cote route.js)
       const txt = await aiCall(p, { cv, task_name: "coach_chat" });
       const parsed = parseJSON(txt);
 
       const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
-      const actions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
+      // JSON Patch operations (nouveau format) + retro-compat actions
+      const operations = (parsed && Array.isArray(parsed.operations)) ? parsed.operations : [];
+      const legacyActions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
 
       // Retro-compat : ancien format {adopt: {kind, value}}
       const legacyAdopt = (parsed && parsed.adopt && parsed.adopt.kind && parsed.adopt.value)
         ? { kind: String(parsed.adopt.kind), value: String(parsed.adopt.value) }
         : null;
 
-      // Applique les actions structurees automatiquement
+      // Applique les operations / actions automatiquement
       let applySummary = "";
-      if (actions.length > 0) {
+      let realChange = false;
+
+      if (operations.length > 0) {
+        // Nouveau format : JSON Patch (RFC 6902)
         pushH(cv); // snapshot pour Undo
-        const result = applyCoachActions(cv, actions, { lang: locale });
+        const result = applyJsonPatch(cv, operations, { lang: locale });
+        if (result.realChange) {
+          setCVFn(() => result.newCv);
+          applySummary = result.summary;
+          realChange = true;
+        }
+        if (result.failed.length > 0) {
+          console.warn("[Coach v5 JSON Patch] Some operations failed:", result.failed);
+        }
+      } else if (legacyActions.length > 0) {
+        // Retro-compat : ancien format actions structurees (31 types)
+        pushH(cv);
+        const result = applyCoachActions(cv, legacyActions, { lang: locale });
         if (result.applied > 0) {
           setCVFn(() => result.newCv);
           applySummary = result.summary;
+          realChange = true;
           if (result.failed.length > 0) {
-            console.warn("[Coach v4] Some actions failed:", result.failed);
+            console.warn("[Coach v4 legacy] Some actions failed:", result.failed);
           }
-        } else if (result.failed.length > 0) {
-          console.warn("[Coach v4] All actions failed:", result.failed);
         }
       }
 
@@ -4800,8 +4829,8 @@ export default function App() {
         return next;
       });
 
-      // Notif visible des changements appliques
-      if (applySummary) {
+      // Notif visible UNIQUEMENT si quelque chose a vraiment change
+      if (realChange && applySummary) {
         notify((locale === "en" ? "Applied : " : "Applique : ") + applySummary);
       }
     } catch (err) {
