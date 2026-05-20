@@ -4,6 +4,8 @@ import NuviCompanion from "./NuviCompanion";
 import NuviLoadingMessages from "./NuviLoadingMessages";
 import LiquidGlassModal, { GlassCard, GlassButton, GlassInput, GlassSection } from "./LiquidGlassModal";
 import { applyCoachActions } from "../../lib/applyCoachActions";
+import { applyJsonPatch } from "../../lib/applyJsonPatch";
+import { buildScopeGuard } from "../../lib/coachScope";
 
 /**
  * AdjustModal v2 (2026-05-20) - Refonte LiquidGlassModal + actions structurees
@@ -182,86 +184,126 @@ export default function AdjustModal({
         ? "Reply STRICTLY in English."
         : "Reply STRICTLY in French.";
 
-      // [Fix 2026-05-20] Prompt avec ACTIONS STRUCTUREES au lieu de regen CV complet
-      const prompt = "You are Nuvi, a senior CV expert. The candidate's complete CV is in your context (cv_context block)."
-        + " Apply the user's instruction by returning structured ACTIONS, NOT the full CV."
+      // [v3 2026-05-20] JSON Patch RFC 6902 (operations standard) + scope guard
+      // Couvre 100% des cas (plus de "job not done")
+      const scopeGuard = buildScopeGuard("free", lang);
 
-        + "\n\nEXPERIENCE INDEX (use exp_idx to target a specific job):"
+      const prompt = scopeGuard
+        + "\n\n" + "You are Nuvi, a senior CV expert. The candidate's complete CV is in your context (cv_context block)."
+        + " Apply the user's instruction by returning JSON Patch operations (RFC 6902)."
+
+        + "\n\nEXPERIENCE INDEX (paths use 0-based indices):"
         + "\n" + (expIndex || "  (no experience)")
 
         + "\n\nUSER INSTRUCTION: \"" + text.trim() + "\""
 
         + "\n\nCORE BEHAVIOR:"
-        + "\n- You APPLY directly via actions, you DON'T propose then re-propose."
+        + "\n- You APPLY directly via JSON Patch operations, you DON'T propose then re-propose."
         + "\n- Read the instruction carefully. Identify WHICH parts of the CV to modify."
-        + "\n- Return ONLY the actions needed. Do NOT regenerate the whole CV."
-        + "\n- If instruction is unclear, return empty actions + ask 1 clarifying question."
+        + "\n- Return ONLY the operations needed. Do NOT regenerate the whole CV."
+        + "\n- If instruction is unclear, return empty operations + ask 1 clarifying question."
+        + "\n- If instruction is OFF-TOPIC (see scope above), refuse politely with empty operations."
         + "\n- " + noDash + " " + langLine
 
-        + "\n\nACTION TYPES YOU CAN RETURN (31 types - use the right one):"
-        + "\n## PERSONAL : update_name, update_email, update_phone, update_location, update_linkedin {type, new_text}"
-        + "\n## PROFILE : update_summary {type, new_text}, clear_summary {type}, update_title {type, new_text}, clear_title {type}"
-        + "\n## BULLETS : replace_bullet {type, exp_idx, bullet_idx, new_text}, delete_bullet {type, exp_idx, bullet_idx}, add_bullet {type, exp_idx, text}, reorder_bullets {type, exp_idx, order:[]}"
-        + "\n## EXPERIENCES : update_experience {type, exp_idx, new_title?, new_company?, new_period?, new_location?}, add_experience {type, title, company, period, bullets:[]}, delete_experience {type, exp_idx}, reorder_experiences {type, order:[]}"
-        + "\n## EDUCATION : update_education {type, edu_idx, ...}, add_education {type, degree, school, period}, delete_education {type, edu_idx}, reorder_education {type, order:[]}"
-        + "\n## CERTIFICATIONS : add_certification {type, text}, delete_certification {type, cert_idx}, replace_certification {type, cert_idx, new_text}"
-        + "\n## SKILLS : add_skill {type, text}, delete_skill {type, skill_idx}, replace_skill {type, skill_idx, new_text}, replace_all_skills {type, skills:[]}"
-        + "\n## LANGUAGES : add_language {type, lang, level}, delete_language {type, lang_idx}, update_language {type, lang_idx, new_lang?, new_level?}"
-        + "\n\nGUIDELINES:"
-        + "\n- Prefer replace_bullet to add_bullet (avoid accumulation)."
-        + "\n- Use delete_experience to fully remove a job (not delete each bullet one by one)."
-        + "\n- Use replace_all_skills for full skills reorganization."
+        + "\n\n# JSON PATCH OPERATIONS (RFC 6902)"
+        + "\nYou return an array of operations to modify the CV. Six operations available :"
+        + "\n  {op: 'add', path: '/<path>', value: <any>}      // add at path (use '-' to append to array)"
+        + "\n  {op: 'remove', path: '/<path>'}                 // remove value at path"
+        + "\n  {op: 'replace', path: '/<path>', value: <any>}  // replace value at path"
+        + "\n  {op: 'move', from: '/<src>', path: '/<dst>'}    // move (reorder)"
+        + "\n  {op: 'copy', from: '/<src>', path: '/<dst>'}    // duplicate"
+        + "\n  {op: 'test', path: '/<path>', value: <any>}     // safety check"
+
+        + "\n\n## CV PATHS YOU CAN TARGET"
+        + "\n  /name, /title, /email, /phone, /location, /linkedin, /summary"
+        + "\n  /experience/N            (job at index N)"
+        + "\n  /experience/N/title, /company, /period, /location"
+        + "\n  /experience/N/bullets/M  (bullet M of job N)"
+        + "\n  /experience/N/bullets/-  (append a bullet)"
+        + "\n  /education/N, /education/N/degree, /school, /period"
+        + "\n  /skills, /skills/N"
+        + "\n  /certifications, /certifications/N"
+        + "\n  /languages/N/lang, /level"
+
+        + "\n\n## CONCRETE EXAMPLES"
+        + '\n  Replace bullet 2 of job 0:  [{op:"replace", path:"/experience/0/bullets/2", value:"..."}]'
+        + '\n  Delete job entirely:        [{op:"remove", path:"/experience/2"}]'
+        + '\n  Add bullet to job 0:        [{op:"add", path:"/experience/0/bullets/-", value:"..."}]'
+        + '\n  Reorder jobs:               [{op:"move", from:"/experience/2", path:"/experience/0"}]'
+        + '\n  Multi-op:                   [{op:"replace",path:"/title",value:"..."}, {op:"add",path:"/skills/-",value:"..."}]'
+
+        + "\n\n## GUIDELINES"
+        + "\n- Use replace for weak existing bullets (preferred over add)."
+        + "\n- Use remove without hesitation for empty/cliche bullets."
+        + "\n- Use move to reorder (avoid remove+add)."
+        + "\n- For full skills reorg, replace the entire /skills array at once."
+        + "\n- Compose multiple operations for complex atomic changes."
+        + "\n- NEVER target a path that doesn't exist (check index ranges)."
 
         + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks):"
-        + '\n{"reply": "your short reply (1-2 sentences)", "actions": [...]}'
-        + '\n\nIf you need more info, return empty actions:'
-        + '\n{"reply": "your follow-up question", "actions": []}';
+        + '\n{"reply": "your short reply (1-2 sentences)", "operations": [...]}'
+        + '\n\nIf you need more info, return empty operations:'
+        + '\n{"reply": "your follow-up question", "operations": []}'
+        + '\n\nIf OFF-TOPIC, return refusal per scope rules + empty operations:'
+        + '\n{"reply": "Je suis Nuvi...", "operations": []}';
 
       // [Fix] Passe le CV via options.cv (cache ephemeral)
-      const txt = await aiCall(prompt, { cv, task_name: "adjust_modal_v2" });
-      console.log("[AdjustModal v2] aiCall response length:", (txt || "").length);
+      const txt = await aiCall(prompt, { cv, task_name: "adjust_modal_v3" });
+      console.log("[AdjustModal v3 JSON Patch] aiCall response length:", (txt || "").length);
 
       const parsed = parseJSON(txt);
       const reply = (parsed && parsed.reply) ? String(parsed.reply) : (txt || "");
-      const actions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
+      // Nouveau format : operations (JSON Patch) + retro-compat actions (legacy)
+      const operations = (parsed && Array.isArray(parsed.operations)) ? parsed.operations : [];
+      const legacyActions = (parsed && Array.isArray(parsed.actions)) ? parsed.actions : [];
 
-      console.log("[AdjustModal v2] actions count:", actions.length, "actions:", actions);
+      console.log("[AdjustModal v3] operations:", operations.length, "legacy actions:", legacyActions.length);
 
-      // [Fix] Applique les actions ET verifie le resultat
+      // [Fix] Applique les operations ET verifie le resultat
       let appliedSummary = "";
       let realChange = false;
 
-      if (actions.length > 0) {
-        const result = applyCoachActions(cv, actions, { lang });
-        console.log("[AdjustModal v2] applyCoachActions result:", result);
+      if (operations.length > 0) {
+        // Nouveau format JSON Patch (RFC 6902)
+        const result = applyJsonPatch(cv, operations, { lang });
+        console.log("[AdjustModal v3] applyJsonPatch result:", result);
+
+        if (result.realChange) {
+          setCVFn(() => result.newCv);
+          appliedSummary = result.summary;
+          realChange = true;
+        }
+        if (result.failed && result.failed.length > 0) {
+          console.warn("[AdjustModal v3] Some operations failed:", result.failed);
+        }
+      } else if (legacyActions.length > 0) {
+        // Retro-compat : ancien format actions structurees
+        const result = applyCoachActions(cv, legacyActions, { lang });
+        console.log("[AdjustModal v3 legacy] applyCoachActions result:", result);
 
         if (result.applied > 0) {
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
-          if (result.failed && result.failed.length > 0) {
-            console.warn("[AdjustModal v2] Some actions failed:", result.failed);
-          }
-        } else if (result.failed && result.failed.length > 0) {
-          console.warn("[AdjustModal v2] All actions failed:", result.failed);
         }
       }
 
       // [Fix] Construit la reponse Nuvi avec INDICATEUR REEL d'application
       let nuviReplyText;
+      const hadAnyOps = operations.length > 0 || legacyActions.length > 0;
       if (realChange) {
         // Vraie application : on confirme avec details
         nuviReplyText = reply || (lang === "fr"
           ? "C'est fait. " + appliedSummary
           : "Done. " + appliedSummary);
-      } else if (actions.length === 0) {
-        // Aucune action : c'est une question de clarification
+      } else if (!hadAnyOps) {
+        // Aucune operation : c'est une question de clarification OU un refus scope
         nuviReplyText = reply || (lang === "fr"
           ? "J'ai besoin de plus de details. Peux-tu preciser ?"
           : "I need more details. Can you specify?");
       } else {
-        // Actions retournees mais aucune appliquee : signale l'echec
-        console.warn("[AdjustModal v2] Actions returned but NONE applied");
+        // Operations retournees mais aucun changement reel : signale l'echec
+        console.warn("[AdjustModal v3] Operations returned but NO real change");
         nuviReplyText = lang === "fr"
           ? "J'ai compris ta demande mais je n'ai pas reussi a l'appliquer. Peux-tu reformuler ?"
           : "I understood your request but couldn't apply it. Can you rephrase?";
