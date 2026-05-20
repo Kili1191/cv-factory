@@ -3569,20 +3569,24 @@ export default function App() {
         }
 
         // [FIX FINAL 2026-05-20]
-        // PROBLEME identifie via logs : le clone hors-ecran ne fait que 220mm
-        // alors que le contenu fait 305mm+. Le clone se rend dans un context
-        // different (flex layout reorganise, hauteur viewport contrainte).
-        //
-        // SOLUTION : on capture directement l'element ORIGINAL, mais on
-        // desactive temporairement les overflow:hidden/auto des parents
-        // qui tronquaient le viewport pour html2canvas.
+        // PROBLEME : meme apres avoir reset overflow, le scrollHeight peut etre
+        // tronque par des contraintes de height/max-height/min-height sur les parents.
+        // SOLUTION : on detecte TOUS les parents avec une contrainte de hauteur
+        // OU d'overflow, et on reset les deux.
 
-        // 1) Trouve TOUS les parents avec overflow:hidden/auto/scroll
+        // 1) Trouve TOUS les parents avec contraintes
         const parents = [];
         let parent = el.parentElement;
         while (parent && parent !== document.body) {
-          const style = window.getComputedStyle(parent);
-          if (style.overflow !== "visible" || style.overflowX !== "visible" || style.overflowY !== "visible") {
+          const computed = window.getComputedStyle(parent);
+          const hasOverflow = computed.overflow !== "visible"
+                          || computed.overflowX !== "visible"
+                          || computed.overflowY !== "visible";
+          const hasHeightLimit = (computed.height !== "auto" && computed.height !== "")
+                              || (computed.maxHeight !== "none" && computed.maxHeight !== "")
+                              || computed.position === "fixed";
+
+          if (hasOverflow || hasHeightLimit) {
             parents.push({
               element: parent,
               overflow: parent.style.overflow,
@@ -3590,28 +3594,37 @@ export default function App() {
               overflowY: parent.style.overflowY,
               height: parent.style.height,
               maxHeight: parent.style.maxHeight,
+              minHeight: parent.style.minHeight,
+              position: parent.style.position,
             });
           }
           parent = parent.parentElement;
         }
 
-        console.log("[exportPDF] Parents avec overflow:", parents.length);
+        console.log("[exportPDF] Parents avec contraintes detectes:", parents.length);
+        parents.forEach((p, i) => {
+          const c = window.getComputedStyle(p.element);
+          console.log("[exportPDF]   Parent " + i + ": " + p.element.tagName +
+                      " | overflow:" + c.overflow +
+                      " | height:" + c.height +
+                      " | max-height:" + c.maxHeight);
+        });
 
-        // 2) Desactive temporairement les overflow + height limit
+        // 2) Desactive TOUTES les contraintes
         parents.forEach(p => {
           p.element.style.overflow = "visible";
           p.element.style.overflowX = "visible";
           p.element.style.overflowY = "visible";
-          // Si le parent avait une height fixe (height: 100vh par ex), on enleve aussi
-          if (p.element.style.height || window.getComputedStyle(p.element).height !== "auto") {
-            p.element.style.height = "auto";
-            p.element.style.maxHeight = "none";
+          p.element.style.height = "auto";
+          p.element.style.maxHeight = "none";
+          p.element.style.minHeight = "auto";
+          // Si position fixed, on passe en static pour permettre layout normal
+          if (window.getComputedStyle(p.element).position === "fixed") {
+            p.element.style.position = "static";
           }
         });
 
-        // [FIX 2026-05-20] cv-print lui-meme a overflowX: hidden qui peut
-        // confondre certains navigateurs sur scrollHeight. On le force aussi
-        // a visible pendant la capture.
+        // 3) cv-print lui-meme : reset aussi
         const origElStyle = {
           overflow: el.style.overflow,
           overflowX: el.style.overflowX,
@@ -3621,18 +3634,19 @@ export default function App() {
         el.style.overflowX = "visible";
         el.style.overflowY = "visible";
 
-        // 3) Force reflow + attend 2 frames pour que le layout se recalcule
+        // 4) Force reflow + 2 frames pour layout
         void el.offsetHeight;
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        // 4) Mesure les VRAIES dimensions maintenant que rien ne tronque
+        // 5) Mesure les VRAIES dimensions
         const cvWidthPx = el.offsetWidth;
         const cvHeightPx = el.scrollHeight;
 
-        console.log("[exportPDF] === MESURES VRAIES ===");
+        console.log("[exportPDF] === MESURES VRAIES (parents libres) ===");
         console.log("[exportPDF] Element:", cvWidthPx + "x" + cvHeightPx + "px");
+        console.log("[exportPDF] Element en mm:", (cvWidthPx / 3.78).toFixed(1) + "x" + (cvHeightPx / 3.78).toFixed(1) + "mm");
 
-        // 5) Capture le CV original (parents now overflow:visible)
+        // 6) Capture le CV original (parents now reset)
         const canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
@@ -3648,16 +3662,16 @@ export default function App() {
           scrollY: 0,
         });
 
-        // 6) Restaure les overflow originaux des parents
+        // 7) Restaure TOUS les styles d'origine
         parents.forEach(p => {
           p.element.style.overflow = p.overflow;
           p.element.style.overflowX = p.overflowX;
           p.element.style.overflowY = p.overflowY;
           p.element.style.height = p.height;
           p.element.style.maxHeight = p.maxHeight;
+          p.element.style.minHeight = p.minHeight;
+          p.element.style.position = p.position;
         });
-
-        // Restaure le style original du cv-print
         el.style.overflow = origElStyle.overflow;
         el.style.overflowX = origElStyle.overflowX;
         el.style.overflowY = origElStyle.overflowY;
