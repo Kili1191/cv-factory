@@ -2440,8 +2440,8 @@ function LayoutTab({ T, layout, setLy }) {
 
       <div style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
-        gap: 12,
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: 14,
       }}>
         {LAYOUTS.map(k => {
           const meta = LAYOUT_META[k] || { label: k, desc: "" };
@@ -2510,135 +2510,151 @@ function LayoutTab({ T, layout, setLy }) {
   );
 }
 
-// Mini preview SVG pour chaque layout (donne un apercu visuel)
-function LayoutPreview({ kind, active }) {
-  const accent = active ? Purple : "#c9a96e";
-  const ink = "#2a2a2e";
-  const muted = "#9ca3af";
-  const bg = "#fafafa";
+// Vrai apercu CV : on rend le composant CV en taille reduite (scale 0.18)
+// pour avoir un preview realiste qui reflete le vrai rendu.
+// CV demo statique avec donnees factices.
+const DEMO_CV = {
+  name: "Alex Martin",
+  title: "Senior Product Manager",
+  email: "alex.martin@email.com",
+  phone: "+33 6 12 34 56 78",
+  location: "Paris, France",
+  linkedin: "linkedin.com/in/alex-martin",
+  summary: "Product Manager senior avec 8 ans d'experience dans le SaaS B2B. Passionne par l'IA, le design produit, et la croissance d'equipes tech. Track record solide en lancement de produits a fort impact.",
+  skills: ["Product Strategy", "Roadmap", "Agile / Scrum", "SQL", "Figma", "A/B Testing", "Analytics"],
+  experience: [
+    {
+      id: "e1", title: "Senior Product Manager",
+      company: "TechCorp", location: "Paris",
+      period: "2022 - present",
+      bullets: [
+        "Lance 3 produits qui ont genere 12M EUR ARR la premiere annee",
+        "Manage une equipe de 8 PMs et designers, +25% velocity",
+        "Mise en place du framework de discovery produit",
+      ],
+    },
+    {
+      id: "e2", title: "Product Manager",
+      company: "StartupCo", location: "Lyon",
+      period: "2019 - 2022",
+      bullets: [
+        "Pilotage roadmap de l'app mobile (500K MAU)",
+        "Reduction du churn de 18% en 6 mois",
+      ],
+    },
+    {
+      id: "e3", title: "Associate PM",
+      company: "BigCorp", location: "Paris",
+      period: "2017 - 2019",
+      bullets: [
+        "Lance feature de paiement qui a augmente conversion +12%",
+      ],
+    },
+  ],
+  education: [
+    {
+      id: "ed1", degree: "Master Management",
+      school: "HEC Paris", period: "2015 - 2017",
+    },
+    {
+      id: "ed2", degree: "Licence Eco-Gestion",
+      school: "Universite Paris-Dauphine", period: "2012 - 2015",
+    },
+  ],
+  languages: [
+    { lang: "Francais", level: "Langue maternelle" },
+    { lang: "Anglais", level: "Courant (C1)" },
+  ],
+  certifications: [
+    "Certified Scrum Product Owner (CSPO)",
+    "Pragmatic Marketing Level 3",
+  ],
+  photoMode: "initials",
+  photoUrl: null,
+  labels: {},
+};
 
-  // Wrapper commun
-  const W = ({ children }) => (
+// Theme demo cohérent pour les previews (Sidebar Pro doré classique)
+const DEMO_THEME = {
+  bf: "Inter, system-ui, sans-serif",
+  tf: "Fraunces, Georgia, serif",
+  bg: "#ffffff",
+  ti: "#1a1a1e",
+  sb: "#1a1a2e",       // sidebar background
+  st: "#f5e9d2",       // sidebar text
+  ac: "#c9a96e",       // accent (or classique)
+};
+
+function LayoutPreview({ kind, active }) {
+  // On charge dynamiquement les layouts depuis CVLayouts
+  // pour eviter circular deps si on veut.
+  // Ici on les a deja importés en haut du fichier.
+  const Comp =
+    kind === "sidebar"  ? CVSidebar  :
+    kind === "classic"  ? CVClassic  :
+    kind === "timeline" ? CVTimeline :
+    kind === "swiss"    ? CVSwiss    :
+    kind === "compact"  ? CVCompact  :
+    kind === "ats"      ? CVAts      : null;
+
+  if (!Comp) {
+    return (
+      <div style={{
+        height: 200, background: "#f5f5f5",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        color: "#999", fontSize: 11,
+      }}>Preview</div>
+    );
+  }
+
+  // T minimal pour les labels (CV-related strings only)
+  const T = {
+    cv_p: "Profil", cv_el: "Experience", cv_ed: "Formation",
+    cv_s: "Competences", cv_l: "Langues", cv_c: "Certifications",
+    cv_ct: "Contact",
+  };
+
+  // Echelle : on rend le CV en taille reelle puis on scale a 18%
+  // pour que ca tienne dans une preview card de ~220x200.
+  // 1080px (largeur A4-like) * 0.18 = 194px
+  const scale = 0.18;
+  const realWidth = 1080;
+  const realHeight = 1400;
+  const previewW = realWidth * scale;   // 194
+  const previewH = realHeight * scale;  // 252
+
+  return (
     <div style={{
-      height: 120, background: bg, padding: 8,
-      borderBottom: "0.5px solid " + Gray200,
+      width: "100%",
+      height: previewH,
+      overflow: "hidden",
+      position: "relative",
+      background: "#f8f8f8",
+      borderBottom: "0.5px solid #e5e5e5",
     }}>
-      <svg viewBox="0 0 160 100" width="100%" height="100%"
-        style={{ display: "block" }}>
-        {children}
-      </svg>
+      <div style={{
+        width: realWidth,
+        height: realHeight,
+        transform: `scale(${scale})`,
+        transformOrigin: "top left",
+        position: "absolute",
+        top: 0,
+        left: "50%",
+        marginLeft: -previewW / 2,
+        pointerEvents: "none",
+        userSelect: "none",
+      }}>
+        {/* set est un noop : preview readonly */}
+        <Comp
+          cv={DEMO_CV}
+          set={() => {}}
+          t={DEMO_THEME}
+          T={T}
+          locale="fr"
+        />
+      </div>
     </div>
   );
-
-  if (kind === "sidebar") {
-    return (
-      <W>
-        <rect x="0" y="0" width="55" height="100" fill={ink} />
-        <circle cx="27" cy="22" r="10" fill={accent} opacity="0.4"/>
-        <rect x="8" y="42" width="40" height="3" fill={accent} opacity="0.5"/>
-        <rect x="8" y="50" width="35" height="2" fill="#fff" opacity="0.3"/>
-        <rect x="8" y="55" width="38" height="2" fill="#fff" opacity="0.3"/>
-        <rect x="65" y="10" width="50" height="5" fill={ink} />
-        <rect x="65" y="20" width="35" height="3" fill={accent} />
-        <rect x="65" y="32" width="20" height="2" fill={accent} />
-        <rect x="65" y="38" width="80" height="2" fill={muted}/>
-        <rect x="65" y="42" width="75" height="2" fill={muted}/>
-        <rect x="65" y="55" width="20" height="2" fill={accent} />
-        <rect x="65" y="61" width="80" height="2" fill={muted}/>
-      </W>
-    );
-  }
-  if (kind === "classic") {
-    return (
-      <W>
-        <rect x="10" y="8" width="60" height="6" fill={ink}/>
-        <rect x="10" y="18" width="40" height="3" fill={accent}/>
-        <rect x="10" y="24" width="90" height="0.5" fill={muted}/>
-        <rect x="10" y="32" width="18" height="2" fill={accent}/>
-        <rect x="10" y="38" width="140" height="2" fill={muted}/>
-        <rect x="10" y="42" width="135" height="2" fill={muted}/>
-        <rect x="10" y="55" width="20" height="2" fill={accent}/>
-        <rect x="10" y="61" width="140" height="2" fill={muted}/>
-        <rect x="10" y="65" width="135" height="2" fill={muted}/>
-        <rect x="10" y="78" width="20" height="2" fill={accent}/>
-        <rect x="10" y="84" width="140" height="2" fill={muted}/>
-      </W>
-    );
-  }
-  if (kind === "timeline") {
-    return (
-      <W>
-        <rect x="10" y="8" width="60" height="6" fill={ink}/>
-        <rect x="10" y="18" width="40" height="3" fill={accent}/>
-        <line x1="20" y1="32" x2="20" y2="92" stroke={accent} strokeWidth="1"/>
-        <circle cx="20" cy="38" r="3" fill={accent}/>
-        <rect x="30" y="36" width="100" height="3" fill={ink}/>
-        <rect x="30" y="42" width="80" height="2" fill={muted}/>
-        <circle cx="20" cy="58" r="3" fill={accent}/>
-        <rect x="30" y="56" width="100" height="3" fill={ink}/>
-        <rect x="30" y="62" width="80" height="2" fill={muted}/>
-        <circle cx="20" cy="78" r="3" fill={accent}/>
-        <rect x="30" y="76" width="100" height="3" fill={ink}/>
-        <rect x="30" y="82" width="80" height="2" fill={muted}/>
-      </W>
-    );
-  }
-  if (kind === "swiss") {
-    return (
-      <W>
-        <rect x="10" y="10" width="50" height="5" fill={ink}/>
-        <rect x="10" y="22" width="35" height="2" fill={muted}/>
-        <rect x="10" y="40" width="14" height="1.5" fill={ink}/>
-        <rect x="10" y="46" width="120" height="1.5" fill={muted}/>
-        <rect x="10" y="50" width="115" height="1.5" fill={muted}/>
-        <rect x="10" y="62" width="14" height="1.5" fill={ink}/>
-        <rect x="10" y="68" width="120" height="1.5" fill={muted}/>
-        <rect x="10" y="72" width="115" height="1.5" fill={muted}/>
-        <rect x="10" y="84" width="14" height="1.5" fill={ink}/>
-        <rect x="10" y="90" width="120" height="1.5" fill={muted}/>
-      </W>
-    );
-  }
-  if (kind === "compact") {
-    return (
-      <W>
-        <rect x="10" y="8" width="60" height="5" fill={ink}/>
-        <rect x="10" y="16" width="40" height="2" fill={accent}/>
-        <rect x="10" y="26" width="60" height="2" fill={accent}/>
-        <rect x="10" y="32" width="60" height="2" fill={muted}/>
-        <rect x="10" y="36" width="55" height="2" fill={muted}/>
-        <rect x="10" y="46" width="60" height="2" fill={accent}/>
-        <rect x="10" y="52" width="60" height="2" fill={muted}/>
-        <rect x="80" y="26" width="60" height="2" fill={accent}/>
-        <rect x="80" y="32" width="60" height="2" fill={muted}/>
-        <rect x="80" y="36" width="55" height="2" fill={muted}/>
-        <rect x="80" y="46" width="60" height="2" fill={accent}/>
-        <rect x="80" y="52" width="60" height="2" fill={muted}/>
-        <rect x="10" y="70" width="130" height="2" fill={muted}/>
-        <rect x="10" y="76" width="125" height="2" fill={muted}/>
-        <rect x="10" y="82" width="130" height="2" fill={muted}/>
-      </W>
-    );
-  }
-  if (kind === "ats") {
-    return (
-      <W>
-        <rect x="10" y="8" width="50" height="5" fill={ink}/>
-        <rect x="10" y="16" width="35" height="2" fill={muted}/>
-        <rect x="10" y="22" width="80" height="1.5" fill={muted}/>
-        <rect x="10" y="34" width="20" height="2" fill={ink}/>
-        <rect x="10" y="40" width="140" height="1.5" fill={muted}/>
-        <rect x="10" y="44" width="135" height="1.5" fill={muted}/>
-        <rect x="10" y="54" width="20" height="2" fill={ink}/>
-        <rect x="10" y="60" width="140" height="1.5" fill={muted}/>
-        <rect x="10" y="64" width="135" height="1.5" fill={muted}/>
-        <rect x="10" y="68" width="138" height="1.5" fill={muted}/>
-        <rect x="10" y="78" width="20" height="2" fill={ink}/>
-        <rect x="10" y="84" width="140" height="1.5" fill={muted}/>
-      </W>
-    );
-  }
-  return <W><rect x="10" y="40" width="140" height="2" fill={muted}/></W>;
 }
 
 // ============================================================
