@@ -134,6 +134,13 @@ const KEYFRAMES_V17 = `
   --nuvi-glass-border: 0.5px solid rgba(255,255,255,0.7);
   --nuvi-glass-edge: inset 0 1px 1px rgba(255,255,255,0.7);
   --nuvi-glass-shadow: 0 8px 28px rgba(120,90,60,0.12);
+  /* Verre PANNEAUX/MODALES : un peu plus opaque pour la lisibilite du texte
+     (ils flottent au-dessus du CV, le texte doit rester net) */
+  --nuvi-glass-panel: rgba(250,248,243,0.62);
+  --nuvi-glass-panel-blur: blur(40px) saturate(180%);
+  /* Verre CARTES/BULLES internes (chat, cards) : transparence + lisibilite */
+  --nuvi-glass-card: rgba(255,255,255,0.5);
+  --nuvi-glass-card-blur: blur(20px) saturate(180%);
   /* Fond enrichi : cream Nuvi + halos colores tres diffus */
   --nuvi-bg-gradient: linear-gradient(160deg,#faf8f3 0%,#f6f2e8 40%,#f3ece2 100%);
 }
@@ -142,6 +149,8 @@ body.cvf-dark{
   --nuvi-glass-bg: rgba(26,26,31,0.55);
   --nuvi-glass-border: 0.5px solid rgba(255,255,255,0.12);
   --nuvi-glass-edge: inset 0 1px 1px rgba(255,255,255,0.12);
+  --nuvi-glass-panel: rgba(26,26,31,0.72);
+  --nuvi-glass-card: rgba(40,40,48,0.55);
   --nuvi-bg-gradient: linear-gradient(160deg,#0f0f12 0%,#15151a 100%);
 }
 /* Classe verre reutilisable */
@@ -902,10 +911,10 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
           width:"100%", maxWidth:920,
           maxHeight:"72vh",
           borderRadius:28,
-          background:"rgba(250, 248, 243, 0.72)",
-          backdropFilter:"blur(40px) saturate(180%)",
-          WebkitBackdropFilter:"blur(40px) saturate(180%)",
-          border:"0.5px solid rgba(232, 227, 214, 0.7)",
+          background:"var(--nuvi-glass-panel, rgba(250,248,243,0.62))",
+          backdropFilter:"var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
+          WebkitBackdropFilter:"var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
+          border:"0.5px solid rgba(255,255,255,0.7)",
           boxShadow:"0 -8px 48px rgba(0,0,0,0.14), 0 1.5px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
           display:"flex", flexDirection:"column",
           overflow:"hidden",
@@ -1006,10 +1015,10 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
         margin: isMobile ? 0 : "12px",
         marginLeft: isMobile ? 0 : 0,
         borderRadius: isMobile ? "0" : 28,
-        background: "rgba(250, 248, 243, 0.65)",
-        backdropFilter: "blur(40px) saturate(180%)",
-        WebkitBackdropFilter: "blur(40px) saturate(180%)",
-        border: "0.5px solid rgba(232, 227, 214, 0.7)",
+        background: "var(--nuvi-glass-panel, rgba(250,248,243,0.62))",
+        backdropFilter: "var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
+        WebkitBackdropFilter: "var(--nuvi-glass-panel-blur, blur(40px) saturate(180%))",
+        border: "0.5px solid rgba(255,255,255,0.7)",
         boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
         display:"flex", flexDirection:"column",
         overflow:"hidden",
