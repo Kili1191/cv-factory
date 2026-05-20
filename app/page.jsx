@@ -5259,29 +5259,51 @@ export default function App() {
         throw new Error("Parsing returned null/invalid");
       }
 
-      // [Fix] Normalize CV puis VERIFIE qu'il a du contenu
-      // Sinon on boucle car cvIsEmpty reste true
+      // [Fix 2026-05-20] Check tres permissif : on accepte le CV des qu'il
+      // a UN champ rempli (meme tres court). Avant on demandait plusieurs
+      // champs ce qui bloquait les CV courts (ex: 413 chars en input).
+      // Si VRAIMENT tout est vide, on applique quand meme avec un summary
+      // basique pour eviter la boucle d'import.
       const normalizedCV = normCV(parsed);
-      const hasContent =
-        (normalizedCV.name && normalizedCV.name.trim()) ||
-        (normalizedCV.title && normalizedCV.title.trim()) ||
-        (normalizedCV.summary && normalizedCV.summary.trim()) ||
-        (normalizedCV.experience || []).some(e => (e.title || e.company)) ||
-        (normalizedCV.education || []).some(e => (e.degree || e.school));
+      const hasAnyContent =
+        (normalizedCV.name && normalizedCV.name.trim().length > 0) ||
+        (normalizedCV.title && normalizedCV.title.trim().length > 0) ||
+        (normalizedCV.summary && normalizedCV.summary.trim().length > 0) ||
+        (normalizedCV.email && normalizedCV.email.trim().length > 0) ||
+        (normalizedCV.phone && normalizedCV.phone.trim().length > 0) ||
+        (normalizedCV.location && normalizedCV.location.trim().length > 0) ||
+        (normalizedCV.linkedin && normalizedCV.linkedin.trim().length > 0) ||
+        (normalizedCV.skills || []).some(s => s && s.trim()) ||
+        (normalizedCV.languages || []).some(l => l && (l.lang || l.level)) ||
+        (normalizedCV.certifications || []).some(c => c && c.trim()) ||
+        (normalizedCV.experience || []).some(e =>
+          (e.title && e.title.trim()) ||
+          (e.company && e.company.trim()) ||
+          (e.bullets || []).some(b => b && b.trim())
+        ) ||
+        (normalizedCV.education || []).some(e =>
+          (e.degree && e.degree.trim()) ||
+          (e.school && e.school.trim())
+        );
 
-      console.log("[onImport] normalized CV hasContent:", hasContent);
+      console.log("[onImport] normalized CV hasAnyContent:", hasAnyContent);
 
-      if (!hasContent) {
-        // [Fix] CV vide apres parsing -> on n'applique PAS pour eviter
-        // de revenir sur l'ecran d'upload (qui se base sur cvIsEmpty).
-        console.warn("[onImport] CV is empty after parsing, aborting");
-        notify(T.ep || "Erreur parsing CV");
-        return;
+      // [Fix 2026-05-20] Si VRAIMENT rien : on applique le texte brut comme
+      // summary pour que l'user ait au moins quelque chose et puisse editer.
+      // Plus de "boucle vide" possible.
+      let cvToApply = normalizedCV;
+      if (!hasAnyContent) {
+        console.warn("[onImport] CV totalement vide -> fallback texte brut en summary");
+        cvToApply = {
+          ...normalizedCV,
+          summary: obRaw.trim().slice(0, 2000),  // limite a 2k chars
+        };
+        notify("CV importe partiellement. Complete les sections vides.");
       }
 
       // [Fix] Sequence stricte des updates pour eviter race condition
       // 1. CV applique en PREMIER (cvIsEmpty sera recalcule au prochain render)
-      setCVFn(() => normalizedCV);
+      setCVFn(() => cvToApply);
       setObRaw("");
 
       // 2. Mode reset en SECOND
@@ -5302,7 +5324,35 @@ export default function App() {
       console.log("[onImport] SUCCESS, navigated to:", wasAdaptMode ? "target" : "ai/adjust");
     } catch (err) {
       console.error("[onImport] FAILED:", err);
-      notify(T.ep || "Erreur parsing CV");
+
+      // [Fix 2026-05-20] Detection precise du type d'erreur pour
+      // donner un message clair a l'user (cle API morte, credits epuises,
+      // rate limit, ou vrai bug parsing).
+      const errMsg = (err && err.message) ? err.message.toLowerCase() : "";
+      const errStr = String(err || "").toLowerCase();
+      const full = errMsg + " " + errStr;
+
+      let userMsg;
+      if (full.includes("401") || full.includes("unauthorized") || full.includes("invalid api key")) {
+        userMsg = "Cle API invalide. Verifie dans Reglages > Cle API.";
+      } else if (full.includes("403") || full.includes("forbidden")) {
+        userMsg = "Acces refuse par l'API. Cle expiree ?";
+      } else if (full.includes("429") || full.includes("rate limit") || full.includes("too many")) {
+        userMsg = "Trop de requetes. Attend 30s et reessaye.";
+      } else if (full.includes("insufficient") || full.includes("credit") || full.includes("billing") || full.includes("quota")) {
+        userMsg = "Plus de credits Claude API. Recharge sur console.anthropic.com";
+      } else if (full.includes("network") || full.includes("fetch") || full.includes("failed to fetch")) {
+        userMsg = "Probleme de connexion. Verifie ton internet et reessaye.";
+      } else if (full.includes("timeout") || full.includes("504")) {
+        userMsg = "Delai depasse. CV trop long ? Essaie avec un CV plus court.";
+      } else if (full.includes("parsing") || full.includes("json")) {
+        userMsg = "L'IA n'a pas renvoye un format valide. Reessaye dans 10s.";
+      } else {
+        // Erreur inconnue : on affiche le debut de l'erreur pour debug
+        userMsg = "Erreur import : " + (err?.message || "inconnue").slice(0, 60);
+      }
+
+      notify(userMsg);
     } finally {
       // [Fix] setObImp(false) dans le finally pour TOUJOURS arreter le loader
       setObImp(false);
