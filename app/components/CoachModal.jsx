@@ -679,8 +679,17 @@ export default function CoachModal({
           - Tint cream chaud + specular highlight + bordure Coral */}
       {/* [Fix 2026-05-20] Wrapper qui re-active pointerEvents pour que la
           modale soit interactive (le parent a pointerEvents:none pour
-          laisser passer les clics sur le CV au-dessus de la modale). */}
-      <div style={{ pointerEvents: "auto" }}>
+          laisser passer les clics sur le CV au-dessus de la modale).
+          IMPORTANT : ce wrapper doit avoir la MEME largeur que la modale
+          (840px max, centre) sinon il couvre toute la largeur de l'ecran
+          et bloque le scroll dans les zones laterales. */}
+      <div style={{
+        pointerEvents: "auto",
+        width: "100%",
+        maxWidth: 840,
+        marginLeft: "auto",
+        marginRight: "auto",
+      }}>
       <LiquidGlassPanel
         height="94vh"
         maxWidth={840}

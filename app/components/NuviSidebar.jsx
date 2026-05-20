@@ -7,6 +7,11 @@ import dynamic from "next/dynamic";
 // TOUJOURS apparaitre en haut a gauche, sur toutes les pages et modales.
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 
+// [Fix 2026-05-20] DesignPaletteIcon en dynamic ssr:false pour eviter
+// les hydration mismatches (l'icone utilise useId() qui peut differer
+// entre SSR et CSR sur certains setups Next.js).
+const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
+
 /**
  * NuviSidebar v2 - Sidebar Apple-like avec sub-items flottants
  *
@@ -91,58 +96,28 @@ export default function NuviSidebar({
 
   const labels = {
     fr: {
-      home: "Accueil",
-      coach: "Coach",
-      edit: "Editer",
-      adjust: "Ajuster",
-      target: "Match offre",
-      pack: "Pack candidature",
-      audits: "Score & Audits",
-      cvs: "Mes CV",
-      design: "Design",
-      tracking: "Candidatures",
-      settings: "Reglages",
-      edit_id: "Identite",
-      edit_exp: "Experiences",
-      edit_edu: "Formation",
-      edit_sk: "Competences",
-      audits_score: "Score recruteur",
-      audits_pos: "Positionnement",
-      audits_truth: "Truth Check",
-      audits_gap: "Lisser le parcours",
-      cvs_list: "Liste de mes CV",
-      cvs_versions: "Versions",
-      cvs_compare: "Comparer",
-      cvs_templates: "Modeles",
-      design_custom: "Personnaliser",
-      design_translate: "Traduction",
+      home: "Accueil", coach: "Coach", edit: "Editer", adjust: "Ajuster",
+      target: "Match offre", pack: "Pack candidature",
+      audits: "Score & Audits", cvs: "Mes CV", design: "Design",
+      tracking: "Candidatures", settings: "Reglages",
+      edit_id: "Identite", edit_exp: "Experiences", edit_edu: "Formation", edit_sk: "Competences",
+      audits_score: "Score recruteur", audits_pos: "Positionnement",
+      audits_truth: "Truth Check", audits_gap: "Lisser le parcours",
+      cvs_list: "Liste de mes CV", cvs_versions: "Versions",
+      cvs_compare: "Comparer", cvs_templates: "Modeles",
+      design_custom: "Personnaliser", design_translate: "Traduction",
     },
     en: {
-      home: "Home",
-      coach: "Coach",
-      edit: "Edit",
-      adjust: "Tweak",
-      target: "Match",
-      pack: "Application Pack",
-      audits: "Score & Audits",
-      cvs: "My CVs",
-      design: "Design",
-      tracking: "Applications",
-      settings: "Settings",
-      edit_id: "Identity",
-      edit_exp: "Experience",
-      edit_edu: "Education",
-      edit_sk: "Skills",
-      audits_score: "Recruiter score",
-      audits_pos: "Positioning",
-      audits_truth: "Truth Check",
-      audits_gap: "Gap repair",
-      cvs_list: "My CVs",
-      cvs_versions: "Versions",
-      cvs_compare: "Compare",
-      cvs_templates: "Templates",
-      design_custom: "Customize",
-      design_translate: "Translate",
+      home: "Home", coach: "Coach", edit: "Edit", adjust: "Tweak",
+      target: "Match", pack: "Application Pack",
+      audits: "Score & Audits", cvs: "My CVs", design: "Design",
+      tracking: "Applications", settings: "Settings",
+      edit_id: "Identity", edit_exp: "Experience", edit_edu: "Education", edit_sk: "Skills",
+      audits_score: "Recruiter score", audits_pos: "Positioning",
+      audits_truth: "Truth Check", audits_gap: "Gap repair",
+      cvs_list: "My CVs", cvs_versions: "Versions",
+      cvs_compare: "Compare", cvs_templates: "Templates",
+      design_custom: "Customize", design_translate: "Translate",
     },
   };
   const L = labels[lang] || labels.fr;
@@ -156,7 +131,10 @@ export default function NuviSidebar({
     pack: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>),
     audits: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>),
     cvs: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>),
-    design: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22a10 10 0 110-20 7 7 0 017 7c0 1.5-1.2 2.5-2.5 2.5H14a2 2 0 00-2 2 2 2 0 002 2 2 2 0 010 4z"/></svg>),
+    // [Fix 2026-05-20] design icon = composant DesignPaletteIcon anime
+    // (couleurs qui cyclent dans le centre de la palette + breathing).
+    // PLUS de SVG inline statique : c'est le composant qui gere l'anim.
+    design: <DesignPaletteIcon size={20} />,
     tracking: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>),
     settings: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>),
   };
