@@ -240,6 +240,13 @@ export default function AdjustModal({
         + "\n- Compose multiple operations for complex atomic changes."
         + "\n- NEVER target a path that doesn't exist (check index ranges)."
 
+        + "\n\n## EDUCATION vs CERTIFICATIONS (CRITICAL - NEVER DUPLICATE)"
+        + "\n- /education = academic degrees ONLY (Bachelor, Master, MBA, BTS, OTHM Level X Diploma, etc.)."
+        + "\n- /certifications = professional short certs (PMP, Scrum, AMF, Google Cloud, Coaching certs, etc.)."
+        + "\n- A SINGLE item belongs to EXACTLY ONE section, NEVER BOTH."
+        + "\n- If you see a duplicate : remove it from the wrong section."
+        + "\n- Academic-looking items (Diploma, Level X) go to /education."
+
         + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks):"
         + '\n{"reply": "your short reply (1-2 sentences)", "operations": [...]}'
         + '\n\nIf you need more info, return empty operations:'

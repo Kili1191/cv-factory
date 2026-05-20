@@ -62,6 +62,46 @@ function getLabel(cv, key, locale) {
   return defaults[key] || key;
 }
 
+// ============================================================
+// hasContent : verifie si une section CV a du contenu reel
+// Si vide -> le titre de section sera cache (regle UX 2026-05-20)
+// ============================================================
+function hasContent(cv, key) {
+  if (!cv) return false;
+  switch (key) {
+    case "profile":
+      return !!(cv.summary && String(cv.summary).trim());
+    case "experience":
+      return Array.isArray(cv.experience) && cv.experience.length > 0
+        && cv.experience.some(e => e && (
+          (e.title && e.title.trim()) ||
+          (e.company && e.company.trim()) ||
+          (Array.isArray(e.bullets) && e.bullets.some(b => b && b.trim()))
+        ));
+    case "education":
+      return Array.isArray(cv.education) && cv.education.length > 0
+        && cv.education.some(e => e && (
+          (e.degree && e.degree.trim()) ||
+          (e.school && e.school.trim())
+        ));
+    case "skills":
+      return Array.isArray(cv.skills) && cv.skills.some(s => s && String(s).trim());
+    case "languages":
+      return Array.isArray(cv.languages) && cv.languages.length > 0
+        && cv.languages.some(l => l && (
+          (l.lang && l.lang.trim()) || (l.level && l.level.trim())
+        ));
+    case "certifications":
+      return Array.isArray(cv.certifications) && cv.certifications.some(c => c && String(c).trim());
+    case "contact":
+      return !!(cv.email || cv.phone || cv.location || cv.linkedin);
+    case "links":
+      return !!(cv.linkedin || (cv.links && Object.values(cv.links).some(v => v)));
+    default:
+      return true; // fallback : montre si on ne sait pas
+  }
+}
+
 function EditableTitle({ cv, set, labelKey, locale, fallback }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
@@ -153,29 +193,35 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
 export function CVSidebar({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  // SS (sidebar section header)
-  const SS = (labelKey, fallback) => (
-    <div style={{
-      fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
-      color: t.ac, margin:"14px 0 7px",
-      borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
-    }}>
-      <EditableTitle cv={cv} set={set} labelKey={labelKey}
-        locale={locale} fallback={fallback}/>
-    </div>
-  );
+  // SS (sidebar section header) - retourne null si section vide (UX 2026-05-20)
+  const SS = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
+      <div style={{
+        fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
+        color: t.ac, margin:"14px 0 7px",
+        borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
+      }}>
+        <EditableTitle cv={cv} set={set} labelKey={labelKey}
+          locale={locale} fallback={fallback}/>
+      </div>
+    );
+  };
 
-  // MS (main section header)
-  const MS = (labelKey, fallback) => (
-    <div style={{
-      fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
-      color: t.ac, margin:"16px 0 9px",
-      borderBottom:"2px solid "+t.ac, paddingBottom:3,
-    }}>
-      <EditableTitle cv={cv} set={set} labelKey={labelKey}
-        locale={locale} fallback={fallback}/>
-    </div>
-  );
+  // MS (main section header) - retourne null si section vide
+  const MS = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
+      <div style={{
+        fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
+        color: t.ac, margin:"16px 0 9px",
+        borderBottom:"2px solid "+t.ac, paddingBottom:3,
+      }}>
+        <EditableTitle cv={cv} set={set} labelKey={labelKey}
+          locale={locale} fallback={fallback}/>
+      </div>
+    );
+  };
 
   return (
     <div style={{
@@ -336,7 +382,9 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 export function CVClassic({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  const S = (labelKey, fallback) => (
+  const S = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
     <div style={{
       fontSize: 10, fontWeight: 700,
       letterSpacing: 2, textTransform: "uppercase",
@@ -347,7 +395,8 @@ export function CVClassic({ cv, set, t, T, locale }) {
       <EditableTitle cv={cv} set={set} labelKey={labelKey}
         locale={locale} fallback={fallback}/>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{
@@ -744,7 +793,9 @@ export function CVTimeline({ cv, set, t, T, locale }) {
 export function CVSwiss({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  const S = (labelKey, fallback) => (
+  const S = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
     <div style={{
       fontSize: 9, fontWeight: 700,
       letterSpacing: 3, textTransform: "uppercase",
@@ -753,7 +804,8 @@ export function CVSwiss({ cv, set, t, T, locale }) {
       <EditableTitle cv={cv} set={set} labelKey={labelKey}
         locale={locale} fallback={fallback}/>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{
@@ -927,7 +979,9 @@ export function CVSwiss({ cv, set, t, T, locale }) {
 export function CVCompact({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
-  const S = (labelKey, fallback) => (
+  const S = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
     <div style={{
       fontSize: 9, fontWeight: 700,
       letterSpacing: 1.5, textTransform: "uppercase",
@@ -937,7 +991,8 @@ export function CVCompact({ cv, set, t, T, locale }) {
       <EditableTitle cv={cv} set={set} labelKey={labelKey}
         locale={locale} fallback={fallback}/>
     </div>
-  );
+    );
+  };
 
   return (
     <div style={{
@@ -1127,7 +1182,9 @@ export function CVAts({ cv, set, T, locale }) {
 
   // Titre de section : MAJUSCULES bold, PAS de border-bottom.
   // Les ATS modernes detectent les sections via le formatting (caps + bold).
-  const S = (labelKey, fallback) => (
+  const S = (labelKey, fallback) => {
+    if (!hasContent(cv, labelKey)) return null;
+    return (
     <div style={{
       fontWeight: 700, fontSize: 11.5, color: "#000",
       marginTop: 18, marginBottom: 6,
@@ -1136,7 +1193,8 @@ export function CVAts({ cv, set, T, locale }) {
       <EditableTitle cv={cv} set={set} labelKey={labelKey}
         locale={locale} fallback={fallback}/>
     </div>
-  );
+    );
+  };
 
   // Helper pour join contact info avec bullet separator (• standard)
   const contactItems = ["email", "phone", "location", "linkedin"]

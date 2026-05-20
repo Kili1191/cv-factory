@@ -192,10 +192,106 @@ function opTest(doc, path, value) {
 }
 
 // ============================================================================
+// Dedup education vs certifications (fuzzy match)
+// Si un meme item apparait dans education ET certifications, on le garde
+// uniquement dans la section la plus probable :
+//   - "Diploma", "Master", "Bachelor", "BTS", "Licence", "MBA" -> education
+//   - tout le reste -> certifications
+// ============================================================================
+function normalizeForCompare(s) {
+  if (!s) return "";
+  return String(s)
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function looksLikeAcademic(text) {
+  if (!text) return false;
+  const t = normalizeForCompare(text);
+  // Mots-cles diplomes academiques (FR + EN)
+  const academicKeywords = [
+    "diploma", "diplome", "bachelor", "licence", "master", "mba",
+    "doctorat", "phd", "bts", "dut", "but", "bep", "cap",
+    "ingenieur", "engineer", "doctorate", "msc", "ba", "bsc",
+    "level 7", "level 6", "level 5", "level 8", "rqf",
+    "ecole", "universite", "university", "school", "faculty", "faculte",
+  ];
+  return academicKeywords.some(kw => t.includes(kw));
+}
+
+function dedupEducationCertifications(cv, log) {
+  const edu = Array.isArray(cv.education) ? cv.education : [];
+  const certs = Array.isArray(cv.certifications) ? cv.certifications : [];
+  if (edu.length === 0 || certs.length === 0) return cv;
+
+  // Index normalise des education (par degree)
+  const eduNorms = edu.map(e => normalizeForCompare((e && e.degree) || ""));
+
+  const certsToRemove = new Set();
+  const eduToRemove = new Set();
+
+  // Pour chaque certification, regarde si match avec une education
+  for (let i = 0; i < certs.length; i++) {
+    if (certsToRemove.has(i)) continue;
+    const certNorm = normalizeForCompare(certs[i]);
+    if (!certNorm) continue;
+
+    for (let j = 0; j < eduNorms.length; j++) {
+      if (eduToRemove.has(j)) continue;
+      const eduNorm = eduNorms[j];
+      if (!eduNorm) continue;
+
+      // Match si >= 2 mots significatifs en commun
+      const certWords = certNorm.split(" ").filter(w => w.length >= 4);
+      const eduWords = eduNorm.split(" ").filter(w => w.length >= 4);
+      const commonWords = certWords.filter(w => eduWords.includes(w));
+      if (commonWords.length < 2) continue;
+
+      // Doublon detecte. Decider quelle section garde l'item.
+      const certIsAcademic = looksLikeAcademic(certs[i]);
+      const eduIsAcademic = looksLikeAcademic(edu[j].degree);
+
+      if (eduIsAcademic && !certIsAcademic) {
+        // Cas standard : item academique mal mis aussi en certifs -> garde edu
+        certsToRemove.add(i);
+      } else if (certIsAcademic && !eduIsAcademic) {
+        // Inverse : item certif mal mis aussi en education -> garde certif
+        eduToRemove.add(j);
+      } else if (eduIsAcademic && certIsAcademic) {
+        // Tous deux academiques : garde education (plus pertinent)
+        certsToRemove.add(i);
+      } else {
+        // Aucun n'est academique : c'est probablement une certification pro
+        // dupliquee a tort dans education -> garde dans certifications
+        eduToRemove.add(j);
+      }
+      break;
+    }
+  }
+
+  if (certsToRemove.size > 0) {
+    cv.certifications = certs.filter((_, i) => !certsToRemove.has(i));
+  }
+  if (eduToRemove.size > 0) {
+    cv.education = edu.filter((_, i) => !eduToRemove.has(i));
+  }
+
+  const total = certsToRemove.size + eduToRemove.size;
+  if (total > 0) {
+    log.dedup_removed = (log.dedup_removed || 0) + total;
+  }
+
+  return cv;
+}
+
+// ============================================================================
 // Apply patch (main API)
 // ============================================================================
 export function applyJsonPatch(cv, operations, opts = {}) {
   const lang = opts.lang || "fr";
+  const skipDedup = opts.skipDedup === true;
 
   if (!cv || typeof cv !== "object") {
     return { newCv: cv, applied: 0, failed: [], summary: "", realChange: false };
@@ -270,6 +366,16 @@ export function applyJsonPatch(cv, operations, opts = {}) {
     }
   }
 
+  // ========================================================================
+  // POST-PATCH : dedup education vs certifications
+  // Si l'IA a accidentellement mis le meme item dans les 2 sections,
+  // on supprime le doublon en gardant le plus pertinent (academique = education)
+  // ========================================================================
+  const dedupLog = {};
+  if (!skipDedup) {
+    next = dedupEducationCertifications(next, dedupLog);
+  }
+
   // Detection realChange : compare JSON avant/apres
   const after = JSON.stringify(next);
   const realChange = before !== after;
@@ -285,9 +391,13 @@ export function applyJsonPatch(cv, operations, opts = {}) {
   if (stats.certifications > 0) parts.push(stats.certifications + (isEn ? " certification ops" : " modif certif" + (stats.certifications > 1 ? "s" : "")));
   if (stats.profile > 0) parts.push(isEn ? "profile updated" : "profil mis a jour");
   if (stats.personal > 0) parts.push(isEn ? "personal info updated" : "infos mises a jour");
+  if (dedupLog.dedup_removed > 0) {
+    parts.push(dedupLog.dedup_removed + (isEn ? " duplicate(s) removed" : " doublon" + (dedupLog.dedup_removed > 1 ? "s" : "") + " supprime" + (dedupLog.dedup_removed > 1 ? "s" : "")));
+  }
   const summary = parts.join(", ");
 
-  return { newCv: next, applied, failed, summary, realChange };
+  return { newCv: next, applied, failed, summary, realChange, dedupRemoved: dedupLog.dedup_removed || 0 };
 }
 
 export default applyJsonPatch;
+export { dedupEducationCertifications };
