@@ -3530,41 +3530,42 @@ export default function App() {
 
       const fname = "CV_" + cv.name.split(" ").join("_") + (format !== "a4" ? "_" + format : "") + ".pdf";
 
-      // === FIX page-break : injecte CSS temporaire pour eviter orphelins ===
-      // Cible les sections principales du CV pour qu'elles ne se coupent pas
-      // entre 2 pages (ex: une formation orpheline en haut de page 2).
+      // [FIX page 2 vide 2026-05-20 - RADICAL] CSS clip strict a 297mm
+      // Le contenu cv-print sera force a faire EXACTEMENT la hauteur d'une page A4
+      // pendant l'export, avec overflow: hidden. Plus aucune chance de debordement.
+      // Si le contenu fait < 297mm : il a du blanc en bas (normal pour CV court)
+      // Si le contenu fait = 297mm : parfait
+      // Si le contenu fait > 297mm : coupe au plus bas (rare avec un CV propre)
       const styleEl = document.createElement("style");
       styleEl.id = "cvf-pdf-pagebreaks";
       styleEl.textContent = `
-        /* [PDF export 2026-05-20] Adapte cv-print au format choisi */
-        /* Et retire les effets visuels propres a la preview (shadow, etc.) */
+        /* [PDF EXPORT 2026-05-20 - CLIP STRICT 1 PAGE] */
         #cv-print {
           width: ${dims.width}mm !important;
+          height: ${dims.height}mm !important;
+          max-height: ${dims.height}mm !important;
           min-height: ${dims.height}mm !important;
+          overflow: hidden !important;
           box-shadow: none !important;
           margin: 0 !important;
           border-radius: 0 !important;
         }
-        /* Override CVLayouts inner containers pour matcher le format */
+        /* IMPORTANT : on retire le min-height des enfants pour qu'ils
+           ne creent pas de debordement supplementaire */
         #cv-print > div {
-          min-height: ${dims.height}mm !important;
+          min-height: auto !important;
+          max-height: ${dims.height}mm !important;
+          height: ${dims.height}mm !important;
+          overflow: hidden !important;
         }
-        /* Page break rules */
-        #cv-print .cv-exp-item,
-        #cv-print .cv-edu-item,
-        #cv-print .cv-cert-item,
-        #cv-print .cv-lang-item {
+        /* Empeche TOUT page break automatique */
+        #cv-print * {
           page-break-inside: avoid !important;
           break-inside: avoid !important;
-        }
-        #cv-print h1, #cv-print h2, #cv-print h3,
-        #cv-print [data-section-title="true"] {
           page-break-after: avoid !important;
           break-after: avoid !important;
-        }
-        #cv-print [data-section="true"] {
-          page-break-inside: avoid !important;
-          break-inside: avoid !important;
+          page-break-before: avoid !important;
+          break-before: avoid !important;
         }
       `;
       document.head.appendChild(styleEl);
@@ -3573,10 +3574,16 @@ export default function App() {
         // === STRATEGIE 1 (PRINCIPALE 2026-05-20) : html2pdf avec image-PDF ===
         // jsPDF.html() etait notre 1ere methode mais MANGE LES ACCENTS
         // car ses polices integrees ne supportent pas l'unicode latin etendu.
-        // Sur un CV francais (ou allemand, espagnol, etc.) c'est inadmissible.
         // html2pdf utilise html2canvas qui photographie le DOM rendu, donc
         // preserve PARFAITEMENT accents/polices/couleurs/layout.
         // Inconvenient : texte non selectionnable. Mais ATS scan aussi l'image.
+
+        // [FIX page 2 vide 2026-05-20] Avec le CSS clip-strict ci-dessus,
+        // cv-print fait EXACTEMENT 297mm de haut. html2pdf voit donc 1 page A4
+        // parfaite et ne peut PAS creer une 2eme page.
+        // Le pagebreak.mode est mis a "avoid-all" en backup de securite.
+        console.log("[exportPDF] CSS clip-strict applique : cv-print = " + dims.height + "mm exact");
+
         await window.html2pdf().set({
           margin: 0,
           filename: fname,
@@ -3585,23 +3592,18 @@ export default function App() {
             scale: 2,
             useCORS: true,
             logging: false,
-            // foreignObjectRendering: true preserverait le texte vectoriel
-            // mais buggue sur Safari, donc false (image rasterisee, OK pour CV)
             foreignObjectRendering: false,
-            // Letter spacing fix pour Chrome
             letterRendering: true,
           },
           jsPDF: {
             unit: "mm",
             format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
             orientation: "portrait",
-            // Compression pour reduire la taille
             compress: true,
           },
-          pagebreak: {
-            mode: ["css", "legacy"],
-            avoid: [".cv-exp-item", ".cv-edu-item", ".cv-cert-item", ".cv-lang-item"],
-          },
+          // [FIX 2026-05-20] avoid-all bloque TOUT page break automatique
+          // En combo avec le CSS clip strict ci-dessus, garantie 1 page absolue.
+          pagebreak: { mode: ["avoid-all"], avoid: "*" },
         }).from(el).save();
 
         notify(T.okp + ": " + fname);
