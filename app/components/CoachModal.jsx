@@ -534,8 +534,11 @@ function Bubble({ T, msg, onAdopt, onAction }) {
       <div style={{ maxWidth: "85%" }}>
         <div style={{
           padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
-          background: Paper, color: Ink,
-          border: "0.5px solid " + Hairline, boxShadow: ShadowSm,
+          // [Fix 2026-05-20] Bulle opaque garantie (cream pur) + ombre marquee
+          // pour decoller du fond glass et rester lisible meme avec aurora.
+          background: "#ffffff", color: Ink,
+          border: "0.5px solid rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
           fontSize: 13, lineHeight: 1.55, fontFamily: Sans,
           whiteSpace: "pre-wrap",
         }}>{msg.content}</div>
@@ -710,6 +713,10 @@ export default function CoachModal({
           padding: "8px 24px 0",
           display: "flex", alignItems: "center",
           flexShrink: 0,
+          // Coherent avec le header titre (meme fond cream blur)
+          background: "rgba(250, 248, 243, 0.78)",
+          backdropFilter: "blur(12px) saturate(150%)",
+          WebkitBackdropFilter: "blur(12px) saturate(150%)",
         }}>
           {/* Logo Nuvi hyper cool : gradient flow + shimmer + glow pulse */}
           <NuviLogoAnimated size={26} />
@@ -720,6 +727,12 @@ export default function CoachModal({
           borderBottom: "0.5px solid rgba(217, 119, 87, 0.25)", flexShrink: 0,
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between", gap: 12,
+          // [Fix 2026-05-20] Header avec fond cream semi-opaque + blur
+          // pour que le titre soit TOUJOURS lisible (pas mange par le CV
+          // qui defile derriere).
+          background: "rgba(250, 248, 243, 0.78)",
+          backdropFilter: "blur(12px) saturate(150%)",
+          WebkitBackdropFilter: "blur(12px) saturate(150%)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Eyebrow COACH NUVI : gradient Purple->Magenta avec fallback solide */}
@@ -735,10 +748,13 @@ export default function CoachModal({
               filter: "drop-shadow(0 0 6px rgba(139,109,255,0.5)) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
             }}>{T.co_eyebrow}</div>
 
-            {/* Titre blanc avec shadow universelle - lisible partout */}
-            <NuviTextGlass style={{
+            {/* [Fix 2026-05-20] Titre en Ink classique : le header a un fond
+                cream opaque qui le rend tres lisible. Plus besoin du
+                NuviTextGlass blanc + shadow qui buguait sur fond CV. */}
+            <div style={{
               fontFamily: Serif, fontWeight: 400, fontSize: 24,
               letterSpacing: "-0.02em", lineHeight: 1.15,
+              color: Ink,
             }}>
               {T.co_title_a}
               {" "}<em style={{
@@ -748,16 +764,15 @@ export default function CoachModal({
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
-                textShadow: "0 0 0 transparent",
-                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
               }}>{T.co_title_em}</em>
               {" "}{T.co_title_b}
-            </NuviTextGlass>
+            </div>
 
-            {/* Sous-titre blanc avec shadow universelle */}
-            <NuviTextGlass style={{
+            {/* Sous-titre en InkMuted (header cream le rend lisible) */}
+            <div style={{
               fontSize: 12, marginTop: 4, lineHeight: 1.5,
-            }}>{T.co_sub}</NuviTextGlass>
+              color: InkMuted,
+            }}>{T.co_sub}</div>
           </div>
 
           {hasMessages && (
@@ -912,7 +927,11 @@ export default function CoachModal({
           padding: "12px 24px 18px",
           borderTop: "0.5px solid rgba(217, 119, 87, 0.25)",
           flexShrink: 0,
-          background: "transparent",
+          // [Fix 2026-05-20] Footer input avec fond cream blur pour que
+          // l'input et le bouton send restent lisibles meme avec CV derriere.
+          background: "rgba(250, 248, 243, 0.78)",
+          backdropFilter: "blur(12px) saturate(150%)",
+          WebkitBackdropFilter: "blur(12px) saturate(150%)",
         }}>
           <div style={{
             display: "flex", gap: 8, alignItems: "flex-end",

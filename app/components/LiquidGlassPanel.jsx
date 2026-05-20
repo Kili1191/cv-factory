@@ -113,6 +113,12 @@ export default function LiquidGlassPanel({
         height,
         borderRadius,
         overflow: "hidden",
+        // [Fix 2026-05-20] Backdrop blur iOS Control Center : le CV derriere
+        // est legerement floute, ce qui permet de "voir a travers" et suivre
+        // les changements live sans que le texte du CV ne se confonde avec
+        // le contenu du panel.
+        backdropFilter: "blur(8px) saturate(140%)",
+        WebkitBackdropFilter: "blur(8px) saturate(140%)",
         boxShadow: `
           0 -8px 32px rgba(0, 0, 0, 0.25),
           0 -2px 8px rgba(0, 0, 0, 0.15)
