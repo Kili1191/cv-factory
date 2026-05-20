@@ -182,7 +182,7 @@ export default function LiquidGlassPanel({
           /* border-radius initial sera override par les keyframes */
           border-radius: 50%;
           filter: blur(100px);
-          opacity: 0.5;
+          opacity: 0.22;
           will-change: transform, border-radius;
         }
 

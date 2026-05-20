@@ -687,7 +687,7 @@ export default function CoachModal({
         borderRadius="32px 32px 0 0"
         borderColor={Coral}
         distortion={30}
-        tintColor="rgba(250, 248, 243, 0.10)"
+        tintColor="rgba(250, 248, 243, 0.05)"
         animate={true}
       >
         <div style={{
