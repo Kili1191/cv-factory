@@ -3568,36 +3568,68 @@ export default function App() {
           return;
         }
 
-        // 1) Mesure CV : on force la largeur a 210mm en px (794px @ 96dpi)
-        // pour que la capture soit calibree exactement pour A4
-        const TARGET_WIDTH_PX = Math.round(dims.width * 3.7795275591); // 210mm en px
-        const cvWidthPx = el.offsetWidth;
-        const cvHeightPx = el.scrollHeight;
+        // [FIX CRITIQUE 2026-05-20 - ORIGIN BUG]
+        // Le wrapper parent du CV a "overflow: auto" qui le met dans une zone scrollable.
+        // html2canvas peut rater le contenu hors viewport.
+        // SOLUTION : on clone le cv-print dans un container hors-ecran sans scroll
+        // parent, et on capture ce clone qui sera entierement visible.
+        const cloneContainer = document.createElement("div");
+        cloneContainer.style.cssText = `
+          position: absolute;
+          left: -10000px;
+          top: 0;
+          width: 794px;
+          height: auto;
+          background: #faf8f3;
+          z-index: -1;
+          overflow: visible;
+        `;
+        const clone = el.cloneNode(true);
+        clone.id = "cv-print-clone";
+        // Reset les styles qui pourraient limiter la hauteur
+        clone.style.cssText = `
+          width: 794px;
+          background: #faf8f3;
+          overflow: visible;
+          box-shadow: none;
+          margin: 0;
+          position: relative;
+        `;
+        cloneContainer.appendChild(clone);
+        document.body.appendChild(cloneContainer);
 
-        // Calcule la hauteur cible si on force la largeur a 794px
-        // (aspect ratio preserve)
-        const scaleRatio = TARGET_WIDTH_PX / cvWidthPx;
-        const targetHeightPx = Math.round(cvHeightPx * scaleRatio);
+        // Force le browser a faire un reflow pour calculer les dimensions
+        void clone.offsetHeight;
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        console.log("[exportPDF] CV actuel:", cvWidthPx + "x" + cvHeightPx + "px");
-        console.log("[exportPDF] CV cible (forced 210mm):", TARGET_WIDTH_PX + "x" + targetHeightPx + "px (ratio " + scaleRatio.toFixed(3) + ")");
+        const TARGET_WIDTH_PX = Math.round(dims.width * 3.7795275591); // 210mm en px = 794
+        const cvWidthPx = clone.offsetWidth;
+        const cvHeightPx = clone.scrollHeight;
 
-        // 2) Capture le CV avec html2canvas
-        // [FIX 2026-05-20] On force width + windowWidth = TARGET_WIDTH_PX
-        // pour que la capture soit calibree pixel-perfect pour A4
-        const canvas = await html2canvas(el, {
+        console.log("[exportPDF] === CLONE HORS-ECRAN ===");
+        console.log("[exportPDF] Clone:", cvWidthPx + "x" + cvHeightPx + "px");
+
+        // 2) Capture le CLONE avec html2canvas (pas l'element original)
+        // Le clone est dans son propre conteneur sans parent scroll, donc tout est visible
+        const canvas = await html2canvas(clone, {
           scale: 2,
           useCORS: true,
           logging: false,
           backgroundColor: "#faf8f3",
-          // Force la largeur de capture a 794px (210mm en px @96dpi)
           width: cvWidthPx,
           height: cvHeightPx,
-          windowWidth: TARGET_WIDTH_PX,
+          windowWidth: cvWidthPx,
           windowHeight: cvHeightPx,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0,
         });
 
-        console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
+        // Cleanup : retire le clone du DOM apres capture
+        document.body.removeChild(cloneContainer);
+
+        console.log("[exportPDF] Canvas capture:", canvas.width + "x" + canvas.height + "px");
 
         // 3) Construit le PDF avec jsPDF
         // [APPROCHE DEFINITIVE 2026-05-20]
