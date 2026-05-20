@@ -515,8 +515,21 @@ function Bubble({ T, msg, onAdopt, onAction }) {
         width: 48, height: 48, flexShrink: 0,
         marginTop: 2,
         display: "flex", alignItems: "center", justifyContent: "center",
+        position: "relative",
       }}>
-        <NuviCompanion size={48} mode="speaking" />
+        {/* Shadow halo derriere l'oeil pour qu'il se detache du glass */}
+        <div style={{
+          position: "absolute",
+          inset: -4,
+          borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 50%, transparent 75%)",
+          filter: "blur(4px)",
+          pointerEvents: "none",
+          zIndex: 0,
+        }} />
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <NuviCompanion size={48} mode="speaking" />
+        </div>
       </div>
       <div style={{ maxWidth: "85%" }}>
         <div style={{
@@ -598,12 +611,10 @@ export default function CoachModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages?.length, cv]);
 
-  useEffect(() => {
-    if (typeof document === "undefined") return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = prev; };
-  }, []);
+  // [Fix 2026-05-20] Ne PLUS bloquer le scroll du body : on veut que
+  // l'user puisse scroller son CV en background pendant qu'il discute
+  // avec le Coach. La modale a son propre scroll interne (overflowY:auto).
+  // useEffect retire car le body lock cassait l'UX desktop ET mobile.
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
@@ -643,24 +654,33 @@ export default function CoachModal({
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 99998,
+      // [Fix 2026-05-20] Wrapper ne couvre QUE la zone de la modale
+      // (les 94vh du bas) au lieu de tout l'ecran. Comme ca le CV en
+      // background reste scrollable + clicable au-dessus de la modale.
+      position: "fixed",
+      left: 0, right: 0, bottom: 0,
+      // Hauteur exacte de la modale pour laisser l'espace au-dessus
+      // totalement interactif (le CV est scrollable derriere).
+      height: "94vh",
+      zIndex: 99998,
       display: "flex", flexDirection: "column", justifyContent: "flex-end",
       fontFamily: Sans,
+      // pointer-events: none sur le wrapper pour que les clics passent
+      // au-dessus de la modale (zone vide), puis re-actives sur la modale.
+      pointerEvents: "none",
     }}>
-      {/* [Glass Coach v7] Backdrop transparent en permanence - on voit le CV
-          a travers tout le temps, plus juste pendant le travail. */}
-      <div
-        data-nv-coach-backdrop="true"
-        style={{
-        position: "absolute", inset: 0,
-        background: "transparent",
-        animation: "cvfFadeIn 200ms ease-out",
-      }} onClick={() => { if (!loading) onClose(); }} />
+      {/* [Fix 2026-05-20] Backdrop SUPPRIME car il interceptait les clicks
+          et empechait l'interaction avec le CV en background.
+          Pour fermer la modale : bouton X en haut a droite ou Escape. */}
 
       {/* [Liquid Glass v2] Sheet avec wrapper LiquidGlassPanel propre :
           - SVG feTurbulence + feDisplacementMap (distorsion REELLE iOS 26)
           - Animation seed 12s (verre vivant)
           - Tint cream chaud + specular highlight + bordure Coral */}
+      {/* [Fix 2026-05-20] Wrapper qui re-active pointerEvents pour que la
+          modale soit interactive (le parent a pointerEvents:none pour
+          laisser passer les clics sur le CV au-dessus de la modale). */}
+      <div style={{ pointerEvents: "auto" }}>
       <LiquidGlassPanel
         height="94vh"
         maxWidth={840}
@@ -823,8 +843,20 @@ export default function CoachModal({
                 width: 48, height: 48, flexShrink: 0,
                 marginTop: 2,
                 display: "flex", alignItems: "center", justifyContent: "center",
+                position: "relative",
               }}>
-                <NuviCompanion size={48} mode="loading" />
+                <div style={{
+                  position: "absolute",
+                  inset: -4,
+                  borderRadius: "50%",
+                  background: "radial-gradient(circle, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.08) 50%, transparent 75%)",
+                  filter: "blur(4px)",
+                  pointerEvents: "none",
+                  zIndex: 0,
+                }} />
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <NuviCompanion size={48} mode="loading" />
+                </div>
               </div>
               <div style={{
                 padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
@@ -935,6 +967,7 @@ export default function CoachModal({
           </div>
         </div>
       </LiquidGlassPanel>
+      </div>
     </div>
   );
 }
