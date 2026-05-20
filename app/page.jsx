@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo, Suspense } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo, Suspense, Component } from "react";
 import dynamic from "next/dynamic";
 import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
@@ -2615,10 +2615,39 @@ const DEMO_THEME = {
   ac: "#c9a96e",       // accent (or classique)
 };
 
+// [Fix 2026-05-20] ErrorBoundary pour isoler les crashes de LayoutPreview
+// Si un layout CV plante, on affiche un placeholder au lieu de tout casser
+class LayoutPreviewErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error) {
+    console.warn("[LayoutPreview] crashed:", error?.message);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          height: 220, background: "#f5f5f5",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          color: "#999", fontSize: 11, fontFamily: "Inter, sans-serif",
+        }}>Preview indisponible</div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 function LayoutPreview({ kind, active }) {
-  // On charge dynamiquement les layouts depuis CVLayouts
-  // pour eviter circular deps si on veut.
-  // Ici on les a deja importés en haut du fichier.
+  // [Fix 2026-05-20] Hydrated guard : ne render le composant CV lourd
+  // qu'apres hydration cote client. Evite hydration mismatch (#418/#423).
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
+
   const Comp =
     kind === "sidebar"  ? CVSidebar  :
     kind === "classic"  ? CVClassic  :
@@ -2627,13 +2656,17 @@ function LayoutPreview({ kind, active }) {
     kind === "compact"  ? CVCompact  :
     kind === "ats"      ? CVAts      : null;
 
-  if (!Comp) {
+  // Placeholder SSR : pas de render du vrai CV avant hydration
+  // (les vrais composants CV peuvent utiliser des hooks/window qui
+  // creent des mismatches entre serveur et client)
+  if (!Comp || !hydrated) {
     return (
       <div style={{
-        height: 200, background: "#f5f5f5",
+        height: 220, background: "#fafafa",
         display: "flex", alignItems: "center", justifyContent: "center",
-        color: "#999", fontSize: 11,
-      }}>Preview</div>
+        color: "#bbb", fontSize: 10, fontFamily: "Inter, sans-serif",
+        borderBottom: "0.5px solid #e5e5e5",
+      }}>{Comp ? "..." : "Preview"}</div>
     );
   }
 
@@ -2644,46 +2677,44 @@ function LayoutPreview({ kind, active }) {
     cv_ct: "Contact",
   };
 
-  // Echelle : on rend le CV en taille reelle puis on scale a 18%
-  // pour que ca tienne dans une preview card de ~220x200.
-  // 1080px (largeur A4-like) * 0.18 = 194px
   const scale = 0.18;
   const realWidth = 1080;
   const realHeight = 1400;
-  const previewW = realWidth * scale;   // 194
-  const previewH = realHeight * scale;  // 252
+  const previewW = realWidth * scale;
+  const previewH = realHeight * scale;
 
   return (
-    <div style={{
-      width: "100%",
-      height: previewH,
-      overflow: "hidden",
-      position: "relative",
-      background: "#f8f8f8",
-      borderBottom: "0.5px solid #e5e5e5",
-    }}>
+    <LayoutPreviewErrorBoundary>
       <div style={{
-        width: realWidth,
-        height: realHeight,
-        transform: `scale(${scale})`,
-        transformOrigin: "top left",
-        position: "absolute",
-        top: 0,
-        left: "50%",
-        marginLeft: -previewW / 2,
-        pointerEvents: "none",
-        userSelect: "none",
+        width: "100%",
+        height: previewH,
+        overflow: "hidden",
+        position: "relative",
+        background: "#f8f8f8",
+        borderBottom: "0.5px solid #e5e5e5",
       }}>
-        {/* set est un noop : preview readonly */}
-        <Comp
-          cv={DEMO_CV}
-          set={() => {}}
-          t={DEMO_THEME}
-          T={T}
-          locale="fr"
-        />
+        <div style={{
+          width: realWidth,
+          height: realHeight,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+          position: "absolute",
+          top: 0,
+          left: "50%",
+          marginLeft: -previewW / 2,
+          pointerEvents: "none",
+          userSelect: "none",
+        }}>
+          <Comp
+            cv={DEMO_CV}
+            set={() => {}}
+            t={DEMO_THEME}
+            T={T}
+            locale="fr"
+          />
+        </div>
       </div>
-    </div>
+    </LayoutPreviewErrorBoundary>
   );
 }
 
