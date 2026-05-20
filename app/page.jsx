@@ -3568,50 +3568,72 @@ export default function App() {
           return;
         }
 
-        // [FIX CRITIQUE 2026-05-20 - ORIGIN BUG]
-        // Le wrapper parent du CV a "overflow: auto" qui le met dans une zone scrollable.
-        // html2canvas peut rater le contenu hors viewport.
-        // SOLUTION : on clone le cv-print dans un container hors-ecran sans scroll
-        // parent, et on capture ce clone qui sera entierement visible.
-        const cloneContainer = document.createElement("div");
-        cloneContainer.style.cssText = `
-          position: absolute;
-          left: -10000px;
-          top: 0;
-          width: 794px;
-          height: auto;
-          background: #faf8f3;
-          z-index: -1;
-          overflow: visible;
-        `;
-        const clone = el.cloneNode(true);
-        clone.id = "cv-print-clone";
-        // Reset les styles qui pourraient limiter la hauteur
-        clone.style.cssText = `
-          width: 794px;
-          background: #faf8f3;
-          overflow: visible;
-          box-shadow: none;
-          margin: 0;
-          position: relative;
-        `;
-        cloneContainer.appendChild(clone);
-        document.body.appendChild(cloneContainer);
+        // [FIX FINAL 2026-05-20]
+        // PROBLEME identifie via logs : le clone hors-ecran ne fait que 220mm
+        // alors que le contenu fait 305mm+. Le clone se rend dans un context
+        // different (flex layout reorganise, hauteur viewport contrainte).
+        //
+        // SOLUTION : on capture directement l'element ORIGINAL, mais on
+        // desactive temporairement les overflow:hidden/auto des parents
+        // qui tronquaient le viewport pour html2canvas.
 
-        // Force le browser a faire un reflow pour calculer les dimensions
-        void clone.offsetHeight;
+        // 1) Trouve TOUS les parents avec overflow:hidden/auto/scroll
+        const parents = [];
+        let parent = el.parentElement;
+        while (parent && parent !== document.body) {
+          const style = window.getComputedStyle(parent);
+          if (style.overflow !== "visible" || style.overflowX !== "visible" || style.overflowY !== "visible") {
+            parents.push({
+              element: parent,
+              overflow: parent.style.overflow,
+              overflowX: parent.style.overflowX,
+              overflowY: parent.style.overflowY,
+              height: parent.style.height,
+              maxHeight: parent.style.maxHeight,
+            });
+          }
+          parent = parent.parentElement;
+        }
+
+        console.log("[exportPDF] Parents avec overflow:", parents.length);
+
+        // 2) Desactive temporairement les overflow + height limit
+        parents.forEach(p => {
+          p.element.style.overflow = "visible";
+          p.element.style.overflowX = "visible";
+          p.element.style.overflowY = "visible";
+          // Si le parent avait une height fixe (height: 100vh par ex), on enleve aussi
+          if (p.element.style.height || window.getComputedStyle(p.element).height !== "auto") {
+            p.element.style.height = "auto";
+            p.element.style.maxHeight = "none";
+          }
+        });
+
+        // [FIX 2026-05-20] cv-print lui-meme a overflowX: hidden qui peut
+        // confondre certains navigateurs sur scrollHeight. On le force aussi
+        // a visible pendant la capture.
+        const origElStyle = {
+          overflow: el.style.overflow,
+          overflowX: el.style.overflowX,
+          overflowY: el.style.overflowY,
+        };
+        el.style.overflow = "visible";
+        el.style.overflowX = "visible";
+        el.style.overflowY = "visible";
+
+        // 3) Force reflow + attend 2 frames pour que le layout se recalcule
+        void el.offsetHeight;
         await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
 
-        const TARGET_WIDTH_PX = Math.round(dims.width * 3.7795275591); // 210mm en px = 794
-        const cvWidthPx = clone.offsetWidth;
-        const cvHeightPx = clone.scrollHeight;
+        // 4) Mesure les VRAIES dimensions maintenant que rien ne tronque
+        const cvWidthPx = el.offsetWidth;
+        const cvHeightPx = el.scrollHeight;
 
-        console.log("[exportPDF] === CLONE HORS-ECRAN ===");
-        console.log("[exportPDF] Clone:", cvWidthPx + "x" + cvHeightPx + "px");
+        console.log("[exportPDF] === MESURES VRAIES ===");
+        console.log("[exportPDF] Element:", cvWidthPx + "x" + cvHeightPx + "px");
 
-        // 2) Capture le CLONE avec html2canvas (pas l'element original)
-        // Le clone est dans son propre conteneur sans parent scroll, donc tout est visible
-        const canvas = await html2canvas(clone, {
+        // 5) Capture le CV original (parents now overflow:visible)
+        const canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
           logging: false,
@@ -3626,8 +3648,19 @@ export default function App() {
           scrollY: 0,
         });
 
-        // Cleanup : retire le clone du DOM apres capture
-        document.body.removeChild(cloneContainer);
+        // 6) Restaure les overflow originaux des parents
+        parents.forEach(p => {
+          p.element.style.overflow = p.overflow;
+          p.element.style.overflowX = p.overflowX;
+          p.element.style.overflowY = p.overflowY;
+          p.element.style.height = p.height;
+          p.element.style.maxHeight = p.maxHeight;
+        });
+
+        // Restaure le style original du cv-print
+        el.style.overflow = origElStyle.overflow;
+        el.style.overflowX = origElStyle.overflowX;
+        el.style.overflowY = origElStyle.overflowY;
 
         console.log("[exportPDF] Canvas capture:", canvas.width + "x" + canvas.height + "px");
 
