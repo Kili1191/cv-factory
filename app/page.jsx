@@ -739,19 +739,49 @@ function parseJSON(txt) {
 }
 
 function normCV(raw, base=EMPTY) {
-  const ns = v => typeof v==="string" ? v : String(v||"");
+  // [Fix 2026-05-19] Filtre les null/undefined du raw pour qu'ils
+  // n'override pas les defaults vides de base via spread.
+  // Sinon "name": null peut donner cvIsEmpty = true en boucle.
+  const ns = v => typeof v==="string" ? v : (v==null ? "" : String(v));
+  const cleanRaw = {};
+  if (raw && typeof raw === "object") {
+    for (const k in raw) {
+      // Garde uniquement les valeurs non-nulles (sauf arrays explicites)
+      if (raw[k] != null) cleanRaw[k] = raw[k];
+    }
+  }
   return {
-    ...base, ...raw,
-    skills:(Array.isArray(raw.skills)?raw.skills:[]).map(ns),
-    languages:(Array.isArray(raw.languages)?raw.languages:[]).map(
-      l=>({lang:ns(l.lang||""), level:ns(l.level||"")})
+    ...base, ...cleanRaw,
+    // Force tous les champs strings a etre des strings (jamais null)
+    name: ns(cleanRaw.name || base.name),
+    title: ns(cleanRaw.title || base.title),
+    summary: ns(cleanRaw.summary || base.summary),
+    email: ns(cleanRaw.email || base.email),
+    phone: ns(cleanRaw.phone || base.phone),
+    location: ns(cleanRaw.location || base.location),
+    linkedin: ns(cleanRaw.linkedin || base.linkedin),
+    skills:(Array.isArray(cleanRaw.skills)?cleanRaw.skills:[]).map(ns),
+    languages:(Array.isArray(cleanRaw.languages)?cleanRaw.languages:[]).map(
+      l=>({lang:ns(l && l.lang), level:ns(l && l.level)})
     ),
-    certifications:(Array.isArray(raw.certifications)?raw.certifications:[]).map(ns),
-    experience:(Array.isArray(raw.experience)?raw.experience:[]).map(
-      (e,i)=>({...e, id:i+1, bullets:(Array.isArray(e.bullets)?e.bullets:[]).map(ns)})
+    certifications:(Array.isArray(cleanRaw.certifications)?cleanRaw.certifications:[]).map(ns),
+    experience:(Array.isArray(cleanRaw.experience)?cleanRaw.experience:[]).map(
+      (e,i)=>({
+        ...e, id:i+1,
+        title: ns(e && e.title),
+        company: ns(e && e.company),
+        period: ns(e && e.period),
+        location: ns(e && e.location),
+        bullets:(Array.isArray(e && e.bullets)?e.bullets:[]).map(ns),
+      })
     ),
-    education:(Array.isArray(raw.education)?raw.education:[]).map(
-      (e,i)=>({...e, id:i+1})
+    education:(Array.isArray(cleanRaw.education)?cleanRaw.education:[]).map(
+      (e,i)=>({
+        ...e, id:i+1,
+        degree: ns(e && e.degree),
+        school: ns(e && e.school),
+        period: ns(e && e.period),
+      })
     ),
   };
 }
@@ -5170,6 +5200,10 @@ export default function App() {
     if (!obRaw.trim()) { notify(T.np2); return; }
     if (!apiKey) { notify(T.nk); return; }
     setObImp(true);
+
+    // [Fix 2026-05-19] Log structure pour debug du bug "boucle import"
+    console.log("[onImport] start, obRaw length:", obRaw.length);
+
     const p = "Expert parsing CV. JSON valide strict sans markdown.\n"
       + 'STRUCTURE:{"name":"","title":"","email":"","phone":"",'
       + '"location":"","linkedin":"","summary":"",'
@@ -5180,25 +5214,68 @@ export default function App() {
       + '"certifications":[""]}\n'
       + "REGLES:toutes experiences, IDs depuis 1, vide si absent."
       + " " + NO_DASH + " UNIQUEMENT JSON.\nCV:\n" + obRaw;
+
+    let importSucceeded = false;
     try {
       const txt = await aiCall(p);
+      console.log("[onImport] aiCall response length:", txt?.length);
+
       const parsed = parseJSON(txt);
-      setCVFn(() => normCV(parsed));
+      console.log("[onImport] parsed result:", parsed ? "OK" : "NULL/INVALID");
+
+      // [Fix] Validation : si parsing fail, throw pour passer dans catch
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("Parsing returned null/invalid");
+      }
+
+      // [Fix] Normalize CV puis VERIFIE qu'il a du contenu
+      // Sinon on boucle car cvIsEmpty reste true
+      const normalizedCV = normCV(parsed);
+      const hasContent =
+        (normalizedCV.name && normalizedCV.name.trim()) ||
+        (normalizedCV.title && normalizedCV.title.trim()) ||
+        (normalizedCV.summary && normalizedCV.summary.trim()) ||
+        (normalizedCV.experience || []).some(e => (e.title || e.company)) ||
+        (normalizedCV.education || []).some(e => (e.degree || e.school));
+
+      console.log("[onImport] normalized CV hasContent:", hasContent);
+
+      if (!hasContent) {
+        // [Fix] CV vide apres parsing -> on n'applique PAS pour eviter
+        // de revenir sur l'ecran d'upload (qui se base sur cvIsEmpty).
+        console.warn("[onImport] CV is empty after parsing, aborting");
+        notify(T.ep || "Erreur parsing CV");
+        return;
+      }
+
+      // [Fix] Sequence stricte des updates pour eviter race condition
+      // 1. CV applique en PREMIER (cvIsEmpty sera recalcule au prochain render)
+      setCVFn(() => normalizedCV);
       setObRaw("");
+
+      // 2. Mode reset en SECOND
       const wasAdaptMode = obMode === "import-adapt";
       setObMode(null);
+
+      // 3. Navigation en DERNIER (apres que cvIsEmpty soit recalcule)
       if (wasAdaptMode) {
-        // Apres import-adapt : aller en phase Cibler et ouvrir le sheet d'offre
         setTab("target");
         setShowOffer(true);
       } else {
-        // Apres import simple : aller sur Ajuster (le CV existe deja)
         setTab("ai");
         setAiMode("adjust");
       }
+
+      importSucceeded = true;
       notify(T.okimp);
-    } catch { notify(T.ep); }
-    setObImp(false);
+      console.log("[onImport] SUCCESS, navigated to:", wasAdaptMode ? "target" : "ai/adjust");
+    } catch (err) {
+      console.error("[onImport] FAILED:", err);
+      notify(T.ep || "Erreur parsing CV");
+    } finally {
+      // [Fix] setObImp(false) dans le finally pour TOUJOURS arreter le loader
+      setObImp(false);
+    }
   }, [obRaw, apiKey, T, setCVFn, notify, obMode, setTab, setAiMode, setShowOffer]);
 
   const loadTpl = useCallback(tpl => {
