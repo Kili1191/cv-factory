@@ -3590,44 +3590,63 @@ export default function App() {
         console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
 
         // 3) Construit le PDF avec jsPDF
+        // [FIX bande blanche 2026-05-20] Le format PDF est ADAPTE a la hauteur
+        // exacte du CV pour eviter du blanc en bas.
+        // - Si le CV fait <= A4 (297mm) : on cree un PDF de la taille EXACTE du CV
+        //   (210mm large x hauteur du CV mm). Plus de bande blanche en bas.
+        // - Si le CV deborde > 297mm : multi-pages A4 standard.
+
+        // D'abord on calcule la hauteur cible
+        const STD_DIMS = {
+          a4:     { width: 210,   height: 297 },
+          letter: { width: 215.9, height: 279.4 },
+          legal:  { width: 215.9, height: 355.6 },
+        };
+        const std = STD_DIMS[format] || STD_DIMS.a4;
+
+        // Hauteur de l'image en mm (a la largeur standard)
+        const canvasAspect = canvas.height / canvas.width;
+        const imgHeightMm = std.width * canvasAspect;
+
+        // Decide : single page custom-sized ou multi-pages standard ?
+        const fitsOnePage = imgHeightMm <= std.height + 5; // 5mm tolerance
+
         const pdf = new jsPDFLib({
           unit: "mm",
-          format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
+          // [CLE] Format custom = taille exacte du CV si tient sur 1 page
+          // Sinon format standard pour multi-pages
+          format: fitsOnePage
+            ? [std.width, Math.min(imgHeightMm, std.height)]
+            : (format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal")),
           orientation: "portrait",
           compress: true,
         });
 
-        // Dimensions PDF en mm
+        // Dimensions PDF reelles en mm
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        // Le canvas a un aspect ratio. On le scale pour qu'il rentre dans la largeur PDF.
-        const canvasAspect = canvas.height / canvas.width;
-        const imgWidthMm = pdfWidth;
-        const imgHeightMm = pdfWidth * canvasAspect;
-
-        console.log("[exportPDF] PDF:", pdfWidth + "x" + pdfHeight + "mm");
-        console.log("[exportPDF] Image fit:", imgWidthMm.toFixed(1) + "x" + imgHeightMm.toFixed(1) + "mm");
+        console.log("[exportPDF] PDF format:", fitsOnePage ? "custom " : "standard ",
+                    pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm");
+        console.log("[exportPDF] Image fit:", pdfWidth.toFixed(1) + "x" + imgHeightMm.toFixed(1) + "mm");
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        if (imgHeightMm <= pdfHeight + 5) {
-          // CAS 1 : Le CV tient sur une seule page (+5mm tolerance)
-          // On ajoute l'image en haut, la hauteur reelle (pas etiree)
-          pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, imgHeightMm);
-          console.log("[exportPDF] Single page - height:", imgHeightMm.toFixed(1) + "mm");
+        if (fitsOnePage) {
+          // CAS 1 : Le CV tient sur une seule page
+          // Le PDF a la taille EXACTE du CV donc l'image remplit la page entiere.
+          // PAS de bande blanche en bas.
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
+          console.log("[exportPDF] Single page - PDF taille = contenu");
         } else {
-          // CAS 2 : Le CV deborde, multi-pages
-          // On decoupe en pages de pdfHeight mm chacune
+          // CAS 2 : Le CV deborde, multi-pages A4/Letter/Legal standard
           let remainingHeight = imgHeightMm;
           let positionY = 0;
           let pageNum = 0;
 
           while (remainingHeight > 0) {
             if (pageNum > 0) pdf.addPage();
-            // addImage avec un negative Y simule un crop : la partie deja
-            // affichee est decalee hors de la page
-            pdf.addImage(imgData, "JPEG", 0, -positionY, imgWidthMm, imgHeightMm);
+            pdf.addImage(imgData, "JPEG", 0, -positionY, pdfWidth, imgHeightMm);
             remainingHeight -= pdfHeight;
             positionY += pdfHeight;
             pageNum++;
