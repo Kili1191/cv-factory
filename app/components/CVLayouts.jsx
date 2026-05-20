@@ -237,6 +237,11 @@ export function CVSidebar({ cv, set, t, T, locale }) {
       <div style={{
         width:185, color: t.st,
         padding:"22px 15px", flexShrink:0,
+        // [FIX overflow text 2026-05-20] Garantit qu'aucun texte ne deborde
+        overflow:"hidden",
+        wordBreak:"break-word",
+        overflowWrap:"anywhere",
+        boxSizing:"border-box",
       }}>
         {/* [Deploy B] Photo CV (3 modes : upload/initials/none) */}
         <CVPhoto
@@ -251,7 +256,10 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 
         {SS("contact", T.cv_ct)}
         {["email","phone","location","linkedin"].map(f => (
-          <div key={f} style={{marginBottom:4}}>
+          <div key={f} style={{
+            marginBottom:4,
+            wordBreak:"break-word", overflowWrap:"anywhere",
+          }}>
             <E value={cv[f]} onChange={u(f)}
               style={{color: t.st, fontSize:9, lineHeight:1.5}}/>
           </div>
@@ -263,14 +271,21 @@ export function CVSidebar({ cv, set, t, T, locale }) {
             display:"flex", gap:4, marginBottom:3, alignItems:"flex-start",
           }}>
             <span style={{color: t.ac, fontSize:8, flexShrink:0, marginTop:2}}>|</span>
-            <E value={s} onChange={v=>us(i, v)}
-              style={{color: t.st, fontSize:9}}/>
+            <div style={{
+              flex:1, minWidth:0,
+              wordBreak:"break-word", overflowWrap:"anywhere",
+            }}>
+              <E value={s} onChange={v=>us(i, v)}
+                style={{color: t.st, fontSize:9}}/>
+            </div>
           </div>
         ))}
 
         {SS("languages", T.cv_l)}
         {cv.languages.map((l, i) => (
-          <div key={i} style={{marginBottom:4}}>
+          <div key={i} style={{
+            marginBottom:4, wordBreak:"break-word", overflowWrap:"anywhere",
+          }}>
             <E value={l.lang} onChange={v=>ul(i, "lang", v)}
               style={{color: t.st, fontWeight:600, fontSize:9, display:"block"}}/>
             <E value={l.level} onChange={v=>ul(i, "level", v)}
@@ -280,7 +295,10 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 
         {SS("certifications", T.cv_c)}
         {cv.certifications.map((c, i) => (
-          <div key={i} style={{fontSize:8, marginBottom:3, lineHeight:1.4}}>
+          <div key={i} style={{
+            fontSize:8, marginBottom:3, lineHeight:1.4,
+            wordBreak:"break-word", overflowWrap:"anywhere",
+          }}>
             <span style={{color: t.ac}}>v </span>
             <E value={c} onChange={v=>uc(i, v)}
               style={{color: t.st, fontSize:8}}/>
