@@ -3578,11 +3578,24 @@ export default function App() {
         // preserve PARFAITEMENT accents/polices/couleurs/layout.
         // Inconvenient : texte non selectionnable. Mais ATS scan aussi l'image.
 
-        // [FIX page 2 vide 2026-05-20] Avec le CSS clip-strict ci-dessus,
-        // cv-print fait EXACTEMENT 297mm de haut. html2pdf voit donc 1 page A4
-        // parfaite et ne peut PAS creer une 2eme page.
-        // Le pagebreak.mode est mis a "avoid-all" en backup de securite.
-        console.log("[exportPDF] CSS clip-strict applique : cv-print = " + dims.height + "mm exact");
+        // [FIX page 2 vide 2026-05-20] Force le reflow apres injection CSS
+        // pour garantir que les styles "!important" sont appliques AVANT
+        // que html2canvas capture le DOM.
+        void el.offsetHeight; // Force reflow
+        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+        // Mesure REELLE apres application du CSS clip strict
+        const MM_TO_PX = 3.7795275591;
+        const heightPxAfterClip = el.offsetHeight;
+        const heightMmAfterClip = heightPxAfterClip / MM_TO_PX;
+        const targetMm = dims.height;
+
+        console.log("[exportPDF] CSS clip-strict applique");
+        console.log("[exportPDF] Hauteur reelle apres CSS:", heightMmAfterClip.toFixed(1) + "mm (cible:", targetMm + "mm)");
+
+        // Calcul de la hauteur exacte en px pour html2canvas
+        // Si le clip a marche, heightPxAfterClip == 297mm en px
+        const targetHeightPx = Math.round(targetMm * MM_TO_PX);
 
         await window.html2pdf().set({
           margin: 0,
@@ -3594,6 +3607,15 @@ export default function App() {
             logging: false,
             foreignObjectRendering: false,
             letterRendering: true,
+            // [FIX critique 2026-05-20] Force la capture sur EXACTEMENT 297mm
+            // Independamment de la hauteur reelle du DOM, html2canvas ne capturera
+            // que cette zone. Plus aucune chance de page 2.
+            height: targetHeightPx,
+            windowHeight: targetHeightPx,
+            width: el.offsetWidth,
+            windowWidth: el.offsetWidth,
+            y: 0,
+            scrollY: 0,
           },
           jsPDF: {
             unit: "mm",
@@ -3602,7 +3624,8 @@ export default function App() {
             compress: true,
           },
           // [FIX 2026-05-20] avoid-all bloque TOUT page break automatique
-          // En combo avec le CSS clip strict ci-dessus, garantie 1 page absolue.
+          // En combo avec le CSS clip strict + html2canvas height fixe :
+          // TRIPLE GARANTIE qu'il n'y aura qu'une seule page.
           pagebreak: { mode: ["avoid-all"], avoid: "*" },
         }).from(el).save();
 
@@ -7023,7 +7046,10 @@ export default function App() {
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
             <div data-cvf="cv" style={{
-              width:794, minHeight:1123, background:"#fff",
+              // [FIX bande blanche 2026-05-20] Le wrapper ne force PLUS de
+              // minHeight 1123px ni de background blanc. Il epouse le contenu
+              // du CV. Le shadow effet papier reste, mais sur la taille reelle.
+              width:794,
               boxShadow:"0 8px 48px rgba(0,0,0,.14)",
               borderRadius:4, overflow:"hidden",
             }}>
@@ -7460,8 +7486,9 @@ export default function App() {
           }}
           >
             <div data-cvf="cv" style={{
+              // [FIX bande blanche 2026-05-20] Pas de background blanc force
               height:cvH, overflow:"hidden",
-              background:"#fff", borderRadius:5,
+              borderRadius:5,
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
               <div style={{
