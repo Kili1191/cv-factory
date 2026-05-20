@@ -828,9 +828,11 @@ function Shimmer() {
 // Conserve la signature de l'ancien `Sheet({title,onClose,children})`
 // pour que tous les Sheet*/Modals existants l'heritent automatiquement.
 // Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
-function Sheet({ title, eyebrow, onClose, children }) {
+function Sheet({ title, eyebrow, onClose, children, dock = false }) {
   // [Liquid Glass refonte 2026-05-20]
   // Side panel droit 480px (desktop) / fullscreen (mobile)
+  // [Dock mode 2026-05-20] dock=true : centre en bas comme un dock macOS,
+  // largeur large (max 920px), hauteur limitee, ne deborde jamais.
   // Fond CV scrollable derriere (pas de overflow:hidden sur body)
   // Backdrop subtil + frosted glass
   const [isMobile, setIsMobile] = useState(false);
@@ -840,6 +842,106 @@ function Sheet({ title, eyebrow, onClose, children }) {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  // Mode dock : centre en bas, large, hauteur ~70vh max
+  if (dock && !isMobile) {
+    return (
+      <div data-cvf="app" style={{
+        position:"fixed",
+        left:0, right:0, bottom:0,
+        zIndex:2000,
+        display:"flex", justifyContent:"center", alignItems:"flex-end",
+        fontFamily:Sans,
+        pointerEvents:"none",
+        padding:"0 16px 16px",
+      }}>
+        <div style={{
+          position:"relative",
+          width:"100%", maxWidth:920,
+          maxHeight:"72vh",
+          borderRadius:28,
+          background:"rgba(250, 248, 243, 0.72)",
+          backdropFilter:"blur(40px) saturate(180%)",
+          WebkitBackdropFilter:"blur(40px) saturate(180%)",
+          border:"0.5px solid rgba(232, 227, 214, 0.7)",
+          boxShadow:"0 -8px 48px rgba(0,0,0,0.14), 0 1.5px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
+          display:"flex", flexDirection:"column",
+          overflow:"hidden",
+          animation:"cvfSlideUp 320ms cubic-bezier(.32,.72,0,1)",
+          pointerEvents:"auto",
+        }}>
+          {/* Aurora blobs subtils */}
+          <div style={{
+            position:"absolute", inset:0, overflow:"hidden",
+            pointerEvents:"none", opacity:0.16,
+          }}>
+            <div style={{
+              position:"absolute", top:"-30%", right:"10%",
+              width:340, height:340, borderRadius:"50%",
+              background:"radial-gradient(circle, #5b3df5 0%, transparent 70%)",
+              filter:"blur(60px)",
+            }}/>
+            <div style={{
+              position:"absolute", bottom:"-20%", left:"15%",
+              width:280, height:280, borderRadius:"50%",
+              background:"radial-gradient(circle, #d97757 0%, transparent 70%)",
+              filter:"blur(60px)",
+            }}/>
+          </div>
+          {/* Specular highlight top */}
+          <div style={{
+            position:"absolute", top:0, left:"20%", right:"20%", height:1.5,
+            background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)",
+            pointerEvents:"none",
+          }}/>
+          {/* Header : handle + close */}
+          <div style={{
+            position:"relative", padding:"12px 24px 4px", flexShrink:0,
+            display:"flex", flexDirection:"column", alignItems:"center",
+          }}>
+            <div style={{
+              width:40, height:4, background:"rgba(10,10,10,0.15)",
+              borderRadius:2, marginBottom:8,
+            }}/>
+            <button onClick={onClose} aria-label="Fermer" style={{
+              position:"absolute", top:10, right:18,
+              width:32, height:32, borderRadius:"50%",
+              background:"rgba(10,10,10,0.05)", border:"none", cursor:"pointer",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:16, color:"var(--nuvi-ink, #0a0a0a)",
+            }}>×</button>
+          </div>
+          {/* Title block */}
+          {(eyebrow || title) && (
+            <div style={{
+              position:"relative", padding:"0 32px 8px", flexShrink:0,
+              textAlign:"center",
+            }}>
+              {eyebrow && (
+                <div style={{
+                  fontSize:11, fontWeight:600, letterSpacing:"0.1em",
+                  textTransform:"uppercase", color:Coral, marginBottom:4,
+                }}>{eyebrow}</div>
+              )}
+              {title && (
+                <div style={{
+                  fontFamily:Serif, fontSize:24, fontWeight:600,
+                  color:"var(--nuvi-ink, #0a0a0a)",
+                }}>{title}</div>
+              )}
+            </div>
+          )}
+          {/* Contenu scrollable */}
+          <div style={{
+            position:"relative", flex:1, overflowY:"auto", overflowX:"hidden",
+            padding:"8px 32px 28px",
+          }}>
+            {children}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div data-cvf="app" style={{
@@ -1628,12 +1730,22 @@ function WCAGBadge({ ratio, level, T }) {
 // onChange recoit la couleur hex finale.
 // `contrastWith` (optionnel) permet d'afficher un badge WCAG par rapport
 // a une couleur de reference (typiquement la couleur de texte qui sera dessus).
+// `contrastWith2` (optionnel) : 2e couleur de reference. Si fournie, le badge
+// affiche le PIRE des deux contrastes (ex: accent visible sur sidebar ET cream).
 function ColorPickerBlock({
   T, label, value, onChange, presets,
-  contrastWith, contrastLabel, columns=4,
+  contrastWith, contrastWith2, contrastLabel, columns=4,
 }) {
-  const ratio = contrastWith && value ? contrastRatio(value, contrastWith) : 0;
-  const level = ratio ? wcagLevel(value, contrastWith) : null;
+  const ratio1 = contrastWith && value ? contrastRatio(value, contrastWith) : 0;
+  const ratio2 = contrastWith2 && value ? contrastRatio(value, contrastWith2) : Infinity;
+  // Pire contraste : si l'accent est invisible sur l'une des 2 surfaces,
+  // le badge le reflete (plus de faux "Tres lisible").
+  const ratio = contrastWith2
+    ? Math.min(ratio1, ratio2 === Infinity ? ratio1 : ratio2)
+    : ratio1;
+  // Le niveau WCAG est calcule sur la surface qui donne le pire contraste
+  const worstSurface = (contrastWith2 && ratio2 < ratio1) ? contrastWith2 : contrastWith;
+  const level = ratio ? wcagLevel(value, worstSurface) : null;
   return (
     <div style={{marginBottom:22}}>
       <div style={{
@@ -1728,7 +1840,8 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
 
   return (
     <div>
-      {/* Couleur d'accent : doit contraster avec sidebar (pour le titre / accent visible dessus) */}
+      {/* Couleur d'accent : doit contraster avec sidebar ET fond cream
+          (l'accent sert pour les titres sur les DEUX surfaces) */}
       <ColorPickerBlock
         T={T}
         label={T.cust_color_accent}
@@ -1736,6 +1849,7 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
         onChange={setAccent}
         presets={ACCENT_PRESETS}
         contrastWith={eff.sb}
+        contrastWith2={eff.bg}
         columns={4}
       />
       {/* Bandeau lateral : doit contraster avec la couleur de texte sur sidebar (st) */}
@@ -2892,6 +3006,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
 
   return (
     <Sheet
+      dock={true}
       eyebrow={T.cust_eyebrow}
       title={
         <>
