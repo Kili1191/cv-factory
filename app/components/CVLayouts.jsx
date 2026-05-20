@@ -278,6 +278,59 @@ export function CVSidebar({ cv, set, t, T, locale }) {
             </div>
           );
         })}
+        {/* [Contact multi-lignes 2026-05-20] Lignes contact supplementaires.
+            Chaque ligne est editable + supprimable. Le bouton "+" et la croix
+            de suppression ont className cvf-no-print : invisibles dans le PDF. */}
+        {Array.isArray(cv.extraContacts) && cv.extraContacts.map((line, i) => (
+          <div key={"xc"+i} style={{
+            marginBottom:6, display:"flex", alignItems:"flex-start", gap:4,
+            wordBreak:"break-word", overflowWrap:"anywhere",
+          }}>
+            <E value={line}
+              onChange={v => set(prev => {
+                const arr = Array.isArray(prev.extraContacts) ? [...prev.extraContacts] : [];
+                arr[i] = v;
+                return { ...prev, extraContacts: arr };
+              })}
+              style={{
+                color: t.st, fontSize:9.5, lineHeight:1.55,
+                opacity:0.92, flex:1,
+              }}/>
+            <button
+              className="cvf-no-print"
+              onClick={() => set(prev => {
+                const arr = Array.isArray(prev.extraContacts) ? [...prev.extraContacts] : [];
+                arr.splice(i, 1);
+                return { ...prev, extraContacts: arr };
+              })}
+              title="Supprimer cette ligne"
+              style={{
+                background:"transparent", border:"none", cursor:"pointer",
+                color: t.st, opacity:0.5, fontSize:11, lineHeight:1,
+                padding:"1px 3px", flexShrink:0,
+              }}>
+              ×
+            </button>
+          </div>
+        ))}
+        {/* Bouton "+ ligne" : invisible dans le PDF (cvf-no-print) */}
+        <button
+          className="cvf-no-print"
+          onClick={() => set(prev => {
+            const arr = Array.isArray(prev.extraContacts) ? [...prev.extraContacts] : [];
+            return { ...prev, extraContacts: [...arr, ""] };
+          })}
+          title={locale === "fr" ? "Ajouter une ligne de contact" : "Add a contact line"}
+          style={{
+            background:"transparent",
+            border:"1px dashed "+t.st+"55",
+            borderRadius:4, cursor:"pointer",
+            color: t.st, opacity:0.7, fontSize:8.5,
+            padding:"3px 8px", marginTop:2, marginBottom:4,
+            width:"100%", textAlign:"left",
+          }}>
+          + {locale === "fr" ? "ligne contact" : "contact line"}
+        </button>
 
         {SS("skills", T.cv_s)}
         {/* [Compact tags 2026-05-20] Competences en pills compactes
