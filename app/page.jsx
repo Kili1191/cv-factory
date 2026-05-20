@@ -3488,259 +3488,77 @@ export default function App() {
   }, [apiKey, T, pushH, setCVFn, notify]);
 
   // ============================================================
-  // exportPDF v2 (2026-05-19) : PDF avec TEXTE SELECTIONNABLE
+  // exportPDF (REFONTE TOTALE 2026-05-20)
   //
-  // ANCIEN BUG : html2canvas convertit le DOM en image puis emballe
-  // dans jsPDF -> texte non selectionnable -> mauvais pour ATS.
-  //
-  // FIX : utiliser jsPDF.html() qui rend nativement le HTML en
-  // texte vectoriel selectionnable. Fallback sur html2canvas si echec.
-  //
-  // Page breaks : on injecte temporairement du CSS pour eviter qu'une
-  // section soit coupee entre 2 pages (problem "La Banque Postale" en
-  // haut de page 2 toute seule).
-  // ============================================================
-  // exportPDF v2 : accepte un format (a4, letter, legal)
-  // - A4 par defaut (Europe, standard recruteurs)
-  // - Letter (US, Canada)
-  // - Legal (rare, document long)
+  // Approche SIMPLE et FIABLE :
+  // - html2pdf.bundle.min.js (lib eprouvee qui marche partout)
+  // - 0 hack, 0 reset overflow, 0 clone, 0 calcul de taille
+  // - L'lib gere TOUT : capture, accents, multi-pages
+  // - Format A4 standard par defaut
   // ============================================================
   const exportPDF = useCallback((format = "a4") => {
     const el = document.getElementById("cv-print");
     if (!el) return;
 
-    // Dimensions par format (en mm)
-    const formatDims = {
-      a4:     { width: 210,   height: 297 },     // 210 x 297 mm
-      letter: { width: 215.9, height: 279.4 },   // 8.5 x 11 inches
-      legal:  { width: 215.9, height: 355.6 },   // 8.5 x 14 inches
-    };
-    const dims = formatDims[format] || formatDims.a4;
+    const fname = "CV_" + cv.name.split(" ").join("_")
+                + (format !== "a4" ? "_" + format : "") + ".pdf";
 
-    // [FIX 2026-05-20] Charge html2canvas + jsPDF separement
-    // html2pdf.bundle merge les deux mais expose mal pour usage direct.
-    // En les chargeant separement, on a un acces propre a chaque API.
-
-    // Helper : charge un script si pas deja present
-    const loadScript = (src) => new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[src="${src}"]`);
+    // Charge html2pdf si pas deja charge
+    const loadHtml2pdf = () => new Promise((resolve, reject) => {
+      if (window.html2pdf) return resolve();
+      const existing = document.querySelector('script[data-html2pdf]');
       if (existing) {
-        if (existing.dataset.loaded === "true") resolve();
-        else existing.addEventListener("load", () => resolve());
-        existing.addEventListener("error", () => reject(new Error("Load failed: " + src)));
+        existing.addEventListener("load", () => resolve());
+        existing.addEventListener("error", () => reject());
         return;
       }
       const s = document.createElement("script");
-      s.src = src;
-      s.onload = () => { s.dataset.loaded = "true"; resolve(); };
-      s.onerror = () => reject(new Error("Load failed: " + src));
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+      s.setAttribute("data-html2pdf", "1");
+      s.onload = () => resolve();
+      s.onerror = () => reject();
       document.head.appendChild(s);
     });
 
     (async () => {
       try {
-        // Charge en parallele html2canvas + jsPDF
-        await Promise.all([
-          loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
-          loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
-        ]);
-      } catch (e) {
-        notify("Erreur chargement PDF : " + e.message);
-        return;
-      }
+        await loadHtml2pdf();
 
-      // Attend que les Google Fonts custom soient chargees avant snapshot
-      try {
-        if (document.fonts && document.fonts.ready) {
-          await document.fonts.ready;
-        }
-      } catch {}
-
-      const fname = "CV_" + cv.name.split(" ").join("_") + (format !== "a4" ? "_" + format : "") + ".pdf";
-
-      try {
-        // Verifie disponibilite des libs
-        const html2canvas = window.html2canvas;
-        const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
-
-        if (!html2canvas || !jsPDFLib) {
-          notify("Erreur : librairies PDF non disponibles");
-          return;
-        }
-
-        // [FIX FINAL 2026-05-20]
-        // PROBLEME : meme apres avoir reset overflow, le scrollHeight peut etre
-        // tronque par des contraintes de height/max-height/min-height sur les parents.
-        // SOLUTION : on detecte TOUS les parents avec une contrainte de hauteur
-        // OU d'overflow, et on reset les deux.
-
-        // 1) Trouve TOUS les parents avec contraintes
-        const parents = [];
-        let parent = el.parentElement;
-        while (parent && parent !== document.body) {
-          const computed = window.getComputedStyle(parent);
-          const hasOverflow = computed.overflow !== "visible"
-                          || computed.overflowX !== "visible"
-                          || computed.overflowY !== "visible";
-          const hasHeightLimit = (computed.height !== "auto" && computed.height !== "")
-                              || (computed.maxHeight !== "none" && computed.maxHeight !== "")
-                              || computed.position === "fixed";
-
-          if (hasOverflow || hasHeightLimit) {
-            parents.push({
-              element: parent,
-              overflow: parent.style.overflow,
-              overflowX: parent.style.overflowX,
-              overflowY: parent.style.overflowY,
-              height: parent.style.height,
-              maxHeight: parent.style.maxHeight,
-              minHeight: parent.style.minHeight,
-              position: parent.style.position,
-            });
+        // Attend que les Google Fonts custom soient chargees
+        try {
+          if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
           }
-          parent = parent.parentElement;
-        }
+        } catch {}
 
-        console.log("[exportPDF] Parents avec contraintes detectes:", parents.length);
-        parents.forEach((p, i) => {
-          const c = window.getComputedStyle(p.element);
-          console.log("[exportPDF]   Parent " + i + ": " + p.element.tagName +
-                      " | overflow:" + c.overflow +
-                      " | height:" + c.height +
-                      " | max-height:" + c.maxHeight);
-        });
-
-        // 2) Desactive TOUTES les contraintes
-        parents.forEach(p => {
-          p.element.style.overflow = "visible";
-          p.element.style.overflowX = "visible";
-          p.element.style.overflowY = "visible";
-          p.element.style.height = "auto";
-          p.element.style.maxHeight = "none";
-          p.element.style.minHeight = "auto";
-          // Si position fixed, on passe en static pour permettre layout normal
-          if (window.getComputedStyle(p.element).position === "fixed") {
-            p.element.style.position = "static";
-          }
-        });
-
-        // 3) cv-print lui-meme : reset aussi
-        const origElStyle = {
-          overflow: el.style.overflow,
-          overflowX: el.style.overflowX,
-          overflowY: el.style.overflowY,
+        const opt = {
+          margin: 0,
+          filename: fname,
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: "#faf8f3",
+          },
+          jsPDF: {
+            unit: "mm",
+            format: format === "a4" ? "a4"
+                  : (format === "letter" ? "letter" : "legal"),
+            orientation: "portrait",
+            compress: true,
+          },
+          // Multi-pages natif gere par html2pdf
+          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
         };
-        el.style.overflow = "visible";
-        el.style.overflowX = "visible";
-        el.style.overflowY = "visible";
 
-        // 4) Force reflow + 2 frames pour layout
-        void el.offsetHeight;
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        await window.html2pdf().set(opt).from(el).save();
 
-        // 5) Mesure les VRAIES dimensions
-        const cvWidthPx = el.offsetWidth;
-        const cvHeightPx = el.scrollHeight;
-
-        console.log("[exportPDF] === MESURES VRAIES (parents libres) ===");
-        console.log("[exportPDF] Element:", cvWidthPx + "x" + cvHeightPx + "px");
-        console.log("[exportPDF] Element en mm:", (cvWidthPx / 3.78).toFixed(1) + "x" + (cvHeightPx / 3.78).toFixed(1) + "mm");
-
-        // 6) Capture le CV original (parents now reset)
-        const canvas = await html2canvas(el, {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          backgroundColor: "#faf8f3",
-          width: cvWidthPx,
-          height: cvHeightPx,
-          windowWidth: cvWidthPx,
-          windowHeight: cvHeightPx,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0,
-        });
-
-        // 7) Restaure TOUS les styles d'origine
-        parents.forEach(p => {
-          p.element.style.overflow = p.overflow;
-          p.element.style.overflowX = p.overflowX;
-          p.element.style.overflowY = p.overflowY;
-          p.element.style.height = p.height;
-          p.element.style.maxHeight = p.maxHeight;
-          p.element.style.minHeight = p.minHeight;
-          p.element.style.position = p.position;
-        });
-        el.style.overflow = origElStyle.overflow;
-        el.style.overflowX = origElStyle.overflowX;
-        el.style.overflowY = origElStyle.overflowY;
-
-        console.log("[exportPDF] Canvas capture:", canvas.width + "x" + canvas.height + "px");
-
-        // 3) Construit le PDF avec jsPDF
-        // [APPROCHE A4 STRICT 2026-05-20]
-        // Format A4/Letter/Legal TOUJOURS standard (210x297mm pour A4)
-        // - Si CV <= 297mm : 1 page A4 avec marge blanche en bas (normal sur papier)
-        // - Si CV > 297mm : multi-pages A4
-        const STD_DIMS = {
-          a4:     { width: 210,   height: 297 },
-          letter: { width: 215.9, height: 279.4 },
-          legal:  { width: 215.9, height: 355.6 },
-        };
-        const std = STD_DIMS[format] || STD_DIMS.a4;
-
-        // Hauteur de l'image en mm a la largeur standard
-        const canvasAspect = canvas.height / canvas.width;
-        const imgHeightMm = std.width * canvasAspect;
-
-        console.log("[exportPDF] Image en mm:", std.width + "x" + imgHeightMm.toFixed(1) + "mm");
-        console.log("[exportPDF] Format cible:", std.width + "x" + std.height + "mm (strict)");
-
-        // PDF TOUJOURS au format standard (A4 / Letter / Legal)
-        const pdf = new jsPDFLib({
-          unit: "mm",
-          format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
-          orientation: "portrait",
-          compress: true,
-        });
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        // Determine si single page ou multi-pages
-        const fitsOnePage = imgHeightMm <= pdfHeight;
-
-        console.log("[exportPDF] PDF:", pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm (A4 strict)",
-                    "| Mode:", fitsOnePage ? "1 page" : "multi-page");
-
-        const imgData = canvas.toDataURL("image/jpeg", 0.95);
-
-        if (fitsOnePage) {
-          // CAS 1 : 1 page A4 standard
-          // L'image est placee en HAUT avec sa hauteur reelle (pas etiree)
-          // Le reste de la page A4 est blanc (normal, comme une feuille A4 avec marge)
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeightMm);
-          console.log("[exportPDF] 1 page A4 strict rendu OK - contenu:", imgHeightMm.toFixed(1) + "mm");
-        } else {
-          // CAS 2 : Multi-pages A4
-          const totalPages = Math.ceil(imgHeightMm / pdfHeight);
-          console.log("[exportPDF] Multi-page :", totalPages, "pages prevues");
-
-          for (let i = 0; i < totalPages; i++) {
-            if (i > 0) pdf.addPage();
-            const offsetY = -i * pdfHeight;
-            pdf.addImage(imgData, "JPEG", 0, offsetY, pdfWidth, imgHeightMm);
-            console.log("[exportPDF] Page " + (i+1) + " : offset Y = " + offsetY.toFixed(1) + "mm");
-          }
-        }
-
-        pdf.save(fname);
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       } catch (e) {
         console.error("[exportPDF] FAILED:", e);
-        notify("Erreur export PDF : " + e.message);
+        notify("Erreur export PDF : " + (e.message || "inconnue"));
       }
     })();
   }, [cv.name, T, notify]);
