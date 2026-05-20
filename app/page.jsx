@@ -124,6 +124,48 @@ const KEYFRAMES_V17 = `
 @keyframes cvfSlideLeft{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes pasteFlashFade{0%{opacity:0}10%{opacity:0.85}100%{opacity:0}}
 
+/* ===== Liquid Glass Nuvi (verdict panel 2026-05-21) =====
+   Variables centralisees : changer ici = toute l'app suit.
+   Verre uniquement sur les couches qui FLOTTENT (barres, dock, sidebar).
+   Le contenu (CV, cartes texte) reste opaque pour la lisibilite. */
+:root{
+  --nuvi-glass-bg: rgba(250,248,243,0.55);
+  --nuvi-glass-blur: blur(28px) saturate(150%);
+  --nuvi-glass-border: 0.5px solid rgba(255,255,255,0.7);
+  --nuvi-glass-edge: inset 0 1px 1px rgba(255,255,255,0.7);
+  --nuvi-glass-shadow: 0 8px 28px rgba(120,90,60,0.12);
+  /* Fond enrichi : cream Nuvi + halos colores tres diffus */
+  --nuvi-bg-gradient: linear-gradient(160deg,#faf8f3 0%,#f6f2e8 40%,#f3ece2 100%);
+}
+body.cvf-dark :root,
+body.cvf-dark{
+  --nuvi-glass-bg: rgba(26,26,31,0.55);
+  --nuvi-glass-border: 0.5px solid rgba(255,255,255,0.12);
+  --nuvi-glass-edge: inset 0 1px 1px rgba(255,255,255,0.12);
+  --nuvi-bg-gradient: linear-gradient(160deg,#0f0f12 0%,#15151a 100%);
+}
+/* Classe verre reutilisable */
+.nuvi-glass{
+  background: var(--nuvi-glass-bg) !important;
+  -webkit-backdrop-filter: var(--nuvi-glass-blur);
+  backdrop-filter: var(--nuvi-glass-blur);
+  border-color: rgba(255,255,255,0.6);
+}
+/* Halos colores diffus en arriere-plan (donnent matiere au verre) */
+.nuvi-bg-halos{ position:relative; }
+.nuvi-bg-halos::before{
+  content:""; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(220px 220px at 92% 14%, rgba(217,119,87,0.18), transparent 70%),
+    radial-gradient(230px 230px at 6% 76%, rgba(91,61,245,0.15), transparent 70%),
+    radial-gradient(170px 170px at 78% 54%, rgba(224,176,77,0.13), transparent 70%);
+}
+body.cvf-dark .nuvi-bg-halos::before{
+  background:
+    radial-gradient(220px 220px at 92% 14%, rgba(217,119,87,0.12), transparent 70%),
+    radial-gradient(230px 230px at 6% 76%, rgba(91,61,245,0.14), transparent 70%);
+}
+
 /* Dark mode : surface app */
 body.cvf-dark [data-cvf="app"]{background:#0f0f12 !important;color:#f5f1e8 !important;}
 /* Cards et boutons dans l'app passent en sombre */
@@ -7191,10 +7233,10 @@ export default function App() {
           lang={locale}
           mob={false}
         />
-        <div data-cvf="app" style={{
+        <div data-cvf="app" className="nuvi-bg-halos" style={{
           display:"flex", height:"100vh",
           fontFamily:Sans,
-          background:"var(--nuvi-cream-soft)", overflow:"hidden",
+          background:"var(--nuvi-bg-gradient)", overflow:"hidden",
         }}>
           <NuviSidebar
             active={navSection}
@@ -7260,6 +7302,7 @@ export default function App() {
               accessibles via NuviSidebar v2 + ses sub-items + AdjustModal */}
           <div style={{
             flex:1, overflow:"auto", padding:22,
+            position:"relative", zIndex:1,
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
             <div data-cvf="cv" style={{
@@ -7609,16 +7652,20 @@ export default function App() {
           <div style={{minWidth:794, padding:14}}>{CVEl}</div>
         </div>
       )}
-      <div data-cvf="app" style={{
+      <div data-cvf="app" className="nuvi-bg-halos" style={{
         display:"flex", flexDirection:"column", height:"100vh",
-        overflow:"hidden", background:"var(--nuvi-cream-soft)",
+        overflow:"hidden", background:"var(--nuvi-bg-gradient)",
         fontFamily:Sans,
       }}>
         <div style={{
+          position:"relative", zIndex:1,
           display:"flex", alignItems:"center",
           justifyContent:"space-between",
-          padding:"12px 16px", background:Paper,
-          borderBottom:"0.5px solid "+Gray200,
+          padding:"12px 16px",
+          background:"var(--nuvi-glass-bg)",
+          WebkitBackdropFilter:"blur(18px) saturate(140%)",
+          backdropFilter:"blur(18px) saturate(140%)",
+          borderBottom:"0.5px solid rgba(255,255,255,0.6)",
           flexShrink:0,
         }}>
           <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2}}>
@@ -7680,7 +7727,8 @@ export default function App() {
         </div>
         {showCV && (
           <div ref={cRef} style={{
-            background:Gray100, padding:"7px", flexShrink:0,
+            background:"transparent", padding:"7px", flexShrink:0,
+            position:"relative", zIndex:1,
             maxHeight:"55vh", overflow:"auto",
             WebkitOverflowScrolling:"touch",
           }}
@@ -7703,22 +7751,26 @@ export default function App() {
           }}
           >
             <div data-cvf="cv" style={{
-              // [FIX bande blanche 2026-05-20] Pas de background blanc force
-              height:cvH, overflow:"hidden",
+              // [FIX mobile scroll 2026-05-20] CV scrollable, plus de coupe.
+              // On utilise CSS zoom (reduit la hauteur de layout, donc le
+              // scroll fonctionne nativement). Fallback transform si zoom KO.
+              maxHeight: cvH,
+              overflowY: "auto",
+              overflowX: "hidden",
+              WebkitOverflowScrolling: "touch",
               borderRadius:5,
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
               <div style={{
-                transformOrigin:"top left",
-                transform:"scale("+scale+")",
-                width:scale<1 ? (100/scale)+"%" : "100%",
+                zoom: scale,
+                width: "100%",
               }}>
                 {CVEl}
               </div>
             </div>
           </div>
         )}
-        <div style={{flex:1, overflowY:"auto", padding:"13px 13px 4px"}}>
+        <div style={{flex:1, overflowY:"auto", padding:"13px 13px 4px", position:"relative", zIndex:1}}>
           {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
               Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales
               via NuviBottomNav, donc pas besoin d'afficher leur contenu inline.
