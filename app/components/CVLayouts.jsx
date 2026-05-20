@@ -226,12 +226,17 @@ export function CVSidebar({ cv, set, t, T, locale }) {
   return (
     <div style={{
       display:"flex", minHeight:"100%",
-      fontFamily: t.bf, background: t.bg,
+      fontFamily: t.bf,
+      // [FIX bande blanche 2026-05-20] Background gradient split :
+      // gauche = couleur sidebar (185px = width sidebar)
+      // droite = couleur fond CV
+      // Garantit que la sidebar visuelle va jusqu'en bas meme si son contenu s'arrete plus tot
+      background: `linear-gradient(to right, ${t.sb} 0, ${t.sb} 185px, ${t.bg} 185px, ${t.bg} 100%)`,
     }}>
-      {/* Colonne sidebar */}
+      {/* Colonne sidebar - le background transparent laisse voir le gradient parent */}
       <div style={{
-        width:185, background: t.sb, color: t.st,
-        padding:"22px 15px", flexShrink:0, minHeight:"100%",
+        width:185, color: t.st,
+        padding:"22px 15px", flexShrink:0,
       }}>
         {/* [Deploy B] Photo CV (3 modes : upload/initials/none) */}
         <CVPhoto
