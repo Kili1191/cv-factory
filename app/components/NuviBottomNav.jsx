@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 /**
  * NuviBottomNav — Bottom navigation mobile (5 icônes)
@@ -29,9 +29,19 @@ export default function NuviBottomNav({
   lang = "fr",
   onCoachOpen,
   onSettingsOpen,
+  onReset,
+  suggestedAction = null,
   hasNotification = {},
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);
+
+  // Si Nuvi change de suggestion, on re-affiche (meme si l'user avait ferme
+  // l'ancienne). Une nouvelle suggestion merite une nouvelle chance.
+  const suggestLabel = suggestedAction && suggestedAction.label;
+  useEffect(() => {
+    setSuggestDismissed(false);
+  }, [suggestLabel]);
 
   // Couleurs Nuvi (CSS variables - support dark mode)
   const Cream = "var(--nuvi-cream)";
@@ -55,6 +65,7 @@ export default function NuviBottomNav({
       design: "Design",
       tracking: "Suivi",
       settings: "Réglages",
+      reset: "Reset",
     },
     en: {
       home: "CV",
@@ -67,6 +78,7 @@ export default function NuviBottomNav({
       design: "Design",
       tracking: "Tracking",
       settings: "Settings",
+      reset: "Reset",
     },
   };
   const L = labels[lang] || labels.fr;
@@ -137,6 +149,12 @@ export default function NuviBottomNav({
         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>
       </svg>
     ),
+    reset: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 2v6h6"/>
+        <path d="M3 13a9 9 0 103-7.7L3 8"/>
+      </svg>
+    ),
   };
 
   // 5 items principaux du bottom nav
@@ -148,13 +166,14 @@ export default function NuviBottomNav({
     { key: "more", label: L.more, isMore: true },
   ];
 
-  // Items du drawer "Plus"
+  // Items du drawer "Plus" (TOUT est accessible : amelioration 2 "Plus complet")
   const drawerItems = [
     { key: "score", label: L.score },
     { key: "cvs", label: L.cvs },
     { key: "design", label: L.design },
     { key: "tracking", label: L.tracking },
     { key: "settings", label: L.settings, isSettings: true },
+    { key: "reset", label: L.reset, isReset: true, danger: true },
   ];
 
   const handleSelect = (item) => {
@@ -167,7 +186,13 @@ export default function NuviBottomNav({
       return;
     }
     if (item.key === "settings" && onSettingsOpen) {
+      setDrawerOpen(false);
       onSettingsOpen();
+      return;
+    }
+    if (item.key === "reset" && onReset) {
+      setDrawerOpen(false);
+      onReset();
       return;
     }
     setDrawerOpen(false);
@@ -229,7 +254,7 @@ export default function NuviBottomNav({
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
-                  color: Ink,
+                  color: item.danger ? "#c0392b" : Ink,
                   fontFamily: "'Inter', sans-serif",
                   fontSize: 15,
                   fontWeight: 500,
@@ -242,7 +267,7 @@ export default function NuviBottomNav({
                   justifyContent: "center",
                   width: 22,
                   height: 22,
-                  color: InkMuted,
+                  color: item.danger ? "#c0392b" : InkMuted,
                   flexShrink: 0,
                 }}>
                   {Icons[item.key]}
@@ -251,6 +276,63 @@ export default function NuviBottomNav({
               </button>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* [Dock contextuel 2026-05-20] Suggestion Nuvi : 1 action mise en
+          avant selon l'etat du CV. Dismissable (amelioration 1). L'user reste
+          libre : la barre 5-icones en dessous donne acces a tout. */}
+      {suggestedAction && !suggestDismissed && !drawerOpen && (
+        <div style={{
+          position: "fixed",
+          bottom: "calc(70px + env(safe-area-inset-bottom, 0px))",
+          left: 12, right: 12,
+          zIndex: 79,
+          display: "flex", alignItems: "center", gap: 10,
+          background: "var(--nuvi-paper)",
+          border: "0.5px solid " + Hairline,
+          borderRadius: 18,
+          padding: "10px 12px",
+          boxShadow: "0 6px 24px rgba(0,0,0,0.10)",
+          animation: "nuviSuggestIn 320ms cubic-bezier(0.22,1,0.36,1)",
+        }}>
+          {/* Oeil Nuvi (petit) */}
+          <span style={{
+            width: 30, height: 30, borderRadius: "50%",
+            background: "var(--nuvi-purple-soft, #ede9fe)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5b3df5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <circle cx="12" cy="12" r="3" fill="#5b3df5"/>
+            </svg>
+          </span>
+          {/* Bouton action principal (gradient) */}
+          <button
+            onClick={() => { if (suggestedAction.onClick) suggestedAction.onClick(); }}
+            style={{
+              flex: 1,
+              background: "linear-gradient(135deg, #5b3df5, #b91c8c)",
+              color: "#fff", border: "none", borderRadius: 12,
+              padding: "11px 14px", fontSize: 14, fontWeight: 600,
+              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+              textAlign: "center",
+            }}>
+            {suggestedAction.label}
+          </button>
+          {/* Fermer la suggestion (dismissable) */}
+          <button
+            onClick={() => setSuggestDismissed(true)}
+            aria-label={lang === "fr" ? "Masquer la suggestion" : "Dismiss"}
+            style={{
+              width: 28, height: 28, borderRadius: "50%",
+              background: "transparent", border: "none", cursor: "pointer",
+              color: InkMuted, fontSize: 16, flexShrink: 0,
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+            ×
+          </button>
         </div>
       )}
 
@@ -329,6 +411,10 @@ export default function NuviBottomNav({
         @keyframes nuviDrawerSlideUp {
           from { transform: translateY(100%); }
           to { transform: translateY(0); }
+        }
+        @keyframes nuviSuggestIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
     </>
