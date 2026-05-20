@@ -198,15 +198,19 @@ export default function AdjustModal({
         + "\n- If instruction is unclear, return empty actions + ask 1 clarifying question."
         + "\n- " + noDash + " " + langLine
 
-        + "\n\nACTION TYPES YOU CAN RETURN:"
-        + "\n  replace_bullet : {type, exp_idx, bullet_idx, new_text}"
-        + "\n  delete_bullet  : {type, exp_idx, bullet_idx}"
-        + "\n  add_bullet     : {type, exp_idx, text}"
-        + "\n  update_summary : {type, new_text}"
-        + "\n  update_title   : {type, new_text}"
-
-        + "\n\nPrefer replace_bullet to add_bullet when a weak bullet exists."
-        + " Use delete_bullet if a bullet adds nothing."
+        + "\n\nACTION TYPES YOU CAN RETURN (31 types - use the right one):"
+        + "\n## PERSONAL : update_name, update_email, update_phone, update_location, update_linkedin {type, new_text}"
+        + "\n## PROFILE : update_summary {type, new_text}, clear_summary {type}, update_title {type, new_text}, clear_title {type}"
+        + "\n## BULLETS : replace_bullet {type, exp_idx, bullet_idx, new_text}, delete_bullet {type, exp_idx, bullet_idx}, add_bullet {type, exp_idx, text}, reorder_bullets {type, exp_idx, order:[]}"
+        + "\n## EXPERIENCES : update_experience {type, exp_idx, new_title?, new_company?, new_period?, new_location?}, add_experience {type, title, company, period, bullets:[]}, delete_experience {type, exp_idx}, reorder_experiences {type, order:[]}"
+        + "\n## EDUCATION : update_education {type, edu_idx, ...}, add_education {type, degree, school, period}, delete_education {type, edu_idx}, reorder_education {type, order:[]}"
+        + "\n## CERTIFICATIONS : add_certification {type, text}, delete_certification {type, cert_idx}, replace_certification {type, cert_idx, new_text}"
+        + "\n## SKILLS : add_skill {type, text}, delete_skill {type, skill_idx}, replace_skill {type, skill_idx, new_text}, replace_all_skills {type, skills:[]}"
+        + "\n## LANGUAGES : add_language {type, lang, level}, delete_language {type, lang_idx}, update_language {type, lang_idx, new_lang?, new_level?}"
+        + "\n\nGUIDELINES:"
+        + "\n- Prefer replace_bullet to add_bullet (avoid accumulation)."
+        + "\n- Use delete_experience to fully remove a job (not delete each bullet one by one)."
+        + "\n- Use replace_all_skills for full skills reorganization."
 
         + "\n\nOUTPUT FORMAT (JSON ONLY, no markdown, no backticks):"
         + '\n{"reply": "your short reply (1-2 sentences)", "actions": [...]}'
