@@ -194,13 +194,14 @@ export function CVSidebar({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
   // SS (sidebar section header) - retourne null si section vide (UX 2026-05-20)
+  // [Premium A4 fill 2026-05-20] Espacement augmente 14->20, 7->10
   const SS = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
     return (
       <div style={{
         fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
-        color: t.ac, margin:"14px 0 7px",
-        borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
+        color: t.ac, margin:"20px 0 10px",
+        borderBottom:"1px solid "+t.ac+"44", paddingBottom:4,
       }}>
         <EditableTitle cv={cv} set={set} labelKey={labelKey}
           locale={locale} fallback={fallback}/>
@@ -209,13 +210,14 @@ export function CVSidebar({ cv, set, t, T, locale }) {
   };
 
   // MS (main section header) - retourne null si section vide
+  // [Premium A4 fill 2026-05-20] Espacement augmente 16->22, 9->12
   const MS = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
     return (
       <div style={{
         fontSize:9, fontWeight:700, letterSpacing:2.5, textTransform:"uppercase",
-        color: t.ac, margin:"16px 0 9px",
-        borderBottom:"2px solid "+t.ac, paddingBottom:3,
+        color: t.ac, margin:"22px 0 12px",
+        borderBottom:"2px solid "+t.ac, paddingBottom:4,
       }}>
         <EditableTitle cv={cv} set={set} labelKey={labelKey}
           locale={locale} fallback={fallback}/>
@@ -326,62 +328,66 @@ export function CVSidebar({ cv, set, t, T, locale }) {
       </div>
 
       {/* Colonne principale */}
-      <div style={{flex:1, padding:"22px 24px"}}>
+      {/* [Premium A4 fill 2026-05-20] padding 22->32 + 24->32 */}
+      <div style={{flex:1, padding:"32px 32px"}}>
         {/* Nom + titre */}
         <div style={{
-          fontFamily: t.hf, fontSize:21, fontWeight:700,
-          color: t.pr, lineHeight:1.1, marginBottom:2,
+          fontFamily: t.hf, fontSize:24, fontWeight:700,
+          color: t.pr, lineHeight:1.1, marginBottom:4,
         }}>
           <E value={cv.name} onChange={u("name")}
             style={{
-              fontFamily: t.hf, fontSize:21, fontWeight:700, color: t.pr,
+              fontFamily: t.hf, fontSize:24, fontWeight:700, color: t.pr,
             }}/>
         </div>
         <div style={{
-          fontSize:10, color: t.ac, fontWeight:600,
+          fontSize:10.5, color: t.ac, fontWeight:600,
           letterSpacing:1.5, textTransform:"uppercase",
         }}>
           <E value={cv.title} onChange={u("title")}
-            style={{color: t.ac, fontSize:10}}/>
+            style={{color: t.ac, fontSize:10.5}}/>
         </div>
 
         {/* Summary */}
         {MS("profile", T.cv_p)}
         <E value={cv.summary} onChange={u("summary")} multi
-          style={{fontSize:10, color:"#555", lineHeight:1.7}}/>
+          style={{fontSize:10.5, color:"#555", lineHeight:1.75}}/>
 
         {/* Experiences */}
         {MS("experience", T.cv_e)}
         {cv.experience.map(ex => (
-          <div key={ex.id} className="cv-exp-item" style={{marginBottom:12}}>
+          <div key={ex.id} className="cv-exp-item" style={{marginBottom:18}}>
             <div style={{
               display:"flex", justifyContent:"space-between", gap:8,
+              marginBottom:3,
             }}>
               <div>
-                <div style={{fontWeight:700, fontSize:11, color: t.pr}}>
+                <div style={{fontWeight:700, fontSize:11.5, color: t.pr, lineHeight:1.3}}>
                   <E value={ex.title} onChange={v=>ux(ex.id, "title", v)}
-                    style={{fontWeight:700, fontSize:11, color: t.pr}}/>
+                    style={{fontWeight:700, fontSize:11.5, color: t.pr}}/>
                 </div>
-                <div style={{fontSize:9.5, color: t.ac, fontWeight:600}}>
+                <div style={{fontSize:10, color: t.ac, fontWeight:600, marginTop:1}}>
                   <E value={ex.company} onChange={v=>ux(ex.id, "company", v)}
-                    style={{fontSize:9.5, color: t.ac}}/>
-                  {" - "}
-                  <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
-                    style={{fontSize:9.5, color:"#888"}}/>
+                    style={{fontSize:10, color: t.ac}}/>
+                  {ex.location && String(ex.location).trim() ? <>
+                    {" - "}
+                    <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
+                      style={{fontSize:10, color:"#888"}}/>
+                  </> : null}
                 </div>
               </div>
-              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
+              <div style={{fontSize:9, color:"#aaa", flexShrink:0, fontWeight:500}}>
                 <E value={ex.period} onChange={v=>ux(ex.id, "period", v)}
-                  style={{fontSize:8.5, color:"#aaa"}}/>
+                  style={{fontSize:9, color:"#aaa"}}/>
               </div>
             </div>
-            <ul style={{margin:"3px 0 0 12px", padding:0}}>
+            <ul style={{margin:"5px 0 0 14px", padding:0}}>
               {ex.bullets.map((b, i) => (
                 <li key={i} style={{
-                  fontSize:9.5, color:"#444", marginBottom:2, lineHeight:1.5,
+                  fontSize:10, color:"#444", marginBottom:3, lineHeight:1.6,
                 }}>
                   <E value={b} onChange={v=>ub(ex.id, i, v)}
-                    style={{fontSize:9.5}}/>
+                    style={{fontSize:10}}/>
                 </li>
               ))}
             </ul>
@@ -392,26 +398,26 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         {MS("education", T.cv_ed)}
         {cv.education.map(ed => (
           <div key={ed.id} className="cv-edu-item" style={{
-            marginBottom:7, display:"flex",
+            marginBottom:10, display:"flex",
             justifyContent:"space-between", gap:8,
           }}>
             <div>
-              <div style={{fontWeight:700, fontSize:10, color: t.pr}}>
+              <div style={{fontWeight:700, fontSize:10.5, color: t.pr, lineHeight:1.3}}>
                 <E value={ed.degree} onChange={v=>ue(ed.id, "degree", v)}
-                  style={{fontWeight:700, fontSize:10}}/>
+                  style={{fontWeight:700, fontSize:10.5}}/>
               </div>
               {/* [FIX placeholder ... 2026-05-20] Render school seulement si non-vide */}
               {ed.school && String(ed.school).trim() && (
-                <div style={{fontSize:9, color:"#777"}}>
+                <div style={{fontSize:9.5, color:"#777", marginTop:1}}>
                   <E value={ed.school} onChange={v=>ue(ed.id, "school", v)}
-                    style={{fontSize:9}}/>
+                    style={{fontSize:9.5}}/>
                 </div>
               )}
             </div>
             {ed.period && String(ed.period).trim() && (
-              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
+              <div style={{fontSize:9, color:"#aaa", flexShrink:0, fontWeight:500}}>
                 <E value={ed.period} onChange={v=>ue(ed.id, "period", v)}
-                  style={{fontSize:8.5}}/>
+                  style={{fontSize:9}}/>
               </div>
             )}
           </div>
