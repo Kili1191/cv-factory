@@ -5984,12 +5984,22 @@ export default function App() {
   const loadTpl = useCallback(tpl => {
     try {
       pushH();
-      setCVFn(() => normCV(tpl.cv));
+      // [FIX 2026-05-20] Un "template" change la MISE EN PAGE (layout + theme),
+      // pas les DONNEES. On preserve le CV de l'user. On ne charge le cv du
+      // template QUE si le CV actuel est vide (sinon l'user perd ses donnees
+      // en changeant de format).
+      const currentEmpty = !cv.name && !cv.title && !cv.summary
+        && (cv.experience || []).every(e => !e.title && !e.company);
+      if (currentEmpty && tpl.cv) {
+        setCVFn(() => normCV(tpl.cv));
+      }
       setTh(tpl.theme || "executive");
       setLy(tpl.layout || "sidebar");
-      notify("Template charge!");
+      notify(currentEmpty ? "Template charge!" : (locale === "en"
+        ? "Layout applied (your data is kept)"
+        : "Mise en page appliquee (tes donnees sont conservees)"));
     } catch(e) { notify("Erreur: "+e.message); }
-  }, [pushH, setCVFn, setTh, setLy, notify]);
+  }, [cv, pushH, setCVFn, setTh, setLy, notify, locale]);
 
   const quick = [
     [T.q_ex, () => {
