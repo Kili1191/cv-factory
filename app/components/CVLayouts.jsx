@@ -400,15 +400,20 @@ export function CVSidebar({ cv, set, t, T, locale }) {
                 <E value={ed.degree} onChange={v=>ue(ed.id, "degree", v)}
                   style={{fontWeight:700, fontSize:10}}/>
               </div>
-              <div style={{fontSize:9, color:"#777"}}>
-                <E value={ed.school} onChange={v=>ue(ed.id, "school", v)}
-                  style={{fontSize:9}}/>
+              {/* [FIX placeholder ... 2026-05-20] Render school seulement si non-vide */}
+              {ed.school && String(ed.school).trim() && (
+                <div style={{fontSize:9, color:"#777"}}>
+                  <E value={ed.school} onChange={v=>ue(ed.id, "school", v)}
+                    style={{fontSize:9}}/>
+                </div>
+              )}
+            </div>
+            {ed.period && String(ed.period).trim() && (
+              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
+                <E value={ed.period} onChange={v=>ue(ed.id, "period", v)}
+                  style={{fontSize:8.5}}/>
               </div>
-            </div>
-            <div style={{fontSize:8.5, color:"#aaa", flexShrink:0}}>
-              <E value={ed.period} onChange={v=>ue(ed.id, "period", v)}
-                style={{fontSize:8.5}}/>
-            </div>
+            )}
           </div>
         ))}
       </div>
