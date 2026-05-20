@@ -3570,51 +3570,33 @@ export default function App() {
       document.head.appendChild(styleEl);
 
       try {
-        // === Strategie 1 : jsPDF.html() natif (texte SELECTIONNABLE) ===
-        // C'est la methode preferee : le texte reste vectoriel dans le PDF,
-        // donc selectionnable et indexable par les ATS.
-        if (window.jspdf && window.jspdf.jsPDF) {
-          try {
-            const pdf = new window.jspdf.jsPDF({
-              unit: "mm",
-              format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
-              orientation: "portrait",
-            });
-            await pdf.html(el, {
-              callback: (doc) => doc.save(fname),
-              margin: [0, 0, 0, 0],
-              autoPaging: "text",     // <- preserve text flow across pages
-              html2canvas: {
-                scale: 0.265,         // mm conversion : 1px = 0.265mm at 96dpi
-                useCORS: true,
-                logging: false,
-              },
-              width: dims.width,      // Format width in mm
-              windowWidth: el.offsetWidth || 794,
-            });
-            notify(T.okp + ": " + fname);
-            if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
-            return;
-          } catch (e) {
-            console.warn("[exportPDF] jsPDF.html failed, fallback to html2canvas:", e);
-          }
-        }
-
-        // === Strategie 2 : html2pdf avec pagebreak CSS (fallback) ===
-        // Si jsPDF.html() echoue, on tombe sur html2canvas mais avec
-        // pagebreak.mode 'css' qui respecte nos page-break-inside: avoid.
+        // === STRATEGIE 1 (PRINCIPALE 2026-05-20) : html2pdf avec image-PDF ===
+        // jsPDF.html() etait notre 1ere methode mais MANGE LES ACCENTS
+        // car ses polices integrees ne supportent pas l'unicode latin etendu.
+        // Sur un CV francais (ou allemand, espagnol, etc.) c'est inadmissible.
+        // html2pdf utilise html2canvas qui photographie le DOM rendu, donc
+        // preserve PARFAITEMENT accents/polices/couleurs/layout.
+        // Inconvenient : texte non selectionnable. Mais ATS scan aussi l'image.
         await window.html2pdf().set({
-          margin: 0, filename: fname,
+          margin: 0,
+          filename: fname,
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: {
-            scale: 2, useCORS: true, logging: false,
-            // foreignObjectRendering garde le texte vectoriel quand supporte
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            // foreignObjectRendering: true preserverait le texte vectoriel
+            // mais buggue sur Safari, donc false (image rasterisee, OK pour CV)
             foreignObjectRendering: false,
+            // Letter spacing fix pour Chrome
+            letterRendering: true,
           },
           jsPDF: {
             unit: "mm",
             format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
             orientation: "portrait",
+            // Compression pour reduire la taille
+            compress: true,
           },
           pagebreak: {
             mode: ["css", "legacy"],
@@ -3624,6 +3606,10 @@ export default function App() {
 
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+        return;
+      } catch (e) {
+        console.error("[exportPDF] FAILED:", e);
+        notify("Erreur export PDF : " + e.message);
       } finally {
         // Cleanup : retire le CSS temporaire
         const tempStyle = document.getElementById("cvf-pdf-pagebreaks");
@@ -3631,14 +3617,6 @@ export default function App() {
       }
     };
     document.head.appendChild(s);
-
-    // Charge jsPDF separement pour la strategie 1 (texte selectionnable)
-    if (!window.jspdf) {
-      const sjp = document.createElement("script");
-      sjp.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
-      sjp.onerror = () => {}; // silent, fallback prendra le relais
-      document.head.appendChild(sjp);
-    }
   }, [cv.name, T, notify]);
 
   // ============================================================
@@ -5815,20 +5793,19 @@ export default function App() {
   const CVEl = (
     <div id="cv-print" style={{
       position:"relative",
-      // [FIX A4 strict 2026-05-20] Le CV est TOUJOURS rendu en A4
-      // 210mm x 297mm avec multi-pages support si le contenu deborde.
-      // Plus de bandes blanches : la sidebar va jusqu'en bas grace au
-      // gradient parent dans CVLayouts, et le conteneur a une taille fixe.
+      // [FIX A4 strict 2026-05-20] Le CV est rendu en A4 (210mm de large)
+      // mais on laisse la hauteur s'adapter au contenu (pas de min-height
+      // qui creerait une 2eme page vide si le contenu fait 230mm seulement).
+      // Le CSS injecte pendant l'export PDF se charge de gerer la hauteur fixe.
       width: "210mm",
-      minHeight: "297mm",
       // Box-sizing pour que les paddings restent dans le 210mm
       boxSizing: "border-box",
       // Background neutre pour eviter tout flash blanc
       background: "var(--nuvi-cream, #faf8f3)",
       // Centrage si le viewport est plus large
       margin: "0 auto",
-      // Garantit qu'aucun contenu enfant ne deborde
-      overflow: "hidden",
+      // Garantit qu'aucun contenu enfant ne deborde lateralement
+      overflowX: "hidden",
       // Shadow pour effet papier (preview only, retire au PDF)
       boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)",
     }}>
