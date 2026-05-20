@@ -61,7 +61,7 @@ import {
 import { serializeCvForContext } from "../lib/cvSerializer";
 import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
-import { applyJsonPatch } from "../lib/applyJsonPatch";
+import { applyJsonPatch, cleanupCv } from "../lib/applyJsonPatch";
 import { buildScopeGuard } from "../lib/coachScope";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
@@ -119,6 +119,7 @@ const KEYFRAMES_V17 = `
 @keyframes cvfSpin{to{transform:rotate(360deg)}}
 @keyframes cvfFadeIn{from{opacity:0}to{opacity:1}}
 @keyframes cvfSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes cvfSlideLeft{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
 @keyframes pasteFlashFade{0%{opacity:0}10%{opacity:0.85}100%{opacity:0}}
 
 /* Dark mode : surface app */
@@ -826,37 +827,115 @@ function Shimmer() {
 // pour que tous les Sheet*/Modals existants l'heritent automatiquement.
 // Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
 function Sheet({ title, eyebrow, onClose, children }) {
+  // [Liquid Glass refonte 2026-05-20]
+  // Side panel droit 480px (desktop) / fullscreen (mobile)
+  // Fond CV scrollable derriere (pas de overflow:hidden sur body)
+  // Backdrop subtil + frosted glass
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
     <div data-cvf="app" style={{
-      position:"fixed", inset:0, zIndex:2000,
-      display:"flex", flexDirection:"column", justifyContent:"flex-end",
+      position:"fixed",
+      // Desktop : side panel droit avec CV visible a gauche
+      // Mobile : bottom sheet plein ecran
+      top:0, right:0,
+      bottom: isMobile ? 0 : 0,
+      width: isMobile ? "100%" : 480,
+      maxWidth: isMobile ? "100%" : "92vw",
+      zIndex:2000,
+      display:"flex", flexDirection:"column",
       fontFamily:Sans,
+      pointerEvents:"none", // permet de scroller le CV en arriere-plan
     }}>
+      {/* Frosted glass card - principal */}
       <div style={{
-        position:"absolute", inset:0,
-        background:"rgba(10,10,10,.55)",
-        backdropFilter:"blur(8px)",
-        WebkitBackdropFilter:"blur(8px)",
-        animation:"cvfFadeIn 200ms ease-out",
-      }} onClick={onClose}/>
-      <div style={{
-        position:"relative", background:"var(--nuvi-cream-soft)",
-        borderRadius:"32px 32px 0 0",
-        maxHeight:"92vh", display:"flex", flexDirection:"column",
-        boxShadow:"0 -20px 60px rgba(0,0,0,.2)",
-        animation:"cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
+        position:"relative",
+        flex:1,
+        margin: isMobile ? 0 : "12px",
+        marginLeft: isMobile ? 0 : 0,
+        borderRadius: isMobile ? "0" : 28,
+        background: "rgba(250, 248, 243, 0.65)",
+        backdropFilter: "blur(40px) saturate(180%)",
+        WebkitBackdropFilter: "blur(40px) saturate(180%)",
+        border: "0.5px solid rgba(232, 227, 214, 0.7)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 1.5px 4px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.6)",
+        display:"flex", flexDirection:"column",
+        overflow:"hidden",
+        animation: isMobile
+          ? "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)"
+          : "cvfSlideLeft 320ms cubic-bezier(.32,.72,0,1)",
+        pointerEvents:"auto",
       }}>
-        {/* Handle iOS */}
+        {/* Aurora blobs subtils */}
         <div style={{
-          width:40, height:4, background:Gray200,
-          borderRadius:RadiusPill,
-          margin:"10px auto 6px",
-          flexShrink:0,
+          position:"absolute", inset:0, overflow:"hidden",
+          pointerEvents:"none", opacity:0.18,
+        }}>
+          <div style={{
+            position:"absolute", top:"-20%", right:"-15%",
+            width:340, height:340, borderRadius:"50%",
+            background:"radial-gradient(circle, #5b3df5 0%, transparent 70%)",
+            filter:"blur(60px)",
+          }}/>
+          <div style={{
+            position:"absolute", bottom:"-15%", left:"-10%",
+            width:280, height:280, borderRadius:"50%",
+            background:"radial-gradient(circle, #d97757 0%, transparent 70%)",
+            filter:"blur(60px)",
+          }}/>
+          <div style={{
+            position:"absolute", top:"40%", left:"30%",
+            width:200, height:200, borderRadius:"50%",
+            background:"radial-gradient(circle, #b91c8c 0%, transparent 70%)",
+            filter:"blur(50px)",
+          }}/>
+        </div>
+
+        {/* Specular highlight Apple iOS 26 */}
+        <div style={{
+          position:"absolute", top:0, left:"15%", right:"15%", height:1.5,
+          background:"linear-gradient(90deg, transparent, rgba(255,255,255,0.85), transparent)",
+          pointerEvents:"none",
         }}/>
+
+        {/* Handle iOS / Close button row */}
+        <div style={{
+          position:"relative",
+          padding:"14px 24px 6px",
+          flexShrink:0,
+          display:"flex",
+          alignItems:"flex-start",
+          justifyContent: isMobile ? "center" : "flex-end",
+        }}>
+          {isMobile && (
+            <div style={{
+              width:40, height:4, background:"rgba(10,10,10,0.15)",
+              borderRadius:RadiusPill,
+            }}/>
+          )}
+          {!isMobile && (
+            <button onClick={onClose} aria-label="close" style={{
+              ...B({
+                background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
+                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                border:"0.5px solid rgba(232,227,214,0.6)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                flexShrink:0, backdropFilter:"blur(10px)",
+              })
+            }}>x</button>
+          )}
+        </div>
+
         {/* Header editorial */}
         <div style={{
-          padding:"6px 24px 14px",
-          borderBottom:"0.5px solid "+Gray200,
+          position:"relative",
+          padding:"4px 24px 14px",
           flexShrink:0,
           display:"flex", alignItems:"flex-start",
           justifyContent:"space-between", gap:12,
@@ -874,23 +953,45 @@ function Sheet({ title, eyebrow, onClose, children }) {
               letterSpacing:"-0.02em", color:"var(--nuvi-ink)", lineHeight:1.15,
             }}>{title}</div>
           </div>
-          <button onClick={onClose} aria-label="close" style={{
-            ...B({
-              background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:Gray600,
-              border:"0.5px solid "+Gray200,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              flexShrink:0,
-            })
-          }}>x</button>
+          {isMobile && (
+            <button onClick={onClose} aria-label="close" style={{
+              ...B({
+                background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
+                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                border:"0.5px solid rgba(232,227,214,0.6)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                flexShrink:0, backdropFilter:"blur(10px)",
+              })
+            }}>x</button>
+          )}
         </div>
+
+        {/* Fade gradient top */}
         <div style={{
+          position:"relative",
+          height:24, marginTop:-6,
+          background:"linear-gradient(to bottom, rgba(250,248,243,0.7), transparent)",
+          pointerEvents:"none", zIndex:1, flexShrink:0,
+        }}/>
+
+        {/* Contenu scrollable */}
+        <div style={{
+          position:"relative",
           overflowY:"auto",
-          padding:"18px 24px 48px",
+          padding:"6px 24px 48px",
           flex:1,
+          zIndex:0,
         }}>
           {children}
         </div>
+
+        {/* Fade gradient bottom */}
+        <div style={{
+          position:"absolute", bottom:0, left:0, right:0,
+          height:32,
+          background:"linear-gradient(to top, rgba(250,248,243,0.85), transparent)",
+          pointerEvents:"none", zIndex:1,
+        }}/>
       </div>
     </div>
   );
@@ -3175,6 +3276,26 @@ export default function App() {
     }
     setHydrated(true);
   }, []);
+
+  // [FIX dedup 2026-05-20] Nettoie le CV au load initial : supprime les
+  // doublons education/certifications hérités d'imports anciens.
+  // Tourne UNE FOIS au montage, apres hydration.
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!cv || typeof cv !== "object") return;
+    try {
+      const result = cleanupCv(cv, { lang: locale });
+      if (result.changed && result.dedupRemoved > 0) {
+        console.log("[cleanupCv] Removed", result.dedupRemoved, "duplicate(s) on load");
+        setCV_(result.newCv);
+        lsS(SK.CV, result.newCv);
+        // Pas de notification : nettoyage silencieux
+      }
+    } catch (e) {
+      console.warn("[cleanupCv] failed:", e);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hydrated]);
 
   // Setter persiste pour le custom global.
   const setCvCustom = useCallback(fn => setCvCustom_(p => {
