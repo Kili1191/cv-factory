@@ -3558,13 +3558,26 @@ export default function App() {
         const A4_HEIGHT_MM = 297;
         const A4_WIDTH_MM = 210;
 
-        const realHeightPx = el.scrollHeight;
-        const realHeightMm = realHeightPx / MM_TO_PX;
+        // [HIDE EDIT UI 2026-05-20] Cache TOUJOURS les elements d'edition
+        // (boutons "+", croix de suppression, etc.) marques .cvf-no-print.
+        // Injecte AVANT la mesure de hauteur pour que le calcul soit correct.
+        const hideEditStyle = document.createElement("style");
+        hideEditStyle.id = "cvf-pdf-hide-edit";
+        hideEditStyle.textContent = `.cvf-no-print { display: none !important; }`;
+        document.head.appendChild(hideEditStyle);
 
-        console.log("[exportPDF] Hauteur reelle:", realHeightMm.toFixed(1) + "mm");
+        // Force reflow pour que le masquage prenne effet avant la mesure
+        void el.offsetHeight;
+        await new Promise(r => requestAnimationFrame(r));
+
+        // Mesure la hauteur reelle APRES masquage des boutons d'edition
+        const realHeightPxClean = el.scrollHeight;
+        const realHeightMmClean = realHeightPxClean / MM_TO_PX;
+        console.log("[exportPDF] Hauteur reelle (sans UI edit):",
+                    realHeightMmClean.toFixed(1) + "mm");
 
         // Si le contenu tient (ou presque) : force le design a remplir 297mm
-        const shouldFillPage = realHeightMm <= A4_HEIGHT_MM;
+        const shouldFillPage = realHeightMmClean <= A4_HEIGHT_MM;
 
         let styleEl = null;
         if (shouldFillPage) {
@@ -3665,9 +3678,11 @@ export default function App() {
 
         pdf.save(fname);
 
-        // Restore : retire le CSS temporaire
+        // Restore : retire les CSS temporaires
         const tempStyle = document.getElementById("cvf-pdf-design-fills");
         if (tempStyle) tempStyle.remove();
+        const tempHide = document.getElementById("cvf-pdf-hide-edit");
+        if (tempHide) tempHide.remove();
 
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
@@ -3677,6 +3692,8 @@ export default function App() {
         // Cleanup en cas d'erreur aussi
         const tempStyle = document.getElementById("cvf-pdf-design-fills");
         if (tempStyle) tempStyle.remove();
+        const tempHide = document.getElementById("cvf-pdf-hide-edit");
+        if (tempHide) tempHide.remove();
       }
     })();
   }, [cv.name, T, notify]);
