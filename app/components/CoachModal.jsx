@@ -403,19 +403,21 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
         ...B({
           display: "inline-flex", alignItems: "center", gap: 6,
           padding: "7px 12px", borderRadius: 999,
+          // [Fix 2026-05-20] Boutons frosted glass coherents avec les bulles
+          // Background transparent (0.55) + backdrop blur fort pour lisibilite.
           background: hovered
-            ? "rgba(250, 248, 243, 0.95)"
-            : "rgba(250, 248, 243, 0.85)",
+            ? "rgba(255, 255, 255, 0.7)"
+            : "rgba(255, 255, 255, 0.5)",
           color: Ink,
-          border: "0.5px solid " + (hovered ? accent : "rgba(217, 119, 87, 0.35)"),
+          border: "0.5px solid " + (hovered ? accent : "rgba(255, 255, 255, 0.6)"),
           fontSize: 12, fontWeight: 500,
           fontFamily: Sans,
           letterSpacing: "0.01em",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          backdropFilter: "blur(18px) saturate(170%)",
+          WebkitBackdropFilter: "blur(18px) saturate(170%)",
           boxShadow: hovered
             ? "0 4px 14px rgba(217, 119, 87, 0.18)"
-            : "0 2px 8px rgba(0, 0, 0, 0.08)",
+            : "0 2px 8px rgba(0, 0, 0, 0.06)",
           transition: "all 150ms ease",
         })
       }}>
@@ -534,11 +536,17 @@ function Bubble({ T, msg, onAdopt, onAction }) {
       <div style={{ maxWidth: "85%" }}>
         <div style={{
           padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
-          // [Fix 2026-05-20] Bulle opaque garantie (cream pur) + ombre marquee
-          // pour decoller du fond glass et rester lisible meme avec aurora.
-          background: "#ffffff", color: Ink,
-          border: "0.5px solid rgba(0,0,0,0.08)",
-          boxShadow: "0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04)",
+          // [Fix 2026-05-20] BULLE = FROSTED GLASS individuel.
+          // Background a peine teinte (alpha 0.55 sur cream) + backdrop-filter
+          // blur fort PROPRE A LA BULLE. Le CV reste visible "a travers" comme
+          // verre depoli, mais le texte de la bulle est tres lisible.
+          // Pas de bordure nette, juste une ombre douce pour decoller.
+          background: "rgba(255, 255, 255, 0.55)",
+          backdropFilter: "blur(20px) saturate(180%)",
+          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          color: Ink,
+          border: "0.5px solid rgba(255, 255, 255, 0.6)",
+          boxShadow: "0 4px 16px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
           fontSize: 13, lineHeight: 1.55, fontFamily: Sans,
           whiteSpace: "pre-wrap",
         }}>{msg.content}</div>
@@ -699,7 +707,7 @@ export default function CoachModal({
         borderRadius="32px 32px 0 0"
         borderColor={Coral}
         distortion={30}
-        tintColor="rgba(250, 248, 243, 0.05)"
+        tintColor="rgba(250, 248, 243, 0.04)"
         animate={true}
       >
         <div style={{
@@ -713,10 +721,11 @@ export default function CoachModal({
           padding: "8px 24px 0",
           display: "flex", alignItems: "center",
           flexShrink: 0,
-          // Coherent avec le header titre (meme fond cream blur)
-          background: "rgba(250, 248, 243, 0.78)",
-          backdropFilter: "blur(12px) saturate(150%)",
-          WebkitBackdropFilter: "blur(12px) saturate(150%)",
+          // Meme fond cream que le header (pas de fade car le fade est en bas
+          // du header). Backdrop blur pour cohesion visuelle.
+          background: "rgba(250, 248, 243, 0.82)",
+          backdropFilter: "blur(16px) saturate(160%)",
+          WebkitBackdropFilter: "blur(16px) saturate(160%)",
         }}>
           {/* Logo Nuvi hyper cool : gradient flow + shimmer + glow pulse */}
           <NuviLogoAnimated size={26} />
@@ -724,15 +733,18 @@ export default function CoachModal({
 
         <div style={{
           padding: "10px 24px 14px",
-          borderBottom: "0.5px solid rgba(217, 119, 87, 0.25)", flexShrink: 0,
+          // [Fix 2026-05-20] PAS de bordure nette en bas, juste un fade
+          // gradient (cream opaque en haut, transparent en bas) pour un
+          // raccord doux avec la zone chat.
+          flexShrink: 0,
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between", gap: 12,
-          // [Fix 2026-05-20] Header avec fond cream semi-opaque + blur
-          // pour que le titre soit TOUJOURS lisible (pas mange par le CV
-          // qui defile derriere).
-          background: "rgba(250, 248, 243, 0.78)",
-          backdropFilter: "blur(12px) saturate(150%)",
-          WebkitBackdropFilter: "blur(12px) saturate(150%)",
+          background: "linear-gradient(180deg, rgba(250, 248, 243, 0.82) 0%, rgba(250, 248, 243, 0.65) 60%, rgba(250, 248, 243, 0.0) 100%)",
+          // Padding bottom plus important pour que le fade ait de la place
+          paddingBottom: 28,
+          // BackdropFilter sur le header uniquement
+          backdropFilter: "blur(16px) saturate(160%)",
+          WebkitBackdropFilter: "blur(16px) saturate(160%)",
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             {/* Eyebrow COACH NUVI : gradient Purple->Magenta avec fallback solide */}
@@ -782,14 +794,14 @@ export default function CoachModal({
               title={T.co_clear}
               style={{
                 ...B({
-                  background: "rgba(250, 248, 243, 0.85)", borderRadius: "50%",
+                  background: "rgba(255, 255, 255, 0.55)", borderRadius: "50%",
                   width: 32, height: 32, color: Ink,
                   border: "0.5px solid rgba(217, 119, 87, 0.4)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   opacity: loading ? 0.4 : 1,
-                  backdropFilter: "blur(6px)",
-                  WebkitBackdropFilter: "blur(6px)",
+                  backdropFilter: "blur(18px) saturate(170%)",
+                  WebkitBackdropFilter: "blur(18px) saturate(170%)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
                   transition: "all 150ms ease",
                 })
@@ -806,14 +818,14 @@ export default function CoachModal({
 
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
-              background: "rgba(250, 248, 243, 0.85)", borderRadius: "50%",
+              background: "rgba(255, 255, 255, 0.55)", borderRadius: "50%",
               width: 32, height: 32, color: Ink,
               border: "0.5px solid rgba(217, 119, 87, 0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
               opacity: loading ? 0.4 : 1,
-              backdropFilter: "blur(6px)",
-              WebkitBackdropFilter: "blur(6px)",
+              backdropFilter: "blur(18px) saturate(170%)",
+              WebkitBackdropFilter: "blur(18px) saturate(170%)",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
               transition: "all 150ms ease",
             })
@@ -924,14 +936,13 @@ export default function CoachModal({
         </div>
 
         <div style={{
-          padding: "12px 24px 18px",
-          borderTop: "0.5px solid rgba(217, 119, 87, 0.25)",
+          padding: "28px 24px 18px",
+          // [Fix 2026-05-20] PAS de bordure nette en haut, juste un fade
+          // gradient inverse (transparent en haut, cream opaque en bas).
           flexShrink: 0,
-          // [Fix 2026-05-20] Footer input avec fond cream blur pour que
-          // l'input et le bouton send restent lisibles meme avec CV derriere.
-          background: "rgba(250, 248, 243, 0.78)",
-          backdropFilter: "blur(12px) saturate(150%)",
-          WebkitBackdropFilter: "blur(12px) saturate(150%)",
+          background: "linear-gradient(180deg, rgba(250, 248, 243, 0.0) 0%, rgba(250, 248, 243, 0.65) 40%, rgba(250, 248, 243, 0.82) 100%)",
+          backdropFilter: "blur(16px) saturate(160%)",
+          WebkitBackdropFilter: "blur(16px) saturate(160%)",
         }}>
           <div style={{
             display: "flex", gap: 8, alignItems: "flex-end",
@@ -953,8 +964,11 @@ export default function CoachModal({
                 flex: 1,
                 padding: "11px 16px",
                 borderRadius: RadiusPill,
-                border: "0.5px solid " + Hairline,
-                background: Paper,
+                // [Fix 2026-05-20] Input frosted glass coherent
+                border: "0.5px solid rgba(255, 255, 255, 0.7)",
+                background: "rgba(255, 255, 255, 0.55)",
+                backdropFilter: "blur(20px) saturate(180%)",
+                WebkitBackdropFilter: "blur(20px) saturate(180%)",
                 color: Ink, fontSize: 13,
                 fontFamily: Sans,
                 outline: "none",
@@ -963,6 +977,7 @@ export default function CoachModal({
                 boxSizing: "border-box",
                 opacity: loading ? 0.5 : 1,
                 transition: "border-color 150ms ease",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
               }}
               onFocus={(e) => { e.currentTarget.style.borderColor = Purple; }}
               onBlur={(e) => { e.currentTarget.style.borderColor = Hairline; }}
