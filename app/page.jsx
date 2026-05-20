@@ -3531,6 +3531,33 @@ export default function App() {
           }
         } catch {}
 
+        // [SCALE-TO-FIT 2026-05-20]
+        // Si le CV deborde de moins de 30mm (ex: 305mm pour A4 297mm),
+        // on applique un scale CSS pour faire rentrer exactement dans 297mm.
+        // Garde 1 page A4 propre sans page 2 quasi-vide.
+        const MM_TO_PX = 3.7795275591;
+        const A4_HEIGHT_MM = 297;
+        const A4_HEIGHT_PX = A4_HEIGHT_MM * MM_TO_PX;
+        const cvHeightPx = el.scrollHeight;
+        const cvHeightMm = cvHeightPx / MM_TO_PX;
+
+        let scaleApplied = null;
+        if (cvHeightMm > A4_HEIGHT_MM && cvHeightMm <= A4_HEIGHT_MM + 30) {
+          // Debordement minime : on scale legerement pour rentrer dans 297mm
+          const scale = A4_HEIGHT_MM / cvHeightMm;
+          el.style.transformOrigin = "top left";
+          el.style.transform = `scale(${scale})`;
+          // Compensation de la largeur (scale verticale = scale horizontale)
+          el.style.width = `${794 / scale}px`;
+          scaleApplied = { scale, originalWidth: el.style.width };
+          console.log("[exportPDF] Scale-to-fit applique:", scale.toFixed(3),
+                      "(CV", cvHeightMm.toFixed(1) + "mm -> 297mm)");
+
+          // Force reflow + attend 2 frames
+          void el.offsetHeight;
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        }
+
         const opt = {
           margin: 0,
           filename: fname,
@@ -3553,6 +3580,13 @@ export default function App() {
         };
 
         await window.html2pdf().set(opt).from(el).save();
+
+        // Restore le style original si scale applique
+        if (scaleApplied) {
+          el.style.transform = "";
+          el.style.transformOrigin = "";
+          el.style.width = "210mm";
+        }
 
         notify(T.okp + ": " + fname);
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
