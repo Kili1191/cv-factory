@@ -3536,6 +3536,20 @@ export default function App() {
       const styleEl = document.createElement("style");
       styleEl.id = "cvf-pdf-pagebreaks";
       styleEl.textContent = `
+        /* [PDF export 2026-05-20] Adapte cv-print au format choisi */
+        /* Et retire les effets visuels propres a la preview (shadow, etc.) */
+        #cv-print {
+          width: ${dims.width}mm !important;
+          min-height: ${dims.height}mm !important;
+          box-shadow: none !important;
+          margin: 0 !important;
+          border-radius: 0 !important;
+        }
+        /* Override CVLayouts inner containers pour matcher le format */
+        #cv-print > div {
+          min-height: ${dims.height}mm !important;
+        }
+        /* Page break rules */
         #cv-print .cv-exp-item,
         #cv-print .cv-edu-item,
         #cv-print .cv-cert-item,
@@ -5799,7 +5813,25 @@ export default function App() {
   ];
 
   const CVEl = (
-    <div id="cv-print" style={{position:"relative"}}>
+    <div id="cv-print" style={{
+      position:"relative",
+      // [FIX A4 strict 2026-05-20] Le CV est TOUJOURS rendu en A4
+      // 210mm x 297mm avec multi-pages support si le contenu deborde.
+      // Plus de bandes blanches : la sidebar va jusqu'en bas grace au
+      // gradient parent dans CVLayouts, et le conteneur a une taille fixe.
+      width: "210mm",
+      minHeight: "297mm",
+      // Box-sizing pour que les paddings restent dans le 210mm
+      boxSizing: "border-box",
+      // Background neutre pour eviter tout flash blanc
+      background: "var(--nuvi-cream, #faf8f3)",
+      // Centrage si le viewport est plus large
+      margin: "0 auto",
+      // Garantit qu'aucun contenu enfant ne deborde
+      overflow: "hidden",
+      // Shadow pour effet papier (preview only, retire au PDF)
+      boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.04)",
+    }}>
       {load && <Shimmer/>}
       {layout==="sidebar"  && <CVSidebar  cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
       {layout==="classic"  && <CVClassic  cv={cv} set={setCVFn} t={effTheme} T={T} locale={locale}/>}
