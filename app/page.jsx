@@ -3568,33 +3568,40 @@ export default function App() {
           return;
         }
 
-        // 1) Mesure la hauteur reelle du CV en px
+        // 1) Mesure CV : on force la largeur a 210mm en px (794px @ 96dpi)
+        // pour que la capture soit calibree exactement pour A4
+        const TARGET_WIDTH_PX = Math.round(dims.width * 3.7795275591); // 210mm en px
         const cvWidthPx = el.offsetWidth;
         const cvHeightPx = el.scrollHeight;
 
-        console.log("[exportPDF] CV dimensions:", cvWidthPx + "x" + cvHeightPx + "px");
+        // Calcule la hauteur cible si on force la largeur a 794px
+        // (aspect ratio preserve)
+        const scaleRatio = TARGET_WIDTH_PX / cvWidthPx;
+        const targetHeightPx = Math.round(cvHeightPx * scaleRatio);
+
+        console.log("[exportPDF] CV actuel:", cvWidthPx + "x" + cvHeightPx + "px");
+        console.log("[exportPDF] CV cible (forced 210mm):", TARGET_WIDTH_PX + "x" + targetHeightPx + "px (ratio " + scaleRatio.toFixed(3) + ")");
 
         // 2) Capture le CV avec html2canvas
-        // Options minimales et standard
+        // [FIX 2026-05-20] On force width + windowWidth = TARGET_WIDTH_PX
+        // pour que la capture soit calibree pixel-perfect pour A4
         const canvas = await html2canvas(el, {
           scale: 2,
           useCORS: true,
           logging: false,
-          backgroundColor: "#faf8f3",  // cream Nuvi (au lieu de transparent)
+          backgroundColor: "#faf8f3",
+          // Force la largeur de capture a 794px (210mm en px @96dpi)
           width: cvWidthPx,
           height: cvHeightPx,
-          windowWidth: cvWidthPx,
+          windowWidth: TARGET_WIDTH_PX,
           windowHeight: cvHeightPx,
         });
 
         console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
 
         // 3) Construit le PDF avec jsPDF
-        // [FIX bande blanche + coupure 2026-05-20]
-        // Regle simple et sans bricolage :
-        // - Si le CV fait <= A4 (297mm) : PDF format custom = taille EXACTE du CV
-        //   (210mm large x hauteur reelle mm). Pas de blanc, pas de coupure.
-        // - Si le CV deborde > 297mm : multi-pages A4 standard. Pas de coupure.
+        // [APPROCHE DEFINITIVE 2026-05-20]
+        // Calcul direct de la hauteur image en mm via le canvas (largeur fixee 210mm)
         const STD_DIMS = {
           a4:     { width: 210,   height: 297 },
           letter: { width: 215.9, height: 279.4 },
@@ -3602,18 +3609,18 @@ export default function App() {
         };
         const std = STD_DIMS[format] || STD_DIMS.a4;
 
-        // Hauteur de l'image en mm (a la largeur standard du format choisi)
+        // Hauteur de l'image en mm a la largeur standard
         const canvasAspect = canvas.height / canvas.width;
         const imgHeightMm = std.width * canvasAspect;
 
-        // Le CV tient sur 1 page SI ET SEULEMENT SI son image est <= hauteur format
-        // (pas de tolerance ici - sinon on coupe le contenu)
+        console.log("[exportPDF] Image en mm:", std.width + "x" + imgHeightMm.toFixed(1) + "mm");
+        console.log("[exportPDF] A4 max:", std.width + "x" + std.height + "mm");
+
+        // Decision : single page custom ou multi-pages standard ?
         const fitsOnePage = imgHeightMm <= std.height;
 
         const pdf = new jsPDFLib({
           unit: "mm",
-          // Single page : format custom = taille EXACTE de l'image (pas de blanc, pas de coupure)
-          // Multi-pages : format standard
           format: fitsOnePage
             ? [std.width, imgHeightMm]
             : (format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal")),
@@ -3621,37 +3628,33 @@ export default function App() {
           compress: true,
         });
 
-        // Dimensions PDF reelles en mm
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        console.log("[exportPDF] Image:", std.width + "x" + imgHeightMm.toFixed(1) + "mm",
-                    "/ PDF:", pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm",
-                    "/ Mode:", fitsOnePage ? "single page custom" : "multi-page");
+        console.log("[exportPDF] PDF format:", pdfWidth.toFixed(1) + "x" + pdfHeight.toFixed(1) + "mm",
+                    "| Mode:", fitsOnePage ? "1 page custom" : "multi-page A4");
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
         if (fitsOnePage) {
-          // CAS 1 : 1 page custom = taille exacte image
-          // L'image remplit pile la page (pas de blanc, pas de coupure)
-          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, pdfHeight);
-          console.log("[exportPDF] Single page rendu OK");
+          // CAS 1 : 1 page, taille = taille image exacte
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfWidth, imgHeightMm);
+          console.log("[exportPDF] Single page rendu OK -", imgHeightMm.toFixed(1) + "mm");
         } else {
           // CAS 2 : Multi-pages
-          // L'image fait imgHeightMm de haut, on la decoupe en pages pdfHeight
-          let remainingHeight = imgHeightMm;
-          let positionY = 0;
-          let pageNum = 0;
+          // On ne coupe pas l'image, on la place avec offset Y negatif
+          // pour decaler le contenu deja affiche
+          const totalPages = Math.ceil(imgHeightMm / pdfHeight);
+          console.log("[exportPDF] Multi-page :", totalPages, "pages prevues");
 
-          while (remainingHeight > 0) {
-            if (pageNum > 0) pdf.addPage();
-            // -positionY decale l'image vers le haut pour afficher la partie suivante
-            pdf.addImage(imgData, "JPEG", 0, -positionY, pdfWidth, imgHeightMm);
-            remainingHeight -= pdfHeight;
-            positionY += pdfHeight;
-            pageNum++;
+          for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+            const offsetY = -i * pdfHeight;
+            // addImage(data, format, x, y, width, height)
+            // L'image fait imgHeightMm de haut, on la place avec offset Y
+            pdf.addImage(imgData, "JPEG", 0, offsetY, pdfWidth, imgHeightMm);
+            console.log("[exportPDF] Page " + (i+1) + " : offset Y = " + offsetY.toFixed(1) + "mm");
           }
-          console.log("[exportPDF] Multi-page rendu:", pageNum + " pages");
         }
 
         pdf.save(fname);
