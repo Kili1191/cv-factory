@@ -3540,65 +3540,117 @@ export default function App() {
         const MM_TO_PX = 3.7795275591;
         const A4_HEIGHT_MM = 297;
         const A4_HEIGHT_PX = Math.round(A4_HEIGHT_MM * MM_TO_PX); // 1123px
-        const cvHeightPx = el.scrollHeight;
-        const cvHeightMm = cvHeightPx / MM_TO_PX;
 
-        // CSS temporaire : force le CV a faire EXACTEMENT 297mm de hauteur
-        // avec le design qui s'etend (sidebar dark + main cream continuent)
-        const styleEl = document.createElement("style");
-        styleEl.id = "cvf-pdf-design-fills";
-        styleEl.textContent = `
-          /* [PDF EXPORT - DESIGN FILLS PAGE] */
-          #cv-print {
-            height: ${A4_HEIGHT_MM}mm !important;
-            min-height: ${A4_HEIGHT_MM}mm !important;
-            max-height: ${A4_HEIGHT_MM}mm !important;
-            overflow: hidden !important;
-            box-shadow: none !important;
-            margin: 0 !important;
-            border-radius: 0 !important;
+        // Mesure la hauteur reelle AVANT d'injecter le CSS
+        const realHeightPx = el.scrollHeight;
+        const realHeightMm = realHeightPx / MM_TO_PX;
+
+        // Decide : contenu tient sur 1 page (<=297mm) ou deborde ?
+        const fitsOnePage = realHeightMm <= A4_HEIGHT_MM;
+
+        console.log("[exportPDF] Hauteur reelle:", realHeightMm.toFixed(1) + "mm",
+                    "| Tient 1 page:", fitsOnePage);
+
+        let styleEl = null;
+        if (fitsOnePage) {
+          // CAS 1 : Le contenu tient. On FORCE le design a remplir 297mm
+          // (sidebar dark + main cream descendent jusqu'en bas)
+          styleEl = document.createElement("style");
+          styleEl.id = "cvf-pdf-design-fills";
+          styleEl.textContent = `
+            #cv-print {
+              height: ${A4_HEIGHT_MM}mm !important;
+              min-height: ${A4_HEIGHT_MM}mm !important;
+              max-height: ${A4_HEIGHT_MM}mm !important;
+              overflow: hidden !important;
+              box-shadow: none !important;
+              margin: 0 !important;
+              border-radius: 0 !important;
+            }
+            #cv-print > div {
+              min-height: ${A4_HEIGHT_MM}mm !important;
+              height: ${A4_HEIGHT_MM}mm !important;
+            }
+            #cv-print > div > div {
+              min-height: ${A4_HEIGHT_MM}mm !important;
+            }
+          `;
+          document.head.appendChild(styleEl);
+
+          // Force reflow + 2 frames
+          void el.offsetHeight;
+          await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+        }
+        // CAS 2 : Le contenu deborde -> pas de CSS force, multi-pages naturel
+
+        // [CAPTURE MANUELLE 2026-05-20]
+        // On capture le CV (force a 297mm) avec html2canvas, puis on construit
+        // le PDF manuellement avec UNE SEULE page A4. Controle total : jamais
+        // de page 2 vide possible.
+
+        // html2pdf.bundle expose html2canvas et jsPDF en interne
+        const h2c = window.html2canvas
+                  || (window.html2pdf && window.html2pdf.html2canvas);
+        const jsPDFLib = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+
+        if (!h2c || !jsPDFLib) {
+          // Fallback html2pdf classique si les libs internes pas accessibles
+          const tempStyle0 = document.getElementById("cvf-pdf-design-fills");
+          await window.html2pdf().set({
+            margin: 0, filename: fname,
+            image: { type: "jpeg", quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: "#faf8f3" },
+            jsPDF: { unit: "mm", format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"), orientation: "portrait", compress: true },
+            pagebreak: { mode: ["avoid-all"] },
+          }).from(el).save();
+          if (tempStyle0) tempStyle0.remove();
+          notify(T.okp + ": " + fname);
+          if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
+          return;
+        }
+
+        // Capture le CV
+        const canvas = await h2c(el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#faf8f3",
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          windowWidth: el.offsetWidth,
+          windowHeight: el.offsetHeight,
+        });
+
+        console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
+
+        const pdf = new jsPDFLib({
+          unit: "mm",
+          format: format === "a4" ? "a4"
+                : (format === "letter" ? "letter" : "legal"),
+          orientation: "portrait",
+          compress: true,
+        });
+
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+        const imgData = canvas.toDataURL("image/jpeg", 0.95);
+
+        if (fitsOnePage) {
+          // CAS 1 : Le CV (force a 297mm) remplit EXACTEMENT 1 page A4
+          pdf.addImage(imgData, "JPEG", 0, 0, pdfW, pdfH);
+          console.log("[exportPDF] 1 page A4 (design fills)");
+        } else {
+          // CAS 2 : Le CV deborde -> multi-pages
+          const imgHeightMm = pdfW * (canvas.height / canvas.width);
+          const totalPages = Math.ceil(imgHeightMm / pdfH);
+          for (let i = 0; i < totalPages; i++) {
+            if (i > 0) pdf.addPage();
+            pdf.addImage(imgData, "JPEG", 0, -i * pdfH, pdfW, imgHeightMm);
           }
-          /* Force le wrapper flex (sidebar + main) a faire toute la hauteur */
-          #cv-print > div {
-            min-height: ${A4_HEIGHT_MM}mm !important;
-            height: ${A4_HEIGHT_MM}mm !important;
-          }
-          /* Sidebar et main : tous deux doivent faire toute la hauteur */
-          #cv-print > div > div {
-            min-height: ${A4_HEIGHT_MM}mm !important;
-          }
-        `;
-        document.head.appendChild(styleEl);
+          console.log("[exportPDF] Multi-page:", totalPages, "pages");
+        }
 
-        // Force reflow + 2 frames pour que le CSS soit applique
-        void el.offsetHeight;
-        await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
-
-        console.log("[exportPDF] CV original:", cvHeightMm.toFixed(1) + "mm");
-        console.log("[exportPDF] PDF cible: A4 strict 297mm (design fills page)");
-
-        const opt = {
-          margin: 0,
-          filename: fname,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#faf8f3",
-          },
-          jsPDF: {
-            unit: "mm",
-            format: format === "a4" ? "a4"
-                  : (format === "letter" ? "letter" : "legal"),
-            orientation: "portrait",
-            compress: true,
-          },
-          // Multi-pages natif gere par html2pdf
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        };
-
-        await window.html2pdf().set(opt).from(el).save();
+        pdf.save(fname);
 
         // Restore : retire le CSS temporaire
         const tempStyle = document.getElementById("cvf-pdf-design-fills");
