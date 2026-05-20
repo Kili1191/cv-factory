@@ -63,6 +63,8 @@ import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
 import { applyJsonPatch, cleanupCv } from "../lib/applyJsonPatch";
 import { buildScopeGuard } from "../lib/coachScope";
+import FormatChoiceModal from "./components/FormatChoiceModal";
+import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
@@ -3498,9 +3500,23 @@ export default function App() {
   // section soit coupee entre 2 pages (problem "La Banque Postale" en
   // haut de page 2 toute seule).
   // ============================================================
-  const exportPDF = useCallback(() => {
+  // exportPDF v2 : accepte un format (a4, letter, legal)
+  // - A4 par defaut (Europe, standard recruteurs)
+  // - Letter (US, Canada)
+  // - Legal (rare, document long)
+  // ============================================================
+  const exportPDF = useCallback((format = "a4") => {
     const el = document.getElementById("cv-print");
     if (!el) return;
+
+    // Dimensions par format (en mm)
+    const formatDims = {
+      a4:     { width: 210,   height: 297 },     // 210 x 297 mm
+      letter: { width: 215.9, height: 279.4 },   // 8.5 x 11 inches
+      legal:  { width: 215.9, height: 355.6 },   // 8.5 x 14 inches
+    };
+    const dims = formatDims[format] || formatDims.a4;
+
     const s = document.createElement("script");
     s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
     s.onerror = () => notify("Erreur chargement PDF");
@@ -3512,7 +3528,7 @@ export default function App() {
         }
       } catch {}
 
-      const fname = "CV_" + cv.name.split(" ").join("_") + ".pdf";
+      const fname = "CV_" + cv.name.split(" ").join("_") + (format !== "a4" ? "_" + format : "") + ".pdf";
 
       // === FIX page-break : injecte CSS temporaire pour eviter orphelins ===
       // Cible les sections principales du CV pour qu'elles ne se coupent pas
@@ -3546,7 +3562,9 @@ export default function App() {
         if (window.jspdf && window.jspdf.jsPDF) {
           try {
             const pdf = new window.jspdf.jsPDF({
-              unit: "mm", format: "a4", orientation: "portrait",
+              unit: "mm",
+              format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
+              orientation: "portrait",
             });
             await pdf.html(el, {
               callback: (doc) => doc.save(fname),
@@ -3557,7 +3575,7 @@ export default function App() {
                 useCORS: true,
                 logging: false,
               },
-              width: 210,             // A4 width in mm
+              width: dims.width,      // Format width in mm
               windowWidth: el.offsetWidth || 794,
             });
             notify(T.okp + ": " + fname);
@@ -3579,7 +3597,11 @@ export default function App() {
             // foreignObjectRendering garde le texte vectoriel quand supporte
             foreignObjectRendering: false,
           },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+          jsPDF: {
+            unit: "mm",
+            format: format === "a4" ? "a4" : (format === "letter" ? "letter" : "legal"),
+            orientation: "portrait",
+          },
           pagebreak: {
             mode: ["css", "legacy"],
             avoid: [".cv-exp-item", ".cv-edu-item", ".cv-cert-item", ".cv-lang-item"],
@@ -3604,6 +3626,120 @@ export default function App() {
       document.head.appendChild(sjp);
     }
   }, [cv.name, T, notify]);
+
+  // ============================================================
+  // Format download dialog : intercepte le download pour demander
+  // a l'user le format prefere (A4 / Letter / Legal).
+  // Memorise le choix dans localStorage si "Toujours utiliser".
+  // ============================================================
+  const [showFormatChoice, setShowFormatChoice] = useState(false);
+
+  const handleDownloadClick = useCallback(() => {
+    // Verifie si l'user a une preference memorisee + "always"
+    const savedFormat = lsG("nuvi-format-pref", null);
+    const alwaysUse = lsG("nuvi-format-always", false);
+    if (alwaysUse && savedFormat) {
+      // Pas de modal, on telecharge direct dans le format prefere
+      exportPDF(savedFormat);
+      return;
+    }
+    // Sinon, ouvre la modal de choix
+    setShowFormatChoice(true);
+  }, [exportPDF]);
+
+  const handleFormatChosen = useCallback((format, alwaysUse) => {
+    setShowFormatChoice(false);
+    // Memorise
+    lsS("nuvi-format-pref", format);
+    lsS("nuvi-format-always", !!alwaysUse);
+    // Lance le download
+    exportPDF(format);
+  }, [exportPDF]);
+
+  // ============================================================
+  // VERDICT NUVI (anti-doom-loop, brainstorm experts 2026-05-20)
+  // Quand le CV atteint un score >= 85, on declenche un moment de rupture :
+  // "Stop d'editer, c'est pret, va candidater". Sortie unique : BatchApply,
+  // conversation empathique sur la peur, ou continuer (dissuasif).
+  // ============================================================
+  const [showVerdict, setShowVerdict] = useState(false);
+  const [verdictDismissed, setVerdictDismissed] = useState(false);
+  // Tracking : edits et delta de score recent pour data Hoffman/Lau
+  const [editsCount, setEditsCount] = useState(0);
+  const [scoreHistory, setScoreHistory] = useState([]); // [{ts, score}]
+
+  // Calcule recentDelta = moyenne du gain par edit sur les 5 derniers
+  const recentDelta = useMemo(() => {
+    if (scoreHistory.length < 2) return 0.4; // valeur par defaut
+    const recent = scoreHistory.slice(-6);
+    if (recent.length < 2) return 0.4;
+    const totalDelta = recent[recent.length - 1].score - recent[0].score;
+    const editsBetween = recent.length - 1;
+    return Math.max(0.1, totalDelta / editsBetween);
+  }, [scoreHistory]);
+
+  // Track : a chaque nouveau score (dashResult), enregistre l'historique
+  useEffect(() => {
+    if (!dashResult || typeof dashResult.score !== "number") return;
+    setScoreHistory(prev => {
+      const next = [...prev, { ts: Date.now(), score: dashResult.score }].slice(-20);
+      lsS("nuvi-score-history", next);
+      return next;
+    });
+  }, [dashResult]);
+
+  // Restore historique au load
+  useEffect(() => {
+    if (!hydrated) return;
+    const saved = lsG("nuvi-score-history", []);
+    if (Array.isArray(saved) && saved.length > 0) setScoreHistory(saved);
+    const savedDismissed = lsG("nuvi-verdict-dismissed", false);
+    if (savedDismissed) setVerdictDismissed(true);
+  }, [hydrated]);
+
+  // Track edits : a chaque modification du CV (setCVFn), incremente
+  useEffect(() => {
+    if (!hydrated) return;
+    setEditsCount(prev => prev + 1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cv]);
+
+  // DECLENCHEMENT du verdict : score >= 85 ET pas deja dismissed
+  useEffect(() => {
+    if (!hydrated) return;
+    if (!dashResult || typeof dashResult.score !== "number") return;
+    if (dashResult.score >= 85 && !verdictDismissed && !showVerdict) {
+      // Petit delai pour laisser l'animation du score se terminer
+      const timer = setTimeout(() => setShowVerdict(true), 600);
+      return () => clearTimeout(timer);
+    }
+  }, [hydrated, dashResult, verdictDismissed, showVerdict]);
+
+  // Handlers du verdict
+  const handleVerdictReady = useCallback(() => {
+    setShowVerdict(false);
+    setVerdictDismissed(true);
+    lsS("nuvi-verdict-dismissed", true);
+    // Redirect vers BatchApply (= ouvrir Match offre)
+    setShowOffer(true);
+  }, []);
+
+  const handleVerdictFear = useCallback(() => {
+    setShowVerdict(false);
+    setVerdictDismissed(true);
+    lsS("nuvi-verdict-dismissed", true);
+    // Redirect vers Coach pour conversation empathique
+    if (typeof setShowCoach === "function") setShowCoach(true);
+  }, []);
+
+  const handleVerdictContinue = useCallback(() => {
+    setShowVerdict(false);
+    setVerdictDismissed(true);
+    lsS("nuvi-verdict-dismissed", true);
+    notify(locale === "en"
+      ? "Reminder : editing past 85 brings diminishing returns."
+      : "Rappel : editer au-dela de 85 = rendement decroissant.");
+  }, [notify, locale]);
 
   const doReset = useCallback(() => {
     if (!window.confirm(T.conf)) return;
@@ -6151,7 +6287,7 @@ export default function App() {
           <path d="M9 18l6-6-6-6"/>
         </svg>
       </button>
-      <button onClick={exportPDF} style={{
+      <button onClick={handleDownloadClick} style={{
         ...B({
           width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
           background:GradDark, color:Cream,
@@ -6335,6 +6471,27 @@ export default function App() {
           layout={layout} setLy={setLy}
         />
       )}
+
+      {/* Format Choice Modal (download dialog) */}
+      <FormatChoiceModal
+        isOpen={showFormatChoice}
+        onClose={() => setShowFormatChoice(false)}
+        onConfirm={handleFormatChosen}
+        locale={locale}
+      />
+
+      {/* Verdict Nuvi (anti-doom-loop, score >= 85) */}
+      <VerdictModal
+        isOpen={showVerdict}
+        onClose={handleVerdictContinue}
+        score={dashResult && typeof dashResult.score === "number" ? dashResult.score : 85}
+        editsCount={editsCount}
+        recentDelta={recentDelta}
+        onReady={handleVerdictReady}
+        onFear={handleVerdictFear}
+        onContinue={handleVerdictContinue}
+        locale={locale}
+      />
       {showGapRepair && (
         <Suspense fallback={null}>
         <GapRepairModal
@@ -7033,7 +7190,7 @@ export default function App() {
           || showMultiCV || showTutorial || showSettings
         ) && (
           <button
-            onClick={exportPDF}
+            onClick={handleDownloadClick}
             aria-label="Telecharger CV"
             style={{
               position: "fixed",
@@ -7222,7 +7379,7 @@ export default function App() {
           </div>
           <div style={{display:"flex", gap:6}}>
             {!cvIsEmpty && (
-              <button onClick={exportPDF} aria-label="Telecharger CV" style={{
+              <button onClick={handleDownloadClick} aria-label="Telecharger CV" style={{
                 ...B({
                   background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
                   color:"#fff",
