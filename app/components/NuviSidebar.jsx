@@ -2,46 +2,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-// [Nuvi v2] Logo wordmark anime importe en dynamic (ssr:false) pour eviter
-// les mismatch d'hydratation. C'est l'ancre de marque permanente : il doit
-// TOUJOURS apparaitre en haut a gauche, sur toutes les pages et modales.
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
-
-// [Fix 2026-05-20] DesignPaletteIcon en dynamic ssr:false pour eviter
-// les hydration mismatches (l'icone utilise useId() qui peut differer
-// entre SSR et CSR sur certains setups Next.js).
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
 
-/**
- * NuviSidebar v2 - Sidebar Apple-like avec sub-items flottants
- *
- * Layout :
- *   - Collapsed : 56px (icones seules)
- *   - Expanded au hover : 240px (icones + labels)
- *   - Sub-items : panel flottant a droite (style macOS dock menu)
- *
- * Items principaux (11) :
- *   home, coach, [edit*], [adjust], target, pack, [audits*],
- *   [cvs*], [design*], tracking, settings
- *   * = avec sub-items flottants au hover
- *
- * Specs validees par panel d'experts (Fadell, Kare, Ive, Saarinen, Walter, Eden) :
- *   - Panel a droite, fade+slide-in 320ms cubic-bezier
- *   - Bridge invisible 28px entre parent et panel (anti-flicker)
- *   - Delay 600ms a la fermeture (intent-based)
- *   - Hierarchie : 1er/2eme item en gras
- *   - Ombre 0 8px 24px rgba(0,0,0,.08) + backdrop blur
- *   - Border radius 14px
- *   - Icones violet pour IA, noir pour manuel
- *
- * Props :
- *   - active: string (key de la section active)
- *   - onSelect: (key) => void  // pour items simples
- *   - onSubSelect: (parentKey, subKey) => void  // pour sub-items
- *   - lang: "fr" | "en"
- *   - onCoachOpen, onSettingsOpen
- *   - hasNotification: { coach: bool, ... }
- */
 export default function NuviSidebar({
   active = "home",
   onSelect = () => {},
@@ -56,8 +19,6 @@ export default function NuviSidebar({
   const [hoveredItem, setHoveredItem] = useState(null);
   const closeTimerRef = useRef(null);
 
-  // [Tutorial] Ecoute les signaux du tutorial pour ouvrir le sub-menu
-  // Place APRES la declaration de hoveredItem/setHoveredItem (ordre obligatoire)
   useEffect(() => {
     const onTutHover = (e) => {
       if (e && e.detail && e.detail.key !== undefined) {
@@ -70,7 +31,6 @@ export default function NuviSidebar({
     }
   }, []);
 
-  // Couleurs Nuvi (CSS variables - support dark mode)
   const Cream = "var(--nuvi-cream)";
   const CreamSoft = "var(--nuvi-cream-soft)";
   const Paper = "var(--nuvi-paper)";
@@ -134,9 +94,6 @@ export default function NuviSidebar({
     pack: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>),
     audits: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>),
     cvs: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>),
-    // [Fix 2026-05-20] design icon = composant DesignPaletteIcon anime
-    // (couleurs qui cyclent dans le centre de la palette + breathing).
-    // PLUS de SVG inline statique : c'est le composant qui gere l'anim.
     design: <DesignPaletteIcon size={20} />,
     tracking: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>),
     settings: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>),
@@ -353,17 +310,16 @@ export default function NuviSidebar({
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => {
-          // [Fix bug] On ferme JUSTE le expand de la sidebar.
-          // On NE FERME PAS le panel flottant ici - c'est le panel lui-meme
-          // qui gere sa fermeture via son onMouseLeave.
-          // Sinon : aller du parent vers le panel ferme le menu en cours de route.
           setExpanded(false);
         }}
         style={{
           width: expanded ? 240 : 56,
           height: "100vh",
-          background: Paper,
-          borderRight: "1px solid " + Hairline,
+          background: "var(--nuvi-glass-bg, " + Paper + ")",
+          WebkitBackdropFilter: "blur(24px) saturate(160%)",
+          backdropFilter: "blur(24px) saturate(160%)",
+          borderRight: "0.5px solid rgba(255,255,255,0.6)",
+          boxShadow: "inset -1px 0 1px rgba(255,255,255,0.4)",
           display: "flex",
           flexDirection: "column",
           transition: "width 220ms cubic-bezier(0.22, 1, 0.36, 1)",
@@ -373,10 +329,6 @@ export default function NuviSidebar({
           position: "relative",
         }}
       >
-        {/* [Nuvi v2] Header avec NuviLogo anime en haut a gauche.
-            En mode collapsed (56px) : taille reduite, centre.
-            En mode expanded (240px) : wordmark complet, aligne a gauche.
-            Le NuviLogo gere ses propres animations (11 personnalites, 65s cycle). */}
         <div style={{
           height: 56,
           display: "flex",
@@ -385,7 +337,7 @@ export default function NuviSidebar({
           paddingLeft: expanded ? 18 : 0,
           paddingRight: expanded ? 18 : 0,
           flexShrink: 0,
-          borderBottom: "0.5px solid " + Hairline,
+          borderBottom: "0.5px solid rgba(255,255,255,0.5)",
           overflow: "hidden",
           transition: "padding 220ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}>
@@ -409,9 +361,7 @@ export default function NuviSidebar({
           {middleItems.map(renderItem)}
         </div>
 
-        <div style={{ borderTop: "1px solid " + Hairline, padding: "8px 0" }}>
-          {/* [Reset CV 2026-05-20] Bouton pour reinitialiser le CV (avec
-              confirmation geree cote parent). Icone seule + "Reset" au hover. */}
+        <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.5)", padding: "8px 0" }}>
           {onReset && (
             <div
               role="button"
@@ -525,9 +475,6 @@ export default function NuviSidebar({
   );
 }
 
-/* ============================================================================
- * FloatingPanel : panel flottant macOS-style
- * ============================================================================ */
 function FloatingPanel({
   parentKey,
   subItems,
@@ -570,12 +517,12 @@ function FloatingPanel({
         top: topPosition,
         minWidth: 220,
         maxWidth: 260,
-        background: Paper,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        border: "0.5px solid " + Hairline,
+        background: "var(--nuvi-glass-bg, " + Paper + ")",
+        backdropFilter: "blur(28px) saturate(160%)",
+        WebkitBackdropFilter: "blur(28px) saturate(160%)",
+        border: "0.5px solid rgba(255,255,255,0.7)",
         borderRadius: 14,
-        boxShadow: "0 8px 24px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
+        boxShadow: "inset 0 1px 1px rgba(255,255,255,0.6), 0 8px 24px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
         padding: 8,
         zIndex: 100,
         animation: "nuviPanelIn 320ms cubic-bezier(0.22, 1, 0.36, 1)",
