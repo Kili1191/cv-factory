@@ -280,22 +280,28 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         })}
 
         {SS("skills", T.cv_s)}
-        {cv.skills.map((s, i) => (
-          <div key={i} style={{
-            // [Refonte premium 2026-05-20] : Sans pipe |, plus aere
-            marginBottom:5, paddingLeft:0,
-          }}>
-            <div style={{
-              wordBreak:"break-word", overflowWrap:"anywhere",
+        {/* [Compact tags 2026-05-20] Competences en pills compactes
+            au lieu d'une longue liste verticale (gain de place + plus pro) */}
+        <div style={{
+          display:"flex", flexWrap:"wrap", gap:4,
+        }}>
+          {cv.skills.map((s, i) => (
+            <span key={i} style={{
+              display:"inline-block",
+              fontSize:8.5, lineHeight:1.4,
+              color: t.st, opacity:0.92,
+              background: t.st + "1a",  // fond leger translucide
+              padding:"2px 7px",
+              borderRadius:4,
+              wordBreak:"break-word",
             }}>
               <E value={s} onChange={v=>us(i, v)}
                 style={{
-                  color: t.st, fontSize:9.5, lineHeight:1.5,
-                  opacity:0.92,
+                  color: t.st, fontSize:8.5,
                 }}/>
-            </div>
-          </div>
-        ))}
+            </span>
+          ))}
+        </div>
 
         {SS("languages", T.cv_l)}
         {cv.languages.map((l, i) => (
