@@ -3436,12 +3436,12 @@ export default function App() {
     // Load dark mode preference
     const savedDk = lsG(SK.DK, false);
     if (savedDk === true) setDarkMode(true);
-    // Tutorial : auto-launch si jamais vu
-    const tutSeen = lsG(SK.TU, false);
-    if (tutSeen !== true) {
-      // On lance apres 800ms pour laisser l'app se stabiliser
-      setTimeout(() => setShowTutorial(true), 800);
-    }
+    // Tutorial : NE se lance PLUS automatiquement au demarrage (v5).
+    // NuviHome (demarrage avant/apres) est le seul ecran d'arrivee. Le tour guide
+    // (Nuvi qui glisse vers chaque feature) reste relancable via Settings
+    // (onRelaunchTutorial) pour ceux qui veulent la visite complete.
+    // On marque le tutorial comme vu pour eviter tout trigger residuel.
+    lsS(SK.TU, true);
     setHydrated(true);
   }, []);
 
@@ -5399,24 +5399,10 @@ export default function App() {
   }, [T]);
 
   // Ouvre le coach et incremente le compteur d'usage (pour shrink auto apres N usages)
+  // NOTE v5 : on NE detourne PLUS vers NuviIntro. NuviHome (avant/apres) est le
+  // seul ecran d'arrivee ; l'ancien intro tour est desactive. Le bouton Coach
+  // ouvre directement le Coach. NuviIntro reste accessible via Settings (replayIntro).
   const openCoach = useCallback((event) => {
-    // Si l'intro n'a jamais ete vue, on la lance au lieu d'ouvrir le Coach
-    const introSeen = lsG("nv-intro-seen", false);
-    if (introSeen !== true) {
-      // Calcule l'origine (position du bouton Coach pour l'animation)
-      let origin = null;
-      if (event && event.currentTarget) {
-        const rect = event.currentTarget.getBoundingClientRect();
-        origin = {
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        };
-      }
-      setIntroOrigin(origin);
-      setShowIntroBubble(false);
-      setShowIntro(true);
-      return;
-    }
     setShowCoach(true);
     setCoachUsageCount(prev => {
       const next = prev + 1;
