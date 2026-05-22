@@ -3,13 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 
 /**
- * NuviCompanion v16 (was v15) - FIX bug 'mascotte broken' (bouche o cassee)
+ * NuviCompanion v17 (was v16) - Mains Mickey (un seul trace) sur arm-left / arm-right
  *
- * Changes vs v15 :
- *   - Validation stricte de la prop 'expression' : si invalide -> fallback idle
- *   - Auto-cleanup : si une expression est passee, elle s'efface auto apres 4s
- *     (au cas ou useNuviReactions oublie de la nettoyer)
- *   - Reset du gag idle quand on quitte/revient en mode idle
+ * Changes vs v16 :
+ *   - Les deux "moignons" (ellipses au bout des bras) sont remplaces par une vraie
+ *     main facon gant cartoon (3 doigts + pouce), dessinee en UN SEUL path continu,
+ *     contour coral fin (1.5), soudee au poignet, taille reduite.
+ *   - Aucun autre changement : oeil, corps, sourcil, expressions, gags, CSS intacts.
+ *   - Les mains restent dans les groupes .arm-left / .arm-right donc elles heritent
+ *     automatiquement de toutes les animations de bras existantes (joy, love, etc.).
  *
  * Props:
  *   mode: 'idle' | 'appearing' | 'speaking' | 'loading' | 'walking' | 'monocycle' | 'expression'
@@ -31,9 +33,6 @@ const VALID_MODES = [
   'idle', 'appearing', 'speaking', 'loading', 'walking', 'monocycle', 'expression'
 ];
 
-// Cleanup automatique : apres ce delai (ms), une expression revient en idle.
-// Evite que la mascotte reste bloquee sur "surprise" ou "scared" si le hook
-// useNuviReactions oublie de nettoyer.
 const EXPRESSION_AUTO_CLEANUP_MS = 4500;
 
 const IDLE_SCHEDULE = [
@@ -62,15 +61,11 @@ export default function NuviCompanion({
   coachOrigin = { x: 85, y: 85 },
   animated = true,
 }) {
-  // [v16 fix] Validation stricte : si mode invalide -> idle
   const safeMode = VALID_MODES.indexOf(mode) >= 0 ? mode : 'idle';
 
-  // [v16 fix] Validation stricte : si expression invalide -> null
   const validExpression = (expression && EXPRESSIONS.indexOf(expression) >= 0)
     ? expression : null;
 
-  // [v16 fix] Auto-cleanup : on garde une copie locale qui s'efface apres 4.5s
-  // si le parent oublie de reset l'expression. Evite la mascotte bloquee.
   const [localExpression, setLocalExpression] = useState(validExpression);
 
   useEffect(() => {
@@ -83,8 +78,6 @@ export default function NuviCompanion({
     }
   }, [validExpression]);
 
-  // Si l'expression a ete cleanee localement mais que le parent dit toujours
-  // mode='expression', on bascule en idle pour pas avoir un mode zombie.
   const effectiveMode = (safeMode === 'expression' && !localExpression)
     ? 'idle'
     : safeMode;
@@ -97,11 +90,8 @@ export default function NuviCompanion({
   const startTimeRef = useRef(Date.now());
   const rafRef = useRef(null);
 
-  // Cycle idle
   useEffect(() => {
     if (effectiveMode !== 'idle' || !animated) {
-      // [v16 fix] Quand on quitte idle, on reset le gag pour qu'il ne reste
-      // pas bloque sur 'pop' ou 'raspberry' au prochain retour
       setCurrentGag(null);
       return;
     }
@@ -119,7 +109,6 @@ export default function NuviCompanion({
     };
   }, [effectiveMode, animated]);
 
-  // Follow cursor
   useEffect(() => {
     if (!followCursor || effectiveMode === 'loading' || isExpression) {
       setPupilOffset({ x: 0, y: 0 });
@@ -200,22 +189,28 @@ function CompanionSVG({ pupilStyle = {} }) {
       </defs>
 
       <g className="nuvi-everything">
-        {/* === BRAS GAUCHE === */}
+        {/* === BRAS GAUCHE (main Mickey, un seul trace) === */}
         <g className="arm-left">
           <path
-            d="M 30 105 Q 12 115, 0 130 Q -8 145, 0 158"
-            fill="none" stroke="url(#nuvi-arm-grad)" strokeWidth="14" strokeLinecap="round" opacity="0.95"
+            d="M 30 105 Q 13 117, 4 134 Q -1 144, 2 152"
+            fill="none" stroke="url(#nuvi-arm-grad)" strokeWidth="13" strokeLinecap="round" opacity="0.95"
           />
-          <ellipse cx="0" cy="160" rx="10" ry="11" fill="url(#nuvi-arm-grad)" stroke="#c25b3f" strokeWidth="2"/>
+          <path
+            d="M 9 154 Q 11 144, 9 142 Q 6 141, 5 144 L 5 150 Q 4 142, 1 141 Q -2 142, -2 145 L -2 150 Q -4 144, -7 144 Q -9 145, -8 150 L -8 153 Q -12 152, -14 156 Q -16 161, -12 164 Q -8 168, 0 167 Q 9 166, 11 159 Z"
+            fill="url(#nuvi-arm-grad)" stroke="#c25b3f" strokeWidth="1.5" strokeLinejoin="round"
+          />
         </g>
 
-        {/* === BRAS DROIT === */}
+        {/* === BRAS DROIT (main Mickey, un seul trace) === */}
         <g className="arm-right">
           <path
-            d="M 150 105 Q 168 115, 180 130 Q 188 145, 180 158"
-            fill="none" stroke="url(#nuvi-arm-grad)" strokeWidth="14" strokeLinecap="round" opacity="0.95"
+            d="M 150 105 Q 167 117, 176 134 Q 181 144, 178 152"
+            fill="none" stroke="url(#nuvi-arm-grad)" strokeWidth="13" strokeLinecap="round" opacity="0.95"
           />
-          <ellipse cx="180" cy="160" rx="10" ry="11" fill="url(#nuvi-arm-grad)" stroke="#c25b3f" strokeWidth="2"/>
+          <path
+            d="M 171 154 Q 169 144, 171 142 Q 174 141, 175 144 L 175 150 Q 176 142, 179 141 Q 182 142, 182 145 L 182 150 Q 184 144, 187 144 Q 189 145, 188 150 L 188 153 Q 192 152, 194 156 Q 196 161, 192 164 Q 188 168, 180 167 Q 171 166, 169 159 Z"
+            fill="url(#nuvi-arm-grad)" stroke="#c25b3f" strokeWidth="1.5" strokeLinejoin="round"
+          />
         </g>
 
         {/* Body */}
