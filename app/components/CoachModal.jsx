@@ -21,7 +21,7 @@
 //   onClose()      : ferme la modale
 //   onAction(action) : dispatch des actions feature
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import dynamic from "next/dynamic";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Gold, GoldDeep,
@@ -489,6 +489,70 @@ function CoachInlineStatus({ status, lang }) {
   );
 }
 
+
+// Sur mobile, l'en-tete du panneau mangeait pres de 40% de la hauteur d'ecran
+// et ne laissait qu'une fenetre de ~300px pour la conversation. On resserre
+// tout l'en-tete sous 520px de large.
+function useIsNarrow(breakpoint = 520) {
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: " + breakpoint + "px)");
+    const apply = () => setNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, [breakpoint]);
+  return narrow;
+}
+
+// Le prompt Coach impose un format DIAGNOSTIC / PROPOSITION / POURQUOI.
+// Sans traitement, ces intitules se noient dans le paragraphe. On les detecte
+// (ligne courte, entierement en capitales) et on les sort en libelle.
+const SECTION_LABEL = /^[A-Z\u00C0-\u00DD][A-Z\u00C0-\u00DD0-9 '\u2019/&-]{2,28}:?$/;
+
+function CoachText({ text }) {
+  const raw = typeof text === "string" ? text : String(text == null ? "" : text);
+  const lines = raw.split("\n");
+  const blocks = [];
+  let buffer = [];
+
+  const flush = () => {
+    if (buffer.length === 0) return;
+    blocks.push({ kind: "p", text: buffer.join("\n").replace(/\n{3,}/g, "\n\n").trim() });
+    buffer = [];
+  };
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (t && SECTION_LABEL.test(t) && t === t.toUpperCase()) {
+      flush();
+      blocks.push({ kind: "h", text: t.replace(/:$/, "") });
+    } else {
+      buffer.push(line);
+    }
+  }
+  flush();
+
+  if (blocks.length === 1 && blocks[0].kind === "p") {
+    return <span style={{ whiteSpace: "pre-wrap" }}>{blocks[0].text}</span>;
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {blocks.map((b, i) => b.kind === "h" ? (
+        <div key={i} style={{
+          fontSize: 10.5, fontWeight: 700, letterSpacing: "0.11em",
+          textTransform: "uppercase", color: Coral,
+          marginTop: i === 0 ? 0 : 2,
+        }}>{b.text}</div>
+      ) : (
+        <div key={i} style={{ whiteSpace: "pre-wrap" }}>{b.text}</div>
+      ))}
+    </div>
+  );
+}
+
 function Bubble({ T, msg, onAdopt, onAction }) {
   const isUser = msg.role === "user";
 
@@ -498,11 +562,14 @@ function Bubble({ T, msg, onAdopt, onAction }) {
         display: "flex", justifyContent: "flex-end", marginBottom: 12,
       }}>
         <div style={{
-          maxWidth: "80%",
+          // Mesure bornee : au-dela de ~60 caracteres par ligne, l'oeil perd
+          // le debut de la ligne suivante.
+          maxWidth: "min(80%, 34em)",
           padding: "10px 14px", borderRadius: "18px 18px 4px 18px",
           background: Purple, color: "#fff",
-          fontSize: 13, lineHeight: 1.5, fontFamily: Sans,
-          whiteSpace: "pre-wrap",
+          fontSize: 13.5, lineHeight: 1.55, fontFamily: Sans,
+          whiteSpace: "pre-wrap", overflowWrap: "anywhere",
+          boxShadow: "0 1px 2px rgba(91,61,245,.25)",
         }}>{msg.content}</div>
       </div>
     );
@@ -533,23 +600,40 @@ function Bubble({ T, msg, onAdopt, onAction }) {
           <NuviCompanion size={48} mode="speaking" />
         </div>
       </div>
-      <div style={{ maxWidth: "85%" }}>
+      <div style={{ maxWidth: "min(85%, 38em)", minWidth: 0 }}>
         <div style={{
-          padding: "12px 16px", borderRadius: "4px 18px 18px 18px",
-          // [Fix 2026-05-20] BULLE = FROSTED GLASS individuel.
-          // Background a peine teinte (alpha 0.55 sur cream) + backdrop-filter
-          // blur fort PROPRE A LA BULLE. Le CV reste visible "a travers" comme
-          // verre depoli, mais le texte de la bulle est tres lisible.
-          // Pas de bordure nette, juste une ombre douce pour decoller.
-          background: "rgba(255, 255, 255, 0.55)",
-          backdropFilter: "blur(20px) saturate(180%)",
-          WebkitBackdropFilter: "blur(20px) saturate(180%)",
+          padding: "13px 16px", borderRadius: "4px 18px 18px 18px",
+          // [Fix] La bulle etait un verre depoli pose sur le CV : le texte du
+          // CV transparaissait derriere les reponses et le contraste tombait
+          // sous le seuil lisible. Le verre reste sur le PANNEAU (qui flotte),
+          // le texte se lit sur une surface opaque.
+          background: Paper,
           color: Ink,
-          border: "0.5px solid rgba(255, 255, 255, 0.6)",
+          border: "0.5px solid " + Hairline,
           boxShadow: "0 4px 16px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
-          fontSize: 13, lineHeight: 1.55, fontFamily: Sans,
-          whiteSpace: "pre-wrap",
-        }}>{msg.content}</div>
+          fontSize: 13.5, lineHeight: 1.6, fontFamily: Sans,
+          overflowWrap: "anywhere",
+        }}><CoachText text={msg.content} /></div>
+
+        {/* Ce que le coach a reellement applique au CV. La valeur etait
+            enregistree sur le message depuis page.jsx mais n'etait affichee
+            nulle part : l'utilisateur ne voyait pas ce qui avait change. */}
+        {msg.appliedSummary && (
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            marginTop: 7, padding: "4px 10px",
+            borderRadius: RadiusPill,
+            background: GreenSoft, color: Green,
+            fontSize: 11, fontWeight: 600, fontFamily: Sans,
+          }}>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="3"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            {msg.appliedSummary}
+          </div>
+        )}
 
         {msg.quickReplies && msg.quickReplies.length > 0 && onAction && (
           <div style={{
@@ -605,6 +689,7 @@ export default function CoachModal({
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
   const inputRef = useRef(null);
+  const isNarrow = useIsNarrow();
   const [welcomeMsg, setWelcomeMsg] = useState(null);
 
   useEffect(() => {
@@ -635,11 +720,45 @@ export default function CoachModal({
     }
   }, [loading, onClose]);
 
+  // Colle au dernier message tant que l'utilisateur n'a pas remonte le fil
+  // lui-meme. Sinon on lui arracherait sa lecture a chaque nouveau message.
+  const stickToBottom = useRef(true);
+
+  const scrollToBottom = useCallback((smooth) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+  }, []);
+
+  const onScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - el.clientHeight - el.scrollTop;
+    stickToBottom.current = distanceFromBottom < 80;
+  }, []);
+
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, loading, welcomeMsg, coachStatus]);
+    const el = scrollRef.current;
+    if (!el) return;
+    // Deux frames : la premiere laisse React peindre, la seconde laisse le
+    // navigateur finir la mise en page (hauteur reelle des bulles).
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => { if (stickToBottom.current) scrollToBottom(false); });
+    });
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); };
+  }, [messages, loading, welcomeMsg, coachStatus, scrollToBottom]);
+
+  // Les polices et les avatars arrivent apres le premier rendu et changent la
+  // hauteur du fil : on resuit le bas a chaque fois.
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(() => { if (stickToBottom.current) scrollToBottom(false); });
+    for (const child of el.children) ro.observe(child);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [messages, scrollToBottom]);
 
   const hasMessages = messages && messages.length > 0;
 
@@ -718,8 +837,8 @@ export default function CoachModal({
         }} />
 
         <div style={{
-          padding: "8px 24px 0",
-          display: "flex", alignItems: "center",
+          padding: isNarrow ? "2px 18px 0" : "8px 24px 0",
+          display: isNarrow ? "none" : "flex", alignItems: "center",
           flexShrink: 0,
           // Meme fond cream que le header (pas de fade car le fade est en bas
           // du header). Backdrop blur pour cohesion visuelle.
@@ -728,20 +847,22 @@ export default function CoachModal({
           WebkitBackdropFilter: "blur(16px) saturate(160%)",
         }}>
           {/* Logo Nuvi hyper cool : gradient flow + shimmer + glow pulse */}
-          <NuviLogoAnimated size={26} />
+          <NuviLogoAnimated size={26} tone="light" />
         </div>
 
         <div style={{
-          padding: "10px 24px 14px",
+          padding: isNarrow ? "10px 18px 6px" : "10px 24px 14px",
           // [Fix 2026-05-20] PAS de bordure nette en bas, juste un fade
           // gradient (cream opaque en haut, transparent en bas) pour un
           // raccord doux avec la zone chat.
           flexShrink: 0,
           display: "flex", alignItems: "flex-start",
           justifyContent: "space-between", gap: 12,
-          background: "linear-gradient(180deg, rgba(250, 248, 243, 0.82) 0%, rgba(250, 248, 243, 0.65) 60%, rgba(250, 248, 243, 0.0) 100%)",
+          background: isNarrow
+            ? CreamSoft
+            : "linear-gradient(180deg, rgba(250, 248, 243, 0.82) 0%, rgba(250, 248, 243, 0.65) 60%, rgba(250, 248, 243, 0.0) 100%)",
           // Padding bottom plus important pour que le fade ait de la place
-          paddingBottom: 28,
+          paddingBottom: isNarrow ? 14 : 28,
           // BackdropFilter sur le header uniquement
           backdropFilter: "blur(16px) saturate(160%)",
           WebkitBackdropFilter: "blur(16px) saturate(160%)",
@@ -752,19 +873,21 @@ export default function CoachModal({
               fontSize: 11, fontWeight: 700,
               letterSpacing: "0.12em", textTransform: "uppercase",
               marginBottom: 4,
+              // Texte en gradient sur fond cream opaque : le double
+              // drop-shadow d'origine (glow violet + ombre noire) bavait
+              // autour des lettres au lieu de les detacher.
               color: "#b91c8c",
-              background: "linear-gradient(135deg, #8b6dff 0%, #e547bf 100%)",
+              background: "linear-gradient(135deg, #7a56ff 0%, #d4359f 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-              filter: "drop-shadow(0 0 6px rgba(139,109,255,0.5)) drop-shadow(0 1px 2px rgba(0,0,0,0.4))",
             }}>{T.co_eyebrow}</div>
 
             {/* [Fix 2026-05-20] Titre en Ink classique : le header a un fond
                 cream opaque qui le rend tres lisible. Plus besoin du
                 NuviTextGlass blanc + shadow qui buguait sur fond CV. */}
             <div style={{
-              fontFamily: Serif, fontWeight: 400, fontSize: 24,
+              fontFamily: Serif, fontWeight: 400, fontSize: isNarrow ? 19 : 24,
               letterSpacing: "-0.02em", lineHeight: 1.15,
               color: Ink,
             }}>
@@ -784,6 +907,7 @@ export default function CoachModal({
             <div style={{
               fontSize: 12, marginTop: 4, lineHeight: 1.5,
               color: InkMuted,
+              display: isNarrow ? "none" : "block",
             }}>{T.co_sub}</div>
           </div>
 
@@ -839,10 +963,20 @@ export default function CoachModal({
           </button>
         </div>
 
-        <div ref={scrollRef} style={{
+        <div ref={scrollRef} onScroll={onScroll} style={{
           flex: 1,
           overflowY: "auto",
-          padding: "18px 24px",
+          // overscroll-contain : le scroll du fil ne fait plus bouger la page
+          // derriere quand on arrive en butee.
+          overscrollBehavior: "contain",
+          background: isNarrow ? CreamSoft : "transparent",
+          padding: isNarrow ? "14px 16px 8px" : "18px 24px 8px",
+          // Le fil part du bas : une conversation courte se colle a la zone de
+          // saisie au lieu de flotter en haut d'un grand vide.
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "flex-end",
+          minHeight: 0,
         }}>
           {!hasMessages && welcomeMsg && (
             <Bubble
@@ -855,7 +989,7 @@ export default function CoachModal({
 
           {hasMessages && messages.map((msg, i) => (
             <Bubble
-              key={i}
+              key={(msg.ts || 0) + "-" + msg.role + "-" + i}
               T={T}
               msg={msg}
               onAdopt={onAdopt}
@@ -991,7 +1125,7 @@ export default function CoachModal({
                   width: 42, height: 42, borderRadius: "50%",
                   background: (loading || !input.trim() || !apiKey)
                     ? Gray200 : GradPurple,
-                  color: "#fff",
+                  color: (loading || !input.trim() || !apiKey) ? Gray600 : "#fff",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   transition: "all 180ms ease-out",

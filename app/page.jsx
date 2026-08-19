@@ -72,7 +72,8 @@ import FormatChoiceModal from "./components/FormatChoiceModal";
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
-const FONT = "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
+// La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
+// le navigateur la decouvre avant l'hydratation. Ne pas la re-injecter ici.
 
 // Palette
 const Ink       = "#0a0a0a";   // noir profond, surface principale
@@ -7251,7 +7252,6 @@ export default function App() {
     });
     return (
       <>
-        <link href={FONT} rel="stylesheet"/>
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
         {notif && <Notif msg={notif}/>}
         {pasteFlash && (
@@ -7643,7 +7643,6 @@ export default function App() {
 
     return (
     <>
-      <link href={FONT} rel="stylesheet"/>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
       {notif && <Notif msg={notif}/>}
         {pasteFlash && (
