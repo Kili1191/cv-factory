@@ -248,7 +248,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
           ))}
         </div>
 
-        <style>{KEYFRAMES_V17}</style>
+        <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
       </div>
     </div>
   ), document.body);

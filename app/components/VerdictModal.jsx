@@ -93,7 +93,7 @@ export default function VerdictModal({
 
   return (
     <>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes vrdFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes vrdScoreGlow {
           0%, 100% { text-shadow: 0 0 30px rgba(91,61,245,0.4); }
@@ -115,7 +115,7 @@ export default function VerdictModal({
           0%, 100% { transform: scale(1); }
           50% { transform: scale(1.05); }
         }
-      `}</style>
+      ` }} />
 
       {/* Fullscreen overlay */}
       <div

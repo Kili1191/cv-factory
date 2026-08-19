@@ -7227,13 +7227,13 @@ export default function App() {
           Nuvi
         </div>
 
-        <style>{`
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes nuviBootPulse {
             0%, 100% { transform: scale(1); opacity: 0.85; }
             50% { transform: scale(1.08); opacity: 1; }
           }
           ${KEYFRAMES_V17}
-        `}</style>
+        ` }} />
       </div>
     );
   }
@@ -7252,7 +7252,7 @@ export default function App() {
     return (
       <>
         <link href={FONT} rel="stylesheet"/>
-        <style>{KEYFRAMES_V17}</style>
+        <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
         {notif && <Notif msg={notif}/>}
         {pasteFlash && (
           <div style={{
@@ -7527,7 +7527,7 @@ export default function App() {
                 Coach
               </span>
             )}
-            <style>{`
+            <style dangerouslySetInnerHTML={{ __html: `
               @keyframes nuviBoxBreathe {
                 0%   { transform: scale(0.65); opacity: 0.35; }
                 25%  { transform: scale(1.0);  opacity: 0.85; }
@@ -7535,7 +7535,7 @@ export default function App() {
                 75%  { transform: scale(0.65); opacity: 0.35; }
                 100% { transform: scale(0.65); opacity: 0.35; }
               }
-            `}</style>
+            ` }} />
           </button>
         )}
         {/* === BOUTON TELECHARGER PERSISTANT (Desktop) === */}
@@ -7629,12 +7629,12 @@ export default function App() {
               bottom: -6, left: "75%", transform: "translateX(-50%) rotate(45deg)",
               width: 12, height: 12, background: "#0f0f12",
             }} />
-            <style>{`
+            <style dangerouslySetInnerHTML={{ __html: `
               @keyframes introBubbleBounce {
                 0%, 100% { transform: translateY(0); }
                 50% { transform: translateY(-6px); }
               }
-            `}</style>
+            ` }} />
           </div>
         )}
       </>
@@ -7644,7 +7644,7 @@ export default function App() {
     return (
     <>
       <link href={FONT} rel="stylesheet"/>
-      <style>{KEYFRAMES_V17}</style>
+      <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
       {notif && <Notif msg={notif}/>}
         {pasteFlash && (
           <div style={{
@@ -8053,12 +8053,12 @@ export default function App() {
               bottom: -6, left: "75%", transform: "translateX(-50%) rotate(45deg)",
               width: 12, height: 12, background: "#0f0f12",
             }} />
-            <style>{`
+            <style dangerouslySetInnerHTML={{ __html: `
               @keyframes introBubbleBounce {
                 0%, 100% { transform: translateY(0); }
                 50% { transform: translateY(-6px); }
               }
-            `}</style>
+            ` }} />
           </div>
         )}
       </div>
