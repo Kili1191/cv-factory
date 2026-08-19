@@ -27,6 +27,7 @@ const MultiCVStrategyModal = dynamic(() => import("./components/MultiCVStrategyM
 const TutorialOverlay = dynamic(() => import("./components/TutorialOverlay"), { ssr: false });
 const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: false });
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
+const ActivityModal = dynamic(() => import("./components/ActivityModal"), { ssr: false });
 
 // CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
 const CoachModal = dynamic(
@@ -59,10 +60,14 @@ import {
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
 } from "./components/dateUtils";
 import { serializeCvForContext } from "../lib/cvSerializer";
-import { cachedAiCall } from "../lib/aiCache";
+import { cachedAiCall, clearAllAiCache } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
 import { applyJsonPatch, cleanupCv } from "../lib/applyJsonPatch";
-import { buildScopeGuard } from "../lib/coachScope";
+import { logActivity, ACT } from "../lib/activityLog";
+import {
+  buildScopeGuard, isObviouslyOffTopic, toggleScopeUnlock,
+  scopeUnlockNotice, scopeRefusalMessage, isScopeUnlocked,
+} from "../lib/coachScope";
 import FormatChoiceModal from "./components/FormatChoiceModal";
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
@@ -3337,6 +3342,7 @@ export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   // v17 chantier 14 : Settings panel
   const [showSettings, setShowSettings] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
   // NuviSidebar : section active (home, coach, target, pack, score, cvs, design, tracking)
   const [navSection, setNavSection] = useState("home");
   // v17 chantier 15 : Auto-save indicator
@@ -3457,6 +3463,7 @@ export default function App() {
         console.log("[cleanupCv] Removed", result.dedupRemoved, "duplicate(s) on load");
         setCV_(result.newCv);
         lsS(SK.CV, result.newCv);
+        logActivity(ACT.CV_CLEANED, result.summary, { removed: result.dedupRemoved });
         // Pas de notification : nettoyage silencieux
       }
     } catch (e) {
@@ -3653,6 +3660,7 @@ export default function App() {
       const p = h[h.length-1];
       setCV_(p);
       lsS(SK.CV, p);
+      logActivity(ACT.UNDO, T.oku);
       notify(T.oku);
       return h.slice(0,-1);
     });
@@ -3888,6 +3896,7 @@ export default function App() {
         if (tempHide) tempHide.remove();
 
         notify(T.okp + ": " + fname);
+        logActivity(ACT.EXPORT_PDF, locale === "en" ? "PDF exported" : "PDF exporte", { format });
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       } catch (e) {
         console.error("[exportPDF] FAILED:", e);
@@ -4105,6 +4114,9 @@ export default function App() {
         }
       );
       setAuditResult(r);
+      logActivity(ACT.AUDIT_RUN,
+        locale==="en" ? "ATS audit run" : "Audit ATS lance",
+        { country: auditCountry, score: (r && typeof r.score === "number") ? r.score : undefined });
       // Nuvi reaction selon score
       // v7 : trigger wizard pour audit ATS
       if (typeof nuviTrigger === 'function') nuviTrigger('audit-ats-done');
@@ -4407,6 +4419,7 @@ export default function App() {
       lsS(SK.VS, next);
       return next;
     });
+    logActivity(ACT.VERSION_SAVED, (locale==="en" ? "Version saved: " : "Version sauvegardee : ") + v.name);
     notify(locale==="en" ? "Version saved" : "Version sauvegardee");
   }, [cv, notify, locale]);
 
@@ -4419,6 +4432,7 @@ export default function App() {
     )) return;
     pushH();
     setCVFn(() => normCV(v.cv, EMPTY));
+    logActivity(ACT.VERSION_RESTORED, (locale==="en" ? "Version loaded: " : "Version chargee : ") + v.name);
     setShowVersions(false);
     notify(locale==="en" ? "Version loaded" : "Version chargee");
   }, [versions, pushH, setCVFn, notify, locale]);
@@ -4736,6 +4750,7 @@ export default function App() {
       const txt = await aiCall(p);
       const parsed = parseJSON(txt);
       setInterviewResult(parsed);
+      logActivity(ACT.INTERVIEW_RUN, locale==="en" ? "Interview prep run" : "Preparation entretien lancee");
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
     }
@@ -5100,6 +5115,9 @@ export default function App() {
       };
 
       await html2pdf().set(opt).from(container).save();
+      logActivity(ACT.EXPORT_PDF,
+        locale === "en" ? "Application pack exported" : "Pack candidature exporte",
+        { kind: "pack" });
       if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       document.body.removeChild(container);
     } catch (err) {
@@ -5132,9 +5150,44 @@ export default function App() {
   //   - Retro-compat : si Claude renvoie {adopt: ...} (ancien format), on garde
   //     le bouton Adopter manuel via adoptCoachSuggestion.
   const runCoachMessage = useCallback(async (userText) => {
+    if (!userText || !userText.trim()) return;
+
+    // Mode proprietaire : taper la passphrase bascule le perimetre.
+    // Le message n'est jamais envoye a l'API et n'est pas ecrit dans
+    // l'historique persiste, pour ne pas laisser la passphrase en clair
+    // dans localStorage.
+    const unlockToggle = toggleScopeUnlock(userText);
+    if (unlockToggle) {
+      setCoachMessages(prev => {
+        const next = [...prev, {
+          role: "assistant",
+          content: scopeUnlockNotice(unlockToggle.unlocked, locale),
+          ts: Date.now(),
+        }].slice(-50);
+        lsS(SK.CO, next);
+        return next;
+      });
+      return;
+    }
+
+    // Pre-filtre hors-scope cote client (defense en profondeur) : evite un
+    // aller-retour API pour un message que le prompt refuserait de toute
+    // facon. Neutralise en mode proprietaire.
+    if (isObviouslyOffTopic(userText)) {
+      setCoachMessages(prev => {
+        const next = [
+          ...prev,
+          { role: "user", content: userText.trim(), ts: Date.now() },
+          { role: "assistant", content: scopeRefusalMessage(locale), ts: Date.now() },
+        ].slice(-50);
+        lsS(SK.CO, next);
+        return next;
+      });
+      return;
+    }
+
     if (!apiKey) { notify(T.nk); return; }
     if (cvIsEmpty) { notify(T.co_no_cv); return; }
-    if (!userText || !userText.trim()) return;
 
     // Append immediately user message (UX feedback instant)
     const userMsg = { role:"user", content:userText.trim(), ts:Date.now() };
@@ -5171,7 +5224,7 @@ export default function App() {
       // Integre : 5 personas audit, detection mots a risque, verification
       // chronologique, calibrage marche, format DIAGNOSTIC + PROPOSITION + POURQUOI
       // + Scope guard (tier "free" pour l'instant, ouvrable selon pricing)
-      const scopeGuard = buildScopeGuard("free", locale);
+      const scopeGuard = buildScopeGuard("free", locale, { unlocked: isScopeUnlocked() });
       const p = scopeGuard
         + "\n\n" + "You are Nuvi Coach, a senior career coach with 20 years of experience"
         + " across all sectors and countries. The candidate's COMPLETE CV is in"
@@ -5339,6 +5392,7 @@ export default function App() {
           setCVFn(() => result.newCv);
           applySummary = result.summary;
           realChange = true;
+          logActivity(ACT.COACH_APPLIED, result.summary, { source: "coach", ops: result.applied });
         }
         if (result.failed.length > 0) {
           console.warn("[Coach v5 JSON Patch] Some operations failed:", result.failed);
@@ -5351,6 +5405,7 @@ export default function App() {
           setCVFn(() => result.newCv);
           applySummary = result.summary;
           realChange = true;
+          logActivity(ACT.COACH_APPLIED, result.summary, { source: "coach", actions: result.applied });
           if (result.failed.length > 0) {
             console.warn("[Coach v4 legacy] Some actions failed:", result.failed);
           }
@@ -6952,7 +7007,18 @@ export default function App() {
           onToggleDark={toggleDarkMode}
           onRelaunchTutorial={relaunchTutorial}
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
+          onOpenHistory={() => { setShowSettings(false); setShowActivity(true); }}
+          onClearAiCache={() => { clearAllAiCache(); notify(T.set_cache_done); }}
           onClose={()=>setShowSettings(false)}
+        />
+        </Suspense>
+      )}
+      {showActivity && (
+        <Suspense fallback={null}>
+        <ActivityModal
+          locale={locale}
+          notify={notify}
+          onClose={()=>setShowActivity(false)}
         />
         </Suspense>
       )}
@@ -7321,7 +7387,7 @@ export default function App() {
           || showCustomize || !!modal
           || showLinkedIn || showCompare || showApplications
           || showMultiCV
-          || showTutorial || showSettings
+          || showTutorial || showSettings || showActivity
         ) && (
          <button
             onClick={(e) => {
@@ -7479,7 +7545,7 @@ export default function App() {
           || showOffer || showScore || showGapRepair || showInterview
           || showCustomize || !!modal
           || showLinkedIn || showCompare || showApplications
-          || showMultiCV || showTutorial || showSettings
+          || showMultiCV || showTutorial || showSettings || showActivity
         ) && (
           <button
             onClick={handleDownloadClick}
@@ -7810,7 +7876,7 @@ export default function App() {
           || showCustomize || !!modal
           || showLinkedIn || showCompare || showApplications
           || showMultiCV
-          || showTutorial || showSettings
+          || showTutorial || showSettings || showActivity
           || (mob && coachScrolling)
         ) && (
           <button
