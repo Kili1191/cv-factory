@@ -376,8 +376,8 @@ export function CVSidebar({ cv, set, t, T, locale }) {
             background:"transparent",
             border:"1px dashed "+t.st+"55",
             borderRadius:4, cursor:"pointer",
-            color: t.st, opacity:0.7, fontSize:8.5,
-            padding:"3px 8px", marginTop:2, marginBottom:4,
+            color: t.st, opacity:0.7, fontSize:9.5,
+            padding:"6px 8px", marginTop:2, marginBottom:4,
             width:"100%", textAlign:"left",
           }}>
           + {locale === "fr" ? "ligne contact" : "contact line"}

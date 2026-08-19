@@ -1172,7 +1172,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
 
   // v17 helpers : inputs paper-on-cream + eyebrow editorial
   const inV17 = (extra={}) => ({
-    width:"100%", padding:"12px 14px", borderRadius:RadiusSm,
+    width:"100%", padding:"12px 14px", minHeight:44, borderRadius:RadiusSm,
     border:"0.5px solid "+Gray200, background:Paper,
     fontSize:13, color:Ink, fontFamily:Sans,
     boxSizing:"border-box", outline:"none",
@@ -1190,7 +1190,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const Pill = ({v, cur, set, l}) => (
     <button onClick={()=>set(v)} style={{
       ...B({
-        flex:1, padding:"10px 8px", borderRadius:RadiusPill,
+        flex:1, padding:"10px 8px", minHeight:44, borderRadius:RadiusPill,
         border:"0.5px solid "+(cur===v ? Ink : Gray200),
         background:cur===v ? Ink : Paper,
         color:cur===v ? Cream : Ink,
@@ -1234,7 +1234,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           background:CoralSoft,
           border:"0.5px solid "+Coral,
           borderRadius:RadiusSm,
-          padding:"10px 14px", marginBottom:14,
+          padding:"10px 14px", minHeight:44, marginBottom:14,
           fontSize:12, color:Ink, lineHeight:1.5,
         }}>
           {T.ai_nk}
@@ -1261,7 +1261,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           }}>{T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}</div>
           <button onClick={onSwitchToAdjust} style={{
             ...B({
-              padding:"10px 18px", borderRadius:RadiusPill,
+              padding:"10px 18px", minHeight:44, borderRadius:RadiusPill,
               background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
               color:"#fff",
               border:"none",
@@ -2102,7 +2102,7 @@ function FontUrlInput({ T, onApply }) {
         placeholder={T.cust_font_url_ph}
         style={{
           width:"100%",
-          padding:"11px 14px",
+          padding:"11px 14px", minHeight:44,
           borderRadius:RadiusSm,
           border:"0.5px solid "+(err ? Coral : Gray200),
           background:Cream,
@@ -2137,7 +2137,7 @@ function FontUrlInput({ T, onApply }) {
         <div>
           {/* Apercu rapide */}
           <div style={{
-            padding:"12px 14px", borderRadius:RadiusSm,
+            padding:"12px 14px", minHeight:44, borderRadius:RadiusSm,
             background:CreamSoft,
             border:"0.5px solid "+Gray200,
             marginBottom:12,
@@ -2160,7 +2160,7 @@ function FontUrlInput({ T, onApply }) {
           <div style={{display:"flex", gap:8}}>
             <button onClick={()=>apply("header")} style={{
               ...B({
-                flex:1, padding:"11px 14px", borderRadius:RadiusPill,
+                flex:1, padding:"11px 14px", minHeight:44, borderRadius:RadiusPill,
                 background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
                 color:"#fff",
                 border:"none",
@@ -2170,7 +2170,7 @@ function FontUrlInput({ T, onApply }) {
             }}>{T.cust_font_url_to_header}</button>
             <button onClick={()=>apply("body")} style={{
               ...B({
-                flex:1, padding:"11px 14px", borderRadius:RadiusPill,
+                flex:1, padding:"11px 14px", minHeight:44, borderRadius:RadiusPill,
                 background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
                 color:"#fff",
                 border:"none",
@@ -3353,7 +3353,6 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
-  const cRef = useRef();
   // === Nuvi Reactions (presence vivante) ===
   const { expression: nuviExpression, mode: nuviMode, bigLogoActive, triggerEvent: nuviTrigger } = useNuviReactions();
 
@@ -3674,13 +3673,27 @@ export default function App() {
     return () => window.removeEventListener("resize", c);
   }, []);
 
-  useEffect(() => {
-    if (!cRef.current) return;
+  // [Fix] Ce ResizeObserver etait pose dans un useEffect a dependances vides.
+  // Le conteneur du CV n'existe que dans la branche mobile, qui n'est montee
+  // qu'apres le premier rendu (mob est calcule dans un effet). L'effet
+  // trouvait donc cRef.current a null, sortait, et ne repassait jamais :
+  // cvW restait a 0, scale a 1, et le CV s'affichait en 794px de large dans
+  // un telephone de 390px. Une ref callback se declenche au montage reel du
+  // noeud, quel que soit l'ordre des rendus.
+  const cvResizeObs = useRef(null);
+  const cRef = useCallback((node) => {
+    if (cvResizeObs.current) {
+      cvResizeObs.current.disconnect();
+      cvResizeObs.current = null;
+    }
+    if (!node) return;
+    setCvW(node.getBoundingClientRect().width);
+    if (typeof ResizeObserver === "undefined") return;
     const ro = new ResizeObserver(es => {
       for (const e of es) setCvW(e.contentRect.width);
     });
-    ro.observe(cRef.current);
-    return () => ro.disconnect();
+    ro.observe(node);
+    cvResizeObs.current = ro;
   }, []);
 
   const scale = cvW > 0 ? Math.min(1, (cvW-16)/794) : 1;
@@ -3775,7 +3788,15 @@ export default function App() {
         // Injecte AVANT la mesure de hauteur pour que le calcul soit correct.
         const hideEditStyle = document.createElement("style");
         hideEditStyle.id = "cvf-pdf-hide-edit";
-        hideEditStyle.textContent = `.cvf-no-print { display: none !important; }`;
+        // Le CV est mis a l'echelle pour tenir dans un telephone
+        // (data-cvf-zoom). Le PDF, lui, doit toujours sortir en A4 pleine
+        // taille : on remet ce wrapper a zoom 1 le temps de la capture, pour
+        // que le rendu exporte ne depende pas de la largeur de l'ecran ni de
+        // la facon dont html2canvas interprete `zoom`.
+        hideEditStyle.textContent = `
+          .cvf-no-print { display: none !important; }
+          [data-cvf-zoom] { zoom: 1 !important; }
+        `;
         document.head.appendChild(hideEditStyle);
 
         // Force reflow pour que le masquage prenne effet avant la mesure
@@ -6165,7 +6186,7 @@ export default function App() {
             return (
               <button key={m} onClick={()=>setAiMode(m)} style={{
                 ...B({
-                  flex:1, padding:"10px 14px", borderRadius:RadiusPill,
+                  flex:1, padding:"10px 14px", minHeight:44, borderRadius:RadiusPill,
                   background:a ? Ink : Paper,
                   color:a ? Cream : Ink,
                   border:"0.5px solid "+(a ? Ink : Gray200),
@@ -6269,7 +6290,7 @@ export default function App() {
     flexShrink:0,
   });
   const finPill = (active) => ({
-    padding:"10px 14px", borderRadius:RadiusPill,
+    padding:"10px 14px", minHeight:44, borderRadius:RadiusPill,
     fontSize:12, fontWeight:active ? 600 : 500,
     color:active ? Cream : Ink,
     background:active ? Ink : Paper,
@@ -6304,7 +6325,7 @@ export default function App() {
         </button>
       ))}
       <div style={{
-        padding:"10px 14px", background:CreamSoft,
+        padding:"10px 14px", minHeight:44, background:CreamSoft,
         borderRadius:RadiusSm, fontSize:11, color:Gray600,
         lineHeight:1.6, marginTop:6,
         border:"0.5px solid "+Gray200,
@@ -6524,7 +6545,7 @@ export default function App() {
       </div>
       {layout==="ats" && (
         <div style={{
-          marginTop:6, padding:"10px 14px", background:GreenSoft,
+          marginTop:6, padding:"10px 14px", minHeight:44, background:GreenSoft,
           borderRadius:RadiusSm, fontSize:11, color:"#166534",
           border:"0.5px solid rgba(22,163,74,.25)",
         }}>{T.dats}</div>
@@ -6652,7 +6673,7 @@ export default function App() {
       {layout!=="ats" && (
         <div style={{
           fontSize:11, color:Gray600, marginBottom:10,
-          padding:"10px 14px", background:CreamSoft,
+          padding:"10px 14px", minHeight:44, background:CreamSoft,
           borderRadius:RadiusSm, lineHeight:1.6,
           border:"0.5px solid "+Gray200,
         }}>{T.t_ath}</div>
@@ -6735,7 +6756,7 @@ export default function App() {
         onChange={e=>setAK(e.target.value)}
         placeholder={T.t_aph}
         style={{
-          width:"100%", padding:"12px 14px",
+          width:"100%", padding:"12px 14px", minHeight:44,
           borderRadius:RadiusSm,
           border:"0.5px solid "+Gray200,
           background:Paper,
@@ -6753,7 +6774,7 @@ export default function App() {
       {quick.map(([l, fn], i) => (
         <button key={i} onClick={fn} style={{
           ...B({
-            width:"100%", padding:"12px 14px", borderRadius:RadiusMd,
+            width:"100%", padding:"12px 14px", minHeight:44, borderRadius:RadiusMd,
             background:Paper, color:Ink,
             border:"0.5px solid "+Gray200,
             fontSize:13, fontWeight:500, fontFamily:Sans,
@@ -7559,6 +7580,8 @@ export default function App() {
               alignItems: "center",
               gap: 10,
               padding: "12px 22px",
+              minHeight: 44,
+              boxSizing: "border-box",
               background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
               color: "#fff",
               border: "none",
@@ -7746,9 +7769,12 @@ export default function App() {
                   color:"#fff",
                   border:"none",
                   borderRadius:RadiusPill,
-                  padding:"6px 10px",
+                  padding:"6px 16px",
+                  minHeight:44,
+                  minWidth:44,
                   display:"flex",
                   alignItems:"center",
+                  justifyContent:"center",
                   gap:5,
                   fontSize:11,
                   fontWeight:600,
@@ -7770,7 +7796,8 @@ export default function App() {
               ...B({
                 background:Paper, color:Ink,
                 border:"0.5px solid "+Gray200,
-                borderRadius:RadiusPill, padding:"6px 12px",
+                borderRadius:RadiusPill, padding:"6px 14px",
+                minHeight:44,
                 fontSize:11, fontWeight:500, fontFamily:Sans,
               })
             }}>{T.zoom}</button>
@@ -7779,13 +7806,18 @@ export default function App() {
                 background:showCV ? Paper : Ink,
                 color:showCV ? Ink : Cream,
                 border:"0.5px solid "+(showCV ? Gray200 : Ink),
-                borderRadius:RadiusPill, padding:"6px 12px",
+                borderRadius:RadiusPill, padding:"6px 14px",
+                minHeight:44,
                 fontSize:11, fontWeight:500, fontFamily:Sans,
               })
             }}>{showCV ? T.hide : T.show}</button>
           </div>
         </div>
-        {showCV && (
+        {/* `!zoomed` : la superposition plein ecran rend deja CVEl. Sans ce
+            garde, deux noeuds portent id="cv-print" en meme temps, et
+            exportPDF (getElementById) capture celui que le hasard du DOM
+            place en premier. */}
+        {showCV && !zoomed && (
           <div ref={cRef} style={{
             background:"transparent", padding:"7px", flexShrink:0,
             position:"relative", zIndex:1,
@@ -7821,7 +7853,7 @@ export default function App() {
               borderRadius:5,
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
-              <div style={{
+              <div data-cvf-zoom style={{
                 zoom: scale,
                 width: "100%",
               }}>
@@ -7830,7 +7862,12 @@ export default function App() {
             </div>
           </div>
         )}
-        <div style={{flex:1, overflowY:"auto", padding:"13px 13px 96px", position:"relative", zIndex:1}}>
+        <div style={{flex:1, overflowY:"auto",
+          // Degage la nav ET la barre de suggestion, toutes deux en position
+          // fixed. La hauteur reelle est publiee par NuviBottomNav ; 96px
+          // en dur ne couvrait que la nav, le reste du contenu passait dessous.
+          padding:"13px 13px calc(var(--nuvi-bottom-inset, 96px) + 24px)",
+          position:"relative", zIndex:1}}>
           {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
               Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales
               via NuviBottomNav, donc pas besoin d'afficher leur contenu inline.
@@ -7933,7 +7970,10 @@ export default function App() {
               position: "fixed",
               ...(coachPos
                 ? { left: coachPos.x, top: coachPos.y, right: "auto", bottom: "auto" }
-                : { right: 16, bottom: 86 }),
+                // Se cale au-dessus du mobilier fixe du bas. A 86px fixes, le
+                // compagnon recouvrait la croix "masquer" de la barre de
+                // suggestion, qui devenait intappable.
+                : { right: 16, bottom: "calc(var(--nuvi-bottom-inset, 86px) + 16px)" }),
               zIndex: 90,
               display: "flex",
               flexDirection: "column",
