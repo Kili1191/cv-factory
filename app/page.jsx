@@ -59,7 +59,7 @@ import {
   countUnparsable, parsePeriod, reformatPeriodToYearOnly, formatDate,
 } from "./components/dateUtils";
 import { serializeCvForContext } from "../lib/cvSerializer";
-import { cachedAiCall, invalidateCacheForTask } from "../lib/aiCache";
+import { cachedAiCall } from "../lib/aiCache";
 import { applyCoachActions } from "../lib/applyCoachActions";
 import { applyJsonPatch, cleanupCv } from "../lib/applyJsonPatch";
 import { buildScopeGuard } from "../lib/coachScope";
