@@ -53,13 +53,13 @@ export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale =
 
   return (
     <>
-      <style>{`
+      <style dangerouslySetInnerHTML={{ __html: `
         @keyframes fcmFadeIn { from{opacity:0} to{opacity:1} }
         @keyframes fcmSlideUp {
           from { transform: translateY(20px); opacity: 0; }
           to { transform: translateY(0); opacity: 1; }
         }
-      `}</style>
+      ` }} />
 
       {/* Backdrop */}
       <div

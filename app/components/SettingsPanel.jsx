@@ -45,6 +45,7 @@ export default function SettingsPanel({
   T, locale, setLocale,
   darkMode, onToggleDark,
   onRelaunchTutorial, onClose,
+  onOpenHistory, onClearAiCache,
 }) {
 
   useEffect(() => {
@@ -208,6 +209,89 @@ export default function SettingsPanel({
           </svg>
         </button>
       </div>
+
+      {/* Historique d'activite */}
+      {onOpenHistory && (
+        <div style={{marginBottom:18}}>
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:Coral, marginBottom:10, fontFamily:Sans,
+          }}>{T.set_history}</div>
+          <button onClick={onOpenHistory} style={{
+            ...B({
+              width:"100%", display:"flex", alignItems:"center", gap:14,
+              padding:"14px 16px",
+              background:Paper, border:"0.5px solid "+Hairline,
+              borderRadius:RadiusMd, boxShadow:ShadowSm,
+              textAlign:"left", fontFamily:Sans,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            <div style={{
+              width:36, height:36, borderRadius:10,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              background:GreenSoft, color:Green, flexShrink:0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v5h5"/>
+                <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/>
+                <path d="M12 7v5l4 2"/>
+              </svg>
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:13, fontWeight:600, color:Ink}}>{T.set_history_open}</div>
+              <div style={{fontSize:11, color:Gray600, marginTop:2}}>{T.set_history_hint}</div>
+            </div>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke={Gray400} strokeWidth="2.5"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* Cache IA */}
+      {onClearAiCache && (
+        <div style={{marginBottom:18}}>
+          <div style={{
+            fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:Coral, marginBottom:10, fontFamily:Sans,
+          }}>{T.set_cache}</div>
+          <button onClick={onClearAiCache} style={{
+            ...B({
+              width:"100%", display:"flex", alignItems:"center", gap:14,
+              padding:"14px 16px",
+              background:Paper, border:"0.5px solid "+Hairline,
+              borderRadius:RadiusMd, boxShadow:ShadowSm,
+              textAlign:"left", fontFamily:Sans,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            <div style={{
+              width:36, height:36, borderRadius:10,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              background:CreamSoft, color:Coral, flexShrink:0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 6h18"/>
+                <path d="M8 6V4h8v2"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+              </svg>
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:13, fontWeight:600, color:Ink}}>{T.set_cache_clear}</div>
+              <div style={{fontSize:11, color:Gray600, marginTop:2}}>{T.set_cache_hint}</div>
+            </div>
+          </button>
+        </div>
+      )}
 
       {/* Raccourcis clavier - eyebrow Coral */}
       <div style={{marginBottom:18}}>

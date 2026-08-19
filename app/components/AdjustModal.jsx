@@ -5,7 +5,8 @@ import NuviLoadingMessages from "./NuviLoadingMessages";
 import LiquidGlassModal, { GlassCard, GlassButton, GlassInput, GlassSection } from "./LiquidGlassModal";
 import { applyCoachActions } from "../../lib/applyCoachActions";
 import { applyJsonPatch } from "../../lib/applyJsonPatch";
-import { buildScopeGuard } from "../../lib/coachScope";
+import { buildScopeGuard, isScopeUnlocked } from "../../lib/coachScope";
+import { logActivity, ACT } from "../../lib/activityLog";
 
 /**
  * AdjustModal v2 (2026-05-20) - Refonte LiquidGlassModal + actions structurees
@@ -186,7 +187,7 @@ export default function AdjustModal({
 
       // [v3 2026-05-20] JSON Patch RFC 6902 (operations standard) + scope guard
       // Couvre 100% des cas (plus de "job not done")
-      const scopeGuard = buildScopeGuard("free", lang);
+      const scopeGuard = buildScopeGuard("free", lang, { unlocked: isScopeUnlocked() });
 
       const prompt = scopeGuard
         + "\n\n" + "You are Nuvi, a senior CV expert. The candidate's complete CV is in your context (cv_context block)."
@@ -279,6 +280,7 @@ export default function AdjustModal({
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
+          logActivity(ACT.ADJUST_APPLIED, result.summary, { source: "adjust", ops: result.applied });
         }
         if (result.failed && result.failed.length > 0) {
           console.warn("[AdjustModal v3] Some operations failed:", result.failed);
@@ -292,6 +294,7 @@ export default function AdjustModal({
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
+          logActivity(ACT.ADJUST_APPLIED, result.summary, { source: "adjust", actions: result.applied });
         }
       }
 

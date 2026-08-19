@@ -10,7 +10,13 @@
 
 import React from "react";
 
-export function NuviLogoAnimated({ size = 26 }) {
+// `tone` doit correspondre au fond sur lequel le logo est pose.
+// "dark"  : lettres blanches + halo, pour du verre pose sur le CV.
+// "light" : lettres encre, pour un en-tete cream opaque. C'etait la vraie
+//           situation dans le Coach, ou le blanc sur cream ne laissait voir
+//           que les ombres portees — le mot ressortait comme une tache.
+export function NuviLogoAnimated({ size = 26, tone = "dark" }) {
+  const light = tone === "light";
   return (
     <div
       style={{
@@ -20,8 +26,10 @@ export function NuviLogoAnimated({ size = 26 }) {
         fontSize: size,
         letterSpacing: "-0.02em",
         lineHeight: 1,
-        color: "#fff",
-        textShadow: `
+        color: light ? "#0a0a0a" : "#fff",
+        textShadow: light
+          ? "none"
+          : `
           0 2px 6px rgba(0,0,0,0.35),
           0 0 10px rgba(217,119,87,0.4),
           0 0 18px rgba(91,61,245,0.3)
