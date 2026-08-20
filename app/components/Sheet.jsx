@@ -17,6 +17,7 @@
 //   children : contenu scrollable
 //   showLogo : afficher le NuviLogo en haut a gauche (default: true)
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import {
   Ink, Cream, CreamSoft, Paper, Coral,
@@ -30,6 +31,19 @@ import {
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 
 export default function Sheet({ title, eyebrow, onClose, children, showLogo = true }) {
+  // [Fix] Escape ferme la sheet. Chaque modale ajoutait son propre ecouteur,
+  // et trois d'entre elles l'avaient oublie : Versions, Activite et les
+  // feuilles d'edition ne se fermaient qu'au bouton ou au clic sur le fond.
+  // La primitive s'en charge maintenant pour toutes. Les modales qui doivent
+  // rester ouvertes pendant un chargement gardent leur garde dans `onClose`,
+  // donc rien ne se ferme au mauvais moment.
+  useEffect(() => {
+    if (typeof onClose !== "function") return undefined;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
     <div style={{
       position: "fixed", inset: 0, zIndex: 2000,

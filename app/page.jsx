@@ -2990,12 +2990,12 @@ function LayoutPreview({ kind, active }) {
 // - Reset au theme en bas
 // ============================================================
 function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
-  apiKey, notify, locale, onClose, layout, setLy }) {
+  apiKey, notify, locale, onClose, layout, setLy, initialTab = "colors" }) {
 
   // Scope : "global" ou "version" - quel custom on edite.
   const [scope, setScope] = useState("global");
-  // Tab principal : "colors" | "fonts" | "suggest"
-  const [tab, setTab] = useState("colors");
+  // Tab principal : "colors" | "fonts" | "layout" | "suggest"
+  const [tab, setTab] = useState(initialTab);
 
   // Lit / ecrit le custom selon le scope choisi.
   const versionCustom = (cv && cv.custom && typeof cv.custom === "object") ? cv.custom : null;
@@ -3095,7 +3095,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
       }}>
         {[["colors", T.cust_tab_colors],
           ["fonts",  T.cust_tab_fonts],
-          ["layout", "Mise en page"],
+          ["layout", locale === "en" ? "Layout" : "Mise en page"],
           ["suggest",T.cust_tab_suggest]].map(([k, label]) => (
             <button key={k} onClick={()=>setTab(k)} style={{...B(pill(tab===k))}}>
               {label}
@@ -3339,6 +3339,9 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
+  // quand on arrive par l'entree Modeles de la barre laterale).
+  const [customizeTab, setCustomizeTab] = useState("colors");
   // === Nuvi Reactions (presence vivante) ===
   const { expression: nuviExpression, mode: nuviMode, bigLogoActive, triggerEvent: nuviTrigger } = useNuviReactions();
 
@@ -4609,10 +4612,28 @@ export default function App() {
         + '{"id":"differentiation","score":55,"reco":"phrase actionnable"}'
         + ']}';
       const txt = await aiCall(p);
-      const r = parseJSON(txt);
+      const parsed = parseJSON(txt);
+      // [Fix] Le meme nombre portait trois noms. Le prompt demande
+      // `global_score`, ScoreDashboard lit `global_score`, mais le suivi de
+      // progression lisait `dashResult.score` et la reaction de Nuvi lisait
+      // `r.total`. Les deux derniers valaient donc toujours undefined :
+      // l'historique de score n'enregistrait jamais rien (la garde
+      // `typeof dashResult.score !== "number"` sortait a chaque fois), la
+      // modale Verdict ne se declenchait jamais, et Nuvi felicitait de la
+      // meme facon un CV a 20 et un CV a 95. On aligne les trois ici.
+      const r = parsed && typeof parsed === "object" ? { ...parsed } : parsed;
+      if (r && typeof r === "object") {
+        const g = [r.global_score, r.score, r.total]
+          .find(v => typeof v === "number" && !Number.isNaN(v));
+        if (typeof g === "number") {
+          r.global_score = g;
+          r.score = g;
+          r.total = g;
+        }
+      }
       setDashResult(r);
       // Nuvi reaction selon score
-      if (typeof nuviTrigger === 'function' && r) {
+      if (typeof nuviTrigger === 'function' && r && typeof r.total === "number") {
         if (r.total >= 80) nuviTrigger('audit-excellent', { score: r.total });
         else if (r.total < 50) nuviTrigger('audit-low', { score: r.total });
         else nuviTrigger('feature-completed');
@@ -6923,8 +6944,9 @@ export default function App() {
           cvCustom={cvCustom} setCvCustom={setCvCustom}
           setCvFn={setCVFn}
           apiKey={apiKey} notify={notify} locale={locale}
-          onClose={()=>setShowCustomize(false)}
+          onClose={()=>{ setShowCustomize(false); setCustomizeTab("colors"); }}
           layout={layout} setLy={setLy}
+          initialTab={customizeTab}
         />
       )}
 
@@ -7452,6 +7474,8 @@ export default function App() {
                 if (subKey === "score")      setShowScore(true);
                 else if (subKey === "pos")   { runPositioning && runPositioning(); }
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
+                else if (subKey === "ats")   setShowAudit(true);
+                else if (subKey === "interview") setShowInterview(true);
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
@@ -7464,17 +7488,25 @@ export default function App() {
                 else if (subKey === "versions")  setShowVersions(true);
                 else if (subKey === "compare")   {
                   if (versions.length < 2) {
-                    notify(lang === "fr"
+                    // [Fix] `lang` n'existe pas dans ce composant : la variable
+                    // s'appelle `locale`. Chaque clic sur "Comparer" avec moins
+                    // de deux versions levait donc "lang is not defined" et le
+                    // gestionnaire mourait avant d'afficher quoi que ce soit.
+                    notify(locale === "fr"
                       ? "Il faut au moins 2 versions pour comparer."
                       : "At least 2 versions needed to compare.");
                   } else {
                     setShowCompare(true);
                   }
                 }
-                else if (subKey === "templates") setShowMultiCV(true); // templates inclus dans MultiCV
+                // [Fix] "Modeles" ouvrait la strategie multi-CV, qui parle de
+                // versions sauvegardees et n'a rien d'un choix de modele. Elle
+                // ouvre desormais la mise en page, la ou les modeles vivent.
+                else if (subKey === "templates") { setCustomizeTab("layout"); setShowCustomize(true); }
               } else if (parentKey === "design") {
                 if (subKey === "custom")    setShowCustomize(true);
                 else if (subKey === "translate") setShowTranslate(true);
+                else if (subKey === "linkedin")  setShowLinkedIn(true);
               }
             }}
             lang={locale}

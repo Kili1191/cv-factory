@@ -11,6 +11,7 @@ const SUITES = [
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],
   ["le pack candidature produit une lettre", "./application-pack-produces-a-letter.mjs"],
+  ["chaque fonctionnalite produit un resultat", "./every-feature-produces-output.mjs"],
 ];
 
 const only = process.argv[2];

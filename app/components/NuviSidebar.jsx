@@ -65,9 +65,11 @@ export default function NuviSidebar({
       edit_id: "Identite", edit_exp: "Experiences", edit_edu: "Formation", edit_sk: "Competences",
       audits_score: "Score recruteur", audits_pos: "Positionnement",
       audits_truth: "Truth Check", audits_gap: "Lisser le parcours",
+      audits_ats: "Audit ATS", audits_interview: "Preparer l'entretien",
       cvs_list: "Liste de mes CV", cvs_versions: "Versions",
       cvs_compare: "Comparer", cvs_templates: "Modeles",
       design_custom: "Personnaliser", design_translate: "Traduction",
+      design_linkedin: "Profil LinkedIn",
     },
     en: {
       home: "Home", coach: "Coach", edit: "Edit", adjust: "Tweak",
@@ -78,9 +80,11 @@ export default function NuviSidebar({
       edit_id: "Identity", edit_exp: "Experience", edit_edu: "Education", edit_sk: "Skills",
       audits_score: "Recruiter score", audits_pos: "Positioning",
       audits_truth: "Truth Check", audits_gap: "Gap repair",
+      audits_ats: "ATS audit", audits_interview: "Interview prep",
       cvs_list: "My CVs", cvs_versions: "Versions",
       cvs_compare: "Compare", cvs_templates: "Templates",
       design_custom: "Customize", design_translate: "Translate",
+      design_linkedin: "LinkedIn profile",
     },
   };
   const L = labels[lang] || labels.fr;
@@ -114,6 +118,9 @@ export default function NuviSidebar({
     compare: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 00-2 2v14a2 2 0 002 2h3"/><path d="M16 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3"/><path d="M12 3v18"/></svg>),
     templates: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>),
     custom: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/></svg>),
+    ats: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 13h2"/><path d="M9 17h6"/></svg>),
+    interview: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/></svg>),
+    linkedin: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-4 0v7h-4v-11h4v1.5"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg>),
     translate: (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/></svg>),
   };
 
@@ -129,6 +136,8 @@ export default function NuviSidebar({
       { key: "pos",   label: L.audits_pos,   icon: SubIcons.pos,   isAI: true  },
       { key: "truth", label: L.audits_truth, icon: SubIcons.truth, isAI: true  },
       { key: "gap",   label: L.audits_gap,   icon: SubIcons.gap,   isAI: true  },
+      { key: "ats",   label: L.audits_ats,   icon: SubIcons.ats,   isAI: true  },
+      { key: "interview", label: L.audits_interview, icon: SubIcons.interview, isAI: true },
     ],
     cvs: [
       { key: "list",      label: L.cvs_list,      icon: SubIcons.list,      isAI: false },
@@ -139,6 +148,7 @@ export default function NuviSidebar({
     design: [
       { key: "custom",    label: L.design_custom,    icon: SubIcons.custom,    isAI: false },
       { key: "translate", label: L.design_translate, icon: SubIcons.translate, isAI: true  },
+      { key: "linkedin",  label: L.design_linkedin,  icon: SubIcons.linkedin,  isAI: true  },
     ],
   };
 
