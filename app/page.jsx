@@ -7198,6 +7198,15 @@ export default function App() {
           loading={packLoading}
           msgIdx={packMsgIdx}
           onCopy={copyToClipboard}
+          // Permet de generer la candidature en collant une offre directement
+          // dans ce panneau. Sans cela, il ne produisait quelque chose que si
+          // l'utilisateur etait passe par l'analyse d'offre au prealable, et
+          // restait vide dans tous les autres cas.
+          onGenerate={(offerText) => {
+            if (!offerText) return;
+            setPackResult(null);
+            setPackCtx({ offer: offerText, matchRes: null });
+          }}
           onClose={()=>{
             if (packLoading) return;
             setShowPack(false);

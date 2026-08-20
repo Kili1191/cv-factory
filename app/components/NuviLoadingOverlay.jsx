@@ -37,18 +37,24 @@ export default function NuviLoadingOverlay({
       //   2. Puis on commence le fade-out (250ms)
       // Total : 350ms apres que active passe a false, l'overlay est parti.
       // L'utilisateur voit DIRECTEMENT le nouveau CV (jamais l'ancien).
+      // [Fix] Le second minuteur etait range dans `renderDelay._fadeTimer`.
+      // Dans un navigateur, setTimeout renvoie un NOMBRE : ecrire une
+      // propriete sur un nombre leve une TypeError en mode strict, et les
+      // modules ES le sont toujours. Chaque fin de chargement jetait donc
+      // "Cannot create property '_fadeTimer' on number", et le nettoyage ne
+      // pouvait jamais annuler le fondu — le minuteur survivait au demontage
+      // et venait modifier l'etat d'un composant disparu.
+      let fadeTimer = null;
       const renderDelay = setTimeout(() => {
         setFadingOut(true);
-        const fadeTimer = setTimeout(() => {
+        fadeTimer = setTimeout(() => {
           setShouldRender(false);
           setFadingOut(false);
         }, 250);
-        // store in closure pour cleanup
-        renderDelay._fadeTimer = fadeTimer;
       }, 100);
       return () => {
         clearTimeout(renderDelay);
-        if (renderDelay._fadeTimer) clearTimeout(renderDelay._fadeTimer);
+        if (fadeTimer) clearTimeout(fadeTimer);
       };
     }
   }, [active, shouldRender]);
