@@ -233,7 +233,8 @@ export default function AdjustModal({
         + "\n- Read the instruction carefully. Identify WHICH parts of the CV to modify."
         + "\n- Return ONLY the operations needed. Do NOT regenerate the whole CV."
         + "\n- If instruction is unclear, return empty operations + ask 1 clarifying question."
-        + "\n- If instruction is OFF-TOPIC (see scope above), refuse politely with empty operations."
+        // Plus de refus hors sujet : le perimetre est desactive cote produit
+        // (voir SCOPE_ENABLED dans lib/coachScope.js). On aide, point.
         + "\n- " + noDash + " " + langLine
 
         + "\n\n# JSON PATCH OPERATIONS (RFC 6902)"
