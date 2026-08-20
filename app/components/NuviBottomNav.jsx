@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 /**
  * NuviBottomNav — Bottom navigation mobile (5 icônes)
@@ -35,6 +35,14 @@ export default function NuviBottomNav({
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [suggestDismissed, setSuggestDismissed] = useState(false);
+
+  // La barre de nav et la barre de suggestion sont en position fixed et
+  // recouvraient le bas du contenu : le champ "annees d'experience" passait
+  // sous la suggestion, les boutons de theme sous la nav. Le padding bas du
+  // contenu etait fige a 96px alors que le mobilier fait 70px + la hauteur
+  // reelle de la suggestion. On publie la hauteur mesuree, le contenu s'y
+  // adapte (voir --nuvi-bottom-inset dans page.jsx).
+  const suggestRef = useRef(null);
 
   // Si Nuvi change de suggestion, on re-affiche (meme si l'user avait ferme
   // l'ancienne). Une nouvelle suggestion merite une nouvelle chance.
@@ -199,6 +207,28 @@ export default function NuviBottomNav({
     onSelect(item.key);
   };
 
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const NAV_H = 70;
+    const apply = () => {
+      const el = suggestRef.current;
+      const extra = el ? el.getBoundingClientRect().height + 12 : 0;
+      document.documentElement.style.setProperty(
+        "--nuvi-bottom-inset", (NAV_H + extra) + "px");
+    };
+    apply();
+    let ro = null;
+    if (suggestRef.current && typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(apply);
+      ro.observe(suggestRef.current);
+    }
+    window.addEventListener("resize", apply);
+    return () => {
+      window.removeEventListener("resize", apply);
+      if (ro) ro.disconnect();
+    };
+  }, [suggestedAction, suggestDismissed, drawerOpen]);
+
   return (
     <>
       {/* Drawer "Plus" en overlay */}
@@ -286,7 +316,7 @@ export default function NuviBottomNav({
           avant selon l'etat du CV. Dismissable (amelioration 1). L'user reste
           libre : la barre 5-icones en dessous donne acces a tout. */}
       {suggestedAction && !suggestDismissed && !drawerOpen && (
-        <div style={{
+        <div ref={suggestRef} style={{
           position: "fixed",
           bottom: "calc(70px + env(safe-area-inset-bottom, 0px))",
           left: 12, right: 12,
@@ -320,7 +350,8 @@ export default function NuviBottomNav({
               flex: 1,
               background: "linear-gradient(135deg, #5b3df5, #b91c8c)",
               color: "#fff", border: "none", borderRadius: 12,
-              padding: "11px 14px", fontSize: 14, fontWeight: 600,
+              padding: "11px 14px", minHeight: 44, boxSizing: "border-box",
+              fontSize: 14, fontWeight: 600,
               cursor: "pointer", fontFamily: "'Inter', sans-serif",
               textAlign: "center",
             }}>
@@ -331,7 +362,9 @@ export default function NuviBottomNav({
             onClick={() => setSuggestDismissed(true)}
             aria-label={lang === "fr" ? "Masquer la suggestion" : "Dismiss"}
             style={{
-              width: 28, height: 28, borderRadius: "50%",
+              // Cible 44px (WCAG 2.5.5) ; le rond visible reste petit grace au
+              // fond transparent, seule la zone tactile grandit.
+              width: 44, height: 44, borderRadius: "50%",
               background: "transparent", border: "none", cursor: "pointer",
               color: InkMuted, fontSize: 16, flexShrink: 0,
               display: "flex", alignItems: "center", justifyContent: "center",

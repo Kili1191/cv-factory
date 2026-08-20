@@ -22,7 +22,17 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={FONT_HREF} />
       </head>
-      <body style={{ margin: 0, padding: 0 }}>{children}</body>
+      <body style={{ margin: 0, padding: 0 }}>
+        {/*
+          L'application n'avait aucun titre de niveau 1 ni aucun point de
+          repere : les titres etaient des <div> stylises. Un lecteur d'ecran
+          n'avait donc aucun plan du document, et les moteurs de recherche
+          aucune accroche. Le titre est masque visuellement (il ferait doublon
+          avec le logo) mais reste expose aux technologies d'assistance.
+        */}
+        <h1 className="sr-only">Nuvi — editeur de CV</h1>
+        <main>{children}</main>
+      </body>
     </html>
   );
 }

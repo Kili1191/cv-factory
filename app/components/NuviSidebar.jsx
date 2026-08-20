@@ -209,7 +209,12 @@ export default function NuviSidebar({
     display: "flex",
     alignItems: "center",
     gap: 14,
+    // 40px de haut : sous le minimum tactile de 44px (WCAG 2.5.5).
+    // La barre est repliee en icones, donc la cible etait un carre de 40.
     padding: "10px 12px",
+    minHeight: 44,
+    minWidth: 44,
+    boxSizing: "border-box",
     margin: "2px 8px",
     borderRadius: 10,
     cursor: "pointer",
