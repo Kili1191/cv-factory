@@ -547,6 +547,10 @@ const EN_T = {
   pk_eyebrow:"Application",
   pk_title:"Complete application",
   pk_sub:"CV + Cover letter + LinkedIn + Email + Pitch + STAR",
+  pk_offer_label:"Paste the job offer",
+  pk_offer_ph:"Paste the full posting here: job title, responsibilities, required profile, skills...",
+  pk_offer_cta:"Generate my full application",
+  pk_offer_hint:"Nuvi writes the cover letter, LinkedIn message, email, pitch and your STAR examples from this offer and your CV.",
   pk_loading_sub:"Generation takes 25 to 40 seconds",
   pk_loading_msgs:[
     "Drafting cover letter...",

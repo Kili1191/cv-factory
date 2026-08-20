@@ -10,7 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple,
 } from "./tokens";
 import Sheet from "./Sheet";
 
@@ -62,8 +62,9 @@ function Section({ T, title, content, onCopy, small }) {
   );
 }
 
-export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose, onCopy }) {
+export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose, onCopy, onGenerate }) {
   const [activeTab, setActiveTab] = useState("cover");
+  const [offer, setOffer] = useState("");
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape" && !loading) onClose(); };
@@ -136,6 +137,49 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
       )}
 
       {/* Pack pret */}
+      {/* [Fix] Sans offre, ce panneau n'affichait que son titre : il ne se
+          generait que si l'utilisateur passait d'abord par l'analyse d'offre,
+          ce que rien n'indiquait. Ouvert depuis le menu, il restait vide pour
+          toujours. On accepte l'offre ici : coller, generer. */}
+      {!loading && !pack && (
+        <div>
+          <label style={{
+            display:"block", fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:Coral, marginBottom:8, fontFamily:Sans,
+          }}>{T.pk_offer_label}</label>
+          <textarea
+            value={offer}
+            onChange={(e) => setOffer(e.target.value)}
+            placeholder={T.pk_offer_ph}
+            rows={9}
+            style={{
+              width:"100%", boxSizing:"border-box",
+              padding:"12px 14px", borderRadius:RadiusMd,
+              border:"0.5px solid "+Hairline, background:Paper,
+              fontSize:13, lineHeight:1.6, fontFamily:Sans, color:Ink,
+              resize:"vertical", marginBottom:14,
+            }}
+          />
+          <button
+            onClick={() => onGenerate && onGenerate(offer.trim())}
+            disabled={!offer.trim() || !onGenerate}
+            style={{
+              ...B({
+                width:"100%", padding:"13px 18px", minHeight:44,
+                boxSizing:"border-box", borderRadius:RadiusPill,
+                background: offer.trim() && onGenerate ? GradPurple : Hairline,
+                color: offer.trim() && onGenerate ? "#fff" : InkMuted,
+                fontSize:14, fontWeight:600, fontFamily:Sans, border:"none",
+              })
+            }}>{T.pk_offer_cta}</button>
+          <p style={{
+            fontSize:11.5, color:InkMuted, textAlign:"center",
+            marginTop:10, lineHeight:1.5,
+          }}>{T.pk_offer_hint}</p>
+        </div>
+      )}
+
       {!loading && pack && (
         <>
           {/* Tabs - active = border-bottom Purple */}

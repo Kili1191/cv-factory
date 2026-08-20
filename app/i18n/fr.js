@@ -545,6 +545,10 @@ const FR_T = {
   pk_eyebrow:"Candidature",
   pk_title:"Candidature complete",
   pk_sub:"CV + Lettre + LinkedIn + Email + Pitch + STAR",
+  pk_offer_label:"Colle l'offre d'emploi",
+  pk_offer_ph:"Colle ici l'offre complete : intitule du poste, missions, profil recherche, competences...",
+  pk_offer_cta:"Generer ma candidature complete",
+  pk_offer_hint:"Nuvi ecrit la lettre, le message LinkedIn, l'email, le pitch et tes exemples STAR a partir de cette offre et de ton CV.",
   pk_loading_sub:"La generation prend 25 a 40 secondes",
   pk_loading_msgs:[
     "Redaction de la lettre de motivation...",
