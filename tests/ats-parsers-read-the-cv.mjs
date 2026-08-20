@@ -24,11 +24,41 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import {
-  startServer, stopServer, launchBrowser, exportCvPdf, extractPdfText, SAMPLE_CV,
+  startServer, stopServer, launchBrowser, exportCvPdf, extractPdfLines, SAMPLE_CV,
 } from "./lib/harness.mjs";
+import { parseResume } from "../lib/atsParser.js";
+import { compareToTruth } from "../lib/atsFidelity.js";
 import { readFileSync } from "node:fs";
 
 const LAYOUTS = ["sidebar", "ats", "classic", "timeline", "swiss", "compact"];
+
+// FIDELITE MINIMALE PAR MODELE
+//
+// On exporte, on relit le PDF comme un robot, on reconstruit les champs, et on
+// compare au CV que l'application detient. Le score est la part des champs
+// retrouves a leur place, ponderee par leur importance.
+//
+// Les planchers ci-dessous sont les valeurs mesurees, moins une marge. Ils
+// disent surtout une chose, qui est le vrai enseignement de ce test :
+//
+//   une colonne  -> 100 partout. ATS-Safe, Classique, Chronologie.
+//   deux colonnes -> degrade sur les moteurs qui reconstruisent le texte par
+//                    position (pdf.js, poppler). Ceux-la fusionnent les deux
+//                    colonnes ligne a ligne : "Experience Professionnelle
+//                    Competences" arrive sur une seule ligne, et plus aucune
+//                    section n'est reconnue.
+//
+// Ce n'est pas reparable depuis le PDF : les colonnes sont cote a cote sur la
+// page, et un lecteur qui va par position les melangera toujours. C'est
+// exactement la raison d'etre d'un modele ATS-Safe en une colonne.
+const FLOORS = {
+  ats:      { "pdf.js": 100, poppler: 100, "tika/pdfbox": 100 },
+  classic:  { "pdf.js": 100, poppler: 100, "tika/pdfbox": 100 },
+  timeline: { "pdf.js": 100, poppler: 90,  "tika/pdfbox": 100 },
+  sidebar:  { "pdf.js": 80,  poppler: 92,  "tika/pdfbox": 100 },
+  swiss:    { "pdf.js": 80,  poppler: 90,  "tika/pdfbox": 100 },
+  compact:  { "pdf.js": 50,  poppler: 84,  "tika/pdfbox": 100 },
+};
 
 const CV = {
   ...SAMPLE_CV,
@@ -79,7 +109,9 @@ const ENGINES = [
   {
     name: "pdf.js",
     available: () => true,
-    read: async (pdfPath) => (await extractPdfText(readFileSync(pdfPath))).text,
+    // Version qui conserve les lignes : sans elles, aucun analyseur ne peut
+    // reconnaitre ses sections, et on mesurerait notre propre instrument.
+    read: async (pdfPath) => (await extractPdfLines(readFileSync(pdfPath))).text,
   },
   {
     name: "poppler",
@@ -144,15 +176,27 @@ export async function run() {
             + `candidat. Un analyseur qui prend la premiere ligne pour l'identite se trompe.`
           );
         }
-        summary.push(`${layout}/${engine.name}`);
+        // Fidelite : ce que le robot a reconstruit, compare a la verite.
+        const report = compareToTruth(CV, parseResume(text), text);
+        const floor = (FLOORS[layout] || {})[engine.name];
+        if (typeof floor === "number" && report.score < floor) {
+          const worst = [...report.lost, ...report.damaged].slice(0, 3)
+            .map(c => `${c.label} (${c.state})`).join(", ");
+          failures.push(
+            `${layout} / ${engine.name} : fidelite ${report.score}%, attendu au moins ${floor}%. `
+            + `Champs en cause : ${worst || "-"}`
+          );
+        }
+        summary.push(`${layout}/${engine.name}:${report.score}`);
       }
     }
 
     if (!failures.length) {
       console.log(
         `      ${LAYOUTS.length} modeles x ${engines.length} moteurs `
-        + `(${engines.map(e => e.name).join(", ")}) : tous les champs presents, nom en premiere ligne`
+        + `(${engines.map(e => e.name).join(", ")}) : champs presents, nom en premiere ligne`
       );
+      console.log(`      fidelite : ${summary.join("  ")}`);
     }
     if (missing.length) {
       // Pas un echec : un manque de couverture, dit a voix haute.

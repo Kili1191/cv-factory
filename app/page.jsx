@@ -3771,6 +3771,7 @@ export default function App() {
         range.detach && range.detach();
         if (r.width > 0 && r.height > 0) {
           frags.push({
+            el: node.parentElement,
             text,
             left: r.left - rootRect.left,
             right: r.right - rootRect.left,
@@ -3830,10 +3831,75 @@ export default function App() {
       if (best < frags.length * 0.30) split = null;
     }
 
-    let ordered;
-    if (split === null) {
+    // ORDRE DE LECTURE
+    //
+    // La geometrie seule ne suffit pas. Une gouttiere verticale unique coupe
+    // a travers les dates alignees a droite : sur le modele compact, mesure
+    // par les trois moteurs, "2021 - 2024" se retrouvait dans la section
+    // Competences et "2016 - 2018" collee a "Natif". Plus aucune date n'etait
+    // rattachee a son poste, donc plus aucune anciennete calculable.
+    //
+    // Le document, lui, sait a quelle colonne appartient chaque mot. On suit
+    // donc sa structure : les blocs de premier niveau donnent les colonnes,
+    // l'ordre du document donne l'ordre a l'interieur de chacune, et on
+    // commence par le bloc qui porte le nom du candidat. La geometrie ne sert
+    // plus que de secours si la structure attendue n'est pas la.
+    const nameWanted = (candidateName || "").trim().toLowerCase();
+    const nameFrag = nameWanted
+      ? frags.find(f => f.text.toLowerCase().includes(nameWanted))
+      : null;
+
+    let blocks = [];
+    {
+      let level = rootEl.firstElementChild
+        ? Array.from(rootEl.firstElementChild.children)
+        : [];
+      // Un seul bloc ne separe rien : on descend jusqu'a en trouver plusieurs.
+      let guard = 0;
+      while (level.length === 1 && guard < 4) {
+        level = Array.from(level[0].children);
+        guard += 1;
+      }
+      blocks = level;
+    }
+
+    const blockIndexOf = (f) => {
+      let n = f.el;
+      let guard = 0;
+      while (n && guard < 24) {
+        const i = blocks.indexOf(n);
+        if (i !== -1) return i;
+        n = n.parentElement;
+        guard += 1;
+      }
+      return -1;
+    };
+
+    let ordered = null;
+    if (blocks.length > 1 && nameFrag) {
+      const groups = new Map();
+      let attributed = 0;
+      for (const f of frags) {
+        const i = blockIndexOf(f);
+        if (i === -1) continue;
+        attributed += 1;
+        if (!groups.has(i)) groups.set(i, []);
+        groups.get(i).push(f);
+      }
+      // Si une part notable des fragments echappe aux blocs, la structure
+      // n'est pas celle qu'on croit : on laisse la geometrie faire.
+      if (attributed >= frags.length * 0.9) {
+        const nameBlock = blockIndexOf(nameFrag);
+        if (nameBlock !== -1) {
+          const order = [nameBlock, ...[...groups.keys()].filter(i => i !== nameBlock).sort((a, b) => a - b)];
+          ordered = order.flatMap(i => groups.get(i) || []);
+        }
+      }
+    }
+
+    if (ordered === null && split === null) {
       ordered = [...frags].sort(byReading);
-    } else {
+    } else if (ordered === null) {
       // Un fragment a cheval sur la gouttiere appartient a la colonne qui en
       // porte la plus grande part. Ils etaient tous ecrits en tete du
       // document : sur le modele chronologie, "Paris, France" chevauchait la

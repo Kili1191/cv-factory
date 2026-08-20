@@ -145,6 +145,44 @@ export async function extractPdfText(bytes) {
   return { text: out.replace(/\s+/g, " ").trim(), pages: doc.numPages };
 }
 
+// Meme extraction, mais en conservant les lignes.
+//
+// extractPdfText ci-dessus ecrase les sauts de ligne : pratique pour chercher
+// une chaine, inutilisable pour analyser un CV. Un analyseur reconnait ses
+// sections parce que "Experience" est seul sur sa ligne ; sans lignes, tout
+// devient un bloc unique et plus rien n'est classe. pdf.js ne rend pas de
+// lignes, il rend des fragments places : on les regroupe par ordonnee, comme
+// le font poppler et PDFBox.
+export async function extractPdfLines(bytes) {
+  const mod = await import("pdfjs-dist/legacy/build/pdf.js");
+  const pdfjs = mod.getDocument ? mod : (mod.default || {});
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+  const lines = [];
+  for (let i = 1; i <= doc.numPages; i += 1) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const rows = [];
+    for (const item of content.items) {
+      if (!item.str || !item.str.trim()) continue;
+      const x = item.transform[4];
+      const y = item.transform[5];
+      // Deux fragments sur la meme ligne de base appartiennent a la meme
+      // ligne. La tolerance absorbe les variations de police.
+      const row = rows.find(r => Math.abs(r.y - y) <= 3);
+      if (row) row.parts.push({ x, str: item.str });
+      else rows.push({ y, parts: [{ x, str: item.str }] });
+    }
+    // Ordonnee decroissante : dans un PDF, l'origine est en bas de page.
+    rows.sort((a, b) => b.y - a.y);
+    for (const row of rows) {
+      row.parts.sort((a, b) => a.x - b.x);
+      const text = row.parts.map(p => p.str).join(" ").replace(/\s+/g, " ").trim();
+      if (text) lines.push(text);
+    }
+  }
+  return { lines, text: lines.join("\n"), pages: doc.numPages };
+}
+
 // Telecharge un vrai PDF depuis l'application, dans la mise en page demandee.
 // Rend aussi le chemin du fichier : les analyseurs externes (poppler, Tika)
 // lisent un fichier, pas un tableau d'octets.
