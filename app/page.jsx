@@ -3819,16 +3819,36 @@ export default function App() {
         const balance = Math.min(before, after);
         if (balance > best) { best = balance; split = cand; }
       }
-      if (best < frags.length * 0.12) split = null;
+      // Le seuil separe une vraie mise en page a deux colonnes d'une colonne
+      // unique ou quelques dates sont alignees a droite. Mesure sur les six
+      // modeles, part des fragments du cote le moins fourni :
+      //   deux colonnes reelles : barre laterale 0.47, compact 0.49
+      //   colonne unique        : suisse 0.03, ATS 0.06, classique 0.09,
+      //                           chronologie 0.17
+      // L'ancien seuil de 0.12 classait donc la chronologie en deux colonnes
+      // et cassait tout son ordre de lecture. 0.30 tombe dans l'ecart, large.
+      if (best < frags.length * 0.30) split = null;
     }
 
     let ordered;
     if (split === null) {
       ordered = [...frags].sort(byReading);
     } else {
-      const straddling = frags.filter(f => f.left < split && f.right > split);
-      const before = frags.filter(f => f.right <= split);
-      const after = frags.filter(f => f.left >= split);
+      // Un fragment a cheval sur la gouttiere appartient a la colonne qui en
+      // porte la plus grande part. Ils etaient tous ecrits en tete du
+      // document : sur le modele chronologie, "Paris, France" chevauchait la
+      // gouttiere et devenait la premiere ligne du texte extrait, avant le
+      // nom. Un analyseur qui prend la premiere ligne pour l'identite lisait
+      // une ville a la place du candidat. Seul Tika le voyait : pdf.js et
+      // poppler reordonnent le texte par position et masquaient le probleme.
+      const before = [], after = [];
+      for (const f of frags) {
+        if (f.right <= split) { before.push(f); continue; }
+        if (f.left >= split) { after.push(f); continue; }
+        const leftShare = split - f.left;
+        const rightShare = f.right - split;
+        (leftShare >= rightShare ? before : after).push(f);
+      }
       // La colonne a ecrire en premier est celle qui porte le nom du
       // candidat. On le cherche par son texte : se fier au plus gros
       // caractere ne marche pas, le monogramme d'initiales du modele par
@@ -3848,11 +3868,7 @@ export default function App() {
         anchor = pool.reduce((a, b) => (b.height > a.height ? b : a), pool[0]);
       }
       const [first, second] = before.includes(anchor) ? [before, after] : [after, before];
-      ordered = [
-        ...straddling.sort(byReading),
-        ...first.sort(byReading),
-        ...second.sort(byReading),
-      ];
+      ordered = [...first.sort(byReading), ...second.sort(byReading)];
     }
 
     // 3. Ecriture invisible, exactement sur le texte de l'image.

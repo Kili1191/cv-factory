@@ -5,6 +5,9 @@
 // ligne ce qui ne va plus, et qu'il tourne aussi bien ici qu'en CI.
 
 import { chromium } from "playwright";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 
@@ -140,4 +143,55 @@ export async function extractPdfText(bytes) {
     out += content.items.map(it => it.str).join(" ") + "\n";
   }
   return { text: out.replace(/\s+/g, " ").trim(), pages: doc.numPages };
+}
+
+// Telecharge un vrai PDF depuis l'application, dans la mise en page demandee.
+// Rend aussi le chemin du fichier : les analyseurs externes (poppler, Tika)
+// lisent un fichier, pas un tableau d'octets.
+export async function exportCvPdf(browser, cv, layout) {
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 950 }, acceptDownloads: true,
+  });
+  const page = await ctx.newPage();
+  // Seules les exceptions JS comptent : un echec de chargement de police
+  // depend du reseau de la machine, pas de l'export.
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message.split("\n")[0]));
+  await seedApp(page, cv, { layout });
+
+  // Le .catch est attache tout de suite : sinon, si un clic echoue, la
+  // promesse reste pendante et sa rejection masque la vraie erreur.
+  let downloadErr = null;
+  const downloadPromise = page
+    .waitForEvent("download", { timeout: 90_000 })
+    .catch((e) => { downloadErr = e; return null; });
+
+  let clickErrMsg = null;
+  try {
+    await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
+    await page.waitForTimeout(1500);
+    const confirm = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
+    if (await confirm.count() > 1) { await confirm.nth(1).click({ timeout: 10_000 }).catch(() => {}); }
+  } catch (clickErr) {
+    clickErrMsg = clickErr.message.split("\n")[0];
+  }
+
+  const download = await downloadPromise;
+  if (!download) {
+    await ctx.close();
+    return {
+      errors, failed:
+        "aucun PDF telecharge.\n"
+        + (clickErrMsg ? "      clic : " + clickErrMsg + "\n" : "")
+        + "      erreurs page : " + (errors.slice(0, 3).join(" | ") || "aucune") + "\n"
+        + "      " + (downloadErr ? downloadErr.message.split("\n")[0] : ""),
+    };
+  }
+  const dir = mkdtempSync(join(tmpdir(), "cvf-export-"));
+  const pdfPath = join(dir, "cv.pdf");
+  await download.saveAs(pdfPath);
+  const bytes = readFileSync(pdfPath);
+  await ctx.close();
+  const { text, pages } = await extractPdfText(bytes);
+  return { errors, bytes, text, pages, pdfPath };
 }
