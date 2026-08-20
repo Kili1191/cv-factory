@@ -14,7 +14,7 @@ import {
 
 function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult,
-  aiCall, parseJSON, normCV }) {
+  aiCall, parseJSON, normCV, pushH }) {
   const [offer, setOffer] = useState("");
   const [load, setLoad]   = useState(false);
   const [res, setRes]     = useState(initialResult || null);
@@ -75,6 +75,11 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
 
   const apply = () => {
     if (!res || !res.cv_optimized) return;
+    // Snapshot avant de remplacer TOUT le CV. C'est l'action centrale de
+    // l'app (coller une offre -> CV adapte) et elle ecrasait le CV de
+    // l'utilisateur sans retour possible : si la version optimisee est moins
+    // bonne, il n'y avait aucun moyen de revenir en arriere.
+    if (typeof pushH === "function") pushH();
     setCVFn(() => normCV(res.cv_optimized, cv));
     notify("CV adapte applique!");
     setPh("input");

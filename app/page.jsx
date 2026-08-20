@@ -1654,7 +1654,7 @@ function BottomNav({ active, onPhase, T }) {
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, cv, setCVFn, notify, apiKey,
+function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
   initialResult, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
@@ -1688,6 +1688,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         apiKey={apiKey}
         T={T}
         onPackRequest={onPackRequest}
+        pushH={pushH}
         initialResult={initialResult}
         onResult={onResult}
         onApplied={onApplied}
@@ -3570,6 +3571,10 @@ export default function App() {
   }), [cv.name, cv.title, cv.experience]);
 
   // v17 chantier 16 : Raccourcis clavier globaux.
+  // undo est declare plus bas ; on passe par une ref pour que le handler
+  // clavier appelle toujours la version courante sans se re-abonner.
+  const undoRef = useRef(null);
+
   useEffect(() => {
     if (!hydrated) return;
     const onKey = (e) => {
@@ -3592,6 +3597,17 @@ export default function App() {
       if (cmdOrCtrl && e.key === ",") {
         e.preventDefault();
         setShowSettings(true);
+      }
+      // Cmd+Z : annule la derniere modification du CV.
+      // [Fix] L'app tient un historique (pushH/undo) mais son seul bouton vit
+      // dans FinalizeContent, qui ne s'affiche que pour des onglets legacy que
+      // la navigation actuelle n'active plus : l'annulation etait donc
+      // inatteignable, sur mobile comme sur desktop, alors que des actions
+      // remplacent tout le CV. Le raccourci standard la rend accessible tout
+      // de suite ; reste a lui donner une place visible dans l'interface.
+      if (cmdOrCtrl && e.key === "z" && !e.shiftKey && !isTyping) {
+        e.preventDefault();
+        undoRef.current && undoRef.current();
       }
     };
     if (typeof window !== "undefined") {
@@ -3665,6 +3681,8 @@ export default function App() {
       return h.slice(0,-1);
     });
   }, [T, notify]);
+
+  useEffect(() => { undoRef.current = undo; }, [undo]);
 
   useEffect(() => {
     const c = () => setMob(window.innerWidth < 800);
@@ -6221,6 +6239,7 @@ export default function App() {
       {aiMode==="match" && (
         <Suspense fallback={null}>
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
+          pushH={pushH}
           onPackRequest={requestPack}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
@@ -6807,7 +6826,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           T={T} cv={cv} setCVFn={setCVFn}
-          notify={notify} apiKey={apiKey}
+          notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
           onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
@@ -7079,6 +7098,7 @@ export default function App() {
           onClose={() => setShowAdjust(false)}
           cv={cv}
           setCVFn={setCVFn}
+          pushH={pushH}
           apiKey={apiKey}
           T={T}
           lang={locale}

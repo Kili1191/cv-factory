@@ -42,6 +42,7 @@ export default function AdjustModal({
   onClose,
   cv,
   setCVFn,
+  pushH,
   apiKey,
   T,
   lang = "fr",
@@ -306,6 +307,9 @@ export default function AdjustModal({
         console.log("[AdjustModal v3] applyJsonPatch result:", result);
 
         if (result.realChange) {
+          // Snapshot avant d'ecrire dans le CV : sans lui, les modifications
+          // appliquees depuis Ajuster n'etaient pas annulables.
+          if (typeof pushH === "function") pushH();
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
@@ -320,6 +324,7 @@ export default function AdjustModal({
         console.log("[AdjustModal v3 legacy] applyCoachActions result:", result);
 
         if (result.applied > 0) {
+          if (typeof pushH === "function") pushH();
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
