@@ -106,7 +106,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
             ...B({
               background: Paper,
               borderRadius: "50%",
-              width: 32, height: 32,
+              width: 44, height: 44,
               color: InkMuted,
               border: "0.5px solid " + Hairline,
               display: "flex", alignItems: "center", justifyContent: "center",

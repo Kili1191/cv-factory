@@ -145,7 +145,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
           <button onClick={onClose} aria-label="close" disabled={loading} style={{
             ...B({
               background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:Gray600,
+              width: 44, height: 44, fontSize:16, color:Gray600,
               border:"0.5px solid "+Gray200,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,

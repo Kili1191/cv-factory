@@ -111,7 +111,7 @@ export function SaveBtn({ onClose, T }) {
   return (
     <button onClick={onClose} style={{
       ...B({
-        width:"100%", padding:13, borderRadius:12,
+        width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:12,
         background:Dark, color:Gold,
         fontWeight:700, fontSize:14, marginTop:6,
       })

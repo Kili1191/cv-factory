@@ -30,7 +30,7 @@ function Section({ T, title, content, onCopy, small }) {
         }}>{title}</div>
         <button onClick={()=>onCopy && onCopy(content)} style={{
           ...B({
-            padding:"6px 12px", borderRadius:RadiusPill,
+            padding:"6px 12px", minHeight:44, borderRadius:RadiusPill,
             background:Paper, color:InkMuted,
             border:"0.5px solid "+Hairline,
             fontSize:11, fontWeight:500,
@@ -288,7 +288,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                     )}
                     style={{
                       ...B({
-                        marginTop:8, padding:"7px 12px", borderRadius:RadiusPill,
+                        marginTop:8, padding:"7px 12px", minHeight:44, borderRadius:RadiusPill,
                         background:Paper, color:InkMuted,
                         border:"0.5px solid "+Hairline,
                         fontSize:11, fontWeight:500,

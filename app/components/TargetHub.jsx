@@ -150,7 +150,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           ...B({
             display:"inline-flex", alignItems:"center", gap:8,
             background:"#fff", color:Purple,
-            padding:"13px 22px", borderRadius:RadiusPill,
+            padding:"13px 22px", minHeight:44, borderRadius:RadiusPill,
             fontSize:14, fontWeight:600,
             fontFamily:Sans, border:"none",
             position:"relative",

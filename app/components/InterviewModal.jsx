@@ -1425,7 +1425,7 @@ export default function InterviewModal({
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
               background:Paper, borderRadius:RadiusPill,
-              width:32, height:32, fontSize:16, color:InkMuted,
+              width: 44, height: 44, fontSize:16, color:InkMuted,
               border:"0.5px solid "+Hairline,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,

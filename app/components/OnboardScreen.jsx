@@ -4,14 +4,78 @@
 // Extrait de page.jsx pour permettre le lazy loading.
 // [Nuvi rebrand] Couleurs alignees : terracotta (Coral #d97757) + violet/magenta gradient pour CTA primaires.
 
+import { useState, useRef } from "react";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
   GradGold, GradPurple, Gray200, Gray400, Gray600, Ink, Paper, RadiusMd,
   RadiusPill, RadiusSm, Sans, Serif, ShadowSm, B,
 } from "./sharedTokens";
 
+
+// Extraction du texte d'un CV, sans dependance reseau.
+//
+// Le worker pdf.js est servi par notre propre domaine (copie dans public/ par
+// scripts/copy-pdf-worker.mjs). Si son chargement echoue malgre tout, on
+// repasse sur le thread principal : plus lent, mais l'import aboutit au lieu
+// de ne rien produire.
+async function extractCvText(file, T) {
+  const name = (file.name || "").toLowerCase();
+  const ext = name.includes(".") ? name.split(".").pop() : "";
+  const type = file.type || "";
+
+  if (ext === "txt" || type === "text/plain") {
+    return await file.text();
+  }
+
+  if (ext === "pdf" || type === "application/pdf") {
+    const pdfjsLib = await import("pdfjs-dist/build/pdf");
+    const buf = await file.arrayBuffer();
+
+    const readWith = async (opts) => {
+      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), ...opts }).promise;
+      let out = "";
+      for (let i = 1; i <= pdf.numPages; i += 1) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        out += content.items.map(it => it.str).join(" ") + "\n\n";
+      }
+      return out.trim();
+    };
+
+    // Le repli doit etre arme AVANT la premiere tentative : pdf.js memorise
+    // le resultat de sa mise en place de worker, donc un premier echec reste
+    // definitif pour toute la vie de la page. Cette entree pose
+    // window.pdfjsWorker, que pdf.js utilise directement si le chargement du
+    // script echoue — le code du worker vient alors du bundle, sans reseau.
+    try { await import("pdfjs-dist/build/pdf.worker.entry"); } catch (e) {}
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
+
+    try {
+      return await readWith({});
+    } catch (err) {
+      const e = new Error(T.ob_file_pdf_err);
+      e.cause = err;
+      throw e;
+    }
+  }
+
+  if (ext === "docx" || type.includes("wordprocessingml")) {
+    const mammoth = await import("mammoth/mammoth.browser");
+    const buf = await file.arrayBuffer();
+    const result = await mammoth.extractRawText({ arrayBuffer: buf });
+    return result.value;
+  }
+
+  // .doc ancien format, images de CV scannes, etc.
+  throw new Error(T.ob_file_format_err);
+}
+
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   raw, setRaw, imping, onImport, setTab, setAiMode }) {
+
+  const fileInputRef = useRef(null);
+  const [fileBusy, setFileBusy] = useState("");   // nom du fichier en lecture
+  const [fileErr, setFileErr]   = useState("");
 
   // [Nuvi] Style accent par mode :
   //  - mode "import" simple   : terracotta (Coral)
@@ -267,51 +331,52 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           {" "}{T.ob_import_format}
         </p>
 
-        {/* Hidden file input */}
+        {/* Champ fichier masque.
+            accept : iOS filtre tres mal sur les seules extensions et grise
+            alors des fichiers parfaitement valides dans l'app Fichiers. On
+            donne aussi les types MIME. */}
         <input
           type="file"
           id="cv-file-upload"
-          accept=".pdf,.docx,.txt"
-          style={{display:"none"}}
+          ref={fileInputRef}
+          accept={[
+            ".pdf", ".docx", ".txt",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain",
+          ].join(",")}
+          style={{
+            // display:none empeche l'ouverture du selecteur sur certains
+            // navigateurs mobiles ; ce masquage-la reste "visible" pour eux.
+            position:"absolute", width:1, height:1,
+            opacity:0, overflow:"hidden", pointerEvents:"none",
+          }}
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
+            setFileErr("");
+            setFileBusy(file.name);
             try {
-              const ext = file.name.split('.').pop().toLowerCase();
-              if (ext === 'txt') {
-                const text = await file.text();
-                setRaw(text);
-              } else if (ext === 'pdf') {
-                const pdfjsLib = await import('pdfjs-dist/build/pdf');
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                const arrayBuffer = await file.arrayBuffer();
-                const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-                let fullText = '';
-                for (let i = 1; i <= pdf.numPages; i++) {
-                  const page = await pdf.getPage(i);
-                  const textContent = await page.getTextContent();
-                  const pageText = textContent.items.map(item => item.str).join(' ');
-                  fullText += pageText + '\n\n';
-                }
-                setRaw(fullText.trim());
-              } else if (ext === 'docx') {
-                const mammoth = await import('mammoth/mammoth.browser');
-                const arrayBuffer = await file.arrayBuffer();
-                const result = await mammoth.extractRawText({arrayBuffer});
-                setRaw(result.value);
+              const text = await extractCvText(file, T);
+              if (!text || !text.trim()) {
+                setFileErr(T.ob_file_empty_err);
               } else {
-                alert(T.ob_file_format_err);
+                setRaw(text);
               }
             } catch (err) {
-              alert(T.ob_file_read_err + ': ' + err.message);
+              // alert() disparait tout seul sur certains mobiles : l'erreur
+              // doit rester lisible dans la page.
+              setFileErr((err && err.message) ? err.message : T.ob_file_read_err);
+            } finally {
+              setFileBusy("");
+              e.target.value = '';
             }
-            e.target.value = '';
           }}
         />
 
         {/* Big upload card (paper, dashed accent terracotta) */}
         <button
-          onClick={() => document.getElementById('cv-file-upload').click()}
+          onClick={() => fileInputRef.current && fileInputRef.current.click()}
           style={{
             ...B({
               padding:"26px 18px",
@@ -349,6 +414,41 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             fontSize:11, color:Gray600, fontWeight:400,
           }}>{T.ob_pick_file_hint}</div>
         </button>
+
+        {/* Retour de lecture du fichier.
+            Auparavant l'unique signal etait un alert(), qui sur mobile peut
+            disparaitre avant d'etre lu : un import rate ne laissait aucune
+            trace et l'utilisateur reessayait a l'aveugle. */}
+        {fileBusy && (
+          <div style={{
+            marginTop:10, padding:"11px 14px",
+            borderRadius:RadiusSm, background:CreamSoft,
+            border:"0.5px solid "+Gray200,
+            fontSize:12.5, color:Ink, fontFamily:Sans,
+            display:"flex", alignItems:"center", gap:10,
+          }} role="status" aria-live="polite">
+            <span style={{
+              width:14, height:14, flexShrink:0,
+              border:"2px solid "+Gray200, borderTopColor:Coral,
+              borderRadius:"50%",
+              animation:"cvfSpin 0.8s linear infinite",
+            }}/>
+            {T.ob_file_reading} {fileBusy}
+          </div>
+        )}
+        {fileErr && (
+          <div style={{
+            marginTop:10, padding:"11px 14px",
+            borderRadius:RadiusSm, background:CoralSoft,
+            border:"0.5px solid "+Coral,
+            fontSize:12.5, color:"#7f1d1d", fontFamily:Sans, lineHeight:1.5,
+          }} role="alert">
+            {fileErr}
+            <div style={{ marginTop:6, fontSize:11.5, color:"#7f1d1d", opacity:.85 }}>
+              {T.ob_file_fallback_hint}
+            </div>
+          </div>
+        )}
 
         {/* Separator */}
         <div style={{

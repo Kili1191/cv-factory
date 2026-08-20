@@ -962,7 +962,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             }}/>
             <button onClick={onClose} aria-label="Fermer" style={{
               position:"absolute", top:10, right:18,
-              width:32, height:32, borderRadius:"50%",
+              width: 44, height: 44, borderRadius:"50%",
               background:"rgba(10,10,10,0.05)", border:"none", cursor:"pointer",
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:16, color:"var(--nuvi-ink, #0a0a0a)",
@@ -1084,7 +1084,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             <button onClick={onClose} aria-label="close" style={{
               ...B({
                 background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
-                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                width: 44, height: 44, fontSize:16, color:"var(--nuvi-ink)",
                 border:"0.5px solid rgba(232,227,214,0.6)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 flexShrink:0, backdropFilter:"blur(10px)",
@@ -1118,7 +1118,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             <button onClick={onClose} aria-label="close" style={{
               ...B({
                 background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
-                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                width: 44, height: 44, fontSize:16, color:"var(--nuvi-ink)",
                 border:"0.5px solid rgba(232,227,214,0.6)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 flexShrink:0, backdropFilter:"blur(10px)",
@@ -1654,7 +1654,7 @@ function BottomNav({ active, onPhase, T }) {
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, cv, setCVFn, notify, apiKey,
+function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
   initialResult, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
@@ -1688,6 +1688,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey,
         apiKey={apiKey}
         T={T}
         onPackRequest={onPackRequest}
+        pushH={pushH}
         initialResult={initialResult}
         onResult={onResult}
         onApplied={onApplied}
@@ -3570,6 +3571,10 @@ export default function App() {
   }), [cv.name, cv.title, cv.experience]);
 
   // v17 chantier 16 : Raccourcis clavier globaux.
+  // undo est declare plus bas ; on passe par une ref pour que le handler
+  // clavier appelle toujours la version courante sans se re-abonner.
+  const undoRef = useRef(null);
+
   useEffect(() => {
     if (!hydrated) return;
     const onKey = (e) => {
@@ -3592,6 +3597,17 @@ export default function App() {
       if (cmdOrCtrl && e.key === ",") {
         e.preventDefault();
         setShowSettings(true);
+      }
+      // Cmd+Z : annule la derniere modification du CV.
+      // [Fix] L'app tient un historique (pushH/undo) mais son seul bouton vit
+      // dans FinalizeContent, qui ne s'affiche que pour des onglets legacy que
+      // la navigation actuelle n'active plus : l'annulation etait donc
+      // inatteignable, sur mobile comme sur desktop, alors que des actions
+      // remplacent tout le CV. Le raccourci standard la rend accessible tout
+      // de suite ; reste a lui donner une place visible dans l'interface.
+      if (cmdOrCtrl && e.key === "z" && !e.shiftKey && !isTyping) {
+        e.preventDefault();
+        undoRef.current && undoRef.current();
       }
     };
     if (typeof window !== "undefined") {
@@ -3665,6 +3681,8 @@ export default function App() {
       return h.slice(0,-1);
     });
   }, [T, notify]);
+
+  useEffect(() => { undoRef.current = undo; }, [undo]);
 
   useEffect(() => {
     const c = () => setMob(window.innerWidth < 800);
@@ -6184,7 +6202,15 @@ export default function App() {
           ["adjust",   T.tab_adj]].map(([m, label]) => {
             const a = aiMode === m;
             return (
-              <button key={m} onClick={()=>setAiMode(m)} style={{
+              <button key={m} onClick={()=>{
+                // [Fix] "Ajuster" posait aiMode="adjust". Or ce mode n'a plus
+                // de branche de rendu (il a ete remplace par AdjustModal) et
+                // le useEffect cense ouvrir la modale a sa place n'a jamais
+                // existe : le panneau se vidait et rien ne s'ouvrait. On ouvre
+                // directement la modale, comme le fait deja onSwitchToAdjust.
+                if (m === "adjust") { setShowAdjust(true); return; }
+                setAiMode(m);
+              }} style={{
                 ...B({
                   flex:1, padding:"10px 14px", minHeight:44, borderRadius:RadiusPill,
                   background:a ? Ink : Paper,
@@ -6213,6 +6239,7 @@ export default function App() {
       {aiMode==="match" && (
         <Suspense fallback={null}>
         <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
+          pushH={pushH}
           onPackRequest={requestPack}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
@@ -6633,7 +6660,7 @@ export default function App() {
         })
       }}>
         <div style={{
-          width:32, height:32, borderRadius:9,
+          width: 44, height: 44, borderRadius:9,
           display:"flex", alignItems:"center", justifyContent:"center",
           background:CreamSoft, color:GoldDeep, flexShrink:0,
         }}>
@@ -6799,7 +6826,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           T={T} cv={cv} setCVFn={setCVFn}
-          notify={notify} apiKey={apiKey}
+          notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
           onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
@@ -7071,6 +7098,7 @@ export default function App() {
           onClose={() => setShowAdjust(false)}
           cv={cv}
           setCVFn={setCVFn}
+          pushH={pushH}
           apiKey={apiKey}
           T={T}
           lang={locale}

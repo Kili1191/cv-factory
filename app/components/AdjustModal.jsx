@@ -42,6 +42,7 @@ export default function AdjustModal({
   onClose,
   cv,
   setCVFn,
+  pushH,
   apiKey,
   T,
   lang = "fr",
@@ -115,11 +116,40 @@ export default function AdjustModal({
     } catch (e) {}
   }, [history]);
 
-  // Auto-scroll chat
+  // Auto-scroll chat.
+  // [Fix] Deux bugs cumules ici. D'une part chatScrollRef designe la colonne
+  // des messages, qui n'a pas d'overflow : lui poser scrollTop ne faisait
+  // donc rien, et l'auto-scroll n'a jamais fonctionne. Le conteneur qui
+  // defile appartient a LiquidGlassModal, autour de {children}. D'autre part
+  // scrollHeight etait lu avant la mise en page du dernier message. On
+  // remonte donc jusqu'au vrai conteneur scrollable, et on attend deux frames
+  // avant de mesurer.
   useEffect(() => {
-    if (mode === "chat" && chatScrollRef.current) {
-      chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
+    if (mode !== "chat") return;
+    const node = chatScrollRef.current;
+    if (!node) return;
+
+    let scroller = node;
+    while (scroller && scroller !== document.body) {
+      const cs = window.getComputedStyle(scroller);
+      if (cs.overflowY === "auto" || cs.overflowY === "scroll") break;
+      scroller = scroller.parentElement;
     }
+    if (!scroller || scroller === document.body) return;
+
+    const toBottom = () => { scroller.scrollTop = scroller.scrollHeight; };
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(toBottom); });
+    let ro = null;
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(toBottom);
+      ro.observe(node);
+    }
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      if (ro) ro.disconnect();
+    };
   }, [history, loading, mode]);
 
   // Focus input
@@ -277,6 +307,9 @@ export default function AdjustModal({
         console.log("[AdjustModal v3] applyJsonPatch result:", result);
 
         if (result.realChange) {
+          // Snapshot avant d'ecrire dans le CV : sans lui, les modifications
+          // appliquees depuis Ajuster n'etaient pas annulables.
+          if (typeof pushH === "function") pushH();
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
@@ -291,6 +324,7 @@ export default function AdjustModal({
         console.log("[AdjustModal v3 legacy] applyCoachActions result:", result);
 
         if (result.applied > 0) {
+          if (typeof pushH === "function") pushH();
           setCVFn(() => result.newCv);
           appliedSummary = result.summary;
           realChange = true;
