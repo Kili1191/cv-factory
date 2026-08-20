@@ -3744,6 +3744,11 @@ export default function App() {
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Les commandes d'edition ne font pas partie du CV
         if (parent.closest(".cvf-no-print")) return NodeFilter.FILTER_REJECT;
+        // Le decor reste dans l'image, mais pas dans le texte que lira un
+        // robot de tri. Le monogramme d'initiales, par exemple, apparaissait
+        // en premiere ligne du texte extrait sur trois modeles : un analyseur
+        // qui prend la premiere ligne pour le nom du candidat lisait "JD".
+        if (parent.closest("[data-cvf-decorative]")) return NodeFilter.FILTER_REJECT;
         const cs = window.getComputedStyle(parent);
         if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) {
           return NodeFilter.FILTER_REJECT;

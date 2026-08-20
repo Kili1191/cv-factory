@@ -233,7 +233,11 @@ export default function CVPhoto({
               }}
             />
           ) : (
-            getInitials(cv.name)
+            // Decoratif : dessine dans le CV, exclu de la couche de texte que
+            // lisent les robots de tri (voir overlayTextLayer).
+            <span data-cvf-decorative="true" aria-hidden="true">
+              {getInitials(cv.name)}
+            </span>
           )}
         </button>
 

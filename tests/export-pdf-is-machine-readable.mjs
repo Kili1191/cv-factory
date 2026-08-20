@@ -132,6 +132,26 @@ function checkCommon(label, out, failures) {
       `"${out.text.slice(0, 40).replace(/\s+/g, " ").trim()}" avant le nom du candidat`
     );
   }
+
+  // Beaucoup d'analyseurs prennent la premiere ligne pour le nom du candidat.
+  // Le monogramme d'initiales du CV, purement decoratif, s'ecrivait dans la
+  // couche de texte et sortait en premiere ligne sur trois modeles : un
+  // analyseur y lisait "JD" comme nom. Le decor est exclu de la couche ; la
+  // premiere ligne doit donc etre le nom.
+  const premiere = out.text.split("\n").map(l => l.trim()).find(Boolean) || "";
+  if (!premiere.includes(CV.name)) {
+    failures.push(
+      `${label} : la premiere ligne lue par un ATS est "${premiere.slice(0, 40)}" ` +
+      `au lieu du nom du candidat`
+    );
+  }
+  const initiales = CV.name.split(/\s+/).map(w => w[0]).join("").toUpperCase();
+  if (new RegExp(`(^|\\s)${initiales}(\\s|$)`).test(out.text)) {
+    failures.push(
+      `${label} : le monogramme "${initiales}" est present dans le texte extrait, ` +
+      `c'est du decor qui pollue le nom du candidat`
+    );
+  }
   if (out.errors.length) {
     failures.push(`${label} : erreurs JS pendant l'export - ` + out.errors.slice(0, 2).join(" | "));
   }
