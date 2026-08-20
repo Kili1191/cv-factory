@@ -1,0 +1,36 @@
+name: CI
+
+# Ces tests tournent sur chaque proposition de fusion et sur main.
+# Ils couvrent ce qui est deja parti casse en production :
+#   - un CV exporte sans texte, invisible pour les robots de tri
+#   - un import de CV qui ne rend rien quand un CDN est injoignable
+#   - toute nouvelle dependance a du code tiers charge a l'execution
+# Un echec ici doit bloquer la fusion.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Installer les dependances
+        run: npm ci
+
+      - name: Installer Chromium pour les tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Verifier le CV exporte, l'import, et l'absence de CDN
+        run: npm test
+        env:
+          TEST_PORT: 4311

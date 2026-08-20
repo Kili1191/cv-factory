@@ -948,25 +948,15 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
     if (!sheetRef.current) return;
     setDownloading(true);
     try {
-      // Charge html2pdf depuis le CDN si pas deja charge
-      const loadHtml2pdf = () => new Promise((resolve, reject) => {
-        if (typeof window === "undefined") return reject(new Error("no window"));
-        if (window.html2pdf) return resolve(window.html2pdf);
-        const existing = document.querySelector('script[data-cvf-html2pdf]');
-        if (existing) {
-          const check = setInterval(() => {
-            if (window.html2pdf) { clearInterval(check); resolve(window.html2pdf); }
-          }, 100);
-          setTimeout(() => clearInterval(check), 10000);
-          return;
-        }
-        const s = document.createElement("script");
-        s.setAttribute("data-cvf-html2pdf", "1");
-        s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-        s.onload = () => resolve(window.html2pdf);
-        s.onerror = () => reject(new Error("Erreur chargement PDF"));
-        document.head.appendChild(s);
-      });
+      const loadHtml2pdf = () => {
+        if (typeof window === "undefined") return Promise.reject(new Error("no window"));
+        if (window.html2pdf) return Promise.resolve(window.html2pdf);
+        // Depuis le bundle : un CDN injoignable ne doit pas tuer l'export.
+        return import("html2pdf.js").then((mod) => {
+          window.html2pdf = mod.default || mod;
+          return window.html2pdf;
+        });
+      };
       const html2pdf = await loadHtml2pdf();
       const opt = {
         margin: 10,

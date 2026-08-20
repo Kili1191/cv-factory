@@ -411,31 +411,16 @@ function escapeHtml(str) {
     .replace(/'/g, "&#39;");
 }
 
-// === Helper : charge html2pdf depuis CDN si pas deja charge ===
-// Resout en window.html2pdf pret a l'emploi, ou rejette si echec reseau.
-// Utilise par tous les PDF exports (CV, pack entretien, pense-bete).
+// === Helper : html2pdf, depuis le bundle ===
+// Auparavant charge depuis cdnjs. Meme faiblesse que le worker pdf.js et que
+// html2canvas/jsPDF : reseau filtre ou bloqueur de contenu, et l'export de
+// pack ou de pense-bete ne repond plus. On l'importe.
 function ensureHtml2pdfLoaded() {
-  return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("no window"));
-    if (window.html2pdf) return resolve(window.html2pdf);
-    const existing = document.querySelector('script[data-cvf-html2pdf]');
-    if (existing) {
-      // Deja en train de se charger : attendre
-      const check = setInterval(() => {
-        if (window.html2pdf) {
-          clearInterval(check);
-          resolve(window.html2pdf);
-        }
-      }, 100);
-      setTimeout(() => clearInterval(check), 10000);
-      return;
-    }
-    const s = document.createElement("script");
-    s.setAttribute("data-cvf-html2pdf", "1");
-    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
-    s.onload = () => resolve(window.html2pdf);
-    s.onerror = () => reject(new Error("Erreur chargement PDF"));
-    document.head.appendChild(s);
+  if (typeof window === "undefined") return Promise.reject(new Error("no window"));
+  if (window.html2pdf) return Promise.resolve(window.html2pdf);
+  return import("html2pdf.js").then((mod) => {
+    window.html2pdf = mod.default || mod;
+    return window.html2pdf;
   });
 }
 
