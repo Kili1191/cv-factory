@@ -3752,8 +3752,8 @@ export default function App() {
       },
     });
 
-    pdf.setTextColor(0, 0, 0);
-    let written = 0;
+    // 1. Releve de chaque fragment et de sa position reelle a l'ecran.
+    const frags = [];
     let node = walker.nextNode();
     while (node) {
       const text = node.nodeValue.replace(/\s+/g, " ").trim();
@@ -3764,21 +3764,89 @@ export default function App() {
         range.selectNodeContents(node);
         const r = range.getBoundingClientRect();
         range.detach && range.detach();
-
         if (r.width > 0 && r.height > 0) {
-          const xMm = (r.left - rootRect.left) * mmPerPxX;
-          // jsPDF pose le texte sur sa ligne de base : on vise le bas du
-          // rectangle, legerement remonte.
-          const yMm = (r.bottom - rootRect.top) * mmPerPxY - (r.height * mmPerPxY * 0.18);
-          const sizePt = Math.max(1, r.height * mmPerPxY * 2.2);
-          try {
-            pdf.setFontSize(sizePt);
-            pdf.text(text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
-            written += 1;
-          } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+          frags.push({
+            text,
+            left: r.left - rootRect.left,
+            right: r.right - rootRect.left,
+            top: r.top - rootRect.top,
+            bottom: r.bottom - rootRect.top,
+            height: r.height,
+          });
         }
       }
       node = walker.nextNode();
+    }
+    if (!frags.length) return 0;
+
+    // 2. Remise en ordre de lecture.
+    //
+    // Les mises en page a deux colonnes rangent la colonne laterale en premier
+    // dans le HTML : le texte extrait commencait donc par "CONTACT" et
+    // l'adresse e-mail, et le nom du candidat arrivait apres les competences.
+    // Un robot de tri lit ce flux dans l'ordre et prend generalement les
+    // premieres lignes pour l'identite : il pouvait retenir "CONTACT" comme
+    // nom du candidat.
+    //
+    // On cherche une verticale que presque aucun fragment ne traverse. Si elle
+    // existe et qu'elle separe deux groupes consequents, la page est en deux
+    // colonnes : on commence par celle qui porte le plus gros texte, donc le
+    // nom. Sinon la page est en une colonne et l'ordre reste celui de la
+    // lecture. Dans les deux cas, a l'interieur d'un groupe : de haut en bas,
+    // puis de gauche a droite.
+    const byReading = (a, b) =>
+      (Math.abs(a.top - b.top) > 4 ? a.top - b.top : a.left - b.left);
+
+    let split = null;
+    {
+      const tolerance = Math.max(1, Math.floor(frags.length * 0.05));
+      let best = 0;
+      // On teste les bords droits comme verticales candidates : une vraie
+      // gouttiere se trouve toujours juste apres la fin d'un fragment.
+      for (const cand of [...new Set(frags.map(f => f.right))]) {
+        let straddling = 0, before = 0, after = 0;
+        for (const f of frags) {
+          if (f.left < cand && f.right > cand) straddling += 1;
+          else if (f.right <= cand) before += 1;
+          else after += 1;
+        }
+        if (straddling > tolerance) continue;
+        const balance = Math.min(before, after);
+        if (balance > best) { best = balance; split = cand; }
+      }
+      if (best < frags.length * 0.12) split = null;
+    }
+
+    let ordered;
+    if (split === null) {
+      ordered = [...frags].sort(byReading);
+    } else {
+      const straddling = frags.filter(f => f.left < split && f.right > split);
+      const before = frags.filter(f => f.right <= split);
+      const after = frags.filter(f => f.left >= split);
+      const biggest = frags.reduce((a, b) => (b.height > a.height ? b : a), frags[0]);
+      const [first, second] = before.includes(biggest) ? [before, after] : [after, before];
+      ordered = [
+        ...straddling.sort(byReading),
+        ...first.sort(byReading),
+        ...second.sort(byReading),
+      ];
+    }
+
+    // 3. Ecriture invisible, exactement sur le texte de l'image.
+    pdf.setTextColor(0, 0, 0);
+    let written = 0;
+    for (const f of ordered) {
+      const xMm = f.left * mmPerPxX;
+      // jsPDF pose le texte sur sa ligne de base : on vise le bas du
+      // rectangle, legerement remonte.
+      const yMm = f.bottom * mmPerPxY - (f.height * mmPerPxY * 0.18);
+      const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
+      try {
+        pdf.setFontSize(sizePt);
+        pdf.text(f.text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
+        written += 1;
+      } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
     }
     console.log("[exportPDF] couche texte ATS :", written, "fragments");
     return written;
@@ -7064,6 +7132,9 @@ export default function App() {
               else if (m === "multicv")    setShowMultiCV(true);
               else if (m === "tracking")   setShowApplications(true);
               else if (m === "customize")  setShowCustomize(true);
+              else if (m === "interview")  setShowInterview(true);
+              else if (m === "linkedin")   setShowLinkedIn(true);
+              else if (m === "activity")   setShowActivity(true);
             }, 150);
           }}
         />
@@ -8015,20 +8086,40 @@ export default function App() {
           active={navSection}
           onSelect={(key) => {
             setNavSection(key);
-            // Wire chaque section à la modale existante (cohérent avec sidebar desktop)
-            if (key === "target") {
-              setShowOffer(true);
-            } else if (key === "pack") {
-              setShowPack(true);
-            } else if (key === "score") {
-              setShowScore(true);
-            } else if (key === "cvs") {
-              setShowMultiCV(true);
-            } else if (key === "design") {
-              setShowCustomize(true);
-            } else if (key === "tracking") {
-              setShowApplications(true);
+            // Wire chaque section a la modale existante (meme couverture que
+            // la barre laterale : le tiroir "Plus" liste maintenant tout).
+            if (key === "target") setShowOffer(true);
+            else if (key === "pack") setShowPack(true);
+            else if (key === "score") setShowScore(true);
+            else if (key === "cvs") setShowMultiCV(true);
+            else if (key === "design") { setCustomizeTab("colors"); setShowCustomize(true); }
+            else if (key === "tracking") setShowApplications(true);
+            else if (key === "adjust") setShowAdjust(true);
+            else if (key === "edit") setModal("id");
+            else if (key === "ats") setShowAudit(true);
+            else if (key === "interview") setShowInterview(true);
+            else if (key === "truth") { runTruthCheck && runTruthCheck(); }
+            else if (key === "pos") { runPositioning && runPositioning(); }
+            else if (key === "gap") {
+              if ((cv.experience || []).length < 2) {
+                notify(T.gr_no_gaps_title || "Aucun trou detecte");
+              } else {
+                setShowGapRepair(true);
+              }
             }
+            else if (key === "versions") setShowVersions(true);
+            else if (key === "compare") {
+              if (versions.length < 2) {
+                notify(locale === "fr"
+                  ? "Il faut au moins 2 versions pour comparer."
+                  : "At least 2 versions needed to compare.");
+              } else {
+                setShowCompare(true);
+              }
+            }
+            else if (key === "translate") setShowTranslate(true);
+            else if (key === "linkedin") setShowLinkedIn(true);
+            else if (key === "activity") setShowActivity(true);
             // "home" = juste mettre la section active
           }}
           lang={locale}

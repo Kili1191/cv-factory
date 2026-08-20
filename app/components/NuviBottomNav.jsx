@@ -74,6 +74,21 @@ export default function NuviBottomNav({
       tracking: "Suivi",
       settings: "Réglages",
       reset: "Reset",
+      adjust: "Ajuster",
+      edit: "Editer",
+      ats: "Audit ATS",
+      interview: "Preparer l'entretien",
+      truth: "Truth Check",
+      pos: "Positionnement",
+      gap: "Lisser le parcours",
+      versions: "Versions",
+      compare: "Comparer",
+      translate: "Traduction",
+      linkedin: "Profil LinkedIn",
+      activity: "Mon activite",
+      sec_cv: "Mon CV",
+      sec_audits: "Analyser",
+      sec_tools: "Outils",
     },
     en: {
       home: "CV",
@@ -87,6 +102,21 @@ export default function NuviBottomNav({
       tracking: "Tracking",
       settings: "Settings",
       reset: "Reset",
+      adjust: "Tweak",
+      edit: "Edit",
+      ats: "ATS audit",
+      interview: "Interview prep",
+      truth: "Truth Check",
+      pos: "Positioning",
+      gap: "Gap repair",
+      versions: "Versions",
+      compare: "Compare",
+      translate: "Translate",
+      linkedin: "LinkedIn profile",
+      activity: "My activity",
+      sec_cv: "My CV",
+      sec_audits: "Analyse",
+      sec_tools: "Tools",
     },
   };
   const L = labels[lang] || labels.fr;
@@ -174,14 +204,35 @@ export default function NuviBottomNav({
     { key: "more", label: L.more, isMore: true },
   ];
 
-  // Items du drawer "Plus" (TOUT est accessible : amelioration 2 "Plus complet")
+  // Items du drawer "Plus".
+  // [Fix] Il n'en listait que six. Sur telephone, l'audit ATS, la preparation
+  // d'entretien, l'export LinkedIn, le Truth Check, le positionnement, la
+  // traduction, les versions, la comparaison et l'ajustement n'avaient
+  // aucun point d'entree : douze fonctionnalites sur dix-huit etaient
+  // reservees a l'ordinateur. Le tiroir les liste toutes maintenant, groupees,
+  // et defile quand l'ecran est trop court.
   const drawerItems = [
-    { key: "score", label: L.score },
-    { key: "cvs", label: L.cvs },
-    { key: "design", label: L.design },
-    { key: "tracking", label: L.tracking },
-    { key: "settings", label: L.settings, isSettings: true },
-    { key: "reset", label: L.reset, isReset: true, danger: true },
+    { section: L.sec_cv },
+    { key: "edit",      label: L.edit },
+    { key: "adjust",    label: L.adjust },
+    { key: "design",    label: L.design },
+    { key: "translate", label: L.translate },
+    { section: L.sec_audits },
+    { key: "score",     label: L.score },
+    { key: "ats",       label: L.ats },
+    { key: "truth",     label: L.truth },
+    { key: "pos",       label: L.pos },
+    { key: "gap",       label: L.gap },
+    { key: "interview", label: L.interview },
+    { section: L.sec_tools },
+    { key: "cvs",       label: L.cvs },
+    { key: "versions",  label: L.versions },
+    { key: "compare",   label: L.compare },
+    { key: "linkedin",  label: L.linkedin },
+    { key: "tracking",  label: L.tracking },
+    { key: "activity",  label: L.activity },
+    { key: "settings",  label: L.settings, isSettings: true },
+    { key: "reset",     label: L.reset, isReset: true, danger: true },
   ];
 
   const handleSelect = (item) => {
@@ -246,6 +297,7 @@ export default function NuviBottomNav({
           }}
         >
           <div
+            data-nuvi="more-drawer"
             onClick={(e) => e.stopPropagation()}
             style={{
               position: "absolute",
@@ -259,7 +311,10 @@ export default function NuviBottomNav({
               borderTopRightRadius: 20,
               borderTop: "0.5px solid rgba(255,255,255,0.7)",
               paddingTop: 8,
-              paddingBottom: 24,
+              paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
+              maxHeight: "78vh",
+              overflowY: "auto",
+              WebkitOverflowScrolling: "touch",
               boxShadow: "inset 0 1px 1px rgba(255,255,255,0.6), 0 -8px 32px rgba(0,0,0,0.12)",
               animation: "nuviDrawerSlideUp 280ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
@@ -274,7 +329,15 @@ export default function NuviBottomNav({
             }} />
 
             {/* Items */}
-            {drawerItems.map((item) => (
+            {drawerItems.map((item, idx) => item.section ? (
+              <div key={"sec" + idx} style={{
+                padding: "14px 24px 6px",
+                fontFamily: "'Inter', sans-serif",
+                fontSize: 10, fontWeight: 600,
+                letterSpacing: "0.1em", textTransform: "uppercase",
+                color: InkMuted,
+              }}>{item.section}</div>
+            ) : (
               <button
                 key={item.key}
                 onClick={() => handleSelect(item)}
@@ -303,7 +366,14 @@ export default function NuviBottomNav({
                   color: item.danger ? "#c0392b" : InkMuted,
                   flexShrink: 0,
                 }}>
-                  {Icons[item.key]}
+                  {Icons[item.key] || (
+                    // Puce neutre pour les entrees ajoutees au tiroir : mieux
+                    // qu'un vide, qui desalignait les libelles entre eux.
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                      stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
+                      <circle cx="12" cy="12" r="3.5"/>
+                    </svg>
+                  )}
                 </span>
                 <span>{item.label}</span>
               </button>

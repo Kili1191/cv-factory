@@ -12,6 +12,7 @@ const SUITES = [
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],
   ["le pack candidature produit une lettre", "./application-pack-produces-a-letter.mjs"],
   ["chaque fonctionnalite produit un resultat", "./every-feature-produces-output.mjs"],
+  ["le telephone atteint toutes les fonctionnalites", "./mobile-reaches-every-feature.mjs"],
 ];
 
 const only = process.argv[2];

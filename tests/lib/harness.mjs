@@ -116,13 +116,14 @@ export const SAMPLE_CV = {
   labels: {},
 };
 
-export async function seedApp(page, cv = SAMPLE_CV) {
+export async function seedApp(page, cv = SAMPLE_CV, { layout } = {}) {
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.evaluate((data) => {
+  await page.evaluate(({ data, layout }) => {
     localStorage.setItem("cvf_d", JSON.stringify(data));
     localStorage.setItem("cvf_k", JSON.stringify("sk-test-not-used"));
     localStorage.setItem("cvf_tu", JSON.stringify(true));
-  }, cv);
+    if (layout) localStorage.setItem("cvf_l", JSON.stringify(layout));
+  }, { data: cv, layout: layout || null });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2500);
 }

@@ -5,6 +5,8 @@ name: CI
 #   - un CV exporte sans texte, invisible pour les robots de tri
 #   - un import de CV qui ne rend rien quand un CDN est injoignable
 #   - toute nouvelle dependance a du code tiers charge a l'execution
+#   - une fonctionnalite qui disparait de la navigation ou cesse de repondre
+#   - un identifiant inexistant, qui tue un gestionnaire de clic sans bruit
 # Un echec ici doit bloquer la fusion.
 
 on:
@@ -15,7 +17,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +31,9 @@ jobs:
 
       - name: Installer Chromium pour les tests
         run: npx playwright install --with-deps chromium
+
+      - name: Chercher les identifiants inexistants
+        run: npm run lint
 
       - name: Verifier le CV exporte, l'import, et l'absence de CDN
         run: npm test
