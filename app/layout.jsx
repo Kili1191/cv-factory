@@ -21,6 +21,8 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={FONT_HREF} />
+        {/* Version servie, lisible sans ouvrir l'app : curl -s thenuvi.com | grep app-build */}
+        <meta name="app-build" content={process.env.NEXT_PUBLIC_BUILD_ID || "unknown"} />
       </head>
       <body style={{ margin: 0, padding: 0 }}>
         {/*

@@ -311,6 +311,15 @@ export default function SettingsPanel({
           <KbdRow keys={["Esc"]}        label={T.set_kbd_esc}/>
         </div>
       </div>
+
+      {/* Version servie. Sert a repondre a "est-ce que la mise a jour est en
+          ligne ?" sans avoir a deviner d'apres l'interface. */}
+      <div style={{
+        textAlign:"center", fontSize:11, color:Gray400,
+        fontFamily:"ui-monospace, monospace", marginBottom:8,
+      }}>
+        build {process.env.NEXT_PUBLIC_BUILD_ID || "unknown"}
+      </div>
     </Sheet>
   );
 }
