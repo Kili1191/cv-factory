@@ -42,8 +42,12 @@ jobs:
       # l'interet. Un bug de l'ordre de lecture du modele chronologie n'etait
       # visible que par PDFBox, les deux autres reordonnaient le texte par
       # position et le masquaient.
-      - name: Installer poppler (moteur d'extraction)
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils
+      # poppler et MuPDF sont deux moteurs d'extraction independants. tesseract
+      # sert a autre chose : il lit l'image rendue, donc ce qu'un oeil voit,
+      # et permet de verifier que la couche de texte invisible ne contient
+      # rien qui ne soit pas sur la page.
+      - name: Installer poppler, MuPDF et l'OCR
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra
 
       - name: Mettre Apache Tika en cache
         id: tika

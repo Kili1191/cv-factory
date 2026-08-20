@@ -10,6 +10,7 @@ const SUITES = [
   ["aucune dependance CDN a l'execution", "./no-runtime-cdn.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
+  ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],
   ["le pack candidature produit une lettre", "./application-pack-produces-a-letter.mjs"],
   ["chaque fonctionnalite produit un resultat", "./every-feature-produces-output.mjs"],
