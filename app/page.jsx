@@ -3937,20 +3937,72 @@ export default function App() {
       ordered = [...first.sort(byReading), ...second.sort(byReading)];
     }
 
-    // 3. Ecriture invisible, exactement sur le texte de l'image.
+    // 3. Ecriture invisible.
+    //
+    // En une colonne, on ecrit chaque mot exactement sur celui de l'image :
+    // la selection du texte reste alignee, et tous les moteurs lisent juste.
+    //
+    // En deux colonnes, c'est impossible. Les moteurs qui reconstruisent le
+    // texte par position (poppler, pdf.js) regroupent par ordonnee : deux
+    // colonnes cote a cote donnent "Experience Professionnelle Competences"
+    // sur une seule ligne, et plus aucune section n'est reconnue. Mesure :
+    // 56% des champs retrouves sur le modele compact. Aucun placement fidele
+    // ne peut l'eviter, puisque les colonnes partagent vraiment ces
+    // ordonnees.
+    //
+    // La couche de texte est invisible : rien n'oblige a la poser sur
+    // l'image. Pour ces modeles on la deroule donc en une seule colonne,
+    // dans l'ordre de lecture. Memes mots, meme ordre qu'un oeil humain,
+    // simplement ranges pour qu'une machine les suive. Le seul cout est
+    // cosmetique : surligner du texte dans un lecteur PDF encadre une zone
+    // decalee. Un CV se joue devant le filtre automatique, pas devant la
+    // poignee de gens qui surlignent un PDF.
+    // Quand faut-il derouler ? Exactement quand un lecteur qui va par position
+    // lirait autre chose que l'ordre du document. On compare les deux : si
+    // elles coincident, le placement fidele suffit et la selection reste
+    // alignee ; si elles different, ce lecteur se tromperait, et on deroule.
+    //
+    // Aucun seuil a regler, et cela attrape les cas partiels que la detection
+    // globale de colonnes manquait : sur les modeles suisse et chronologie, la
+    // page est en une colonne mais la derniere bande ne l'est pas
+    // ("Competences" et "Langues" cote a cote). Un lecteur par position rendait
+    // "Competences Langues" sur une seule ligne et perdait la section.
+    const geoOrder = [...frags].sort(byReading);
+    const linearise = ordered.some((f, i) => geoOrder[i] !== f);
     pdf.setTextColor(0, 0, 0);
     let written = 0;
-    for (const f of ordered) {
-      const xMm = f.left * mmPerPxX;
-      // jsPDF pose le texte sur sa ligne de base : on vise le bas du
-      // rectangle, legerement remonte.
-      const yMm = f.bottom * mmPerPxY - (f.height * mmPerPxY * 0.18);
-      const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
-      try {
-        pdf.setFontSize(sizePt);
-        pdf.text(f.text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
-        written += 1;
-      } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+
+    if (linearise) {
+      const marginMm = 10;
+      const usable = Math.max(10, pageHeightMm - marginMm * 2);
+      const advances = ordered.map(f => Math.max(3.2, f.height * mmPerPxY * 1.25));
+      const needed = advances.reduce((a, b) => a + b, 0);
+      const fit = needed > usable ? usable / needed : 1;
+      let y = marginMm;
+      for (let i = 0; i < ordered.length; i += 1) {
+        const f = ordered[i];
+        const advance = advances[i] * fit;
+        y += advance;
+        const sizePt = Math.max(1, Math.min(advance * 2.2, f.height * mmPerPxY * 2.2));
+        try {
+          pdf.setFontSize(sizePt);
+          pdf.text(f.text, marginMm, y, { renderingMode: "invisible", baseline: "alphabetic" });
+          written += 1;
+        } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+      }
+    } else {
+      for (const f of ordered) {
+        const xMm = f.left * mmPerPxX;
+        // jsPDF pose le texte sur sa ligne de base : on vise le bas du
+        // rectangle, legerement remonte.
+        const yMm = f.bottom * mmPerPxY - (f.height * mmPerPxY * 0.18);
+        const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
+        try {
+          pdf.setFontSize(sizePt);
+          pdf.text(f.text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
+          written += 1;
+        } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+      }
     }
     console.log("[exportPDF] couche texte ATS :", written, "fragments");
     return written;

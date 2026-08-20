@@ -32,33 +32,24 @@ import { readFileSync } from "node:fs";
 
 const LAYOUTS = ["sidebar", "ats", "classic", "timeline", "swiss", "compact"];
 
-// FIDELITE MINIMALE PAR MODELE
+// FIDELITE EXIGEE : 100%, SUR CHAQUE MODELE ET CHAQUE MOTEUR
 //
 // On exporte, on relit le PDF comme un robot, on reconstruit les champs, et on
 // compare au CV que l'application detient. Le score est la part des champs
 // retrouves a leur place, ponderee par leur importance.
 //
-// Les planchers ci-dessous sont les valeurs mesurees, moins une marge. Ils
-// disent surtout une chose, qui est le vrai enseignement de ce test :
+// Ce test a d'abord ete ecrit avec un plancher par modele, cale sur les
+// valeurs mesurees : 50% pour le modele compact, 80% pour la barre laterale.
+// C'etait une faute. Un test qui repond "OK" pendant qu'un CV perd la moitie
+// de ses champs ne protege personne : il transforme un defaut en reference et
+// le rend permanent. Le seuil est le seul defendable, et il est atteint.
 //
-//   une colonne  -> 100 partout. ATS-Safe, Classique, Chronologie.
-//   deux colonnes -> degrade sur les moteurs qui reconstruisent le texte par
-//                    position (pdf.js, poppler). Ceux-la fusionnent les deux
-//                    colonnes ligne a ligne : "Experience Professionnelle
-//                    Competences" arrive sur une seule ligne, et plus aucune
-//                    section n'est reconnue.
-//
-// Ce n'est pas reparable depuis le PDF : les colonnes sont cote a cote sur la
-// page, et un lecteur qui va par position les melangera toujours. C'est
-// exactement la raison d'etre d'un modele ATS-Safe en une colonne.
-const FLOORS = {
-  ats:      { "pdf.js": 100, poppler: 100, "tika/pdfbox": 100 },
-  classic:  { "pdf.js": 100, poppler: 100, "tika/pdfbox": 100 },
-  timeline: { "pdf.js": 100, poppler: 90,  "tika/pdfbox": 100 },
-  sidebar:  { "pdf.js": 80,  poppler: 92,  "tika/pdfbox": 100 },
-  swiss:    { "pdf.js": 80,  poppler: 90,  "tika/pdfbox": 100 },
-  compact:  { "pdf.js": 50,  poppler: 84,  "tika/pdfbox": 100 },
-};
+// Ce qu'il a fallu pour y arriver : la couche de texte invisible se deroule en
+// une colonne des que l'ordre du document differe de l'ordre geometrique. Les
+// moteurs qui regroupent par ordonnee fusionnaient sinon les colonnes voisines
+// ("Experience Professionnelle Competences" sur une seule ligne) et perdaient
+// toutes les sections.
+const REQUIRED = 100;
 
 const CV = {
   ...SAMPLE_CV,
@@ -178,12 +169,11 @@ export async function run() {
         }
         // Fidelite : ce que le robot a reconstruit, compare a la verite.
         const report = compareToTruth(CV, parseResume(text), text);
-        const floor = (FLOORS[layout] || {})[engine.name];
-        if (typeof floor === "number" && report.score < floor) {
+        if (report.score < REQUIRED) {
           const worst = [...report.lost, ...report.damaged].slice(0, 3)
             .map(c => `${c.label} (${c.state})`).join(", ");
           failures.push(
-            `${layout} / ${engine.name} : fidelite ${report.score}%, attendu au moins ${floor}%. `
+            `${layout} / ${engine.name} : fidelite ${report.score}%, exigee ${REQUIRED}%. `
             + `Champs en cause : ${worst || "-"}`
           );
         }
