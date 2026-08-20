@@ -3731,6 +3731,72 @@ export default function App() {
   }, [apiKey, T, pushH, setCVFn, notify]);
 
   // ============================================================
+  // overlayTextLayer : rend le PDF exploitable par un ATS
+  //
+  // Parcourt les noeuds de texte reellement affiches dans le CV et ecrit
+  // chacun dans le PDF en mode "invisible", a la position qu'il occupe a
+  // l'ecran. Rien ne change visuellement — l'image JPEG reste au-dessus du
+  // rendu — mais le fichier contient desormais du texte selectionnable,
+  // cherchable, et surtout analysable par les robots de tri de CV.
+  //
+  // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
+  // a l'extraction une structure coherente (nom, titre, sections, postes).
+  // ============================================================
+  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm) => {
+    const rootRect = rootEl.getBoundingClientRect();
+    if (!rootRect.width || !rootRect.height) return 0;
+    const mmPerPxX = pageWidthMm / rootRect.width;
+    const mmPerPxY = pageHeightMm / rootRect.height;
+
+    const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        const text = node.nodeValue && node.nodeValue.trim();
+        if (!text) return NodeFilter.FILTER_REJECT;
+        const parent = node.parentElement;
+        if (!parent) return NodeFilter.FILTER_REJECT;
+        // Les commandes d'edition ne font pas partie du CV
+        if (parent.closest(".cvf-no-print")) return NodeFilter.FILTER_REJECT;
+        const cs = window.getComputedStyle(parent);
+        if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      },
+    });
+
+    pdf.setTextColor(0, 0, 0);
+    let written = 0;
+    let node = walker.nextNode();
+    while (node) {
+      const text = node.nodeValue.replace(/\s+/g, " ").trim();
+      if (text) {
+        // Rectangle du texte lui-meme, pas de son conteneur : un titre centre
+        // ou un bloc large donnerait sinon une position fausse.
+        const range = document.createRange();
+        range.selectNodeContents(node);
+        const r = range.getBoundingClientRect();
+        range.detach && range.detach();
+
+        if (r.width > 0 && r.height > 0) {
+          const xMm = (r.left - rootRect.left) * mmPerPxX;
+          // jsPDF pose le texte sur sa ligne de base : on vise le bas du
+          // rectangle, legerement remonte.
+          const yMm = (r.bottom - rootRect.top) * mmPerPxY - (r.height * mmPerPxY * 0.18);
+          const sizePt = Math.max(1, r.height * mmPerPxY * 2.2);
+          try {
+            pdf.setFontSize(sizePt);
+            pdf.text(text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
+            written += 1;
+          } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+        }
+      }
+      node = walker.nextNode();
+    }
+    console.log("[exportPDF] couche texte ATS :", written, "fragments");
+    return written;
+  }, []);
+
+  // ============================================================
   // exportPDF (REFONTE TOTALE 2026-05-20)
   //
   // Approche SIMPLE et FIABLE :
@@ -3764,18 +3830,17 @@ export default function App() {
     });
 
     // Charge html2canvas + jsPDF SEPAREMENT (exposition fiable sur window)
+    // [Fix] html2canvas et jsPDF venaient de cdnjs. C'est exactement ce qui
+    // cassait l'import de CV (worker pdf.js) : un bloqueur de contenu ou un
+    // filtrage reseau, et la fonction s'arrete. On les prend depuis le bundle.
     const loadLibs = async () => {
       if (!window.html2canvas) {
-        await loadScript(
-          "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
-          "data-h2c"
-        );
+        const mod = await import("html2canvas");
+        window.html2canvas = mod.default || mod;
       }
       if (!(window.jspdf && window.jspdf.jsPDF)) {
-        await loadScript(
-          "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-          "data-jspdf"
-        );
+        const mod = await import("jspdf");
+        window.jspdf = { jsPDF: mod.jsPDF || (mod.default && mod.default.jsPDF) || mod.default };
       }
     };
 
@@ -3916,6 +3981,21 @@ export default function App() {
         // L'image remplit EXACTEMENT la page (0,0 -> pleine taille)
         pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, imgHeightMm);
 
+        // [ATS] Couche de texte invisible par-dessus l'image.
+        //
+        // Le PDF exporte etait une seule photo JPEG du CV : zero texte. Un ATS
+        // lit du texte, pas des pixels — le CV arrivait donc vide devant le
+        // premier filtre, ce qui est exactement ce que ce produit promet
+        // d'eviter. Le rendu visuel doit rester au pixel pres, donc on garde
+        // l'image et on superpose le texte en mode invisible, a sa vraie
+        // position. C'est le principe d'un PDF scanne "cherchable" : identique
+        // a l'oeil, lisible par une machine.
+        try {
+          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm);
+        } catch (layerErr) {
+          console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
+        }
+
         // [GARANTIE BETON] Supprime toute page surnumeraire (ceinture+bretelles)
         try {
           const pageCount = pdf.internal.getNumberOfPages
@@ -3948,7 +4028,7 @@ export default function App() {
         if (tempHide) tempHide.remove();
       }
     })();
-  }, [cv.name, T, notify]);
+  }, [cv.name, T, notify, overlayTextLayer]);
 
   // ============================================================
   // Format download dialog : intercepte le download pour demander
