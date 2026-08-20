@@ -1,3 +1,4 @@
 node_modules/
 .next/
 shot-*.png
+public/pdf.worker.min.js
