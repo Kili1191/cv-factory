@@ -962,7 +962,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             }}/>
             <button onClick={onClose} aria-label="Fermer" style={{
               position:"absolute", top:10, right:18,
-              width:32, height:32, borderRadius:"50%",
+              width: 44, height: 44, borderRadius:"50%",
               background:"rgba(10,10,10,0.05)", border:"none", cursor:"pointer",
               display:"flex", alignItems:"center", justifyContent:"center",
               fontSize:16, color:"var(--nuvi-ink, #0a0a0a)",
@@ -1084,7 +1084,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             <button onClick={onClose} aria-label="close" style={{
               ...B({
                 background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
-                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                width: 44, height: 44, fontSize:16, color:"var(--nuvi-ink)",
                 border:"0.5px solid rgba(232,227,214,0.6)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 flexShrink:0, backdropFilter:"blur(10px)",
@@ -1118,7 +1118,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
             <button onClick={onClose} aria-label="close" style={{
               ...B({
                 background:"rgba(255,255,255,0.6)", borderRadius:RadiusPill,
-                width:32, height:32, fontSize:16, color:"var(--nuvi-ink)",
+                width: 44, height: 44, fontSize:16, color:"var(--nuvi-ink)",
                 border:"0.5px solid rgba(232,227,214,0.6)",
                 display:"flex", alignItems:"center", justifyContent:"center",
                 flexShrink:0, backdropFilter:"blur(10px)",
@@ -6184,7 +6184,15 @@ export default function App() {
           ["adjust",   T.tab_adj]].map(([m, label]) => {
             const a = aiMode === m;
             return (
-              <button key={m} onClick={()=>setAiMode(m)} style={{
+              <button key={m} onClick={()=>{
+                // [Fix] "Ajuster" posait aiMode="adjust". Or ce mode n'a plus
+                // de branche de rendu (il a ete remplace par AdjustModal) et
+                // le useEffect cense ouvrir la modale a sa place n'a jamais
+                // existe : le panneau se vidait et rien ne s'ouvrait. On ouvre
+                // directement la modale, comme le fait deja onSwitchToAdjust.
+                if (m === "adjust") { setShowAdjust(true); return; }
+                setAiMode(m);
+              }} style={{
                 ...B({
                   flex:1, padding:"10px 14px", minHeight:44, borderRadius:RadiusPill,
                   background:a ? Ink : Paper,
@@ -6633,7 +6641,7 @@ export default function App() {
         })
       }}>
         <div style={{
-          width:32, height:32, borderRadius:9,
+          width: 44, height: 44, borderRadius:9,
           display:"flex", alignItems:"center", justifyContent:"center",
           background:CreamSoft, color:GoldDeep, flexShrink:0,
         }}>

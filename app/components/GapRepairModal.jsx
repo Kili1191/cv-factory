@@ -219,7 +219,7 @@ export default function GapRepairModal({
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
               background:Paper, borderRadius:"50%",
-              width:32, height:32, color:InkMuted,
+              width: 44, height: 44, color:InkMuted,
               border:"0.5px solid "+Hairline,
               display:"flex", alignItems:"center", justifyContent:"center",
               flexShrink:0,

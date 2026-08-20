@@ -373,7 +373,7 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
         style={{
           ...B({
             display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "7px 14px", borderRadius: 999,
+            padding: "7px 14px", minHeight: 44, borderRadius: 999,
             background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
             color: "#fff",
             border: "none",
@@ -402,7 +402,7 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
       style={{
         ...B({
           display: "inline-flex", alignItems: "center", gap: 6,
-          padding: "7px 12px", borderRadius: 999,
+          padding: "7px 12px", minHeight: 44, borderRadius: 999,
           // [Fix 2026-05-20] Boutons frosted glass coherents avec les bulles
           // Background transparent (0.55) + backdrop blur fort pour lisibilite.
           background: hovered
@@ -656,7 +656,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
             style={{
               ...B({
                 marginTop: 6,
-                padding: "7px 12px", borderRadius: RadiusPill,
+                padding: "7px 12px", minHeight: 44, borderRadius: RadiusPill,
                 background: GradPurple, color: "#fff",
                 fontSize: 11, fontWeight: 600, fontFamily: Sans,
                 display: "inline-flex", alignItems: "center", gap: 5,
@@ -919,7 +919,7 @@ export default function CoachModal({
               style={{
                 ...B({
                   background: "rgba(255, 255, 255, 0.55)", borderRadius: "50%",
-                  width: 32, height: 32, color: Ink,
+                  width: 44, height: 44, color: Ink,
                   border: "0.5px solid rgba(217, 119, 87, 0.4)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
@@ -943,7 +943,7 @@ export default function CoachModal({
           <button onClick={onClose} disabled={loading} aria-label="close" style={{
             ...B({
               background: "rgba(255, 255, 255, 0.55)", borderRadius: "50%",
-              width: 32, height: 32, color: Ink,
+              width: 44, height: 44, color: Ink,
               border: "0.5px solid rgba(217, 119, 87, 0.4)",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
@@ -1097,6 +1097,7 @@ export default function CoachModal({
               style={{
                 flex: 1,
                 padding: "11px 16px",
+                minHeight: 44,
                 borderRadius: RadiusPill,
                 // [Fix 2026-05-20] Input frosted glass coherent
                 border: "0.5px solid rgba(255, 255, 255, 0.7)",
@@ -1122,7 +1123,7 @@ export default function CoachModal({
               aria-label={T.co_send}
               style={{
                 ...B({
-                  width: 42, height: 42, borderRadius: "50%",
+                  width: 44, height: 44, borderRadius: "50%",
                   background: (loading || !input.trim() || !apiKey)
                     ? Gray200 : GradPurple,
                   color: (loading || !input.trim() || !apiKey) ? Gray600 : "#fff",

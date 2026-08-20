@@ -253,7 +253,7 @@ function ModalContent({
               style={{
                 background: CARD_BG,
                 borderRadius: "50%",
-                width: 32, height: 32, color: Ink,
+                width: 44, height: 44, color: Ink,
                 border: "0.5px solid rgba(255, 255, 255, 0.6)",
                 cursor: "pointer",
                 display: "flex", alignItems: "center", justifyContent: "center",

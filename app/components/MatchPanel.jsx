@@ -273,7 +273,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
         {/* Apply button - gradient violet→magenta */}
         <button onClick={apply} style={{
           ...B({
-            width:"100%", padding:13, borderRadius:RadiusPill,
+            width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
             background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
             color:"#fff", fontWeight:600, fontSize:14, marginBottom:8,
             border:"none", fontFamily:Sans,
@@ -287,7 +287,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
         {onPackRequest && (
           <button onClick={()=>onPackRequest(offer, res)} style={{
             ...B({
-              width:"100%", padding:13, borderRadius:RadiusPill,
+              width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
               background:Paper, color:Purple,
               border:"0.5px solid "+Purple,
               fontWeight:600, fontSize:14, marginBottom:8,
@@ -352,7 +352,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
         disabled={load||!apiKey||!offer.trim()}
         style={{
           ...B({
-            width:"100%", padding:13, borderRadius:RadiusPill,
+            width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
             background: load||!apiKey||!offer.trim()
               ? Hairline
               : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
