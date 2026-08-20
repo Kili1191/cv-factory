@@ -3730,7 +3730,7 @@ export default function App() {
   // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
   // a l'extraction une structure coherente (nom, titre, sections, postes).
   // ============================================================
-  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm) => {
+  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm, candidateName) => {
     const rootRect = rootEl.getBoundingClientRect();
     if (!rootRect.width || !rootRect.height) return 0;
     const mmPerPxX = pageWidthMm / rootRect.width;
@@ -3824,8 +3824,25 @@ export default function App() {
       const straddling = frags.filter(f => f.left < split && f.right > split);
       const before = frags.filter(f => f.right <= split);
       const after = frags.filter(f => f.left >= split);
-      const biggest = frags.reduce((a, b) => (b.height > a.height ? b : a), frags[0]);
-      const [first, second] = before.includes(biggest) ? [before, after] : [after, before];
+      // La colonne a ecrire en premier est celle qui porte le nom du
+      // candidat. On le cherche par son texte : se fier au plus gros
+      // caractere ne marche pas, le monogramme d'initiales du modele par
+      // defaut ("JD") est dessine plus grand que le nom, et il est dans la
+      // colonne laterale — c'est ainsi que le PDF continuait de commencer
+      // par "JD Contact jane.doe@...". A defaut de nom, on retombe sur le
+      // plus grand fragment d'au moins quatre caracteres, ce qui exclut les
+      // monogrammes.
+      const wanted = (candidateName || "").trim().toLowerCase();
+      const holdsName = wanted
+        ? f => f.text.toLowerCase().includes(wanted)
+        : null;
+      let anchor = holdsName ? frags.find(holdsName) : null;
+      if (!anchor) {
+        const long = frags.filter(f => f.text.length >= 4);
+        const pool = long.length ? long : frags;
+        anchor = pool.reduce((a, b) => (b.height > a.height ? b : a), pool[0]);
+      }
+      const [first, second] = before.includes(anchor) ? [before, after] : [after, before];
       ordered = [
         ...straddling.sort(byReading),
         ...first.sort(byReading),
@@ -3969,10 +3986,19 @@ export default function App() {
               min-height: ${A4_HEIGHT_MM}mm !important;
               height: ${A4_HEIGHT_MM}mm !important;
             }
-            #cv-print > div > div {
-              min-height: ${A4_HEIGHT_MM}mm !important;
-            }
           `;
+          // [Fix] Il y avait ici une troisieme regle,
+          // "#cv-print > div > div { min-height: 297mm }", posee pour que la
+          // colonne laterale du modele par defaut descende jusqu'en bas.
+          // Elle visait tous les petits-enfants : dans les modeles a une
+          // colonne, ce sont les sections du CV, et chacune se retrouvait
+          // haute d'une page entiere. Mesure sous le CSS d'export : le
+          // contenu descendait a 11450px pour ATS-Safe, 11509px pour
+          // Classique et 9209px pour Suisse, sur une page qui en fait 1123 et
+          // qui coupe le reste. Cinq modeles sur six exportaient donc une page
+          // quasiment vide, image comprise. La colonne laterale du modele par
+          // defaut atteint le bas sans cette regle, son parent etant une
+          // rangee flex qui etire deja ses enfants.
           document.head.appendChild(styleEl);
           console.log("[exportPDF] Design fills page (force 297mm)");
 
@@ -4047,7 +4073,7 @@ export default function App() {
         // position. C'est le principe d'un PDF scanne "cherchable" : identique
         // a l'oeil, lisible par une machine.
         try {
-          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm);
+          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm, cv.name);
         } catch (layerErr) {
           console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
         }

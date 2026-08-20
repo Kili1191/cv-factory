@@ -137,43 +137,43 @@ function checkCommon(label, out, failures) {
   }
 }
 
+// Le CV existe en six modeles, et un seul etait teste.
+//
+// Pendant l'export, un CSS force le CV a remplir exactement une page A4 et
+// coupe ce qui depasse. Une de ces regles visait tous les petits-enfants de
+// #cv-print, pour que la colonne laterale du modele par defaut descende
+// jusqu'en bas. Dans les modeles a une seule colonne, ces petits-enfants sont
+// les sections du CV : chacune se retrouvait haute d'une page entiere. Le
+// contenu descendait a 11450px pour ATS-Safe et 11509px pour Classique, sur
+// une page qui en fait 1123. Cinq modeles sur six exportaient une page
+// quasiment vide - l'image comme le texte.
+//
+// On exporte donc reellement les six. C'est plus long qu'une verification du
+// CSS depuis le test, mais un test qui reecrit le CSS de l'application ne
+// verifie que sa propre copie : il aurait laisse passer exactement ce bug.
+const LAYOUTS = ["sidebar", "ats", "classic", "timeline", "swiss", "compact"];
+
 export async function run() {
   const failures = [];
   const server = await startServer();
   const browser = await launchBrowser();
+  const sizes = [];
   try {
-    // Mise en page par defaut : deux colonnes.
-    const main = await exportOnce(browser, "sidebar");
-    if (main.failed) {
-      failures.push("colonne laterale : " + main.failed);
-    } else {
-      checkCommon("colonne laterale", main, failures);
+    for (const layout of LAYOUTS) {
+      const out = await exportOnce(browser, layout);
+      if (out.failed) { failures.push(`modele ${layout} : ` + out.failed); continue; }
+      checkCommon(`modele ${layout}`, out, failures);
       for (const [what, needle] of MUST_CONTAIN) {
-        if (!main.text.includes(needle)) {
-          failures.push(`colonne laterale : ${what} absent du texte du PDF - "${needle}"`);
+        if (!out.text.includes(needle)) {
+          failures.push(`modele ${layout} : ${what} absent du texte du PDF - "${needle}"`);
         }
       }
-    }
-
-    // Mise en page ATS-Safe : une seule colonne. Le regroupement par colonne
-    // ne doit pas y inventer de gouttiere et disperser le texte.
-    const ats = await exportOnce(browser, "ats");
-    if (ats.failed) {
-      failures.push("ATS-Safe : " + ats.failed);
-    } else {
-      checkCommon("ATS-Safe", ats, failures);
-      for (const [what, needle] of MUST_CONTAIN) {
-        if (!ats.text.includes(needle)) {
-          failures.push(`ATS-Safe : ${what} absent du texte du PDF - "${needle}"`);
-        }
-      }
+      sizes.push(`${layout} ${out.text.length}`);
     }
 
     if (!failures.length) {
-      console.log(
-        `      colonne laterale : ${main.text.length} caracteres, ` +
-        `ATS-Safe : ${ats.text.length} caracteres, nom en tete, image conservee`
-      );
+      console.log(`      ${LAYOUTS.length} modeles exportes, nom en tete, accents intacts, `
+        + `image conservee (caracteres extraits : ${sizes.join(", ")})`);
     }
   } finally {
     await browser.close();
