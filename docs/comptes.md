@@ -109,3 +109,56 @@ toutes les 1,2 seconde.
 Entre deux appareils, la version la plus recente gagne, cle par cle. Quand une
 version plus recente arrive d'ailleurs, l'application le signale et se recharge
 pour repartir d'un etat coherent.
+
+---
+
+# Brancher les sources d'offres
+
+Trois sources ont ete verifiees comme reellement accessibles, gratuitement et
+sans partenariat. Chacune est absente tant que sa cle n'est pas posee, et une
+source en panne n'empeche pas les autres de repondre.
+
+| Source | Couverture | Inscription | Cout |
+|---|---|---|---|
+| France Travail | France, 300 000+ offres | francetravail.io | gratuit |
+| Adzuna | 19 pays dont France et Royaume-Uni | developer.adzuna.com | gratuit, ~1000 appels/mois |
+| Reed | Royaume-Uni | reed.co.uk/developers | gratuit |
+
+Adzuna seule couvre les deux marches qui interessent Nuvi. C'est la premiere a
+brancher si tu n'en fais qu'une.
+
+## Variables
+
+```
+FRANCE_TRAVAIL_ID=...
+FRANCE_TRAVAIL_SECRET=...
+ADZUNA_APP_ID=...
+ADZUNA_APP_KEY=...
+REED_API_KEY=...
+```
+
+Aucune n'est prefixee `NEXT_PUBLIC_` : ce sont des secrets, ils restent sur le
+serveur. La recherche passe par `/api/jobs/search`, jamais par le navigateur.
+
+## Ce qui n'est pas possible, et pourquoi
+
+**LinkedIn.** "Sign In with LinkedIn" est gratuit et immediat, mais ne donne
+que le nom, l'e-mail et la photo. Le profil complet et les offres passent par
+le Partner Program : trois a six mois d'instruction, accorde a discretion, les
+refus sont rarement expliques, et l'API Sales Navigator n'accepte plus de
+nouveaux partenaires. Le chemin honnete pour importer un profil LinkedIn reste
+l'export PDF que LinkedIn fournit a chaque utilisateur, et que Nuvi sait deja
+lire.
+
+**Indeed.** L'API publique de recherche est fermee depuis 2024. Il ne reste
+qu'une API destinee aux employeurs, payante a l'appel, qui ne sert pas a lire
+des offres. Aucun acces en lecture pour une application tierce, a aucun prix
+raisonnable.
+
+**Google.** Google Jobs n'est pas une API mais une fonction de recherche.
+Google se branche pour la connexion, la boite mail et l'agenda, pas pour les
+offres.
+
+Contourner ces limites par du grattage de pages violerait les conditions
+d'utilisation de ces plateformes, qui bloquent activement et poursuivent. Ce
+n'est pas une option pour un produit qu'on veut faire durer.
