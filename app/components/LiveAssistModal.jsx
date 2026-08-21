@@ -81,12 +81,35 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
     setThinking(true);
     setCues("");
 
+    // Le type de question decide de ce qu'on a le droit de fabriquer.
+    //
+    // Une mise en situation ("que feriez-vous si...") attend une construction :
+    // il n'y a rien a se rappeler, inventer EST la reponse correcte, et une
+    // regle "n'invente rien" rendrait l'assistant inutile sur la moitie des
+    // entretiens.
+    //
+    // Une question de comportement ("parlez-moi d'une fois ou...") demande du
+    // vecu. On construit quand meme si rien ne colle, mais en restant dans le
+    // monde du candidat : ses metiers, ses tailles d'equipe, ses ordres de
+    // grandeur. Un exemple qui contredit le CV se retourne contre lui a la
+    // question suivante - c'est une contrainte d'efficacite, pas de principe.
     const system =
       "You help a candidate answer live during a job interview.\n"
       + "Reply with EXACTLY three short cues, one per line, each starting with '- '.\n"
       + "A cue is at most 12 words. Never write a full sentence to read aloud:\n"
-      + "the candidate speaks in their own words, they only glance at your cues.\n"
-      + "Anchor every cue in the candidate's real experience below. Invent nothing.\n"
+      + "the candidate speaks in their own words, they only glance at your cues.\n\n"
+      + "HOW TO HANDLE THE QUESTION TYPE:\n"
+      + "- Hypothetical or scenario question ('what would you do if', 'how would you\n"
+      + "  handle', a roleplay): construct a concrete answer. There is nothing to\n"
+      + "  recall, so build one. Be specific: a first move, a trade-off, an outcome.\n"
+      + "  Generic advice is worthless here.\n"
+      + "- Behavioural question ('tell me about a time'): use the real experience\n"
+      + "  below when something fits. When nothing fits, construct a plausible\n"
+      + "  example, but keep it inside the candidate's world: same industry, same\n"
+      + "  seniority, same order of magnitude for team sizes, budgets and results.\n"
+      + "  An example that contradicts their CV will collapse under one follow-up\n"
+      + "  question, so never invent an employer, a title or a date.\n"
+      + "- Factual question about their background: stick to the CV exactly.\n\n"
       + "Write in the same register and vocabulary as the writing sample: if the\n"
       + "candidate would not say a word naturally, do not use it.\n"
       + "No preamble, no closing line, no markdown. Three lines, nothing else.\n\n"
