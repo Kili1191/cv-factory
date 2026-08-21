@@ -67,6 +67,7 @@ export default function NuviBottomNav({
       coach: "Coach",
       target: "Cibler",
       pack: "Pack",
+      live: "Live",
       more: "Plus",
       score: "Score",
       cvs: "Mes CV",
@@ -95,6 +96,7 @@ export default function NuviBottomNav({
       coach: "Coach",
       target: "Match",
       pack: "Pack",
+      live: "Live",
       more: "More",
       score: "Score",
       cvs: "My CVs",
@@ -123,6 +125,17 @@ export default function NuviBottomNav({
 
   // Icônes (réutilisé du NuviSidebar mais 22px)
   const Icons = {
+    // Micro avec une pastille : on doit reconnaitre l'outil d'un coup d'oeil
+    // dans une barre de cinq icones.
+    live: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/>
+        <path d="M19 10v1a7 7 0 01-14 0v-1"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+        <circle cx="19.5" cy="4.5" r="2.2" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
     home: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -196,11 +209,16 @@ export default function NuviBottomNav({
   };
 
   // 5 items principaux du bottom nav
+  // [Fix] L'assistant d'entretien etait range sous "Score & Audits", au
+  // troisieme niveau. C'est l'outil qu'on ouvre sous pression, deux minutes
+  // avant un appel, et souvent sur le telephone qu'on pose a cote de soi :
+  // il doit se trouver du premier coup. Il prend donc une place dans la barre
+  // du bas, et "Pack" rejoint le tiroir, ou il se cherche sans urgence.
   const mainItems = [
     { key: "home", label: L.home },
     { key: "coach", label: L.coach, special: true }, // Coach déclenche openCoach
     { key: "target", label: L.target },
-    { key: "pack", label: L.pack },
+    { key: "live", label: L.live },
     { key: "more", label: L.more, isMore: true },
   ];
 
@@ -218,6 +236,7 @@ export default function NuviBottomNav({
     { key: "design",    label: L.design },
     { key: "translate", label: L.translate },
     { section: L.sec_audits },
+    { key: "pack",      label: L.pack },
     { key: "score",     label: L.score },
     { key: "ats",       label: L.ats },
     { key: "truth",     label: L.truth },

@@ -48,6 +48,7 @@ export default function NuviSidebar({
     adjust: Violet,
     target: Coral,
     pack: Violet,
+    live: Magenta,
     audits: Violet,
     cvs: Coral,
     design: Coral,
@@ -59,6 +60,7 @@ export default function NuviSidebar({
     fr: {
       home: "Accueil", coach: "Coach", edit: "Editer", adjust: "Ajuster",
       target: "Match offre", pack: "Pack candidature",
+      live: "Entretien live",
       audits: "Score & Audits", cvs: "Mes CV", design: "Design",
       tracking: "Candidatures", settings: "Reglages",
       replay: "Reset",
@@ -75,6 +77,7 @@ export default function NuviSidebar({
     en: {
       home: "Home", coach: "Coach", edit: "Edit", adjust: "Tweak",
       target: "Match", pack: "Application Pack",
+      live: "Live interview",
       audits: "Score & Audits", cvs: "My CVs", design: "Design",
       tracking: "Applications", settings: "Settings",
       replay: "Reset",
@@ -98,6 +101,7 @@ export default function NuviSidebar({
     adjust: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.962 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.582a.5.5 0 010 .962L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.962 0z"/></svg>),
     target: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>),
     pack: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>),
+    live: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><circle cx="19.5" cy="4.5" r="2" fill="currentColor" stroke="none"/></svg>),
     audits: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 5-5"/></svg>),
     cvs: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>),
     design: <DesignPaletteIcon size={20} />,
@@ -141,7 +145,6 @@ export default function NuviSidebar({
       { key: "gap",   label: L.audits_gap,   icon: SubIcons.gap,   isAI: true  },
       { key: "ats",   label: L.audits_ats,   icon: SubIcons.ats,   isAI: true  },
       { key: "interview", label: L.audits_interview, icon: SubIcons.interview, isAI: true },
-      { key: "live",      label: L.audits_live,      icon: SubIcons.live,      isAI: true },
     ],
     cvs: [
       { key: "list",      label: L.cvs_list,      icon: SubIcons.list,      isAI: false },
@@ -163,6 +166,7 @@ export default function NuviSidebar({
     { key: "adjust",   label: L.adjust,   hasSub: false },
     { key: "target",   label: L.target,   hasSub: false },
     { key: "pack",     label: L.pack,     hasSub: false },
+    { key: "live",     label: L.live,     hasSub: false },
     { key: "audits",   label: L.audits,   hasSub: true  },
   ];
   const middleItems = [

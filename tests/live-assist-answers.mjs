@@ -101,12 +101,13 @@ export async function run() {
     await page.reload({ waitUntil: "networkidle" });
     await page.waitForTimeout(1800);
 
-    await page.locator('[role="button"]:has-text("Score & Audits"), button:has-text("Score & Audits")')
-      .first().click({ timeout: 8000 });
-    await page.waitForTimeout(1000);
-    const entry = page.locator('[role="button"], button').filter({ hasText: "Assistant live" }).first();
+    // L'entree doit etre au PREMIER niveau. Elle etait rangee sous
+    // "Score & Audits", au troisieme : c'est l'outil qu'on ouvre sous
+    // pression, deux minutes avant un appel. S'il faut le chercher, il est
+    // deja trop tard.
+    const entry = page.locator('[role="button"], button').filter({ hasText: "Entretien live" }).first();
     if (await entry.count() === 0) {
-      failures.push("aucune entree 'Assistant live' dans la barre laterale");
+      failures.push("aucune entree 'Entretien live' au premier niveau de la barre laterale");
     } else {
       await entry.click({ timeout: 8000 });
       await page.waitForTimeout(1200);

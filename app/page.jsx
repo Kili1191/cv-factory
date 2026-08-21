@@ -7828,6 +7828,8 @@ export default function App() {
                 setShowOffer(true);
               } else if (key === "pack") {
                 setShowPack(true);
+              } else if (key === "live") {
+                setShowLive(true);
               } else if (key === "tracking") {
                 setShowApplications(true);
               }
@@ -7845,7 +7847,6 @@ export default function App() {
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
                 else if (subKey === "ats")   setShowAudit(true);
                 else if (subKey === "interview") setShowInterview(true);
-                else if (subKey === "live") setShowLive(true);
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
@@ -8432,6 +8433,7 @@ export default function App() {
             // Wire chaque section a la modale existante (meme couverture que
             // la barre laterale : le tiroir "Plus" liste maintenant tout).
             if (key === "target") setShowOffer(true);
+            else if (key === "live") setShowLive(true);
             else if (key === "pack") setShowPack(true);
             else if (key === "score") setShowScore(true);
             else if (key === "cvs") setShowMultiCV(true);
