@@ -14,6 +14,8 @@ const SUITES = [
   ["une offre trouvee devient une candidature", "./job-search-becomes-an-application.mjs"],
   ["l'extension lit une annonce", "./extension-reads-a-job-ad.mjs"],
   ["l'assistant d'entretien repond", "./live-assist-answers.mjs"],
+  ["Gmail rend au suivi son vrai etat", "./gmail-reads-the-replies.mjs"],
+  ["l'app s'installe sur l'ecran d'accueil", "./installs-on-the-home-screen.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useInstallState } from "./InstallAppSheet";
 
 /**
  * NuviBottomNav — Bottom navigation mobile (5 icônes)
@@ -29,11 +30,17 @@ export default function NuviBottomNav({
   lang = "fr",
   onCoachOpen,
   onSettingsOpen,
+  onInstallOpen,
   onReset,
   suggestedAction = null,
   hasNotification = {},
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // "Installer l'app" n'a de sens que la ou l'installation est possible :
+  // sur un telephone deja equipe, ou sur un navigateur qui ne sait pas le
+  // faire, l'entree disparait du tiroir au lieu de mener a une impasse.
+  const install = useInstallState();
   const [suggestDismissed, setSuggestDismissed] = useState(false);
 
   // La barre de nav et la barre de suggestion sont en position fixed et
@@ -88,6 +95,7 @@ export default function NuviBottomNav({
       translate: "Traduction",
       linkedin: "Profil LinkedIn",
       activity: "Mon activite",
+      install: "Installer l'app",
       sec_cv: "Mon CV",
       sec_audits: "Analyser",
       sec_tools: "Outils",
@@ -118,6 +126,7 @@ export default function NuviBottomNav({
       translate: "Translate",
       linkedin: "LinkedIn profile",
       activity: "My activity",
+      install: "Install the app",
       sec_cv: "My CV",
       sec_audits: "Analyse",
       sec_tools: "Tools",
@@ -253,6 +262,7 @@ export default function NuviBottomNav({
     { key: "linkedin",  label: L.linkedin },
     { key: "tracking",  label: L.tracking },
     { key: "activity",  label: L.activity },
+    ...(install.installable ? [{ key: "install", label: L.install, isInstall: true }] : []),
     { key: "settings",  label: L.settings, isSettings: true },
     { key: "reset",     label: L.reset, isReset: true, danger: true },
   ];
@@ -269,6 +279,11 @@ export default function NuviBottomNav({
     if (item.key === "settings" && onSettingsOpen) {
       setDrawerOpen(false);
       onSettingsOpen();
+      return;
+    }
+    if (item.key === "install" && onInstallOpen) {
+      setDrawerOpen(false);
+      onInstallOpen();
       return;
     }
     if (item.key === "reset" && onReset) {

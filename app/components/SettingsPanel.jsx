@@ -41,6 +41,8 @@ function KbdRow({ keys, label }) {
   );
 }
 
+import { useInstallState } from "./InstallAppSheet";
+
 export default function SettingsPanel({
   T, locale, setLocale,
   darkMode, onToggleDark,
@@ -48,7 +50,13 @@ export default function SettingsPanel({
   onOpenHistory, onClearAiCache,
   cloudEnabled = false, cloudUser = null,
   onSignIn = () => {}, onSignOut = () => {},
+  onOpenInstall = () => {},
 }) {
+
+  // La ligne d'installation ne s'affiche que si elle mene quelque part :
+  // deja installee, ou navigateur qui ne sait pas installer, elle disparait
+  // plutot que de promettre un geste impossible.
+  const install = useInstallState();
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -221,6 +229,48 @@ export default function SettingsPanel({
           </div>
         </button>
       </div>
+
+      {/* Installer sur l'ecran d'accueil */}
+      {install.installable && (
+        <div style={{marginBottom:18}}>
+          <button onClick={onOpenInstall} style={{
+            ...B({
+              width:"100%",
+              display:"flex", alignItems:"center", gap:14,
+              padding:"14px 16px",
+              background:Paper,
+              border:"0.5px solid "+Hairline,
+              borderRadius:RadiusMd,
+              boxShadow:ShadowSm,
+              textAlign:"left", fontFamily:Sans,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            <div style={{
+              width:36, height:36, borderRadius:10, overflow:"hidden",
+              flexShrink:0, border:"0.5px solid "+Hairline,
+            }}>
+              <img src="/apple-touch-icon.png" alt="" width={36} height={36}
+                style={{display:"block", width:"100%", height:"100%"}}/>
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:2}}>
+                {T.set_install || (locale === "en" ? "Install the app" : "Installer l'application")}
+              </div>
+              <div style={{fontSize:11, color:InkMuted, lineHeight:1.4}}>
+                {T.set_install_desc || (locale === "en"
+                  ? "An icon on your home screen. Opens full screen."
+                  : "Une icone sur ton ecran d'accueil. Ouverture plein ecran.")}
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke={InkMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{flexShrink:0}}>
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Relancer tutoriel */}
       <div style={{marginBottom:18}}>

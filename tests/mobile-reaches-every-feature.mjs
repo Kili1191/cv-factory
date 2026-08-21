@@ -35,6 +35,7 @@ const AI_STUB = JSON.stringify({ content: [{ type: "text", text: JSON.stringify(
 // n'y sont pas : avec un CV neuf elles repondent par un message, ce qui est le
 // comportement voulu et non l'ouverture d'un panneau.
 const ITEMS = [
+  "Trouver un poste",
   "Editer", "Ajuster", "Design", "Traduction",
   "Score", "Audit ATS", "Truth Check", "Positionnement", "Preparer l'entretien",
   "Mes CV", "Versions", "Profil LinkedIn", "Suivi", "Mon activite",

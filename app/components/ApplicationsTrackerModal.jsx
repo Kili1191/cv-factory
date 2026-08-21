@@ -12,6 +12,7 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
+import GmailScanPanel from "./GmailScanPanel";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
@@ -394,6 +395,12 @@ function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
 export default function ApplicationsTrackerModal({
   T, applications, onAdd, onUpdate, onDelete, onClose,
   onAction = () => {},
+  // Gmail est facultatif : sans compte configure, ces trois-la restent nuls
+  // et le panneau ne s'affiche pas. Le suivi fonctionne exactement comme
+  // avant, a la main.
+  locale = "fr",
+  connectGmail = null,
+  getGmailToken = null,
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
@@ -486,6 +493,28 @@ export default function ApplicationsTrackerModal({
         fontSize:13, color:InkMuted, lineHeight:1.5,
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.ap_sub}</p>
+
+      {/* Les reponses des recruteurs, lues dans la boite mail.
+          C'est ce qui separe un tableau qu'il faut tenir a jour d'un tableau
+          qui dit la verite : sans lui, les lignes "en attente" contiennent
+          des refus encaisses il y a trois semaines et des invitations
+          restees sans reponse. */}
+      {connectGmail && getGmailToken && (
+        <GmailScanPanel
+          locale={locale}
+          applications={applications}
+          connectGmail={connectGmail}
+          getGmailToken={getGmailToken}
+          onApply={(id, status) => {
+            const app = applications.find(a => String(a.id) === String(id));
+            if (!app) return;
+            // La date de derniere nouvelle repart d'aujourd'hui : c'est elle
+            // qui decide, plus tard, si la candidature est a relancer ou
+            // consideree comme morte.
+            onUpdate({ ...app, status, lastReplyAt: Date.now() });
+          }}
+        />
+      )}
 
       {/* Stats */}
       {applications.length > 0 && (

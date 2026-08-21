@@ -17,6 +17,7 @@ const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ss
 const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr: false });
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
 const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
+const InstallAppSheet = dynamic(() => import("./components/InstallAppSheet"), { ssr: false });
 const LiveAssistModal = dynamic(() => import("./components/LiveAssistModal"), { ssr: false });
 const JobSearchModal = dynamic(() => import("./components/JobSearchModal"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
@@ -74,7 +75,7 @@ import {
 import FormatChoiceModal from "./components/FormatChoiceModal";
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
-import { initCloud, queuePush, signOut, subscribe as subscribeCloud } from "../lib/cloudSync.js";
+import { initCloud, queuePush, signOut, subscribe as subscribeCloud, connectGmail, getGmailToken } from "../lib/cloudSync.js";
 import { isCloudConfigured } from "../lib/supabaseClient.js";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 // La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
@@ -3359,6 +3360,7 @@ export default function App() {
   // L'app fonctionne sans compte, exactement comme avant. Quand le serveur est
   // configure, le compte sert uniquement a retrouver son CV ailleurs.
   const [showAuth, setShowAuth] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
@@ -3741,6 +3743,46 @@ export default function App() {
     const onCaptured = (e) => consume(e && e.detail);
     window.addEventListener("nuvi:job-captured", onCaptured);
     return () => window.removeEventListener("nuvi:job-captured", onCaptured);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // CE QUE L'ADRESSE PEUT DEMANDER A L'OUVERTURE
+  //
+  //   ?go=target|tracking|live   les raccourcis de l'icone posee sur l'ecran
+  //                              d'accueil. Un appui long dessus propose ces
+  //                              trois actions ; sans ce code elles ouvriraient
+  //                              l'accueil et ne feraient rien.
+  //   ?gmail=1                   le retour de l'autorisation Google. On rouvre
+  //                              le suivi, la ou le balayage se declenche.
+  //
+  // Le parametre est retire de l'adresse une fois lu : sans ca, un
+  // rafraichissement rejouerait l'ouverture, et l'adresse copiee a un ami
+  // ouvrirait son application sur un ecran qu'il n'a pas demande.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let params;
+    try { params = new URLSearchParams(window.location.search); }
+    catch { return; }
+    const go = params.get("go");
+    const gmail = params.get("gmail");
+    if (!go && !gmail) return;
+
+    try {
+      params.delete("go"); params.delete("gmail"); params.delete("src");
+      const q = params.toString();
+      window.history.replaceState({}, "",
+        window.location.pathname + (q ? "?" + q : "") + window.location.hash);
+    } catch { /* l'historique refuse : sans importance */ }
+
+    // Un temps de latence avant d'ouvrir : l'ecran d'accueil et la
+    // restauration du CV se placent d'abord, sinon le panneau s'ouvre sur un
+    // etat encore vide.
+    const t = setTimeout(() => {
+      if (gmail === "1" || go === "tracking") { setShowApplications(true); return; }
+      if (go === "live") { setShowLive(true); return; }
+      if (go === "target") { setShowOffer(true); return; }
+    }, 420);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -7363,6 +7405,12 @@ export default function App() {
         </Suspense>
       )}
 
+      {showInstall && (
+        <Suspense fallback={null}>
+          <InstallAppSheet lang={locale} onClose={() => setShowInstall(false)}/>
+        </Suspense>
+      )}
+
       {showCustomize && (
         <CustomizeSheet
           T={T} cv={cv} theme={theme}
@@ -7526,6 +7574,12 @@ export default function App() {
         <Suspense fallback={null}>
         <ApplicationsTrackerModal
           T={T} applications={applications}
+          locale={locale}
+          // Sans compte configure, Gmail n'existe pas : le panneau de lecture
+          // des reponses ne s'affiche pas, et le suivi se tient a la main
+          // comme avant.
+          connectGmail={isCloudConfigured() ? connectGmail : null}
+          getGmailToken={isCloudConfigured() ? getGmailToken : null}
           onAdd={addApplication}
           onUpdate={updateApplication}
           onDelete={deleteApplication}
@@ -7600,6 +7654,7 @@ export default function App() {
             await signOut();
             notify(locale === "en" ? "Signed out" : "Deconnecte");
           }}
+          onOpenInstall={() => { setShowSettings(false); setShowInstall(true); }}
           onClose={()=>setShowSettings(false)}
         />
         </Suspense>
@@ -7971,6 +8026,7 @@ export default function App() {
             lang={locale}
             onCoachOpen={() => openCoach()}
             onSettingsOpen={() => setShowSettings(true)}
+            onInstallOpen={() => setShowInstall(true)}
             onReset={() => doReset()}
           />
           {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
@@ -8559,6 +8615,7 @@ export default function App() {
           lang={locale}
           onCoachOpen={() => openCoach()}
           onSettingsOpen={() => setShowSettings(true)}
+          onInstallOpen={() => setShowInstall(true)}
           onReset={() => doReset()}
           suggestedAction={suggestedAction}
         />

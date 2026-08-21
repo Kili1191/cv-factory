@@ -736,6 +736,8 @@ const EN_T = {
   set_lang:"Interface language",
   set_dark:"Dark mode",
   set_dark_desc:"Interface in dark. The CV stays light for export.",
+  set_install:"Install the app",
+  set_install_desc:"An icon on your home screen. Opens full screen, no browser bar.",
   set_kbd:"Keyboard shortcuts",
   set_tutorial:"Re-launch tutorial",
   set_cache:"AI cache",
