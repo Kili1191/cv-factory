@@ -3361,6 +3361,9 @@ export default function App() {
   // configure, le compte sert uniquement a retrouver son CV ailleurs.
   const [showAuth, setShowAuth] = useState(false);
   const [showInstall, setShowInstall] = useState(false);
+  // Vrai uniquement au retour de l'autorisation Google, pour lancer le
+  // balayage de la boite mail sans redemander un clic.
+  const [gmailReturn, setGmailReturn] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
@@ -3778,7 +3781,8 @@ export default function App() {
     // restauration du CV se placent d'abord, sinon le panneau s'ouvre sur un
     // etat encore vide.
     const t = setTimeout(() => {
-      if (gmail === "1" || go === "tracking") { setShowApplications(true); return; }
+      if (gmail === "1") { setGmailReturn(true); setShowApplications(true); return; }
+      if (go === "tracking") { setShowApplications(true); return; }
       if (go === "live") { setShowLive(true); return; }
       if (go === "target") { setShowOffer(true); return; }
     }, 420);
@@ -7580,6 +7584,7 @@ export default function App() {
           // comme avant.
           connectGmail={isCloudConfigured() ? connectGmail : null}
           getGmailToken={isCloudConfigured() ? getGmailToken : null}
+          gmailAutoScan={gmailReturn}
           onAdd={addApplication}
           onUpdate={updateApplication}
           onDelete={deleteApplication}

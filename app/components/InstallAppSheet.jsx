@@ -26,8 +26,6 @@ import {
 } from "./tokens";
 import { detectPlatform, isStandalone } from "../../lib/installTarget";
 
-const DISMISS_KEY = "cvf_install_dismissed";
-
 // La detection vit dans lib/installTarget.js, sans JSX : c'est la seule
 // partie de l'installation qui peut se tromper en silence, donc celle que les
 // tests doivent pouvoir charger directement.
@@ -308,5 +306,3 @@ export default function InstallAppSheet({ lang = "fr", onClose = () => {} }) {
     </div>
   );
 }
-
-export { DISMISS_KEY };

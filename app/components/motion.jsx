@@ -299,7 +299,19 @@ export function Aurora({ children, style, className, ...rest }) {
       ref={ref}
       onPointerMove={onMove}
       className={className}
-      style={{ position: "relative", ...style }}
+      style={{
+        position: "relative",
+        // LA LIGNE QUI EVITE UN FAUX DEFILEMENT
+        //
+        // La lueur deborde de 80 pixels pour que son flou s'eteigne hors du
+        // cadre plutot que de laisser un bord net. Mais un element en
+        // position absolue qui depasse a droite ou en bas AJOUTE de la zone
+        // de defilement a son conteneur : sans ce recadrage, l'accueil
+        // gagnerait 80 pixels de defilement fantome vers le bas et vers la
+        // droite, sur un ecran ou il n'y a rien a voir.
+        overflow: "hidden",
+        ...style,
+      }}
       {...rest}
     >
       <div aria-hidden="true" style={{

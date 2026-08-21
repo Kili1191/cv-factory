@@ -401,6 +401,7 @@ export default function ApplicationsTrackerModal({
   locale = "fr",
   connectGmail = null,
   getGmailToken = null,
+  gmailAutoScan = false,
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
@@ -505,6 +506,7 @@ export default function ApplicationsTrackerModal({
           applications={applications}
           connectGmail={connectGmail}
           getGmailToken={getGmailToken}
+          autoScan={gmailAutoScan}
           onApply={(id, status) => {
             const app = applications.find(a => String(a.id) === String(id));
             if (!app) return;

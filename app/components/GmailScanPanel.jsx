@@ -17,7 +17,7 @@
 // message qui l'a produite, avec un lien pour aller le lire dans Gmail, et
 // attend un oui.
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Ink, InkMuted, Paper, Hairline, Coral, CoralSoft, Green, GreenSoft,
   Purple, PurpleSoft, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
@@ -103,6 +103,10 @@ export default function GmailScanPanel({
   onApply = () => {},
   connectGmail,
   getGmailToken,
+  // Vrai au retour de l'autorisation Google. On ne fait pas cliquer quelqu'un
+  // sur "chercher les reponses" trois secondes apres qu'il vient d'autoriser
+  // Nuvi a chercher les reponses.
+  autoScan = false,
 }) {
   const t = TXT[locale] || TXT.fr;
   const [phase, setPhase] = useState("idle"); // idle | scanning | done | expired | failed
@@ -128,6 +132,15 @@ export default function GmailScanPanel({
       }
     }
   }, [applications, getGmailToken]);
+
+  // Une seule fois : sans ce garde, un rendu declenche par le resultat du
+  // balayage relancerait le balayage.
+  const started = useRef(false);
+  useEffect(() => {
+    if (!autoScan || started.current || !applications.length) return;
+    started.current = true;
+    scan();
+  }, [autoScan, applications.length, scan]);
 
   const live = results.filter(r => !dismissed.has(r.message.id));
   const changes = live.filter(r => r.proposedStatus);
