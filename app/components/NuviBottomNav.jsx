@@ -66,6 +66,7 @@ export default function NuviBottomNav({
       home: "CV",
       coach: "Coach",
       target: "Cibler",
+      jobs: "Trouver un poste",
       pack: "Pack",
       live: "Live",
       more: "Plus",
@@ -95,6 +96,7 @@ export default function NuviBottomNav({
       home: "CV",
       coach: "Coach",
       target: "Match",
+      jobs: "Find a role",
       pack: "Pack",
       live: "Live",
       more: "More",
@@ -231,6 +233,7 @@ export default function NuviBottomNav({
   // et defile quand l'ecran est trop court.
   const drawerItems = [
     { section: L.sec_cv },
+    { key: "jobs",      label: L.jobs },
     { key: "edit",      label: L.edit },
     { key: "adjust",    label: L.adjust },
     { key: "design",    label: L.design },

@@ -46,6 +46,7 @@ export default function NuviSidebar({
     coach: Violet,
     edit: Coral,
     adjust: Violet,
+    jobs: Coral,
     target: Coral,
     pack: Violet,
     live: Magenta,
@@ -59,7 +60,7 @@ export default function NuviSidebar({
   const labels = {
     fr: {
       home: "Accueil", coach: "Coach", edit: "Editer", adjust: "Ajuster",
-      target: "Match offre", pack: "Pack candidature",
+      jobs: "Trouver un poste", target: "Match offre", pack: "Pack candidature",
       live: "Entretien live",
       audits: "Score & Audits", cvs: "Mes CV", design: "Design",
       tracking: "Candidatures", settings: "Reglages",
@@ -76,7 +77,7 @@ export default function NuviSidebar({
     },
     en: {
       home: "Home", coach: "Coach", edit: "Edit", adjust: "Tweak",
-      target: "Match", pack: "Application Pack",
+      jobs: "Find a role", target: "Match", pack: "Application Pack",
       live: "Live interview",
       audits: "Score & Audits", cvs: "My CVs", design: "Design",
       tracking: "Applications", settings: "Settings",
@@ -99,6 +100,7 @@ export default function NuviSidebar({
     coach: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>),
     edit: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>),
     adjust: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.937 15.5A2 2 0 008.5 14.063l-6.135-1.582a.5.5 0 010-.962L8.5 9.936A2 2 0 009.937 8.5l1.582-6.135a.5.5 0 01.962 0L14.063 8.5A2 2 0 0015.5 9.937l6.135 1.582a.5.5 0 010 .962L15.5 14.063a2 2 0 00-1.437 1.437l-1.582 6.135a.5.5 0 01-.962 0z"/></svg>),
+    jobs: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16.2" y2="16.2"/></svg>),
     target: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>),
     pack: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg>),
     live: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/><path d="M19 10v1a7 7 0 01-14 0v-1"/><line x1="12" y1="18" x2="12" y2="22"/><circle cx="19.5" cy="4.5" r="2" fill="currentColor" stroke="none"/></svg>),
@@ -164,6 +166,7 @@ export default function NuviSidebar({
     { key: "coach",    label: L.coach,    hasSub: false },
     { key: "edit",     label: L.edit,     hasSub: true  },
     { key: "adjust",   label: L.adjust,   hasSub: false },
+    { key: "jobs",     label: L.jobs,     hasSub: false },
     { key: "target",   label: L.target,   hasSub: false },
     { key: "pack",     label: L.pack,     hasSub: false },
     { key: "live",     label: L.live,     hasSub: false },

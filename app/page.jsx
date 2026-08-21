@@ -18,6 +18,7 @@ const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr:
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
 const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
 const LiveAssistModal = dynamic(() => import("./components/LiveAssistModal"), { ssr: false });
+const JobSearchModal = dynamic(() => import("./components/JobSearchModal"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
 const TranslateModal = dynamic(() => import("./components/TranslateModal"), { ssr: false });
 const AuditModal = dynamic(() => import("./components/AuditModal"), { ssr: false });
@@ -1686,6 +1687,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
         onPackRequest={onPackRequest}
         pushH={pushH}
         initialResult={initialResult}
+        initialOffer={initialOffer}
         onResult={onResult}
         onApplied={onApplied}
         aiCall={aiCall}
@@ -3358,6 +3360,7 @@ export default function App() {
   // configure, le compte sert uniquement a retrouver son CV ailleurs.
   const [showAuth, setShowAuth] = useState(false);
   const [showLive, setShowLive] = useState(false);
+  const [showJobs, setShowJobs] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
   // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
   // quand on arrive par l'entree Modeles de la barre laterale).
@@ -7254,6 +7257,42 @@ export default function App() {
           </Suspense>
         </Sheet>
       )}
+      {showJobs && (
+        <Suspense fallback={null}>
+          <JobSearchModal
+            T={T} locale={locale}
+            onClose={() => setShowJobs(false)}
+            onTrack={(job) => {
+              // Le geste qui ferme la boucle. L'offre devient une candidature
+              // QUI PORTE SON ANNONCE : c'est elle qui alimente ensuite le CV
+              // adapte, la relance et la preparation d'entretien. Sans ce
+              // champ, chaque etape suivante redemanderait de recoller le
+              // texte, ce que font tous les concurrents.
+              const app = {
+                id: Date.now(),
+                company: job.company || "",
+                role: job.title || "",
+                date: new Date().toISOString().slice(0, 10),
+                status: "applied",
+                notes: "",
+                link: job.url || "",
+                offer: job.description || "",
+                created: Date.now(),
+              };
+              addApplication(app);
+              logActivity(ACT.APPLICATION_ADDED, (locale === "en" ? "Tracked: " : "Suivie : ")
+                + [job.title, job.company].filter(Boolean).join(" - "));
+              notify(locale === "en" ? "Tracked, adapting your CV" : "Suivie, on adapte ton CV");
+              setShowJobs(false);
+              setTimeout(() => {
+                setPendingOffer(job.description || "");
+                setShowOffer(true);
+              }, 220);
+            }}
+          />
+        </Suspense>
+      )}
+
       {showLive && (
         <Suspense fallback={null}>
           <LiveAssistModal
@@ -7824,6 +7863,8 @@ export default function App() {
               } else if (key === "adjust") {
                 // Ouvre l'AdjustModal (chat-style avec Nuvi)
                 setShowAdjust(true);
+              } else if (key === "jobs") {
+                setShowJobs(true);
               } else if (key === "target") {
                 setShowOffer(true);
               } else if (key === "pack") {
@@ -8432,7 +8473,8 @@ export default function App() {
             setNavSection(key);
             // Wire chaque section a la modale existante (meme couverture que
             // la barre laterale : le tiroir "Plus" liste maintenant tout).
-            if (key === "target") setShowOffer(true);
+            if (key === "jobs") setShowJobs(true);
+            else if (key === "target") setShowOffer(true);
             else if (key === "live") setShowLive(true);
             else if (key === "pack") setShowPack(true);
             else if (key === "score") setShowScore(true);

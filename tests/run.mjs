@@ -11,6 +11,7 @@ const SUITES = [
   ["la requete envoyee a l'IA est bien formee", "./the-ai-request-is-well-formed.mjs"],
   ["les comptes ne perdent jamais le CV", "./accounts-never-lose-the-cv.mjs"],
   ["les sources d'offres rendent la meme forme", "./job-sources-normalise.mjs"],
+  ["une offre trouvee devient une candidature", "./job-search-becomes-an-application.mjs"],
   ["l'assistant d'entretien repond", "./live-assist-answers.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
