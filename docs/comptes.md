@@ -179,8 +179,10 @@ Pas encore publiee sur le Chrome Web Store. En attendant :
 2. Activer le mode developpeur, en haut a droite
 3. "Charger l'extension non empaquetee", choisir le dossier `extension/`
 
-Il manque `extension/icon128.png` : n'importe quelle image carree fait
-l'affaire, sinon Chrome refuse de charger.
+Les icones sont l'oeil de Nuvi, aux trois tailles attendues par Chrome. Elles
+sont generees depuis le trace du compagnon par
+`scripts/build-extension-icons.mjs` : pour les regenerer apres un changement de
+charte, lancer ce script plutot que retoucher des images a la main.
 
 ## Comment elle lit les annonces
 
