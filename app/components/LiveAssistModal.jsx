@@ -334,6 +334,50 @@ export default function LiveAssistModal({
           }}>
             {locale === "en" ? "Continue without a role" : "Continuer sans poste precis"}
           </button>
+
+          {/* Le montage audio. C'est la seule chose qui decide si l'assistant
+              entend le recruteur ou seulement toi, et ca se joue avant l'appel,
+              pas pendant. Deux appareils separes evitent aussi la question du
+              partage de micro entre deux logiciels, qui marche sur ordinateur
+              mais jamais sur telephone. */}
+          <div style={{
+            marginTop: 18, padding: "14px 16px", borderRadius: 12,
+            background: "rgba(124,107,255,.12)", border: "1px solid rgba(124,107,255,.3)",
+          }}>
+            <div style={{
+              color: "#b3a6ff", fontSize: 11, letterSpacing: ".08em",
+              textTransform: "uppercase", marginBottom: 8, fontWeight: 600,
+            }}>{locale === "en" ? "Audio setup" : "Montage audio"}</div>
+            <div style={{ color: "rgba(255,255,255,.82)", fontSize: 13.5, lineHeight: 1.55 }}>
+              {locale === "en" ? (
+                <>
+                  <strong>Best: two devices.</strong> Take the call on your computer with the
+                  speakers on, and open this on your phone beside it. The phone hears both of
+                  you, nothing competes for a microphone, and the cues do not cover the call.
+                  <br /><br />
+                  Same computer as the call also works on macOS and Windows, where two apps can
+                  share one microphone. On a phone they cannot: the call app takes it.
+                  <br /><br />
+                  <strong>Headphones stop this working</strong> whatever the setup. No microphone
+                  ever hears the interviewer. Speakers on, or type the question.
+                </>
+              ) : (
+                <>
+                  <strong>Le mieux : deux appareils.</strong> L'appel sur ton ordinateur,
+                  haut-parleurs allumes, et ceci ouvert sur ton telephone a cote. Le telephone
+                  vous entend tous les deux, aucun logiciel ne se dispute le micro, et les
+                  reperes ne recouvrent pas l'appel.
+                  <br /><br />
+                  Sur le meme ordinateur que l'appel, ca marche aussi : macOS et Windows
+                  laissent deux logiciels partager un micro. Sur telephone, non : l'app d'appel
+                  le prend.
+                  <br /><br />
+                  <strong>Le casque empeche tout</strong>, quel que soit le montage. Aucun micro
+                  n'entend le recruteur. Haut-parleurs, ou tape la question.
+                </>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
