@@ -56,12 +56,16 @@ function StatCard({ label, value, color }) {
 
 // Formulaire add/edit.
 function ApplicationForm({ T, app, onSave, onCancel }) {
+  // `offer` est le texte de l'annonce. C'est le champ qui transforme ce
+  // tableau en chaine de travail : sans lui, aucune etape suivante ne peut
+  // etre preparee pour CE poste-la. C'est exactement ce qui manque chez les
+  // concurrents, dont le suivi et l'adaptation du CV ne se parlent pas.
   const [form, setForm] = useState(app || {
     id: Date.now(),
     company:"", role:"",
     date: new Date().toISOString().slice(0, 10),
     status:"applied",
-    notes:"", link:"",
+    notes:"", link:"", offer:"",
     created: Date.now(),
   });
 
@@ -124,6 +128,25 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           placeholder="https://..."
           style={inputStyle}/>
       </div>
+      {/* L'annonce. Collee ici, elle alimente l'adaptation du CV, la relance
+          et la preparation d'entretien pour ce poste precis. */}
+      <div style={{marginBottom:14}}>
+        <label style={labelStyle}>
+          {T.ap_field_offer || "Annonce (colle le texte)"}
+        </label>
+        <textarea
+          value={form.offer || ""}
+          onChange={e=>u("offer")(e.target.value)}
+          rows={4}
+          placeholder={T.ap_offer_hint
+            || "Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance."}
+          style={{...inputStyle, resize:"vertical", minHeight:80}}/>
+        {form.offer && form.offer.trim().length > 0 && (
+          <div style={{fontSize:11, color:Green, marginTop:5}}>
+            {(T.ap_offer_ready || "Annonce enregistree, les actions suivantes sont debloquees")}
+          </div>
+        )}
+      </div>
       <div style={{marginBottom:14}}>
         <label style={labelStyle}>{T.ap_field_notes}</label>
         <textarea value={form.notes} onChange={e=>u("notes")(e.target.value)}
@@ -157,8 +180,60 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
 }
 
 // Carte d'une candidature.
-function ApplicationCard({ T, app, onEdit, onDelete }) {
+// PROCHAINE ACTION SELON L'ETAPE
+//
+// Un tableau de suivi ordinaire est passif : on y deplace des cartes. Celui-ci
+// est actif. Chaque etape sait ce qui fait avancer la candidature, et le
+// propose en un clic, deja charge avec CETTE annonce.
+//
+//   envoyee      -> relancer, avec le nombre de jours ecoules
+//   entretien    -> preparer l'entretien sur cette annonce
+//   offre        -> preparer la negociation
+//   sans annonce -> coller l'annonce, qui debloque tout le reste
+//
+// C'est la boucle que personne n'a fermee : chez les concurrents, le suivi et
+// l'adaptation du CV sont deux outils separes qui ne se parlent pas.
+function nextAction(app, T) {
+  const hasOffer = Boolean(app.offer && app.offer.trim());
+  if (!hasOffer) {
+    return { key:"offer", label:T.ap_do_offer || "Coller l'annonce",
+      hint:T.ap_do_offer_hint || "Debloque le CV adapte, la relance et l'entretien" };
+  }
+  switch (app.status) {
+    case "applied": {
+      const days = daysSince(app.date);
+      return {
+        key:"followup",
+        label:T.ap_do_followup || "Rediger la relance",
+        hint: days === null ? null
+          : days >= 7 ? (T.ap_do_followup_due || `Envoyee il y a ${days} jours, c'est le moment`)
+          : (T.ap_do_followup_soon || `Envoyee il y a ${days} jour${days > 1 ? "s" : ""}`),
+        urgent: days !== null && days >= 7,
+      };
+    }
+    case "phone":
+    case "interview":
+      return { key:"prepare", label:T.ap_do_prepare || "Preparer l'entretien",
+        hint:T.ap_do_prepare_hint || "Questions et reponses sur cette annonce" };
+    case "offer":
+      return { key:"negotiate", label:T.ap_do_negotiate || "Preparer la negociation",
+        hint:null };
+    default:
+      return { key:"tailor", label:T.ap_do_tailor || "Adapter mon CV",
+        hint:T.ap_do_tailor_hint || "Reecrit ton CV pour cette annonce" };
+  }
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const then = Date.parse(dateStr);
+  if (!Number.isFinite(then)) return null;
+  return Math.max(0, Math.floor((Date.now() - then) / 86400000));
+}
+
+function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
   const badge = statusBadge(app.status, T);
+  const action = nextAction(app, T);
   return (
     <div style={{
       padding:"14px 16px",
@@ -215,6 +290,35 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
         }}>{app.notes}</div>
       )}
 
+      {/* Prochaine action : ce qui fait avancer CETTE candidature, en un clic
+          et deja charge avec son annonce. */}
+      <button
+        onClick={()=>onAction && onAction(action.key, app)}
+        style={{
+          ...B({
+            width:"100%", minHeight:44, marginBottom:8,
+            borderRadius:RadiusPill, border:"none",
+            background: action.urgent
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : action.key === "offer" ? CreamSoft
+              : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color: action.key === "offer" ? Ink : "#fff",
+            fontSize:13, fontWeight:600, fontFamily:Sans,
+            display:"flex", flexDirection:"column",
+            alignItems:"center", justifyContent:"center", gap:1,
+            padding:"6px 12px",
+          }),
+        }}
+      >
+        <span>{action.label}</span>
+        {action.hint && (
+          <span style={{
+            fontSize:10.5, fontWeight:400, opacity:.85,
+            color: action.key === "offer" ? InkMuted : "rgba(255,255,255,.9)",
+          }}>{action.hint}</span>
+        )}
+      </button>
+
       {/* Actions */}
       <div style={{display:"flex", gap:8}}>
         <button onClick={()=>onEdit(app)} style={{
@@ -238,7 +342,10 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
   );
 }
 
-export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpdate, onDelete, onClose }) {
+export default function ApplicationsTrackerModal({
+  T, applications, onAdd, onUpdate, onDelete, onClose,
+  onAction = () => {},
+}) {
   const [showForm, setShowForm] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
   const [filter, setFilter] = useState("all");
@@ -411,7 +518,8 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
 
       {!showForm && visible.map(app => (
         <ApplicationCard key={app.id} T={T} app={app}
-          onEdit={handleEdit} onDelete={handleDelete}/>
+          onEdit={handleEdit} onDelete={handleDelete}
+          onAction={onAction}/>
       ))}
     </Sheet>
   );

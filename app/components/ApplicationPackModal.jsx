@@ -74,14 +74,32 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
     }
   }, [loading, onClose]);
 
+  // Un onglet n'apparait que si le contenu existe : un pack genere avant
+  // l'ajout de ces sections ne doit pas afficher d'onglets vides.
   const tabs = [
     ["cover",    T.pk_tab_cover],
     ["linkedin", T.pk_tab_linkedin],
     ["email",    T.pk_tab_email],
     ["pitch",    T.pk_tab_pitch],
     ["star",     T.pk_tab_star],
+    ...(pack && pack.follow_up ? [["followup", T.pk_tab_followup || "Relance"]] : []),
+    ...(pack && pack.objections && pack.objections.length
+      ? [["objections", T.pk_tab_objections || "Objections"]] : []),
+    ...(pack && pack.questions_to_ask && pack.questions_to_ask.length
+      ? [["ask", T.pk_tab_ask || "Tes questions"]] : []),
+    ...(pack && pack.negotiation ? [["nego", T.pk_tab_nego || "Negocier"]] : []),
   ];
   const loadingMsgs = T.pk_loading_msgs || [];
+
+  // Une ligne qui dit a quoi sert la section et quand s'en servir. Sans elle,
+  // l'utilisateur recoit du texte sans savoir quoi en faire ni quand.
+  const hintStyle = {
+    margin: "0 0 14px",
+    fontSize: 12.5,
+    lineHeight: 1.5,
+    color: InkMuted,
+    fontFamily: Sans,
+  };
 
   return (
     <Sheet
@@ -264,6 +282,82 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           )}
 
           {/* Tab : STAR */}
+          {activeTab === "followup" && pack.follow_up && (
+            <>
+              <p style={hintStyle}>
+                {T.pk_followup_hint
+                  || "A envoyer 7 a 10 jours apres, sans reponse. Elle apporte un element nouveau, elle ne quemande pas."}
+              </p>
+              <Section T={T}
+                title={T.pk_email_subject || "Objet"}
+                content={pack.follow_up.subject}
+                onCopy={onCopy} small/>
+              <Section T={T}
+                title={T.pk_email_body || "Corps"}
+                content={pack.follow_up.body}
+                onCopy={onCopy}/>
+            </>
+          )}
+
+          {activeTab === "objections" && pack.objections && pack.objections.length > 0 && (
+            <>
+              <p style={hintStyle}>
+                {T.pk_objections_hint
+                  || "Les doutes qu'un recruteur aura en lisant ton CV pour ce poste. Mieux vaut les avoir prepares que les decouvrir en entretien."}
+              </p>
+              {pack.objections.map((o, i) => (
+                <div key={i} style={{marginBottom:14}}>
+                  <Section T={T}
+                    title={(T.pk_objection_doubt || "Son doute") + " " + (i + 1)}
+                    content={o.doubt}
+                    onCopy={onCopy} small/>
+                  <Section T={T}
+                    title={T.pk_objection_answer || "Ta reponse"}
+                    content={o.answer}
+                    onCopy={onCopy}/>
+                </div>
+              ))}
+            </>
+          )}
+
+          {activeTab === "ask" && pack.questions_to_ask && pack.questions_to_ask.length > 0 && (
+            <>
+              <p style={hintStyle}>
+                {T.pk_ask_hint
+                  || "A poser en fin d'entretien. Aucune n'a sa reponse sur leur site : c'est le but."}
+              </p>
+              {pack.questions_to_ask.map((q, i) => (
+                <Section key={i} T={T}
+                  title={(T.pk_ask_q || "Question") + " " + (i + 1)}
+                  content={q}
+                  onCopy={onCopy} small/>
+              ))}
+            </>
+          )}
+
+          {activeTab === "nego" && pack.negotiation && (
+            <>
+              <p style={hintStyle}>
+                {T.pk_nego_hint
+                  || "Une fourchette qu'on sait defendre vaut mieux qu'un chiffre lance au hasard."}
+              </p>
+              <Section T={T}
+                title={T.pk_nego_range || "Fourchette"}
+                content={pack.negotiation.range}
+                onCopy={onCopy} small/>
+              <Section T={T}
+                title={T.pk_nego_argument || "Ton argument"}
+                content={pack.negotiation.argument}
+                onCopy={onCopy}/>
+              {pack.negotiation.levers && pack.negotiation.levers.length > 0 && (
+                <Section T={T}
+                  title={T.pk_nego_levers || "Leviers hors salaire"}
+                  content={pack.negotiation.levers.map(l => "- " + l).join("\n")}
+                  onCopy={onCopy}/>
+              )}
+            </>
+          )}
+
           {activeTab === "star" && pack.star_answers && pack.star_answers.length > 0 && (
             <>
               <div style={{

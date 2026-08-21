@@ -1650,7 +1650,7 @@ function BottomNav({ active, onPhase, T }) {
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
 function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
-  initialResult, onResult, onApplied, onPackRequest, onClose }) {
+  initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
       title={
@@ -3200,6 +3200,9 @@ export default function App() {
   const [packResult, setPackResult]   = useState(null);
   const [packMsgIdx, setPackMsgIdx]   = useState(0);
   const [packCtx, setPackCtx]         = useState(null);
+  // Annonce pre-remplie quand on ouvre "Adapter mon CV" depuis une
+  // candidature suivie : l'utilisateur ne recolle jamais la meme annonce.
+  const [pendingOffer, setPendingOffer] = useState("");
   const [showPos, setShowPos]         = useState(false);
   const [posLoading, setPosLoading]   = useState(false);
   const [posResult, setPosResult]     = useState(null);
@@ -4605,6 +4608,14 @@ export default function App() {
       +"- Email: objet specifique (pas 'Candidature au poste de X'), corps court 150 mots max.\n"
       +"- Pitch entretien: 60 secondes a l'oral (~150 mots), structure: qui je suis, ce que j'apporte, pourquoi ce poste.\n"
       +"- 5 reponses STAR aux questions probables, chacune avec Situation/Task/Action/Result concrets bases sur le CV.\n"
+      +"- Relance: a envoyer 7 a 10 jours apres la candidature si aucune reponse. Courte (80 mots max), "
+      +"apporte un element NOUVEAU (une reflexion sur leur enjeu, un travail recent), ne quemande pas.\n"
+      +"- Objections: les 3 doutes qu'un recruteur aura en lisant CE CV pour CE poste, "
+      +"chacun avec une reponse honnete et courte. Ne pas nier une faiblesse reelle, la recadrer.\n"
+      +"- Questions a poser: 4 questions que le candidat pose EN FIN d'entretien, "
+      +"qui montrent qu'il a compris l'enjeu du poste. Aucune question dont la reponse est sur leur site.\n"
+      +"- Negociation: fourchette realiste argumentee pour ce poste et ce marche, "
+      +"plus les deux leviers non salariaux les plus credibles a demander.\n"
       +"- " + NO_DASH + "\n"
       +"- Reponds UNIQUEMENT en JSON valide strict, sans markdown.\n\n"
       +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "")
@@ -4625,7 +4636,23 @@ export default function App() {
       +'      "action": "action prise par le candidat",\n'
       +'      "result": "resultat chiffre si possible"\n'
       +'    }\n'
-      +'  ]\n'
+      +'  ],\n'
+      +'  "follow_up": {\n'
+      +'    "subject": "objet de la relance",\n'
+      +'    "body": "corps de la relance, 80 mots max"\n'
+      +'  },\n'
+      +'  "objections": [\n'
+      +'    {\n'
+      +'      "doubt": "le doute du recruteur, formule franchement",\n'
+      +'      "answer": "la reponse honnete et courte du candidat"\n'
+      +'    }\n'
+      +'  ],\n'
+      +'  "questions_to_ask": ["question de fin d entretien"],\n'
+      +'  "negotiation": {\n'
+      +'    "range": "fourchette realiste",\n'
+      +'    "argument": "pourquoi cette fourchette, appuye sur le parcours",\n'
+      +'    "levers": ["levier non salarial"]\n'
+      +'  }\n'
       +'}';
     try {
       const txt = await aiCall(p);
@@ -7197,6 +7224,7 @@ export default function App() {
       {modal==="sk"  && <SheetSk cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {showOffer && (
         <OfferSheet
+          initialOffer={pendingOffer}
           T={T} cv={cv} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
@@ -7401,6 +7429,26 @@ export default function App() {
           onUpdate={updateApplication}
           onDelete={deleteApplication}
           onClose={()=>setShowApplications(false)}
+          onAction={(key, app) => {
+            // La boucle se ferme ici : chaque etape ouvre l'outil deja charge
+            // avec l'annonce de CETTE candidature. C'est ce que les
+            // concurrents ne font pas - chez eux le suivi et l'adaptation du
+            // CV sont deux outils qui ne se parlent pas.
+            const offer = (app && app.offer) || "";
+            if (key === "offer") return; // le formulaire s'en charge
+            setShowApplications(false);
+            setTimeout(() => {
+              if (key === "prepare") {
+                setInterviewOffer(offer);
+                setShowInterview(true);
+              } else if (key === "followup" || key === "negotiate") {
+                requestPack(offer, null);
+              } else {
+                setPendingOffer(offer);
+                setShowOffer(true);
+              }
+            }, 160);
+          }}
         />
         </Suspense>
       )}
