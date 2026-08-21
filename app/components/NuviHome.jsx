@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import NuviCompanion from "./NuviCompanion";
-import { Reveal, WordReveal, Magnetic, Aurora, ScrollProgress } from "./motion";
+import { Reveal, WordReveal, Magnetic, Aurora, ScrollProgress, useReducedMotion } from "./motion";
 
 /**
  * NuviHome v5 : Demarrage "avant / apres" (Direction D, verdict panel 2026-05-21)
@@ -155,6 +155,21 @@ export default function NuviHome({
   const timers = useRef([]);
   const ex = examples[exampleIdx];
 
+  // QUAND LE MOUVEMENT EST REFUSE, LA DEMONSTRATION EST DEJA FINIE
+  //
+  // Le coeur de cet ecran est une transformation qui se joue sous les yeux du
+  // visiteur : un CV banal devient un CV percutant, ligne apres ligne, en
+  // deux secondes. C'est le meilleur argument de l'application, et c'est
+  // aussi, precisement, ce que quelqu'un qui a coche "reduire les animations"
+  // a demande a ne pas subir.
+  //
+  // Couper les transitions CSS ne suffit pas : le decompte, lui, continue de
+  // tourner, et cette personne attend deux secondes devant une carte vide
+  // sans savoir qu'il se passe quelque chose. On lui montre donc le resultat
+  // tout de suite. Elle voit la meme chose - la comparaison avant/apres -
+  // sans le spectacle.
+  const reducedMotion = useReducedMotion();
+
   const clearTimers = () => {
     timers.current.forEach((t) => clearTimeout(t));
     timers.current = [];
@@ -165,8 +180,12 @@ export default function NuviHome({
   const playTransform = (idx) => {
     clearTimers();
     setExampleIdx(idx);
-    setShowAfter(false);
     setTransforming(false);
+    if (reducedMotion) {
+      setShowAfter(true);
+      return;
+    }
+    setShowAfter(false);
     timers.current.push(setTimeout(() => setTransforming(true), 1200));
     timers.current.push(setTimeout(() => {
       setTransforming(false);
@@ -177,11 +196,16 @@ export default function NuviHome({
   // Au montage : fade-in puis joue la transformation une fois.
   useEffect(() => {
     setEntered(true);
-    const t = setTimeout(() => playTransform(0), 500);
+    // Le reglage "reduire les animations" est lu par un media query, donc
+    // connu un instant APRES le premier rendu. On relance donc la sequence
+    // quand la reponse arrive : sans ce declencheur, la toute premiere
+    // lecture (false par defaut) resterait figee et le decompte partirait
+    // quand meme.
+    const t = setTimeout(() => playTransform(0), reducedMotion ? 0 : 500);
     timers.current.push(t);
     return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [reducedMotion]);
 
   const handleReplay = () => {
     const next = (exampleIdx + 1) % examples.length;
@@ -208,7 +232,12 @@ export default function NuviHome({
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        padding: mob ? "24px 16px" : "32px",
+        // Le compagnon Coach flotte en bas a droite, au-dessus de tout. Sur
+        // telephone il se posait sur le bouton "J'ai deja un CV" : taper la
+        // ouvrait le Coach au lieu d'importer son CV, et rien ne le laissait
+        // deviner. On reserve la hauteur qu'il occupe - son cercle plus son
+        // etiquette - pour que le contenu puisse defiler au clair.
+        padding: mob ? "24px 16px 120px" : "32px",
         opacity: entered ? 1 : 0,
         transition: "opacity 500ms ease",
       }}
@@ -242,7 +271,19 @@ export default function NuviHome({
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-            }}><WordReveal text={T.titleAccent} delay={180}/></em>.
+            // PAS DE WordReveal ICI, ET C'EST UNE REGLE, PAS UN OUBLI.
+            //
+            // Ce mot est peint par un degrade decoupe sur la forme des
+            // lettres : le texte lui-meme est transparent, et c'est le fond
+            // de l'element qui se voit a travers. Un mot decoupe en spans
+            // enfants garde la transparence mais perd le fond - chaque span
+            // peint dans sa propre couche, et le mot disparait purement et
+            // simplement de la page.
+            //
+            // C'est arrive : "Voila ce que je fais aux ." est parti en
+            // production. Le test "l'accueil ne cache aucun texte" verifie
+            // desormais qu'aucun element transparent n'est prive de son fond.
+            }}>{T.titleAccent}</em>.
           </div>
           <Reveal as="p" delay={260} y={12} style={{
             color: InkMuted,

@@ -8624,9 +8624,33 @@ export default function App() {
           onReset={() => doReset()}
           suggestedAction={suggestedAction}
         />
-        {/* Bouton Coach intelligent (mobile + desktop) : drag (long press), shrink, scroll-hide */}
+        {/* LE COMPAGNON FLOTTANT N'EXISTE PAS SUR TELEPHONE, ET C'EST VOULU
+            ============================================================
+            Sur telephone, la barre du bas porte deja une entree "Coach". Le
+            compagnon flottant etait donc un SECOND bouton Coach a l'ecran en
+            meme temps que le premier - et, faute de place, il se posait sur ce
+            qui passait dessous.
+
+            Il n'y a aucun coin libre a lui donner : la nav occupe les 70
+            derniers pixels, la barre de suggestion la soixantaine au-dessus,
+            et la rangee Generer / Ajuster prend toute la largeur. Ou qu'on le
+            mette, il recouvre une commande. Sur la capture qui a motive cette
+            correction, il etait pose sur la moitie droite d'"Ajuster" : taper
+            la ouvrait le Coach.
+
+            Le deplacer par appui long ne repare rien - ca demande a
+            l'utilisateur de resoudre lui-meme un probleme de mise en page, et
+            il faut deja savoir que c'est possible.
+
+            Sur ordinateur il reste : il n'y a pas de barre du bas la-bas, donc
+            pas de doublon, et la place ne manque pas.
+
+            Le test "rien ne recouvre une commande sur telephone" verifie
+            desormais qu'aucun element fixe n'intercepte le tap d'un bouton
+            visible. */}
         {!(
-          cvIsEmpty
+          mob
+          || cvIsEmpty
           || showCoach || showAudit || showTranslate || showPack
           || showPos || showTruth || showVersions
           || showOffer || showScore || showGapRepair || showInterview
