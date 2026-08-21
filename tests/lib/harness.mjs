@@ -5,6 +5,9 @@
 // ligne ce qui ne va plus, et qu'il tourne aussi bien ici qu'en CI.
 
 import { chromium } from "playwright";
+import { mkdtempSync, readFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 
@@ -116,13 +119,14 @@ export const SAMPLE_CV = {
   labels: {},
 };
 
-export async function seedApp(page, cv = SAMPLE_CV) {
+export async function seedApp(page, cv = SAMPLE_CV, { layout } = {}) {
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.evaluate((data) => {
+  await page.evaluate(({ data, layout }) => {
     localStorage.setItem("cvf_d", JSON.stringify(data));
     localStorage.setItem("cvf_k", JSON.stringify("sk-test-not-used"));
     localStorage.setItem("cvf_tu", JSON.stringify(true));
-  }, cv);
+    if (layout) localStorage.setItem("cvf_l", JSON.stringify(layout));
+  }, { data: cv, layout: layout || null });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2500);
 }
@@ -139,4 +143,93 @@ export async function extractPdfText(bytes) {
     out += content.items.map(it => it.str).join(" ") + "\n";
   }
   return { text: out.replace(/\s+/g, " ").trim(), pages: doc.numPages };
+}
+
+// Meme extraction, mais en conservant les lignes.
+//
+// extractPdfText ci-dessus ecrase les sauts de ligne : pratique pour chercher
+// une chaine, inutilisable pour analyser un CV. Un analyseur reconnait ses
+// sections parce que "Experience" est seul sur sa ligne ; sans lignes, tout
+// devient un bloc unique et plus rien n'est classe. pdf.js ne rend pas de
+// lignes, il rend des fragments places : on les regroupe par ordonnee, comme
+// le font poppler et PDFBox.
+export async function extractPdfLines(bytes) {
+  const mod = await import("pdfjs-dist/legacy/build/pdf.js");
+  const pdfjs = mod.getDocument ? mod : (mod.default || {});
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(bytes) }).promise;
+  const lines = [];
+  for (let i = 1; i <= doc.numPages; i += 1) {
+    const page = await doc.getPage(i);
+    const content = await page.getTextContent();
+    const rows = [];
+    for (const item of content.items) {
+      if (!item.str || !item.str.trim()) continue;
+      const x = item.transform[4];
+      const y = item.transform[5];
+      // Deux fragments sur la meme ligne de base appartiennent a la meme
+      // ligne. La tolerance absorbe les variations de police.
+      const row = rows.find(r => Math.abs(r.y - y) <= 3);
+      if (row) row.parts.push({ x, str: item.str });
+      else rows.push({ y, parts: [{ x, str: item.str }] });
+    }
+    // Ordonnee decroissante : dans un PDF, l'origine est en bas de page.
+    rows.sort((a, b) => b.y - a.y);
+    for (const row of rows) {
+      row.parts.sort((a, b) => a.x - b.x);
+      const text = row.parts.map(p => p.str).join(" ").replace(/\s+/g, " ").trim();
+      if (text) lines.push(text);
+    }
+  }
+  return { lines, text: lines.join("\n"), pages: doc.numPages };
+}
+
+// Telecharge un vrai PDF depuis l'application, dans la mise en page demandee.
+// Rend aussi le chemin du fichier : les analyseurs externes (poppler, Tika)
+// lisent un fichier, pas un tableau d'octets.
+export async function exportCvPdf(browser, cv, layout) {
+  const ctx = await browser.newContext({
+    viewport: { width: 1440, height: 950 }, acceptDownloads: true,
+  });
+  const page = await ctx.newPage();
+  // Seules les exceptions JS comptent : un echec de chargement de police
+  // depend du reseau de la machine, pas de l'export.
+  const errors = [];
+  page.on("pageerror", e => errors.push(e.message.split("\n")[0]));
+  await seedApp(page, cv, { layout });
+
+  // Le .catch est attache tout de suite : sinon, si un clic echoue, la
+  // promesse reste pendante et sa rejection masque la vraie erreur.
+  let downloadErr = null;
+  const downloadPromise = page
+    .waitForEvent("download", { timeout: 90_000 })
+    .catch((e) => { downloadErr = e; return null; });
+
+  let clickErrMsg = null;
+  try {
+    await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
+    await page.waitForTimeout(1500);
+    const confirm = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
+    if (await confirm.count() > 1) { await confirm.nth(1).click({ timeout: 10_000 }).catch(() => {}); }
+  } catch (clickErr) {
+    clickErrMsg = clickErr.message.split("\n")[0];
+  }
+
+  const download = await downloadPromise;
+  if (!download) {
+    await ctx.close();
+    return {
+      errors, failed:
+        "aucun PDF telecharge.\n"
+        + (clickErrMsg ? "      clic : " + clickErrMsg + "\n" : "")
+        + "      erreurs page : " + (errors.slice(0, 3).join(" | ") || "aucune") + "\n"
+        + "      " + (downloadErr ? downloadErr.message.split("\n")[0] : ""),
+    };
+  }
+  const dir = mkdtempSync(join(tmpdir(), "cvf-export-"));
+  const pdfPath = join(dir, "cv.pdf");
+  await download.saveAs(pdfPath);
+  const bytes = readFileSync(pdfPath);
+  await ctx.close();
+  const { text, pages } = await extractPdfText(bytes);
+  return { errors, bytes, text, pages, pdfPath };
 }

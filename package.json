@@ -10,7 +10,8 @@
     "predev": "node scripts/copy-pdf-worker.mjs",
     "test": "node tests/run.mjs",
     "test:export": "node tests/run.mjs export",
-    "pretest": "next build"
+    "pretest": "next build",
+    "lint": "eslint app lib tests scripts"
   },
   "dependencies": {
     "html2canvas": "^1.4.1",
@@ -23,6 +24,7 @@
     "react-dom": "^18.3.0"
   },
   "devDependencies": {
-    "playwright": "^1.49.1"
+    "playwright": "^1.49.1",
+    "eslint": "^9.17.0"
   }
 }

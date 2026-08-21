@@ -439,7 +439,12 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 
       {/* Colonne principale */}
       {/* [Premium A4 fill 2026-05-20 v2] padding calibre */}
-      <div style={{flex:1, padding:"24px 28px"}}>
+      {/* [Fix] minWidth:0 manquait ici, alors que les autres modeles l'ont.
+          Sans lui, un enfant flex refuse de descendre sous la largeur
+          minimale de son contenu : une adresse e-mail ou un nom d'entreprise
+          long elargissait la colonne et poussait la mise en page hors du
+          cadre sur un ecran etroit. */}
+      <div style={{flex:1, minWidth:0, padding:"24px 28px"}}>
         {/* Nom + titre */}
         <div style={{
           fontFamily: t.hf, fontSize:22, fontWeight:700,

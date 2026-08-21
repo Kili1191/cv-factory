@@ -5,6 +5,10 @@ name: CI
 #   - un CV exporte sans texte, invisible pour les robots de tri
 #   - un import de CV qui ne rend rien quand un CDN est injoignable
 #   - toute nouvelle dependance a du code tiers charge a l'execution
+#   - une fonctionnalite qui disparait de la navigation ou cesse de repondre
+#   - un identifiant inexistant, qui tue un gestionnaire de clic sans bruit
+#   - un CV que les moteurs d'extraction des ATS lisent mal, ou dans le
+#     mauvais ordre (nom du candidat qui n'ouvre plus le document)
 # Un echec ici doit bloquer la fusion.
 
 on:
@@ -15,7 +19,7 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +34,36 @@ jobs:
       - name: Installer Chromium pour les tests
         run: npx playwright install --with-deps chromium
 
+      - name: Chercher les identifiants inexistants
+        run: npm run lint
+
+      # Les moteurs d'extraction que les ATS utilisent reellement. poppler et
+      # PDFBox sont des implementations independantes de pdf.js : c'est tout
+      # l'interet. Un bug de l'ordre de lecture du modele chronologie n'etait
+      # visible que par PDFBox, les deux autres reordonnaient le texte par
+      # position et le masquaient.
+      # poppler et MuPDF sont deux moteurs d'extraction independants. tesseract
+      # sert a autre chose : il lit l'image rendue, donc ce qu'un oeil voit,
+      # et permet de verifier que la couche de texte invisible ne contient
+      # rien qui ne soit pas sur la page.
+      - name: Installer poppler, MuPDF et l'OCR
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra
+
+      - name: Mettre Apache Tika en cache
+        id: tika
+        uses: actions/cache@v4
+        with:
+          path: ~/tika-app.jar
+          key: tika-app-2.9.2
+
+      - name: Telecharger Apache Tika
+        if: steps.tika.outputs.cache-hit != 'true'
+        run: curl -sSL -o ~/tika-app.jar https://repo1.maven.org/maven2/org/apache/tika/tika-app/2.9.2/tika-app-2.9.2.jar
+
       - name: Verifier le CV exporte, l'import, et l'absence de CDN
         run: npm test
         env:
           TEST_PORT: 4311
+          # Sans ce chemin le test signale le moteur comme non execute au lieu
+          # de le passer sous silence.
+          TIKA_JAR: /home/runner/tika-app.jar

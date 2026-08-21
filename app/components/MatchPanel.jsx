@@ -31,7 +31,7 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
       + e.bullets.filter(b=>b).join("; ")
     ).join(" | ");
     const cvT = "Profil: " + cv.name + " - " + cv.title
-      + "\nAcrroche: " + cv.summary
+      + "\nAccroche: " + cv.summary
       + "\nExps: " + expT
       + "\nSkills: " + cv.skills.filter(s=>s).join(", ")
       + "\nLangues: " + cv.languages.filter(l=>l.lang)
@@ -50,6 +50,21 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
       +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
       +"REGLES: ne pas inventer, adapter mots-cles offre. " + NO_DASH + "\n"
       +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
+      // C'est la promesse du produit : coller une offre et obtenir un CV qui
+      // passe le tri automatique. Les mots-cles manquants ne servent a rien
+      // s'ils restent dans une liste a cote ; il faut qu'ils soient dans le
+      // CV, avec les termes exacts de l'offre, sinon le robot ne les voit pas.
+      +"CV_OPTIMIZED, exigences supplementaires :\n"
+      +"- Reprends dans le CV les termes exacts de l'offre (pas de synonyme) quand"
+      +" l'experience reelle du candidat les justifie : c'est sur ces chaines que"
+      +" le tri automatique compare.\n"
+      +"- Chaque mot-cle de keywords_to_add que le parcours permet d'appuyer doit"
+      +" apparaitre dans summary, dans un bullet, ou dans skills. Laisse de cote"
+      +" ceux que rien ne justifie plutot que d'inventer.\n"
+      +"- Le titre doit reprendre l'intitule du poste vise s'il est credible.\n"
+      +"- Garde chaque bullet sur une ligne de texte simple, avec un verbe d'action"
+      +" et un chiffre quand il existe. Ni tableau, ni colonne, ni caractere"
+      +" decoratif : le CV doit rester lisible par une machine.\n"
       +'JSON uniquement: {"match_score":75,"job_title":"","company":"",'
       +'"key_requirements":["r1","r2","r3"],"keywords_matched":["k1","k2"],'
       +'"keywords_to_add":["k1","k2"],'

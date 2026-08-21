@@ -2990,12 +2990,12 @@ function LayoutPreview({ kind, active }) {
 // - Reset au theme en bas
 // ============================================================
 function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
-  apiKey, notify, locale, onClose, layout, setLy }) {
+  apiKey, notify, locale, onClose, layout, setLy, initialTab = "colors" }) {
 
   // Scope : "global" ou "version" - quel custom on edite.
   const [scope, setScope] = useState("global");
-  // Tab principal : "colors" | "fonts" | "suggest"
-  const [tab, setTab] = useState("colors");
+  // Tab principal : "colors" | "fonts" | "layout" | "suggest"
+  const [tab, setTab] = useState(initialTab);
 
   // Lit / ecrit le custom selon le scope choisi.
   const versionCustom = (cv && cv.custom && typeof cv.custom === "object") ? cv.custom : null;
@@ -3095,7 +3095,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
       }}>
         {[["colors", T.cust_tab_colors],
           ["fonts",  T.cust_tab_fonts],
-          ["layout", "Mise en page"],
+          ["layout", locale === "en" ? "Layout" : "Mise en page"],
           ["suggest",T.cust_tab_suggest]].map(([k, label]) => (
             <button key={k} onClick={()=>setTab(k)} style={{...B(pill(tab===k))}}>
               {label}
@@ -3339,6 +3339,9 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
+  // quand on arrive par l'entree Modeles de la barre laterale).
+  const [customizeTab, setCustomizeTab] = useState("colors");
   // === Nuvi Reactions (presence vivante) ===
   const { expression: nuviExpression, mode: nuviMode, bigLogoActive, triggerEvent: nuviTrigger } = useNuviReactions();
 
@@ -3699,8 +3702,25 @@ export default function App() {
     cvResizeObs.current = ro;
   }, []);
 
-  const scale = cvW > 0 ? Math.min(1, (cvW-16)/794) : 1;
-  const cvH   = Math.round(1123 * scale);
+  // Hauteur reelle du CV, avant mise a l'echelle. Le conteneur qui defile a
+  // besoin de la hauteur APRES reduction, sinon on peut defiler dans le vide.
+  // ResizeObserver rapporte la taille de mise en page, jamais la taille
+  // transformee : c'est exactement ce qu'il faut ici.
+  const [cvNatH, setCvNatH] = useState(1123);
+  const cvInnerObs = useRef(null);
+  const cvInnerRef = useCallback((node) => {
+    if (cvInnerObs.current) { cvInnerObs.current.disconnect(); cvInnerObs.current = null; }
+    if (!node) return;
+    const read = () => setCvNatH(Math.max(1, node.offsetHeight || 1123));
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(read);
+    ro.observe(node);
+    cvInnerObs.current = ro;
+  }, []);
+
+  const scale = cvW > 0 ? Math.min(1, (cvW - 16) / 794) : 1;
+  const cvH   = Math.round(Math.min(1123, cvNatH) * scale);
 
   const handleGen = useCallback(async p => {
     if (!apiKey) { notify(T.nk); return; }
@@ -3727,7 +3747,7 @@ export default function App() {
   // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
   // a l'extraction une structure coherente (nom, titre, sections, postes).
   // ============================================================
-  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm) => {
+  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm, candidateName) => {
     const rootRect = rootEl.getBoundingClientRect();
     if (!rootRect.width || !rootRect.height) return 0;
     const mmPerPxX = pageWidthMm / rootRect.width;
@@ -3741,6 +3761,11 @@ export default function App() {
         if (!parent) return NodeFilter.FILTER_REJECT;
         // Les commandes d'edition ne font pas partie du CV
         if (parent.closest(".cvf-no-print")) return NodeFilter.FILTER_REJECT;
+        // Le decor reste dans l'image, mais pas dans le texte que lira un
+        // robot de tri. Le monogramme d'initiales, par exemple, apparaissait
+        // en premiere ligne du texte extrait sur trois modeles : un analyseur
+        // qui prend la premiere ligne pour le nom du candidat lisait "JD".
+        if (parent.closest("[data-cvf-decorative]")) return NodeFilter.FILTER_REJECT;
         const cs = window.getComputedStyle(parent);
         if (cs.display === "none" || cs.visibility === "hidden" || parseFloat(cs.opacity) === 0) {
           return NodeFilter.FILTER_REJECT;
@@ -3749,8 +3774,8 @@ export default function App() {
       },
     });
 
-    pdf.setTextColor(0, 0, 0);
-    let written = 0;
+    // 1. Releve de chaque fragment et de sa position reelle a l'ecran.
+    const frags = [];
     let node = walker.nextNode();
     while (node) {
       const text = node.nodeValue.replace(/\s+/g, " ").trim();
@@ -3761,21 +3786,240 @@ export default function App() {
         range.selectNodeContents(node);
         const r = range.getBoundingClientRect();
         range.detach && range.detach();
-
         if (r.width > 0 && r.height > 0) {
-          const xMm = (r.left - rootRect.left) * mmPerPxX;
-          // jsPDF pose le texte sur sa ligne de base : on vise le bas du
-          // rectangle, legerement remonte.
-          const yMm = (r.bottom - rootRect.top) * mmPerPxY - (r.height * mmPerPxY * 0.18);
-          const sizePt = Math.max(1, r.height * mmPerPxY * 2.2);
-          try {
-            pdf.setFontSize(sizePt);
-            pdf.text(text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
-            written += 1;
-          } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+          frags.push({
+            el: node.parentElement,
+            text,
+            left: r.left - rootRect.left,
+            right: r.right - rootRect.left,
+            top: r.top - rootRect.top,
+            bottom: r.bottom - rootRect.top,
+            height: r.height,
+          });
         }
       }
       node = walker.nextNode();
+    }
+    if (!frags.length) return 0;
+
+    // 2. Remise en ordre de lecture.
+    //
+    // Les mises en page a deux colonnes rangent la colonne laterale en premier
+    // dans le HTML : le texte extrait commencait donc par "CONTACT" et
+    // l'adresse e-mail, et le nom du candidat arrivait apres les competences.
+    // Un robot de tri lit ce flux dans l'ordre et prend generalement les
+    // premieres lignes pour l'identite : il pouvait retenir "CONTACT" comme
+    // nom du candidat.
+    //
+    // On cherche une verticale que presque aucun fragment ne traverse. Si elle
+    // existe et qu'elle separe deux groupes consequents, la page est en deux
+    // colonnes : on commence par celle qui porte le plus gros texte, donc le
+    // nom. Sinon la page est en une colonne et l'ordre reste celui de la
+    // lecture. Dans les deux cas, a l'interieur d'un groupe : de haut en bas,
+    // puis de gauche a droite.
+    const byReading = (a, b) =>
+      (Math.abs(a.top - b.top) > 4 ? a.top - b.top : a.left - b.left);
+
+    let split = null;
+    {
+      const tolerance = Math.max(1, Math.floor(frags.length * 0.05));
+      let best = 0;
+      // On teste les bords droits comme verticales candidates : une vraie
+      // gouttiere se trouve toujours juste apres la fin d'un fragment.
+      for (const cand of [...new Set(frags.map(f => f.right))]) {
+        let straddling = 0, before = 0, after = 0;
+        for (const f of frags) {
+          if (f.left < cand && f.right > cand) straddling += 1;
+          else if (f.right <= cand) before += 1;
+          else after += 1;
+        }
+        if (straddling > tolerance) continue;
+        const balance = Math.min(before, after);
+        if (balance > best) { best = balance; split = cand; }
+      }
+      // Le seuil separe une vraie mise en page a deux colonnes d'une colonne
+      // unique ou quelques dates sont alignees a droite. Mesure sur les six
+      // modeles, part des fragments du cote le moins fourni :
+      //   deux colonnes reelles : barre laterale 0.47, compact 0.49
+      //   colonne unique        : suisse 0.03, ATS 0.06, classique 0.09,
+      //                           chronologie 0.17
+      // L'ancien seuil de 0.12 classait donc la chronologie en deux colonnes
+      // et cassait tout son ordre de lecture. 0.30 tombe dans l'ecart, large.
+      if (best < frags.length * 0.30) split = null;
+    }
+
+    // ORDRE DE LECTURE
+    //
+    // La geometrie seule ne suffit pas. Une gouttiere verticale unique coupe
+    // a travers les dates alignees a droite : sur le modele compact, mesure
+    // par les trois moteurs, "2021 - 2024" se retrouvait dans la section
+    // Competences et "2016 - 2018" collee a "Natif". Plus aucune date n'etait
+    // rattachee a son poste, donc plus aucune anciennete calculable.
+    //
+    // Le document, lui, sait a quelle colonne appartient chaque mot. On suit
+    // donc sa structure : les blocs de premier niveau donnent les colonnes,
+    // l'ordre du document donne l'ordre a l'interieur de chacune, et on
+    // commence par le bloc qui porte le nom du candidat. La geometrie ne sert
+    // plus que de secours si la structure attendue n'est pas la.
+    const nameWanted = (candidateName || "").trim().toLowerCase();
+    const nameFrag = nameWanted
+      ? frags.find(f => f.text.toLowerCase().includes(nameWanted))
+      : null;
+
+    let blocks = [];
+    {
+      let level = rootEl.firstElementChild
+        ? Array.from(rootEl.firstElementChild.children)
+        : [];
+      // Un seul bloc ne separe rien : on descend jusqu'a en trouver plusieurs.
+      let guard = 0;
+      while (level.length === 1 && guard < 4) {
+        level = Array.from(level[0].children);
+        guard += 1;
+      }
+      blocks = level;
+    }
+
+    const blockIndexOf = (f) => {
+      let n = f.el;
+      let guard = 0;
+      while (n && guard < 24) {
+        const i = blocks.indexOf(n);
+        if (i !== -1) return i;
+        n = n.parentElement;
+        guard += 1;
+      }
+      return -1;
+    };
+
+    let ordered = null;
+    if (blocks.length > 1 && nameFrag) {
+      const groups = new Map();
+      let attributed = 0;
+      for (const f of frags) {
+        const i = blockIndexOf(f);
+        if (i === -1) continue;
+        attributed += 1;
+        if (!groups.has(i)) groups.set(i, []);
+        groups.get(i).push(f);
+      }
+      // Si une part notable des fragments echappe aux blocs, la structure
+      // n'est pas celle qu'on croit : on laisse la geometrie faire.
+      if (attributed >= frags.length * 0.9) {
+        const nameBlock = blockIndexOf(nameFrag);
+        if (nameBlock !== -1) {
+          const order = [nameBlock, ...[...groups.keys()].filter(i => i !== nameBlock).sort((a, b) => a - b)];
+          ordered = order.flatMap(i => groups.get(i) || []);
+        }
+      }
+    }
+
+    if (ordered === null && split === null) {
+      ordered = [...frags].sort(byReading);
+    } else if (ordered === null) {
+      // Un fragment a cheval sur la gouttiere appartient a la colonne qui en
+      // porte la plus grande part. Ils etaient tous ecrits en tete du
+      // document : sur le modele chronologie, "Paris, France" chevauchait la
+      // gouttiere et devenait la premiere ligne du texte extrait, avant le
+      // nom. Un analyseur qui prend la premiere ligne pour l'identite lisait
+      // une ville a la place du candidat. Seul Tika le voyait : pdf.js et
+      // poppler reordonnent le texte par position et masquaient le probleme.
+      const before = [], after = [];
+      for (const f of frags) {
+        if (f.right <= split) { before.push(f); continue; }
+        if (f.left >= split) { after.push(f); continue; }
+        const leftShare = split - f.left;
+        const rightShare = f.right - split;
+        (leftShare >= rightShare ? before : after).push(f);
+      }
+      // La colonne a ecrire en premier est celle qui porte le nom du
+      // candidat. On le cherche par son texte : se fier au plus gros
+      // caractere ne marche pas, le monogramme d'initiales du modele par
+      // defaut ("JD") est dessine plus grand que le nom, et il est dans la
+      // colonne laterale — c'est ainsi que le PDF continuait de commencer
+      // par "JD Contact jane.doe@...". A defaut de nom, on retombe sur le
+      // plus grand fragment d'au moins quatre caracteres, ce qui exclut les
+      // monogrammes.
+      const wanted = (candidateName || "").trim().toLowerCase();
+      const holdsName = wanted
+        ? f => f.text.toLowerCase().includes(wanted)
+        : null;
+      let anchor = holdsName ? frags.find(holdsName) : null;
+      if (!anchor) {
+        const long = frags.filter(f => f.text.length >= 4);
+        const pool = long.length ? long : frags;
+        anchor = pool.reduce((a, b) => (b.height > a.height ? b : a), pool[0]);
+      }
+      const [first, second] = before.includes(anchor) ? [before, after] : [after, before];
+      ordered = [...first.sort(byReading), ...second.sort(byReading)];
+    }
+
+    // 3. Ecriture invisible.
+    //
+    // En une colonne, on ecrit chaque mot exactement sur celui de l'image :
+    // la selection du texte reste alignee, et tous les moteurs lisent juste.
+    //
+    // En deux colonnes, c'est impossible. Les moteurs qui reconstruisent le
+    // texte par position (poppler, pdf.js) regroupent par ordonnee : deux
+    // colonnes cote a cote donnent "Experience Professionnelle Competences"
+    // sur une seule ligne, et plus aucune section n'est reconnue. Mesure :
+    // 56% des champs retrouves sur le modele compact. Aucun placement fidele
+    // ne peut l'eviter, puisque les colonnes partagent vraiment ces
+    // ordonnees.
+    //
+    // La couche de texte est invisible : rien n'oblige a la poser sur
+    // l'image. Pour ces modeles on la deroule donc en une seule colonne,
+    // dans l'ordre de lecture. Memes mots, meme ordre qu'un oeil humain,
+    // simplement ranges pour qu'une machine les suive. Le seul cout est
+    // cosmetique : surligner du texte dans un lecteur PDF encadre une zone
+    // decalee. Un CV se joue devant le filtre automatique, pas devant la
+    // poignee de gens qui surlignent un PDF.
+    // Quand faut-il derouler ? Exactement quand un lecteur qui va par position
+    // lirait autre chose que l'ordre du document. On compare les deux : si
+    // elles coincident, le placement fidele suffit et la selection reste
+    // alignee ; si elles different, ce lecteur se tromperait, et on deroule.
+    //
+    // Aucun seuil a regler, et cela attrape les cas partiels que la detection
+    // globale de colonnes manquait : sur les modeles suisse et chronologie, la
+    // page est en une colonne mais la derniere bande ne l'est pas
+    // ("Competences" et "Langues" cote a cote). Un lecteur par position rendait
+    // "Competences Langues" sur une seule ligne et perdait la section.
+    const geoOrder = [...frags].sort(byReading);
+    const linearise = ordered.some((f, i) => geoOrder[i] !== f);
+    pdf.setTextColor(0, 0, 0);
+    let written = 0;
+
+    if (linearise) {
+      const marginMm = 10;
+      const usable = Math.max(10, pageHeightMm - marginMm * 2);
+      const advances = ordered.map(f => Math.max(3.2, f.height * mmPerPxY * 1.25));
+      const needed = advances.reduce((a, b) => a + b, 0);
+      const fit = needed > usable ? usable / needed : 1;
+      let y = marginMm;
+      for (let i = 0; i < ordered.length; i += 1) {
+        const f = ordered[i];
+        const advance = advances[i] * fit;
+        y += advance;
+        const sizePt = Math.max(1, Math.min(advance * 2.2, f.height * mmPerPxY * 2.2));
+        try {
+          pdf.setFontSize(sizePt);
+          pdf.text(f.text, marginMm, y, { renderingMode: "invisible", baseline: "alphabetic" });
+          written += 1;
+        } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+      }
+    } else {
+      for (const f of ordered) {
+        const xMm = f.left * mmPerPxX;
+        // jsPDF pose le texte sur sa ligne de base : on vise le bas du
+        // rectangle, legerement remonte.
+        const yMm = f.bottom * mmPerPxY - (f.height * mmPerPxY * 0.18);
+        const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
+        try {
+          pdf.setFontSize(sizePt);
+          pdf.text(f.text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
+          written += 1;
+        } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
+      }
     }
     console.log("[exportPDF] couche texte ATS :", written, "fragments");
     return written;
@@ -3898,10 +4142,19 @@ export default function App() {
               min-height: ${A4_HEIGHT_MM}mm !important;
               height: ${A4_HEIGHT_MM}mm !important;
             }
-            #cv-print > div > div {
-              min-height: ${A4_HEIGHT_MM}mm !important;
-            }
           `;
+          // [Fix] Il y avait ici une troisieme regle,
+          // "#cv-print > div > div { min-height: 297mm }", posee pour que la
+          // colonne laterale du modele par defaut descende jusqu'en bas.
+          // Elle visait tous les petits-enfants : dans les modeles a une
+          // colonne, ce sont les sections du CV, et chacune se retrouvait
+          // haute d'une page entiere. Mesure sous le CSS d'export : le
+          // contenu descendait a 11450px pour ATS-Safe, 11509px pour
+          // Classique et 9209px pour Suisse, sur une page qui en fait 1123 et
+          // qui coupe le reste. Cinq modeles sur six exportaient donc une page
+          // quasiment vide, image comprise. La colonne laterale du modele par
+          // defaut atteint le bas sans cette regle, son parent etant une
+          // rangee flex qui etire deja ses enfants.
           document.head.appendChild(styleEl);
           console.log("[exportPDF] Design fills page (force 297mm)");
 
@@ -3976,7 +4229,7 @@ export default function App() {
         // position. C'est le principe d'un PDF scanne "cherchable" : identique
         // a l'oeil, lisible par une machine.
         try {
-          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm);
+          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm, cv.name);
         } catch (layerErr) {
           console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
         }
@@ -4609,10 +4862,28 @@ export default function App() {
         + '{"id":"differentiation","score":55,"reco":"phrase actionnable"}'
         + ']}';
       const txt = await aiCall(p);
-      const r = parseJSON(txt);
+      const parsed = parseJSON(txt);
+      // [Fix] Le meme nombre portait trois noms. Le prompt demande
+      // `global_score`, ScoreDashboard lit `global_score`, mais le suivi de
+      // progression lisait `dashResult.score` et la reaction de Nuvi lisait
+      // `r.total`. Les deux derniers valaient donc toujours undefined :
+      // l'historique de score n'enregistrait jamais rien (la garde
+      // `typeof dashResult.score !== "number"` sortait a chaque fois), la
+      // modale Verdict ne se declenchait jamais, et Nuvi felicitait de la
+      // meme facon un CV a 20 et un CV a 95. On aligne les trois ici.
+      const r = parsed && typeof parsed === "object" ? { ...parsed } : parsed;
+      if (r && typeof r === "object") {
+        const g = [r.global_score, r.score, r.total]
+          .find(v => typeof v === "number" && !Number.isNaN(v));
+        if (typeof g === "number") {
+          r.global_score = g;
+          r.score = g;
+          r.total = g;
+        }
+      }
       setDashResult(r);
       // Nuvi reaction selon score
-      if (typeof nuviTrigger === 'function' && r) {
+      if (typeof nuviTrigger === 'function' && r && typeof r.total === "number") {
         if (r.total >= 80) nuviTrigger('audit-excellent', { score: r.total });
         else if (r.total < 50) nuviTrigger('audit-low', { score: r.total });
         else nuviTrigger('feature-completed');
@@ -6923,8 +7194,9 @@ export default function App() {
           cvCustom={cvCustom} setCvCustom={setCvCustom}
           setCvFn={setCVFn}
           apiKey={apiKey} notify={notify} locale={locale}
-          onClose={()=>setShowCustomize(false)}
+          onClose={()=>{ setShowCustomize(false); setCustomizeTab("colors"); }}
           layout={layout} setLy={setLy}
+          initialTab={customizeTab}
         />
       )}
 
@@ -7042,6 +7314,9 @@ export default function App() {
               else if (m === "multicv")    setShowMultiCV(true);
               else if (m === "tracking")   setShowApplications(true);
               else if (m === "customize")  setShowCustomize(true);
+              else if (m === "interview")  setShowInterview(true);
+              else if (m === "linkedin")   setShowLinkedIn(true);
+              else if (m === "activity")   setShowActivity(true);
             }, 150);
           }}
         />
@@ -7452,6 +7727,8 @@ export default function App() {
                 if (subKey === "score")      setShowScore(true);
                 else if (subKey === "pos")   { runPositioning && runPositioning(); }
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
+                else if (subKey === "ats")   setShowAudit(true);
+                else if (subKey === "interview") setShowInterview(true);
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
@@ -7464,17 +7741,25 @@ export default function App() {
                 else if (subKey === "versions")  setShowVersions(true);
                 else if (subKey === "compare")   {
                   if (versions.length < 2) {
-                    notify(lang === "fr"
+                    // [Fix] `lang` n'existe pas dans ce composant : la variable
+                    // s'appelle `locale`. Chaque clic sur "Comparer" avec moins
+                    // de deux versions levait donc "lang is not defined" et le
+                    // gestionnaire mourait avant d'afficher quoi que ce soit.
+                    notify(locale === "fr"
                       ? "Il faut au moins 2 versions pour comparer."
                       : "At least 2 versions needed to compare.");
                   } else {
                     setShowCompare(true);
                   }
                 }
-                else if (subKey === "templates") setShowMultiCV(true); // templates inclus dans MultiCV
+                // [Fix] "Modeles" ouvrait la strategie multi-CV, qui parle de
+                // versions sauvegardees et n'a rien d'un choix de modele. Elle
+                // ouvre desormais la mise en page, la ou les modeles vivent.
+                else if (subKey === "templates") { setCustomizeTab("layout"); setShowCustomize(true); }
               } else if (parentKey === "design") {
                 if (subKey === "custom")    setShowCustomize(true);
                 else if (subKey === "translate") setShowTranslate(true);
+                else if (subKey === "linkedin")  setShowLinkedIn(true);
               }
             }}
             lang={locale}
@@ -7945,9 +8230,19 @@ export default function App() {
           }}
           >
             <div data-cvf="cv" style={{
-              // [FIX mobile scroll 2026-05-20] CV scrollable, plus de coupe.
-              // On utilise CSS zoom (reduit la hauteur de layout, donc le
-              // scroll fonctionne nativement). Fallback transform si zoom KO.
+              // [Fix] La reduction se faisait avec la propriete CSS `zoom`.
+              // WebKit la calcule mal sur une mise en page flex : il dessine
+              // les enfants a la taille reduite mais les positionne a la
+              // taille brute. Sur iPhone, la colonne laterale du modele par
+              // defaut, large de 200px fixes, restait donc dessinee a 200px
+              // sur un ecran de 390 - la moitie de l'ecran - et le texte de
+              // la colonne principale passait dessous, illisible.
+              //
+              // `transform: scale()` n'a pas ce defaut et est supporte
+              // partout. Il ne modifie pas la mise en page, en revanche : le
+              // bloc garde sa taille brute. D'ou la boite intermediaire, qui
+              // reserve la hauteur reduite pour que le defilement s'arrete au
+              // bon endroit.
               maxHeight: cvH,
               overflowY: "auto",
               overflowX: "hidden",
@@ -7956,10 +8251,22 @@ export default function App() {
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
               <div data-cvf-zoom style={{
-                zoom: scale,
                 width: "100%",
+                height: Math.round(cvNatH * scale),
+                position: "relative",
+                overflow: "hidden",
               }}>
-                {CVEl}
+                <div
+                  ref={cvInnerRef}
+                  style={{
+                    position: "absolute", top: 0, left: 0,
+                    width: 794,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  {CVEl}
+                </div>
               </div>
             </div>
           </div>
@@ -7983,20 +8290,40 @@ export default function App() {
           active={navSection}
           onSelect={(key) => {
             setNavSection(key);
-            // Wire chaque section à la modale existante (cohérent avec sidebar desktop)
-            if (key === "target") {
-              setShowOffer(true);
-            } else if (key === "pack") {
-              setShowPack(true);
-            } else if (key === "score") {
-              setShowScore(true);
-            } else if (key === "cvs") {
-              setShowMultiCV(true);
-            } else if (key === "design") {
-              setShowCustomize(true);
-            } else if (key === "tracking") {
-              setShowApplications(true);
+            // Wire chaque section a la modale existante (meme couverture que
+            // la barre laterale : le tiroir "Plus" liste maintenant tout).
+            if (key === "target") setShowOffer(true);
+            else if (key === "pack") setShowPack(true);
+            else if (key === "score") setShowScore(true);
+            else if (key === "cvs") setShowMultiCV(true);
+            else if (key === "design") { setCustomizeTab("colors"); setShowCustomize(true); }
+            else if (key === "tracking") setShowApplications(true);
+            else if (key === "adjust") setShowAdjust(true);
+            else if (key === "edit") setModal("id");
+            else if (key === "ats") setShowAudit(true);
+            else if (key === "interview") setShowInterview(true);
+            else if (key === "truth") { runTruthCheck && runTruthCheck(); }
+            else if (key === "pos") { runPositioning && runPositioning(); }
+            else if (key === "gap") {
+              if ((cv.experience || []).length < 2) {
+                notify(T.gr_no_gaps_title || "Aucun trou detecte");
+              } else {
+                setShowGapRepair(true);
+              }
             }
+            else if (key === "versions") setShowVersions(true);
+            else if (key === "compare") {
+              if (versions.length < 2) {
+                notify(locale === "fr"
+                  ? "Il faut au moins 2 versions pour comparer."
+                  : "At least 2 versions needed to compare.");
+              } else {
+                setShowCompare(true);
+              }
+            }
+            else if (key === "translate") setShowTranslate(true);
+            else if (key === "linkedin") setShowLinkedIn(true);
+            else if (key === "activity") setShowActivity(true);
             // "home" = juste mettre la section active
           }}
           lang={locale}
