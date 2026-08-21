@@ -17,6 +17,7 @@ const SUITES = [
   ["Gmail rend au suivi son vrai etat", "./gmail-reads-the-replies.mjs"],
   ["l'app s'installe sur l'ecran d'accueil", "./installs-on-the-home-screen.mjs"],
   ["l'accueil ne cache aucun texte", "./the-home-screen-hides-no-text.mjs"],
+  ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],
