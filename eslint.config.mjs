@@ -20,6 +20,8 @@ const BROWSER_GLOBALS = [
   "DeviceOrientationEvent", "DOMParser", "XMLHttpRequest", "performance",
   "screen", "history", "location", "getComputedStyle", "matchMedia", "Intl",
   "TextEncoder", "TextDecoder", "Uint8Array", "ArrayBuffer", "DataView",
+  "ReadableStream", "WritableStream", "TransformStream",
+  "SpeechRecognition", "webkitSpeechRecognition", "MediaRecorder",
   "HTMLElement", "Node", "Element", "CSS", "SVGElement", "Worker",
   "print", "scrollTo", "getSelection", "IdleDeadline",
   "process", "Buffer", "global", "globalThis", "React",

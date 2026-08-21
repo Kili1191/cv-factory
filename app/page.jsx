@@ -17,6 +17,7 @@ const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ss
 const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr: false });
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
 const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
+const LiveAssistModal = dynamic(() => import("./components/LiveAssistModal"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
 const TranslateModal = dynamic(() => import("./components/TranslateModal"), { ssr: false });
 const AuditModal = dynamic(() => import("./components/AuditModal"), { ssr: false });
@@ -3356,6 +3357,7 @@ export default function App() {
   // L'app fonctionne sans compte, exactement comme avant. Quand le serveur est
   // configure, le compte sert uniquement a retrouver son CV ailleurs.
   const [showAuth, setShowAuth] = useState(false);
+  const [showLive, setShowLive] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
   // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
   // quand on arrive par l'entree Modeles de la barre laterale).
@@ -7252,6 +7254,18 @@ export default function App() {
           </Suspense>
         </Sheet>
       )}
+      {showLive && (
+        <Suspense fallback={null}>
+          <LiveAssistModal
+            open={showLive}
+            onClose={() => setShowLive(false)}
+            cv={cv}
+            offer={interviewOffer}
+            locale={locale}
+          />
+        </Suspense>
+      )}
+
       {isCloudConfigured() && (
         <Suspense fallback={null}>
           <AuthSheet
@@ -7830,6 +7844,7 @@ export default function App() {
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
                 else if (subKey === "ats")   setShowAudit(true);
                 else if (subKey === "interview") setShowInterview(true);
+                else if (subKey === "live") setShowLive(true);
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
