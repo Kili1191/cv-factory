@@ -162,3 +162,52 @@ offres.
 Contourner ces limites par du grattage de pages violerait les conditions
 d'utilisation de ces plateformes, qui bloquent activement et poursuivent. Ce
 n'est pas une option pour un produit qu'on veut faire durer.
+
+---
+
+# L'extension navigateur
+
+Dans `extension/`. Elle capture une annonce sur n'importe quel site d'emploi et
+l'envoie vers Nuvi, ou elle devient une candidature suivie et ou le CV s'adapte
+aussitot.
+
+## L'installer
+
+Pas encore publiee sur le Chrome Web Store. En attendant :
+
+1. Ouvrir `chrome://extensions`
+2. Activer le mode developpeur, en haut a droite
+3. "Charger l'extension non empaquetee", choisir le dossier `extension/`
+
+Il manque `extension/icon128.png` : n'importe quelle image carree fait
+l'affaire, sinon Chrome refuse de charger.
+
+## Comment elle lit les annonces
+
+Pas de selecteurs par site. Ecrire un selecteur pour LinkedIn, un pour Indeed,
+un pour Welcome to the Jungle, c'est signer pour les reparer a chaque refonte,
+et n'avoir rien du tout sur les milliers d'autres sites.
+
+Elle lit les donnees structurees schema.org `JobPosting` que ces sites
+publient deja, parce que Google Jobs l'exige pour les referencer. C'est le
+format le plus fiable et le plus universel disponible.
+
+Trois niveaux : les donnees structurees d'abord, les balises meta ensuite, le
+texte de la page en dernier recours. L'extension annonce quand la lecture est
+approximative plutot que de faire croire a une capture propre.
+
+## Ce qui la distingue
+
+L'extension de Jobscan capture l'annonce puis renvoie l'utilisateur sur son
+site, ou il reprend tout a la main. Un comparatif mesure vingt-deux a
+vingt-six minutes par candidature.
+
+Ici, un clic depose l'annonce, ouvre Nuvi, cree la candidature suivie et
+pre-remplit l'adaptation du CV. Aucun copier-coller.
+
+## Ce qu'elle ne fait pas
+
+Elle ne lit que la page ouverte, quand tu cliques. Elle ne surveille rien, ne
+parcourt aucun site en arriere-plan, et n'a acces qu'a `thenuvi.com` en
+ecriture. Le contournement des protections de LinkedIn ou d'Indeed n'est pas
+au programme : c'est contraire a leurs conditions et ils le detectent.

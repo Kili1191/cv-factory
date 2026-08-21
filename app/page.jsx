@@ -3697,6 +3697,53 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Reception d'une annonce capturee par l'extension.
+  //
+  // L'extension range l'annonce puis ouvre Nuvi ; son pont la depose ici. On
+  // la consomme une seule fois, sinon chaque visite rejouerait la derniere
+  // offre capturee. Le traitement est le meme que pour une offre trouvee dans
+  // la recherche : candidature suivie qui porte son annonce, puis adaptation
+  // du CV. Aucun detour, aucun copier-coller : c'est precisement ce que les
+  // extensions concurrentes imposent.
+  useEffect(() => {
+    const consume = (job) => {
+      if (!job || !job.description) return;
+      const app = {
+        id: Date.now(),
+        company: job.company || "",
+        role: job.title || "",
+        date: new Date().toISOString().slice(0, 10),
+        status: "applied",
+        notes: "",
+        link: job.url || "",
+        offer: job.description,
+        created: Date.now(),
+      };
+      addApplication(app);
+      logActivity(ACT.APPLICATION_ADDED,
+        (locale === "en" ? "Captured: " : "Capturee : ")
+        + [job.title, job.company].filter(Boolean).join(" - "));
+      notify(locale === "en"
+        ? "Job captured, adapting your CV"
+        : "Offre capturee, on adapte ton CV");
+      setPendingOffer(job.description);
+      setShowOffer(true);
+    };
+
+    try {
+      const raw = localStorage.getItem("cvf_incoming_job");
+      if (raw) {
+        localStorage.removeItem("cvf_incoming_job");
+        consume(JSON.parse(raw));
+      }
+    } catch { /* rien a consommer */ }
+
+    const onCaptured = (e) => consume(e && e.detail);
+    window.addEventListener("nuvi:job-captured", onCaptured);
+    return () => window.removeEventListener("nuvi:job-captured", onCaptured);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const pushH = useCallback(() => setCV_(c => {
     setHist(h => [...h.slice(-11), c]);
     return c;

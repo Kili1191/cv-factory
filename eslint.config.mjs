@@ -21,6 +21,7 @@ const BROWSER_GLOBALS = [
   "screen", "history", "location", "getComputedStyle", "matchMedia", "Intl",
   "TextEncoder", "TextDecoder", "Uint8Array", "ArrayBuffer", "DataView",
   "ReadableStream", "WritableStream", "TransformStream",
+  "chrome",
   "SpeechRecognition", "webkitSpeechRecognition", "MediaRecorder",
   "HTMLElement", "Node", "Element", "CSS", "SVGElement", "Worker",
   "print", "scrollTo", "getSelection", "IdleDeadline",
