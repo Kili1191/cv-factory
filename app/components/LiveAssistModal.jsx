@@ -24,16 +24,23 @@
 // Un repere qu'on ne saurait pas prononcer naturellement ne sert a rien.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { serializeCvForContext } from "../../lib/cvSerializer.js";
 
 const SILENCE_MS = 900;
 
-export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr" }) {
+export default function LiveAssistModal({
+  open, onClose, cv, offer, locale = "fr", applications = [],
+}) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState("");
   const [cues, setCues] = useState("");
   const [thinking, setThinking] = useState(false);
   const [support, setSupport] = useState("unknown");
   const [manual, setManual] = useState("");
+  // Tant que le poste n'est pas confirme, on n'ecoute pas. Se tromper de
+  // poste en direct est pire que de perdre trois secondes a le choisir.
+  const [confirmed, setConfirmed] = useState(false);
+  const [chosen, setChosen] = useState(null);
 
   const recRef = useRef(null);
   const silenceRef = useRef(null);
@@ -62,12 +69,28 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
     thinking: "...",
   };
 
-  // Echantillon de style : ce que le candidat ecrit deja, pour que les
-  // reperes lui ressemblent.
+  // Le CV ENTIER, pas un extrait. Un recruteur peut demander n'importe quel
+  // poste de la liste, y compris le plus ancien : un resume tronque produirait
+  // trois reperes vides sur la seule question ou ils comptaient.
+  const fullCv = serializeCvForContext(cv) || "";
+
+  // Echantillon de style, distinct du contenu : il sert au registre et au
+  // vocabulaire, pas aux faits.
   const styleSample = [
     cv && cv.summary,
     ...((cv && cv.experience) || []).flatMap(e => (e.bullets || []).slice(0, 2)),
   ].filter(Boolean).join(" ").slice(0, 700);
+
+  // Candidatures qui portent une annonce : ce sont les seules pour lesquelles
+  // on peut preparer quoi que ce soit.
+  const withOffer = (applications || []).filter(a => a && a.offer && a.offer.trim());
+
+  // Le poste retenu : celui qu'on vient de choisir, sinon celui passe par
+  // l'ecran precedent.
+  const activeOffer = chosen ? chosen.offer : (offer || "");
+  const activeLabel = chosen
+    ? [chosen.role, chosen.company].filter(Boolean).join(" - ")
+    : (offer ? (locale === "en" ? "The role from the previous screen" : "Le poste de l'ecran precedent") : "");
 
   const askFor = useCallback(async (question) => {
     const q = String(question || "").trim();
@@ -113,8 +136,11 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
       + "Write in the same register and vocabulary as the writing sample: if the\n"
       + "candidate would not say a word naturally, do not use it.\n"
       + "No preamble, no closing line, no markdown. Three lines, nothing else.\n\n"
-      + "CANDIDATE EXPERIENCE:\n" + (styleSample || "(not provided)")
-      + (offer ? "\n\nROLE THEY ARE INTERVIEWING FOR:\n" + String(offer).slice(0, 1500) : "");
+      + "FULL CV (facts come from here):\n" + (fullCv || "(not provided)")
+      + "\n\nWRITING SAMPLE (register and vocabulary only):\n" + (styleSample || "(none)")
+      + (activeOffer
+        ? "\n\nROLE THEY ARE INTERVIEWING FOR:\n" + String(activeOffer).slice(0, 2500)
+        : "\n\nThe role is unknown: keep cues general and do not guess the company.");
 
     try {
       const res = await fetch("/api/claude/stream", {
@@ -145,7 +171,7 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
     } finally {
       setThinking(false);
     }
-  }, [styleSample, offer]);
+  }, [fullCv, styleSample, activeOffer]);
 
   // --- ecoute ---------------------------------------------------------------
   const stopListening = useCallback(() => {
@@ -198,6 +224,121 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
 
   if (!open) return null;
 
+  // --- confirmation du poste ----------------------------------------------
+  // Demandee a chaque ouverture. L'assistant qui repond sur le mauvais poste
+  // est pire qu'un assistant absent.
+  if (!confirmed) {
+    const pick = (app) => { setChosen(app); setConfirmed(true); };
+    const cvName = (cv && (cv.name || cv.fullName)) || "";
+    const cvTitle = (cv && (cv.title || cv.headline)) || "";
+    const nExp = ((cv && cv.experience) || []).filter(e => e && (e.title || e.company)).length;
+
+    return (
+      <div role="dialog" aria-modal="true" style={{
+        position: "fixed", inset: 0, zIndex: 6500,
+        background: "rgba(8,8,10,.95)", overflowY: "auto",
+        padding: "max(22px, env(safe-area-inset-top)) 20px 24px",
+        fontFamily: "'Inter', -apple-system, sans-serif",
+      }}>
+        <div style={{ maxWidth: 460, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 22 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ color: "#fff", fontSize: 21, fontWeight: 600, letterSpacing: "-.02em" }}>
+                {locale === "en" ? "Which interview is this?" : "C'est pour quel entretien ?"}
+              </div>
+              <div style={{ color: "rgba(255,255,255,.55)", fontSize: 13.5, marginTop: 4, lineHeight: 1.45 }}>
+                {locale === "en"
+                  ? "So the cues match the role, not a different one."
+                  : "Pour que les reperes collent a ce poste-la, pas a un autre."}
+              </div>
+            </div>
+            <button onClick={onClose} aria-label={locale === "en" ? "Close" : "Fermer"} style={{
+              width: 44, height: 44, borderRadius: "50%", border: "none",
+              background: "rgba(255,255,255,.12)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                strokeWidth="2.2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
+          </div>
+
+          {/* Le CV qui sera utilise, verifiable d'un coup d'oeil. */}
+          <div style={{
+            padding: "13px 15px", borderRadius: 12, marginBottom: 18,
+            background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)",
+          }}>
+            <div style={{ color: "rgba(255,255,255,.45)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase" }}>
+              {locale === "en" ? "CV used" : "CV utilise"}
+            </div>
+            <div style={{ color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 4 }}>
+              {cvName || (locale === "en" ? "Your CV" : "Ton CV")}
+            </div>
+            <div style={{ color: "rgba(255,255,255,.55)", fontSize: 12.5, marginTop: 2 }}>
+              {[cvTitle, nExp
+                ? `${nExp} ${locale === "en" ? "roles" : "experiences"}`
+                : null].filter(Boolean).join(" · ")}
+            </div>
+          </div>
+
+          {withOffer.length > 0 && (
+            <>
+              <div style={{ color: "rgba(255,255,255,.45)", fontSize: 11, letterSpacing: ".08em",
+                textTransform: "uppercase", marginBottom: 8 }}>
+                {locale === "en" ? "Your applications" : "Tes candidatures"}
+              </div>
+              {withOffer.map((a) => (
+                <button key={a.id} onClick={() => pick(a)} style={{
+                  width: "100%", textAlign: "left", marginBottom: 8,
+                  padding: "14px 16px", borderRadius: 12, cursor: "pointer",
+                  background: "rgba(255,255,255,.07)", border: "1px solid rgba(255,255,255,.12)",
+                  fontFamily: "inherit",
+                }}>
+                  <div style={{ color: "#fff", fontSize: 15, fontWeight: 600 }}>{a.role || "?"}</div>
+                  <div style={{ color: "rgba(255,255,255,.55)", fontSize: 13, marginTop: 2 }}>
+                    {a.company || "?"}
+                  </div>
+                </button>
+              ))}
+            </>
+          )}
+
+          {offer && (
+            <button onClick={() => pick(null)} style={{
+              width: "100%", minHeight: 52, marginTop: withOffer.length ? 6 : 0,
+              borderRadius: 12, border: "none", cursor: "pointer",
+              background: "linear-gradient(135deg,#5b3df5,#b91c8c)",
+              color: "#fff", fontSize: 15, fontWeight: 600, fontFamily: "inherit",
+            }}>
+              {locale === "en" ? "Use the role I was working on" : "Utiliser le poste en cours"}
+            </button>
+          )}
+
+          {!offer && withOffer.length === 0 && (
+            <div style={{
+              padding: "14px 16px", borderRadius: 12,
+              background: "rgba(255,255,255,.06)", color: "rgba(255,255,255,.7)",
+              fontSize: 13.5, lineHeight: 1.5,
+            }}>
+              {locale === "en"
+                ? "No application carries a job ad yet. Paste one in the tracker and the cues will match that role."
+                : "Aucune candidature ne porte encore d'annonce. Colle-en une dans le suivi et les reperes colleront a ce poste."}
+            </div>
+          )}
+
+          <button onClick={() => pick(null)} style={{
+            width: "100%", minHeight: 46, marginTop: 12, border: "none",
+            background: "transparent", color: "rgba(255,255,255,.5)",
+            fontSize: 13.5, fontFamily: "inherit", cursor: "pointer",
+          }}>
+            {locale === "en" ? "Continue without a role" : "Continuer sans poste precis"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const lines = cues.split("\n").map(l => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
 
   return (
@@ -215,7 +356,10 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ color: "#fff", fontSize: 17, fontWeight: 600 }}>{T.title}</div>
-          <div style={{ color: "rgba(255,255,255,.55)", fontSize: 12.5 }}>{T.sub}</div>
+          <div style={{
+            color: activeLabel ? "#9d8bff" : "rgba(255,255,255,.55)",
+            fontSize: 12.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>{activeLabel || T.sub}</div>
         </div>
         <button
           onClick={onClose}
@@ -266,6 +410,18 @@ export default function LiveAssistModal({ open, onClose, cv, offer, locale = "fr
           maxHeight: 58, overflow: "hidden",
         }}>
           <span style={{ opacity: .6 }}>{T.heard}: </span>{heard.slice(-160)}
+        </div>
+      )}
+
+      {!listening && !cues && (
+        <div style={{
+          margin: "12px 0 0", padding: "11px 13px", borderRadius: 10,
+          background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",
+          color: "rgba(255,255,255,.6)", fontSize: 12.5, lineHeight: 1.5,
+        }}>
+          {locale === "en"
+            ? "Uses this device's default microphone. With headphones on, it cannot hear the interviewer - keep the call on speaker, or type the question."
+            : "Utilise le micro par defaut de cet appareil. Avec un casque, il n'entend pas le recruteur : garde l'appel en haut-parleur, ou tape la question."}
         </div>
       )}
 

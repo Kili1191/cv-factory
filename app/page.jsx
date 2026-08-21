@@ -7261,6 +7261,7 @@ export default function App() {
             onClose={() => setShowLive(false)}
             cv={cv}
             offer={interviewOffer}
+            applications={applications}
             locale={locale}
           />
         </Suspense>

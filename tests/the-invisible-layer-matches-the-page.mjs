@@ -73,13 +73,34 @@ export async function run() {
     return [];
   }
 
+  // DEUX PHASES, ET C'EST INDISPENSABLE
+  //
+  // La premiere version intercalait le rendu d'image et l'OCR entre chaque
+  // export. Les trois premiers modeles passaient, les trois derniers
+  // echouaient sur un clic qui expirait : mutool et tesseract sont lourds, et
+  // la pression accumulee finissait par affamer le navigateur encore ouvert.
+  //
+  // On exporte donc les six PDF d'abord, on ferme le navigateur, et seulement
+  // ensuite on lance les outils d'analyse. Plus rien ne se dispute la machine,
+  // et le test est aussi nettement plus rapide.
   const server = await startServer();
   const browser = await launchBrowser();
   const scores = [];
+  const exported = [];
   try {
     for (const layout of LAYOUTS) {
       const out = await exportCvPdf(browser, SAMPLE_CV, layout);
       if (out.failed) { failures.push(`modele ${layout} : ${out.failed}`); continue; }
+      exported.push({ layout, pdfPath: out.pdfPath });
+    }
+  } finally {
+    await browser.close();
+    await stopServer(server);
+  }
+
+  try {
+    for (const { layout, pdfPath } of exported) {
+      const out = { pdfPath };
 
       const dir = mkdtempSync(join(tmpdir(), "cvf-ocr-"));
       const png = join(dir, "page.png");
@@ -113,9 +134,8 @@ export async function run() {
     if (!failures.length) {
       console.log(`      couche invisible confirmee par l'oeil : ${scores.join("  ")}`);
     }
-  } finally {
-    await browser.close();
-    await stopServer(server);
+  } catch (err) {
+    failures.push(`analyse impossible : ${err.message.split("\n")[0]}`);
   }
   return failures;
 }
