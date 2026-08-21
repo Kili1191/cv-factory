@@ -8119,7 +8119,29 @@ export default function App() {
           position:"fixed", inset:0, zIndex:1500,
           background:"rgba(0,0,0,.9)", overflow:"auto",
         }} onClick={()=>setZoomed(false)}>
-          <div style={{minWidth:794, padding:14}}>{CVEl}</div>
+          {/* [Fix] Il n'y avait aucun moyen visible de revenir en arriere.
+              Seul un clic sur le fond fermait la vue, mais le CV occupe tout
+              l'ecran et ses champs sont modifiables : on tapait dans le texte
+              au lieu de sortir. Un bouton explicite, toujours visible, avec
+              une cible de 44px. */}
+          <button
+            onClick={(e)=>{ e.stopPropagation(); setZoomed(false); }}
+            aria-label={locale === "en" ? "Close zoom" : "Fermer le zoom"}
+            style={{
+              position:"fixed", top:"max(14px, env(safe-area-inset-top))", right:14,
+              zIndex:1600, width:44, height:44, borderRadius:"50%",
+              border:"none", cursor:"pointer",
+              background:"rgba(255,255,255,.95)",
+              boxShadow:"0 4px 16px rgba(0,0,0,.35)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#0a0a0a" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <div style={{minWidth:794, padding:14}} onClick={(e)=>e.stopPropagation()}>{CVEl}</div>
         </div>
       )}
       <div data-cvf="app" className="nuvi-bg-halos" style={{
