@@ -12,6 +12,7 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 import Sheet from "./Sheet";
+import GmailScanPanel from "./GmailScanPanel";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
@@ -56,12 +57,16 @@ function StatCard({ label, value, color }) {
 
 // Formulaire add/edit.
 function ApplicationForm({ T, app, onSave, onCancel }) {
+  // `offer` est le texte de l'annonce. C'est le champ qui transforme ce
+  // tableau en chaine de travail : sans lui, aucune etape suivante ne peut
+  // etre preparee pour CE poste-la. C'est exactement ce qui manque chez les
+  // concurrents, dont le suivi et l'adaptation du CV ne se parlent pas.
   const [form, setForm] = useState(app || {
     id: Date.now(),
     company:"", role:"",
     date: new Date().toISOString().slice(0, 10),
     status:"applied",
-    notes:"", link:"",
+    notes:"", link:"", offer:"",
     created: Date.now(),
   });
 
@@ -124,6 +129,25 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           placeholder="https://..."
           style={inputStyle}/>
       </div>
+      {/* L'annonce. Collee ici, elle alimente l'adaptation du CV, la relance
+          et la preparation d'entretien pour ce poste precis. */}
+      <div style={{marginBottom:14}}>
+        <label style={labelStyle}>
+          {T.ap_field_offer || "Annonce (colle le texte)"}
+        </label>
+        <textarea
+          value={form.offer || ""}
+          onChange={e=>u("offer")(e.target.value)}
+          rows={4}
+          placeholder={T.ap_offer_hint
+            || "Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance."}
+          style={{...inputStyle, resize:"vertical", minHeight:80}}/>
+        {form.offer && form.offer.trim().length > 0 && (
+          <div style={{fontSize:11, color:Green, marginTop:5}}>
+            {(T.ap_offer_ready || "Annonce enregistree, les actions suivantes sont debloquees")}
+          </div>
+        )}
+      </div>
       <div style={{marginBottom:14}}>
         <label style={labelStyle}>{T.ap_field_notes}</label>
         <textarea value={form.notes} onChange={e=>u("notes")(e.target.value)}
@@ -157,8 +181,103 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
 }
 
 // Carte d'une candidature.
-function ApplicationCard({ T, app, onEdit, onDelete }) {
+// PROCHAINE ACTION SELON L'ETAPE
+//
+// Un tableau de suivi ordinaire est passif : on y deplace des cartes. Celui-ci
+// est actif. Chaque etape sait ce qui fait avancer la candidature, et le
+// propose en un clic, deja charge avec CETTE annonce.
+//
+//   envoyee      -> relancer, avec le nombre de jours ecoules
+//   entretien    -> preparer l'entretien sur cette annonce
+//   offre        -> preparer la negociation
+//   sans annonce -> coller l'annonce, qui debloque tout le reste
+//
+// C'est la boucle que personne n'a fermee : chez les concurrents, le suivi et
+// l'adaptation du CV sont deux outils separes qui ne se parlent pas.
+function nextAction(app, T) {
+  const hasOffer = Boolean(app.offer && app.offer.trim());
+  if (!hasOffer) {
+    return { key:"offer", label:T.ap_do_offer || "Coller l'annonce",
+      hint:T.ap_do_offer_hint || "Debloque le CV adapte, la relance et l'entretien" };
+  }
+  switch (app.status) {
+    case "applied": {
+      const days = daysSince(app.date);
+      return {
+        key:"followup",
+        label:T.ap_do_followup || "Rediger la relance",
+        hint: days === null ? null
+          : days >= 7 ? (T.ap_do_followup_due || `Envoyee il y a ${days} jours, c'est le moment`)
+          : (T.ap_do_followup_soon || `Envoyee il y a ${days} jour${days > 1 ? "s" : ""}`),
+        urgent: days !== null && days >= 7,
+      };
+    }
+    case "phone":
+    case "interview":
+      return { key:"prepare", label:T.ap_do_prepare || "Preparer l'entretien",
+        hint:T.ap_do_prepare_hint || "Questions et reponses sur cette annonce" };
+    case "offer":
+      return { key:"negotiate", label:T.ap_do_negotiate || "Preparer la negociation",
+        hint:null };
+    default:
+      return { key:"tailor", label:T.ap_do_tailor || "Adapter mon CV",
+        hint:T.ap_do_tailor_hint || "Reecrit ton CV pour cette annonce" };
+  }
+}
+
+// ETAT DE SANTE D'UNE CANDIDATURE
+//
+// Trois familles, calculees sans IA : c'est instantane, gratuit, et le
+// resultat ne change pas d'un appel a l'autre.
+//
+//   morte     refusee, sans nouvelles depuis trop longtemps, ou relancee sans
+//             reponse. Elle encombre, il faut la sortir de la tete.
+//   en cours  envoyee recemment, ou relance encore utile. C'est la que se
+//             joue le travail.
+//   ca avance entretien, offre, accepte. On protege ces dossiers-la.
+//
+// Les seuils suivent les usages du recrutement : sous une semaine il est trop
+// tot pour s'inquieter, au-dela de trois semaines sans reponse ni relance la
+// candidature est statistiquement finie.
+const HEALTH_GOOD = "good";
+const HEALTH_PENDING = "pending";
+const HEALTH_DEAD = "dead";
+
+function health(app) {
+  const days = daysSince(app.date);
+  switch (app.status) {
+    case "accepted":
+    case "offer":
+    case "interview":
+    case "phone":
+      return { key:HEALTH_GOOD };
+    case "rejected":
+      return { key:HEALTH_DEAD, why:"refusee" };
+    case "ghosted":
+      return { key:HEALTH_DEAD, why:"sans reponse" };
+    case "applied":
+    default: {
+      if (days === null) return { key:HEALTH_PENDING };
+      const followed = Boolean(app.followedUpAt);
+      if (days > 30) return { key:HEALTH_DEAD, why:`${days} jours sans reponse` };
+      if (days > 21 && followed) return { key:HEALTH_DEAD, why:"relancee, sans suite" };
+      if (days >= 7 && !followed) return { key:HEALTH_PENDING, why:"a relancer", act:true };
+      return { key:HEALTH_PENDING, why:days === 0 ? "envoyee aujourd hui" : `${days} j` };
+    }
+  }
+}
+
+function daysSince(dateStr) {
+  if (!dateStr) return null;
+  const then = Date.parse(dateStr);
+  if (!Number.isFinite(then)) return null;
+  return Math.max(0, Math.floor((Date.now() - then) / 86400000));
+}
+
+function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
   const badge = statusBadge(app.status, T);
+  const action = nextAction(app, T);
+  const h = health(app);
   return (
     <div style={{
       padding:"14px 16px",
@@ -194,6 +313,12 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
         fontSize:11, color:InkMuted, marginBottom: app.notes ? 8 : 10,
       }}>
         {app.date && <span>{app.date}</span>}
+        {h.why && (
+          <span style={{
+            color: h.key === "dead" ? InkMuted : h.act ? Coral : InkMuted,
+            fontWeight: h.act ? 600 : 400,
+          }}>{h.why}</span>
+        )}
         {app.link && (
           <a href={app.link} target="_blank" rel="noopener noreferrer"
             style={{color:Purple, textDecoration:"none"}}>
@@ -214,6 +339,35 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
           marginBottom:10, whiteSpace:"pre-wrap",
         }}>{app.notes}</div>
       )}
+
+      {/* Prochaine action : ce qui fait avancer CETTE candidature, en un clic
+          et deja charge avec son annonce. */}
+      <button
+        onClick={()=>onAction && onAction(action.key, app)}
+        style={{
+          ...B({
+            width:"100%", minHeight:44, marginBottom:8,
+            borderRadius:RadiusPill, border:"none",
+            background: action.urgent
+              ? `linear-gradient(135deg, ${Purple}, ${Magenta})`
+              : action.key === "offer" ? CreamSoft
+              : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+            color: action.key === "offer" ? Ink : "#fff",
+            fontSize:13, fontWeight:600, fontFamily:Sans,
+            display:"flex", flexDirection:"column",
+            alignItems:"center", justifyContent:"center", gap:1,
+            padding:"6px 12px",
+          }),
+        }}
+      >
+        <span>{action.label}</span>
+        {action.hint && (
+          <span style={{
+            fontSize:10.5, fontWeight:400, opacity:.85,
+            color: action.key === "offer" ? InkMuted : "rgba(255,255,255,.9)",
+          }}>{action.hint}</span>
+        )}
+      </button>
 
       {/* Actions */}
       <div style={{display:"flex", gap:8}}>
@@ -238,7 +392,17 @@ function ApplicationCard({ T, app, onEdit, onDelete }) {
   );
 }
 
-export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpdate, onDelete, onClose }) {
+export default function ApplicationsTrackerModal({
+  T, applications, onAdd, onUpdate, onDelete, onClose,
+  onAction = () => {},
+  // Gmail est facultatif : sans compte configure, ces trois-la restent nuls
+  // et le panneau ne s'affiche pas. Le suivi fonctionne exactement comme
+  // avant, a la main.
+  locale = "fr",
+  connectGmail = null,
+  getGmailToken = null,
+  gmailAutoScan = false,
+}) {
   const [showForm, setShowForm] = useState(false);
   const [editingApp, setEditingApp] = useState(null);
   const [filter, setFilter] = useState("all");
@@ -260,10 +424,23 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
     return { total, active, offers, rejected };
   }, [applications]);
 
+  // Tri de sante : ce qui avance, ce qui attend, ce qui est mort.
+  const triage = useMemo(() => {
+    const g = { good:[], pending:[], dead:[], toFollow:0 };
+    for (const a of applications) {
+      const h = health(a);
+      g[h.key].push(a);
+      if (h.act) g.toFollow += 1;
+    }
+    return g;
+  }, [applications]);
+
   // Filtre + tri par date desc.
   const visible = useMemo(() => {
     let v = applications;
-    if (filter !== "all") {
+    if (filter === "good" || filter === "pending" || filter === "dead") {
+      v = v.filter(a => health(a).key === filter);
+    } else if (filter !== "all") {
       v = v.filter(a => a.status === filter);
     }
     return [...v].sort((a, b) => {
@@ -318,6 +495,29 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
         margin:"0 0 18px", fontFamily:Sans,
       }}>{T.ap_sub}</p>
 
+      {/* Les reponses des recruteurs, lues dans la boite mail.
+          C'est ce qui separe un tableau qu'il faut tenir a jour d'un tableau
+          qui dit la verite : sans lui, les lignes "en attente" contiennent
+          des refus encaisses il y a trois semaines et des invitations
+          restees sans reponse. */}
+      {connectGmail && getGmailToken && (
+        <GmailScanPanel
+          locale={locale}
+          applications={applications}
+          connectGmail={connectGmail}
+          getGmailToken={getGmailToken}
+          autoScan={gmailAutoScan}
+          onApply={(id, status) => {
+            const app = applications.find(a => String(a.id) === String(id));
+            if (!app) return;
+            // La date de derniere nouvelle repart d'aujourd'hui : c'est elle
+            // qui decide, plus tard, si la candidature est a relancer ou
+            // consideree comme morte.
+            onUpdate({ ...app, status, lastReplyAt: Date.now() });
+          }}
+        />
+      )}
+
       {/* Stats */}
       {applications.length > 0 && (
         <div style={{display:"flex", gap:8, marginBottom:16}}>
@@ -325,6 +525,58 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
           <StatCard label={T.ap_stats_active}   value={stats.active}   color={Purple}/>
           <StatCard label={T.ap_stats_offers}   value={stats.offers}   color={Green}/>
           <StatCard label={T.ap_stats_rejected} value={stats.rejected} color={Coral}/>
+        </div>
+      )}
+
+      {/* Le point de la semaine. Trois familles, cliquables pour filtrer.
+          C'est ce qu'on veut savoir en ouvrant l'ecran : ou en suis-je, et
+          qu'est-ce qui reclame quelque chose de moi maintenant. */}
+      {applications.length > 0 && (
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex", gap:8}}>
+            {[
+              ["good",    T.ap_health_good    || "Ca avance", triage.good.length,    Green,  GreenSoft],
+              ["pending", T.ap_health_pending || "En cours",  triage.pending.length, Purple, PurpleSoft],
+              ["dead",    T.ap_health_dead    || "Mortes",    triage.dead.length,    InkMuted, Hairline],
+            ].map(([key, label, n, fg, bg]) => (
+              <button
+                key={key}
+                onClick={() => setFilter(filter === key ? "all" : key)}
+                style={{
+                  ...B({
+                    flex:1, padding:"12px 8px", borderRadius:RadiusMd,
+                    background: filter === key ? fg : bg,
+                    border: "0.5px solid " + (filter === key ? fg : Hairline),
+                    fontFamily:Sans, textAlign:"center", minHeight:64,
+                  }),
+                }}
+              >
+                <div style={{
+                  fontSize:22, fontWeight:600, lineHeight:1,
+                  color: filter === key ? "#fff" : fg,
+                  fontVariantNumeric:"tabular-nums",
+                }}>{n}</div>
+                <div style={{
+                  fontSize:11, marginTop:4,
+                  color: filter === key ? "rgba(255,255,255,.9)" : InkMuted,
+                }}>{label}</div>
+              </button>
+            ))}
+          </div>
+          {triage.toFollow > 0 && (
+            <div style={{
+              marginTop:8, padding:"10px 12px", borderRadius:RadiusSm,
+              background:CoralSoft, border:"0.5px solid "+Coral,
+              fontSize:12.5, color:Ink, fontFamily:Sans, lineHeight:1.45,
+            }}>
+              <strong>{triage.toFollow}</strong>{" "}
+              {triage.toFollow > 1
+                ? (T.ap_to_follow_many || "candidatures attendent une relance.")
+                : (T.ap_to_follow_one || "candidature attend une relance.")}
+              {" "}
+              {T.ap_to_follow_hint || "C'est le seul geste qui les fait repartir."}
+            </div>
+          )}
         </div>
       )}
 
@@ -411,7 +663,8 @@ export default function ApplicationsTrackerModal({ T, applications, onAdd, onUpd
 
       {!showForm && visible.map(app => (
         <ApplicationCard key={app.id} T={T} app={app}
-          onEdit={handleEdit} onDelete={handleDelete}/>
+          onEdit={handleEdit} onDelete={handleDelete}
+          onAction={onAction}/>
       ))}
     </Sheet>
   );

@@ -16,6 +16,10 @@ const GapRepairModal = dynamic(() => import("./components/GapRepairModal"), { ss
 const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ssr: false });
 const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr: false });
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
+const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
+const InstallAppSheet = dynamic(() => import("./components/InstallAppSheet"), { ssr: false });
+const LiveAssistModal = dynamic(() => import("./components/LiveAssistModal"), { ssr: false });
+const JobSearchModal = dynamic(() => import("./components/JobSearchModal"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
 const TranslateModal = dynamic(() => import("./components/TranslateModal"), { ssr: false });
 const AuditModal = dynamic(() => import("./components/AuditModal"), { ssr: false });
@@ -71,6 +75,8 @@ import {
 import FormatChoiceModal from "./components/FormatChoiceModal";
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
+import { initCloud, queuePush, signOut, subscribe as subscribeCloud, connectGmail, getGmailToken } from "../lib/cloudSync.js";
+import { isCloudConfigured } from "../lib/supabaseClient.js";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 // La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
 // le navigateur la decouvre avant l'hydratation. Ne pas la re-injecter ici.
@@ -672,6 +678,10 @@ function lsG(k, fb=null) {
 function lsS(k, v) {
   if (typeof window === "undefined") return;
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  // Le compte recoit la modification en arriere-plan. queuePush ne bloque
+  // jamais et ne fait rien tant que personne n'est connecte : l'ecriture
+  // locale reste exactement aussi rapide qu'avant.
+  try { queuePush(k, v); } catch { /* la sauvegarde locale a deja reussi */ }
 }
 
 const B = (x={}) => ({ border:"none", cursor:"pointer", fontFamily:"inherit", ...x });
@@ -715,8 +725,12 @@ function sanDeep(v) {
 }
 
 async function aiCall(prompt, options = {}) {
-  // Options: { cv, max_tokens, temperature, task_name, messages }
-  const { cv, max_tokens, temperature, task_name = "unknown", messages } = options;
+  // Options: { cv, max_tokens, task_name, messages }
+  // [Migration Opus 5] `temperature` a disparu : les parametres
+  // d'echantillonnage sont retires sur cette generation de modeles et
+  // provoquent une erreur 400. La route ne le transmet plus ; on cesse aussi
+  // de l'envoyer, pour qu'aucun appelant ne croie encore pouvoir le regler.
+  const { cv, max_tokens, task_name = "unknown", messages } = options;
   
   // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
   let cv_context = null;
@@ -742,7 +756,6 @@ async function aiCall(prompt, options = {}) {
         messages,
         cv_context, 
         max_tokens, 
-        temperature,
         task_name,
       }),
       signal: ctrl.signal,
@@ -1640,7 +1653,7 @@ function BottomNav({ active, onPhase, T }) {
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
 function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
-  initialResult, onResult, onApplied, onPackRequest, onClose }) {
+  initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
       title={
@@ -1675,6 +1688,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
         onPackRequest={onPackRequest}
         pushH={pushH}
         initialResult={initialResult}
+        initialOffer={initialOffer}
         onResult={onResult}
         onApplied={onApplied}
         aiCall={aiCall}
@@ -3190,6 +3204,9 @@ export default function App() {
   const [packResult, setPackResult]   = useState(null);
   const [packMsgIdx, setPackMsgIdx]   = useState(0);
   const [packCtx, setPackCtx]         = useState(null);
+  // Annonce pre-remplie quand on ouvre "Adapter mon CV" depuis une
+  // candidature suivie : l'utilisateur ne recolle jamais la meme annonce.
+  const [pendingOffer, setPendingOffer] = useState("");
   const [showPos, setShowPos]         = useState(false);
   const [posLoading, setPosLoading]   = useState(false);
   const [posResult, setPosResult]     = useState(null);
@@ -3339,6 +3356,17 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  // --- Compte -------------------------------------------------------------
+  // L'app fonctionne sans compte, exactement comme avant. Quand le serveur est
+  // configure, le compte sert uniquement a retrouver son CV ailleurs.
+  const [showAuth, setShowAuth] = useState(false);
+  const [showInstall, setShowInstall] = useState(false);
+  // Vrai uniquement au retour de l'autorisation Google, pour lancer le
+  // balayage de la boite mail sans redemander un clic.
+  const [gmailReturn, setGmailReturn] = useState(false);
+  const [showLive, setShowLive] = useState(false);
+  const [showJobs, setShowJobs] = useState(false);
+  const [cloud, setCloud] = useState({ status: "off", user: null });
   // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
   // quand on arrive par l'entree Modeles de la barre laterale).
   const [customizeTab, setCustomizeTab] = useState("colors");
@@ -3651,6 +3679,115 @@ export default function App() {
   const notify = useCallback(msg => {
     setNotif(msg);
     setTimeout(() => setNotif(""), 3000);
+  }, []);
+
+  // Branchement du compte. Sans configuration serveur, initCloud sort tout de
+  // suite et l'application se comporte comme avant.
+  useEffect(() => {
+    const stop = initCloud((changedKeys) => {
+      // Des donnees plus recentes viennent d'un autre appareil. Elles sont
+      // deja ecrites dans le stockage local ; il reste a les faire remonter
+      // dans l'interface. Un rechargement garantit que les cinquante-sept
+      // endroits qui lisent le stockage repartent de la meme verite, ce
+      // qu'un rafraichissement partiel ne garantirait pas. Le cas est rare
+      // par nature : il ne se produit qu'en changeant d'appareil.
+      if (!changedKeys || !changedKeys.length) return;
+      notify(locale === "en"
+        ? "Updated from your other device"
+        : "Mis a jour depuis ton autre appareil");
+      setTimeout(() => { window.location.reload(); }, 1400);
+    });
+    const unsub = subscribeCloud(setCloud);
+    return () => { stop(); unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Reception d'une annonce capturee par l'extension.
+  //
+  // L'extension range l'annonce puis ouvre Nuvi ; son pont la depose ici. On
+  // la consomme une seule fois, sinon chaque visite rejouerait la derniere
+  // offre capturee. Le traitement est le meme que pour une offre trouvee dans
+  // la recherche : candidature suivie qui porte son annonce, puis adaptation
+  // du CV. Aucun detour, aucun copier-coller : c'est precisement ce que les
+  // extensions concurrentes imposent.
+  useEffect(() => {
+    const consume = (job) => {
+      if (!job || !job.description) return;
+      const app = {
+        id: Date.now(),
+        company: job.company || "",
+        role: job.title || "",
+        date: new Date().toISOString().slice(0, 10),
+        status: "applied",
+        notes: "",
+        link: job.url || "",
+        offer: job.description,
+        created: Date.now(),
+      };
+      addApplication(app);
+      logActivity(ACT.APPLICATION_ADDED,
+        (locale === "en" ? "Captured: " : "Capturee : ")
+        + [job.title, job.company].filter(Boolean).join(" - "));
+      notify(locale === "en"
+        ? "Job captured, adapting your CV"
+        : "Offre capturee, on adapte ton CV");
+      setPendingOffer(job.description);
+      setShowOffer(true);
+    };
+
+    try {
+      const raw = localStorage.getItem("cvf_incoming_job");
+      if (raw) {
+        localStorage.removeItem("cvf_incoming_job");
+        consume(JSON.parse(raw));
+      }
+    } catch { /* rien a consommer */ }
+
+    const onCaptured = (e) => consume(e && e.detail);
+    window.addEventListener("nuvi:job-captured", onCaptured);
+    return () => window.removeEventListener("nuvi:job-captured", onCaptured);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // CE QUE L'ADRESSE PEUT DEMANDER A L'OUVERTURE
+  //
+  //   ?go=target|tracking|live   les raccourcis de l'icone posee sur l'ecran
+  //                              d'accueil. Un appui long dessus propose ces
+  //                              trois actions ; sans ce code elles ouvriraient
+  //                              l'accueil et ne feraient rien.
+  //   ?gmail=1                   le retour de l'autorisation Google. On rouvre
+  //                              le suivi, la ou le balayage se declenche.
+  //
+  // Le parametre est retire de l'adresse une fois lu : sans ca, un
+  // rafraichissement rejouerait l'ouverture, et l'adresse copiee a un ami
+  // ouvrirait son application sur un ecran qu'il n'a pas demande.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let params;
+    try { params = new URLSearchParams(window.location.search); }
+    catch { return; }
+    const go = params.get("go");
+    const gmail = params.get("gmail");
+    if (!go && !gmail) return;
+
+    try {
+      params.delete("go"); params.delete("gmail"); params.delete("src");
+      const q = params.toString();
+      window.history.replaceState({}, "",
+        window.location.pathname + (q ? "?" + q : "") + window.location.hash);
+    } catch { /* l'historique refuse : sans importance */ }
+
+    // Un temps de latence avant d'ouvrir : l'ecran d'accueil et la
+    // restauration du CV se placent d'abord, sinon le panneau s'ouvre sur un
+    // etat encore vide.
+    const t = setTimeout(() => {
+      if (gmail === "1") { setGmailReturn(true); setShowApplications(true); return; }
+      if (go === "tracking") { setShowApplications(true); return; }
+      if (go === "live") { setShowLive(true); return; }
+      if (go === "target") { setShowOffer(true); return; }
+    }, 420);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pushH = useCallback(() => setCV_(c => {
@@ -4569,6 +4706,14 @@ export default function App() {
       +"- Email: objet specifique (pas 'Candidature au poste de X'), corps court 150 mots max.\n"
       +"- Pitch entretien: 60 secondes a l'oral (~150 mots), structure: qui je suis, ce que j'apporte, pourquoi ce poste.\n"
       +"- 5 reponses STAR aux questions probables, chacune avec Situation/Task/Action/Result concrets bases sur le CV.\n"
+      +"- Relance: a envoyer 7 a 10 jours apres la candidature si aucune reponse. Courte (80 mots max), "
+      +"apporte un element NOUVEAU (une reflexion sur leur enjeu, un travail recent), ne quemande pas.\n"
+      +"- Objections: les 3 doutes qu'un recruteur aura en lisant CE CV pour CE poste, "
+      +"chacun avec une reponse honnete et courte. Ne pas nier une faiblesse reelle, la recadrer.\n"
+      +"- Questions a poser: 4 questions que le candidat pose EN FIN d'entretien, "
+      +"qui montrent qu'il a compris l'enjeu du poste. Aucune question dont la reponse est sur leur site.\n"
+      +"- Negociation: fourchette realiste argumentee pour ce poste et ce marche, "
+      +"plus les deux leviers non salariaux les plus credibles a demander.\n"
       +"- " + NO_DASH + "\n"
       +"- Reponds UNIQUEMENT en JSON valide strict, sans markdown.\n\n"
       +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "")
@@ -4589,7 +4734,23 @@ export default function App() {
       +'      "action": "action prise par le candidat",\n'
       +'      "result": "resultat chiffre si possible"\n'
       +'    }\n'
-      +'  ]\n'
+      +'  ],\n'
+      +'  "follow_up": {\n'
+      +'    "subject": "objet de la relance",\n'
+      +'    "body": "corps de la relance, 80 mots max"\n'
+      +'  },\n'
+      +'  "objections": [\n'
+      +'    {\n'
+      +'      "doubt": "le doute du recruteur, formule franchement",\n'
+      +'      "answer": "la reponse honnete et courte du candidat"\n'
+      +'    }\n'
+      +'  ],\n'
+      +'  "questions_to_ask": ["question de fin d entretien"],\n'
+      +'  "negotiation": {\n'
+      +'    "range": "fourchette realiste",\n'
+      +'    "argument": "pourquoi cette fourchette, appuye sur le parcours",\n'
+      +'    "levers": ["levier non salarial"]\n'
+      +'  }\n'
       +'}';
     try {
       const txt = await aiCall(p);
@@ -7161,6 +7322,7 @@ export default function App() {
       {modal==="sk"  && <SheetSk cv={cv} set={setCVFn} onClose={()=>setModal(null)} T={T}/>}
       {showOffer && (
         <OfferSheet
+          initialOffer={pendingOffer}
           T={T} cv={cv} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
@@ -7188,6 +7350,71 @@ export default function App() {
           </Suspense>
         </Sheet>
       )}
+      {showJobs && (
+        <Suspense fallback={null}>
+          <JobSearchModal
+            T={T} locale={locale}
+            onClose={() => setShowJobs(false)}
+            onTrack={(job) => {
+              // Le geste qui ferme la boucle. L'offre devient une candidature
+              // QUI PORTE SON ANNONCE : c'est elle qui alimente ensuite le CV
+              // adapte, la relance et la preparation d'entretien. Sans ce
+              // champ, chaque etape suivante redemanderait de recoller le
+              // texte, ce que font tous les concurrents.
+              const app = {
+                id: Date.now(),
+                company: job.company || "",
+                role: job.title || "",
+                date: new Date().toISOString().slice(0, 10),
+                status: "applied",
+                notes: "",
+                link: job.url || "",
+                offer: job.description || "",
+                created: Date.now(),
+              };
+              addApplication(app);
+              logActivity(ACT.APPLICATION_ADDED, (locale === "en" ? "Tracked: " : "Suivie : ")
+                + [job.title, job.company].filter(Boolean).join(" - "));
+              notify(locale === "en" ? "Tracked, adapting your CV" : "Suivie, on adapte ton CV");
+              setShowJobs(false);
+              setTimeout(() => {
+                setPendingOffer(job.description || "");
+                setShowOffer(true);
+              }, 220);
+            }}
+          />
+        </Suspense>
+      )}
+
+      {showLive && (
+        <Suspense fallback={null}>
+          <LiveAssistModal
+            open={showLive}
+            onClose={() => setShowLive(false)}
+            cv={cv}
+            offer={interviewOffer}
+            applications={applications}
+            locale={locale}
+          />
+        </Suspense>
+      )}
+
+      {isCloudConfigured() && (
+        <Suspense fallback={null}>
+          <AuthSheet
+            open={showAuth}
+            onClose={() => setShowAuth(false)}
+            locale={locale}
+          />
+        </Suspense>
+      )}
+
+      {showInstall && (
+        <Suspense fallback={null}>
+          <InstallAppSheet lang={locale} onClose={() => setShowInstall(false)}/>
+        </Suspense>
+      )}
+
       {showCustomize && (
         <CustomizeSheet
           T={T} cv={cv} theme={theme}
@@ -7351,10 +7578,37 @@ export default function App() {
         <Suspense fallback={null}>
         <ApplicationsTrackerModal
           T={T} applications={applications}
+          locale={locale}
+          // Sans compte configure, Gmail n'existe pas : le panneau de lecture
+          // des reponses ne s'affiche pas, et le suivi se tient a la main
+          // comme avant.
+          connectGmail={isCloudConfigured() ? connectGmail : null}
+          getGmailToken={isCloudConfigured() ? getGmailToken : null}
+          gmailAutoScan={gmailReturn}
           onAdd={addApplication}
           onUpdate={updateApplication}
           onDelete={deleteApplication}
           onClose={()=>setShowApplications(false)}
+          onAction={(key, app) => {
+            // La boucle se ferme ici : chaque etape ouvre l'outil deja charge
+            // avec l'annonce de CETTE candidature. C'est ce que les
+            // concurrents ne font pas - chez eux le suivi et l'adaptation du
+            // CV sont deux outils qui ne se parlent pas.
+            const offer = (app && app.offer) || "";
+            if (key === "offer") return; // le formulaire s'en charge
+            setShowApplications(false);
+            setTimeout(() => {
+              if (key === "prepare") {
+                setInterviewOffer(offer);
+                setShowInterview(true);
+              } else if (key === "followup" || key === "negotiate") {
+                requestPack(offer, null);
+              } else {
+                setPendingOffer(offer);
+                setShowOffer(true);
+              }
+            }, 160);
+          }}
         />
         </Suspense>
       )}
@@ -7398,6 +7652,14 @@ export default function App() {
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
           onOpenHistory={() => { setShowSettings(false); setShowActivity(true); }}
           onClearAiCache={() => { clearAllAiCache(); notify(T.set_cache_done); }}
+          cloudEnabled={isCloudConfigured()}
+          cloudUser={cloud.user}
+          onSignIn={() => { setShowSettings(false); setShowAuth(true); }}
+          onSignOut={async () => {
+            await signOut();
+            notify(locale === "en" ? "Signed out" : "Deconnecte");
+          }}
+          onOpenInstall={() => { setShowSettings(false); setShowInstall(true); }}
           onClose={()=>setShowSettings(false)}
         />
         </Suspense>
@@ -7708,10 +7970,14 @@ export default function App() {
               } else if (key === "adjust") {
                 // Ouvre l'AdjustModal (chat-style avec Nuvi)
                 setShowAdjust(true);
+              } else if (key === "jobs") {
+                setShowJobs(true);
               } else if (key === "target") {
                 setShowOffer(true);
               } else if (key === "pack") {
                 setShowPack(true);
+              } else if (key === "live") {
+                setShowLive(true);
               } else if (key === "tracking") {
                 setShowApplications(true);
               }
@@ -7765,6 +8031,7 @@ export default function App() {
             lang={locale}
             onCoachOpen={() => openCoach()}
             onSettingsOpen={() => setShowSettings(true)}
+            onInstallOpen={() => setShowInstall(true)}
             onReset={() => doReset()}
           />
           {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
@@ -8119,7 +8386,29 @@ export default function App() {
           position:"fixed", inset:0, zIndex:1500,
           background:"rgba(0,0,0,.9)", overflow:"auto",
         }} onClick={()=>setZoomed(false)}>
-          <div style={{minWidth:794, padding:14}}>{CVEl}</div>
+          {/* [Fix] Il n'y avait aucun moyen visible de revenir en arriere.
+              Seul un clic sur le fond fermait la vue, mais le CV occupe tout
+              l'ecran et ses champs sont modifiables : on tapait dans le texte
+              au lieu de sortir. Un bouton explicite, toujours visible, avec
+              une cible de 44px. */}
+          <button
+            onClick={(e)=>{ e.stopPropagation(); setZoomed(false); }}
+            aria-label={locale === "en" ? "Close zoom" : "Fermer le zoom"}
+            style={{
+              position:"fixed", top:"max(14px, env(safe-area-inset-top))", right:14,
+              zIndex:1600, width:44, height:44, borderRadius:"50%",
+              border:"none", cursor:"pointer",
+              background:"rgba(255,255,255,.95)",
+              boxShadow:"0 4px 16px rgba(0,0,0,.35)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+            }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="#0a0a0a" strokeWidth="2.2" strokeLinecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+          <div style={{minWidth:794, padding:14}} onClick={(e)=>e.stopPropagation()}>{CVEl}</div>
         </div>
       )}
       <div data-cvf="app" className="nuvi-bg-halos" style={{
@@ -8292,7 +8581,9 @@ export default function App() {
             setNavSection(key);
             // Wire chaque section a la modale existante (meme couverture que
             // la barre laterale : le tiroir "Plus" liste maintenant tout).
-            if (key === "target") setShowOffer(true);
+            if (key === "jobs") setShowJobs(true);
+            else if (key === "target") setShowOffer(true);
+            else if (key === "live") setShowLive(true);
             else if (key === "pack") setShowPack(true);
             else if (key === "score") setShowScore(true);
             else if (key === "cvs") setShowMultiCV(true);
@@ -8329,6 +8620,7 @@ export default function App() {
           lang={locale}
           onCoachOpen={() => openCoach()}
           onSettingsOpen={() => setShowSettings(true)}
+          onInstallOpen={() => setShowInstall(true)}
           onReset={() => doReset()}
           suggestedAction={suggestedAction}
         />

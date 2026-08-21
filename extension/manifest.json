@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "Nuvi - capture une offre",
+  "version": "1.0.0",
+  "description": "Envoie une annonce vers Nuvi en un clic : elle devient une candidature suivie et ton CV s'adapte.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://thenuvi.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Capturer cette offre",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://thenuvi.com/*"
+      ],
+      "js": [
+        "bridge.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

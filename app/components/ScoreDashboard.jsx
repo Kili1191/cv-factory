@@ -24,6 +24,7 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradPurple, B,
 } from "./tokens";
+import { CountUp } from "./motion";
 
 // 8 axes : id stable, label/sub viennent de T (i18n).
 // L'ordre ici detemine l'ordre d'affichage dans la grille.
@@ -88,7 +89,7 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
             flexShrink: 0,
             minWidth: 56,
           }}>
-            {validScore !== null ? validScore : "..."}
+            {validScore !== null ? <CountUp to={validScore}/> : "..."}
           </div>
           <div style={{flex:1, minWidth:0}}>
             <div style={{
@@ -113,7 +114,7 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
             width: validScore !== null ? Math.max(2, validScore) + "%" : "0%",
             background: validScore !== null ? scoreColor(validScore) : Gray400,
             borderRadius: RadiusPill,
-            transition: "width 400ms ease-out",
+            transition: "width 900ms cubic-bezier(.22,1,.36,1)",
           }}/>
         </div>
 
@@ -287,7 +288,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
                     fontSize: 56, lineHeight: 1,
                     letterSpacing: "-0.04em",
                     color: Cream, marginBottom: 8,
-                  }}>{Math.round(result.global_score)}</div>
+                  }}><CountUp to={Math.round(result.global_score)}/></div>
                 )}
                 {result.verdict_global && (
                   <div style={{

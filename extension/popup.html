@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Nuvi</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; width: 320px; padding: 18px;
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #faf8f3; color: #0a0a0a;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #16161a; color: #f0eee9; }
+    .card { background: #1f1f25 !important; border-color: #33333c !important; }
+    .muted { color: #9a9aa5 !important; }
+  }
+  h1 { margin: 0 0 4px; font-size: 15px; font-weight: 600; }
+  .muted { color: #5a5a62; font-size: 12.5px; margin: 0 0 14px; }
+  .card { background: #fff; border: 1px solid #e8e3d6; border-radius: 12px; padding: 12px 14px; margin-bottom: 12px; }
+  .role { font-size: 14.5px; font-weight: 600; }
+  .co { font-size: 12.5px; color: #d97757; font-weight: 600; margin-top: 2px; }
+  .loc { font-size: 12px; color: #5a5a62; margin-top: 3px; }
+  .warn { background: #fdf1e8; border-color: #d97757; font-size: 12.5px; }
+  button {
+    width: 100%; min-height: 46px; border: none; border-radius: 11px;
+    background: linear-gradient(135deg, #5b3df5, #b91c8c); color: #fff;
+    font: 600 14px inherit; cursor: pointer;
+  }
+  button[disabled] { opacity: .5; cursor: default; }
+</style>
+<h1>Nuvi</h1>
+<p class="muted" id="sub">Lecture de l'annonce...</p>
+<div id="out"></div>
+<button id="go" disabled>Envoyer vers Nuvi</button>
+<script src="popup.js" type="module"></script>

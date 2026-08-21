@@ -734,6 +734,8 @@ const FR_T = {
   set_lang:"Langue de l'interface",
   set_dark:"Mode sombre",
   set_dark_desc:"L'interface en sombre. Le CV reste clair pour l'export.",
+  set_install:"Installer l'application",
+  set_install_desc:"Une icone sur ton ecran d'accueil. Ouverture plein ecran, sans barre de navigateur.",
   set_kbd:"Raccourcis clavier",
   set_tutorial:"Relancer le tutoriel",
   set_cache:"Cache IA",

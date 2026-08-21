@@ -132,3 +132,70 @@ html, body {
   white-space: nowrap;
   border: 0;
 }
+
+/* =========================================================================
+   MOUVEMENT
+   =========================================================================
+
+   Trois choses ici, et une seule regle qui compte vraiment.
+
+   1. La regle qui compte : prefers-reduced-motion coupe TOUT. Ce reglage
+      n'exprime pas un gout, il est active par des gens que le mouvement rend
+      reellement malades - vertiges, nausees, migraines. Une seule animation
+      oubliee suffit a declencher la crise, donc la coupure est globale et
+      s'applique aussi a ce qui sera ajoute demain.
+
+      La duree passe a 0.01ms et non a 0 : a zero, certains navigateurs
+      n'emettent plus animationend ni transitionend, et un code qui attend la
+      fin d'une animation pour afficher la suite reste bloque pour toujours.
+
+   2. Le retour au doigt. Un bouton qui s'enfonce a l'appui donne le sentiment
+      d'une application native. C'est le detail le moins cher et le plus
+      remarque de toute l'interface.
+
+   3. Le defilement doux, pour les ancres - sauf, encore une fois, si le
+      mouvement est refuse.
+   ========================================================================= */
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* L'enfoncement au clic. `:active` seulement : au survol, un bouton qui
+   grossit deplace ses voisins et fait rater la cible. */
+button:not(:disabled):active,
+[role="button"]:not([aria-disabled="true"]):active {
+  transform: scale(0.975);
+}
+button,
+[role="button"] {
+  /* Sans cette ligne, le retour a la taille normale est instantane et
+     l'enfoncement passe inapercu. */
+  transition: transform 140ms cubic-bezier(.22, 1, .36, 1);
+  /* Le rectangle gris que WebKit peint sur chaque element touche. Il double
+     l'effet d'enfoncement, en plus laid. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* L'apercu du CV ne bouge jamais. C'est une feuille de papier, et le clic y
+   sert a placer un curseur : la faire tressaillir donnerait l'impression
+   d'avoir deplace quelque chose dans le document. */
+[data-cvf="cv"] button:active,
+#cv-print button:active,
+.cv-preview-container button:active {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

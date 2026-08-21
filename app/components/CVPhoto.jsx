@@ -19,6 +19,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
+import { createPortal } from "react-dom";
 
 const PhotoCropEditor = dynamic(() => import("./PhotoCropEditor"), { ssr: false });
 
@@ -41,6 +42,15 @@ export default function CVPhoto({
   T = {},
   locale = "fr",
 }) {
+  // Telephone : le menu doit sortir du CV et s'afficher au centre de l'ecran.
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const read = () => setNarrow(window.innerWidth < 768);
+    read();
+    window.addEventListener("resize", read);
+    return () => window.removeEventListener("resize", read);
+  }, []);
+
   const photo = cv.photo || { mode: "initials" };
   const mode = photo.mode || "initials";
   const src = photo.src || null;
@@ -258,6 +268,8 @@ export default function CVPhoto({
               setMenuOpen(false);
             }}
             accent={accentColor}
+            narrow={narrow}
+            onClose={() => setMenuOpen(false)}
           />
         )}
       </div>
@@ -285,15 +297,21 @@ function PhotoMenu({
   onPickInitials,
   onPickNone,
   accent,
+  narrow = false,
+  onClose = () => {},
 }) {
   const tx = locale === "en" ? {
     upload: mode === "upload" ? "Edit photo" : "Upload photo",
     initials: "Initials",
     none: "No photo",
+    title: "Photo",
+    cancel: "Cancel",
   } : {
     upload: mode === "upload" ? "Modifier la photo" : "Importer une photo",
     initials: "Initiales",
     none: "Sans photo",
+    title: "Photo",
+    cancel: "Annuler",
   };
 
   const itemStyle = (active) => ({
@@ -312,6 +330,88 @@ function PhotoMenu({
     gap: 8,
     transition: "background 120ms ease",
   });
+
+  // [Fix] Sur telephone ce menu etait illisible, et pas parce qu'il etait mal
+  // dimensionne : il est dessine A L'INTERIEUR du CV, que l'apercu mobile
+  // reduit avec transform: scale(). A l'echelle 0.45, ses 11px de texte en
+  // font 5. Un `position: fixed` ne suffirait pas a s'en echapper, puisqu'un
+  // transform cree un bloc conteneur pour ses descendants fixes. Il faut donc
+  // sortir du CV par un portail vers document.body, ou le menu retrouve sa
+  // taille reelle : une boite centree, lisible, avec des cibles de 44px.
+  const items = (big) => [
+    { key: "upload", on: onPickUpload, active: mode === "upload", label: tx.upload,
+      icon: (<svg width={big ? 18 : 13} height={big ? 18 : 13} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/>
+        <line x1="12" y1="3" x2="12" y2="15"/></svg>) },
+    { key: "initials", on: onPickInitials, active: mode === "initials", label: tx.initials,
+      icon: (<svg width={big ? 18 : 13} height={big ? 18 : 13} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="9"/><path d="M8 13h.01M16 13h.01"/></svg>) },
+    { key: "none", on: onPickNone, active: mode === "none", label: tx.none,
+      icon: (<svg width={big ? 18 : 13} height={big ? 18 : 13} viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>) },
+  ];
+
+  if (narrow && typeof document !== "undefined") {
+    return createPortal(
+      <div
+        role="dialog"
+        aria-modal="true"
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 5000,
+          background: "rgba(10,10,10,.55)",
+          WebkitBackdropFilter: "blur(6px)", backdropFilter: "blur(6px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 24,
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: "100%", maxWidth: 340,
+            background: "#fff", borderRadius: 18,
+            boxShadow: "0 20px 60px rgba(0,0,0,.28)",
+            overflow: "hidden",
+            fontFamily: "'Inter', -apple-system, sans-serif",
+          }}
+        >
+          <div style={{
+            padding: "16px 20px 12px", fontSize: 15, fontWeight: 600,
+            color: "#0a0a0a", borderBottom: "0.5px solid #e8e3d6",
+          }}>{tx.title}</div>
+          {items(true).map(it => (
+            <button
+              key={it.key}
+              onClick={it.on}
+              style={{
+                width: "100%", minHeight: 52, padding: "0 20px",
+                border: "none", borderBottom: "0.5px solid #f0ece3",
+                background: it.active ? accent + "1a" : "#fff",
+                color: it.active ? accent : "#0a0a0a",
+                fontSize: 15, fontWeight: it.active ? 600 : 500,
+                fontFamily: "inherit", textAlign: "left", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 12,
+              }}
+            >
+              {it.icon}{it.label}
+            </button>
+          ))}
+          <button
+            onClick={onClose}
+            style={{
+              width: "100%", minHeight: 52, padding: "0 20px", border: "none",
+              background: "#fff", color: "#6b6b6b", fontSize: 15, fontWeight: 500,
+              fontFamily: "inherit", cursor: "pointer",
+            }}
+          >{tx.cancel}</button>
+        </div>
+      </div>,
+      document.body,
+    );
+  }
 
   return (
     <div

@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
+import { useInstallState } from "./InstallAppSheet";
 
 /**
  * NuviBottomNav — Bottom navigation mobile (5 icônes)
@@ -29,11 +30,17 @@ export default function NuviBottomNav({
   lang = "fr",
   onCoachOpen,
   onSettingsOpen,
+  onInstallOpen,
   onReset,
   suggestedAction = null,
   hasNotification = {},
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // "Installer l'app" n'a de sens que la ou l'installation est possible :
+  // sur un telephone deja equipe, ou sur un navigateur qui ne sait pas le
+  // faire, l'entree disparait du tiroir au lieu de mener a une impasse.
+  const install = useInstallState();
   const [suggestDismissed, setSuggestDismissed] = useState(false);
 
   // La barre de nav et la barre de suggestion sont en position fixed et
@@ -66,7 +73,9 @@ export default function NuviBottomNav({
       home: "CV",
       coach: "Coach",
       target: "Cibler",
+      jobs: "Trouver un poste",
       pack: "Pack",
+      live: "Live",
       more: "Plus",
       score: "Score",
       cvs: "Mes CV",
@@ -86,6 +95,7 @@ export default function NuviBottomNav({
       translate: "Traduction",
       linkedin: "Profil LinkedIn",
       activity: "Mon activite",
+      install: "Installer l'app",
       sec_cv: "Mon CV",
       sec_audits: "Analyser",
       sec_tools: "Outils",
@@ -94,7 +104,9 @@ export default function NuviBottomNav({
       home: "CV",
       coach: "Coach",
       target: "Match",
+      jobs: "Find a role",
       pack: "Pack",
+      live: "Live",
       more: "More",
       score: "Score",
       cvs: "My CVs",
@@ -114,6 +126,7 @@ export default function NuviBottomNav({
       translate: "Translate",
       linkedin: "LinkedIn profile",
       activity: "My activity",
+      install: "Install the app",
       sec_cv: "My CV",
       sec_audits: "Analyse",
       sec_tools: "Tools",
@@ -123,6 +136,17 @@ export default function NuviBottomNav({
 
   // Icônes (réutilisé du NuviSidebar mais 22px)
   const Icons = {
+    // Micro avec une pastille : on doit reconnaitre l'outil d'un coup d'oeil
+    // dans une barre de cinq icones.
+    live: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2a3 3 0 013 3v6a3 3 0 01-6 0V5a3 3 0 013-3z"/>
+        <path d="M19 10v1a7 7 0 01-14 0v-1"/>
+        <line x1="12" y1="18" x2="12" y2="22"/>
+        <circle cx="19.5" cy="4.5" r="2.2" fill="currentColor" stroke="none"/>
+      </svg>
+    ),
     home: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
         <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
@@ -196,11 +220,16 @@ export default function NuviBottomNav({
   };
 
   // 5 items principaux du bottom nav
+  // [Fix] L'assistant d'entretien etait range sous "Score & Audits", au
+  // troisieme niveau. C'est l'outil qu'on ouvre sous pression, deux minutes
+  // avant un appel, et souvent sur le telephone qu'on pose a cote de soi :
+  // il doit se trouver du premier coup. Il prend donc une place dans la barre
+  // du bas, et "Pack" rejoint le tiroir, ou il se cherche sans urgence.
   const mainItems = [
     { key: "home", label: L.home },
     { key: "coach", label: L.coach, special: true }, // Coach déclenche openCoach
     { key: "target", label: L.target },
-    { key: "pack", label: L.pack },
+    { key: "live", label: L.live },
     { key: "more", label: L.more, isMore: true },
   ];
 
@@ -213,11 +242,13 @@ export default function NuviBottomNav({
   // et defile quand l'ecran est trop court.
   const drawerItems = [
     { section: L.sec_cv },
+    { key: "jobs",      label: L.jobs },
     { key: "edit",      label: L.edit },
     { key: "adjust",    label: L.adjust },
     { key: "design",    label: L.design },
     { key: "translate", label: L.translate },
     { section: L.sec_audits },
+    { key: "pack",      label: L.pack },
     { key: "score",     label: L.score },
     { key: "ats",       label: L.ats },
     { key: "truth",     label: L.truth },
@@ -231,6 +262,7 @@ export default function NuviBottomNav({
     { key: "linkedin",  label: L.linkedin },
     { key: "tracking",  label: L.tracking },
     { key: "activity",  label: L.activity },
+    ...(install.installable ? [{ key: "install", label: L.install, isInstall: true }] : []),
     { key: "settings",  label: L.settings, isSettings: true },
     { key: "reset",     label: L.reset, isReset: true, danger: true },
   ];
@@ -247,6 +279,11 @@ export default function NuviBottomNav({
     if (item.key === "settings" && onSettingsOpen) {
       setDrawerOpen(false);
       onSettingsOpen();
+      return;
+    }
+    if (item.key === "install" && onInstallOpen) {
+      setDrawerOpen(false);
+      onInstallOpen();
       return;
     }
     if (item.key === "reset" && onReset) {

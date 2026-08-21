@@ -13,9 +13,11 @@ import {
 } from "./sharedTokens";
 
 function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
-  onResult, onApplied, initialResult,
+  onResult, onApplied, initialResult, initialOffer = "",
   aiCall, parseJSON, normCV, pushH }) {
-  const [offer, setOffer] = useState("");
+  // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
+  // depuis une candidature arrive avec son annonce deja collee.
+  const [offer, setOffer] = useState(initialOffer || "");
   const [load, setLoad]   = useState(false);
   const [res, setRes]     = useState(initialResult || null);
   const [ph, setPh]       = useState(initialResult ? "done" : "input");

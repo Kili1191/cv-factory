@@ -41,12 +41,22 @@ function KbdRow({ keys, label }) {
   );
 }
 
+import { useInstallState } from "./InstallAppSheet";
+
 export default function SettingsPanel({
   T, locale, setLocale,
   darkMode, onToggleDark,
   onRelaunchTutorial, onClose,
   onOpenHistory, onClearAiCache,
+  cloudEnabled = false, cloudUser = null,
+  onSignIn = () => {}, onSignOut = () => {},
+  onOpenInstall = () => {},
 }) {
+
+  // La ligne d'installation ne s'affiche que si elle mene quelque part :
+  // deja installee, ou navigateur qui ne sait pas installer, elle disparait
+  // plutot que de promettre un geste impossible.
+  const install = useInstallState();
 
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -67,6 +77,58 @@ export default function SettingsPanel({
       title={T.set_title}
       onClose={onClose}
     >
+      {/* Compte. Absent tant qu'aucun serveur n'est configure : mieux vaut
+          ne rien montrer qu'une fonction qui ne repondrait pas. */}
+      {cloudEnabled && (
+        <div style={{marginBottom:18}}>
+          <label style={{
+            display:"block", fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:Coral, marginBottom:8, fontFamily:Sans,
+          }}>{locale === "en" ? "Account" : "Compte"}</label>
+          {cloudUser ? (
+            <div style={{
+              display:"flex", alignItems:"center", gap:12,
+              padding:"12px 14px", borderRadius:12,
+              background:Paper, border:"0.5px solid "+Hairline,
+            }}>
+              <div style={{
+                width:34, height:34, borderRadius:"50%", flexShrink:0,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff", display:"flex", alignItems:"center",
+                justifyContent:"center", fontSize:14, fontWeight:600,
+              }}>{String(cloudUser.email || "?").charAt(0).toUpperCase()}</div>
+              <div style={{flex:1, minWidth:0}}>
+                <div style={{
+                  fontSize:13, fontWeight:600, color:Ink,
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                }}>{cloudUser.email}</div>
+                <div style={{fontSize:11.5, color:InkMuted}}>
+                  {locale === "en" ? "CV saved to your account" : "CV sauvegarde sur ton compte"}
+                </div>
+              </div>
+              <button onClick={onSignOut} style={{
+                ...B({
+                  padding:"8px 12px", borderRadius:RadiusPill,
+                  background:"transparent", border:"0.5px solid "+Hairline,
+                  color:InkMuted, fontSize:12, fontFamily:Sans, minHeight:36,
+                }),
+              }}>{locale === "en" ? "Sign out" : "Deconnexion"}</button>
+            </div>
+          ) : (
+            <button onClick={onSignIn} style={{
+              ...B({
+                width:"100%", minHeight:48, borderRadius:12,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff", fontSize:14, fontWeight:600, fontFamily:Sans,
+              }),
+            }}>
+              {locale === "en" ? "Sign in to keep your CV" : "Se connecter pour garder son CV"}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Lang switcher - selected = gradient violet→magenta */}
       <div style={{marginBottom:18}}>
         <label style={{
@@ -167,6 +229,48 @@ export default function SettingsPanel({
           </div>
         </button>
       </div>
+
+      {/* Installer sur l'ecran d'accueil */}
+      {install.installable && (
+        <div style={{marginBottom:18}}>
+          <button onClick={onOpenInstall} style={{
+            ...B({
+              width:"100%",
+              display:"flex", alignItems:"center", gap:14,
+              padding:"14px 16px",
+              background:Paper,
+              border:"0.5px solid "+Hairline,
+              borderRadius:RadiusMd,
+              boxShadow:ShadowSm,
+              textAlign:"left", fontFamily:Sans,
+              transition:"all 200ms ease-out",
+            })
+          }}>
+            <div style={{
+              width:36, height:36, borderRadius:10, overflow:"hidden",
+              flexShrink:0, border:"0.5px solid "+Hairline,
+            }}>
+              <img src="/apple-touch-icon.png" alt="" width={36} height={36}
+                style={{display:"block", width:"100%", height:"100%"}}/>
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:2}}>
+                {T.set_install || (locale === "en" ? "Install the app" : "Installer l'application")}
+              </div>
+              <div style={{fontSize:11, color:InkMuted, lineHeight:1.4}}>
+                {T.set_install_desc || (locale === "en"
+                  ? "An icon on your home screen. Opens full screen."
+                  : "Une icone sur ton ecran d'accueil. Ouverture plein ecran.")}
+              </div>
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke={InkMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+              style={{flexShrink:0}}>
+              <path d="M9 18l6-6-6-6"/>
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Relancer tutoriel */}
       <div style={{marginBottom:18}}>

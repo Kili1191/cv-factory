@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import NuviCompanion from "./NuviCompanion";
+import { Reveal, WordReveal, Magnetic, Aurora, ScrollProgress } from "./motion";
 
 /**
  * NuviHome v5 : Demarrage "avant / apres" (Direction D, verdict panel 2026-05-21)
@@ -188,11 +189,14 @@ export default function NuviHome({
   };
 
   const cardPad = mob ? "16px 18px" : "20px 22px";
+  // C'est ce bloc qui defile, pas la page : l'ecran est en position fixe.
+  const scrollRef = useRef(null);
   const lineColBefore = InkMuted;
   const lineColAfter = "#3a3a40";
 
   return (
     <div
+      ref={scrollRef}
       style={{
         position: "fixed",
         inset: 0,
@@ -209,7 +213,8 @@ export default function NuviHome({
         transition: "opacity 500ms ease",
       }}
     >
-      <div style={{ width: "100%", maxWidth: mob ? "100%" : 720 }}>
+      <ScrollProgress targetRef={scrollRef}/>
+      <Aurora style={{ width: "100%", maxWidth: mob ? "100%" : 720 }}>
 
         {/* ===== TEMPS 1 : ACCUEIL (instantane) ===== */}
         <div style={{ textAlign: "center", marginBottom: mob ? 18 : 24 }}>
@@ -229,7 +234,7 @@ export default function NuviHome({
             letterSpacing: "-0.02em",
             marginBottom: 6,
           }}>
-            {T.title}{" "}
+            <WordReveal text={T.title}/>{" "}
             <em style={{
               fontStyle: "italic",
               color: Magenta,
@@ -237,14 +242,14 @@ export default function NuviHome({
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
-            }}>{T.titleAccent}</em>.
+            }}><WordReveal text={T.titleAccent} delay={180}/></em>.
           </div>
-          <p style={{
+          <Reveal as="p" delay={260} y={12} style={{
             color: InkMuted,
             fontSize: mob ? 13 : 14,
             margin: 0,
             lineHeight: 1.5,
-          }}>{balanceText(T.sub)}</p>
+          }}>{balanceText(T.sub)}</Reveal>
         </div>
 
         {/* ===== TEMPS 2 : LE WOW (avant -> apres) ===== */}
@@ -375,13 +380,14 @@ export default function NuviHome({
         </div>
 
         {/* ===== TEMPS 3 : LE CHOIX (apres la valeur) ===== */}
-        <div style={{
+        <Reveal delay={120} y={16} style={{
           display: "flex",
           flexDirection: mob ? "column" : "row",
           gap: 10,
           maxWidth: mob ? "100%" : 440,
           margin: "20px auto 0",
         }}>
+          <Magnetic as="span" style={{ flex: 1, display: "flex" }}>
           <button
             onClick={onGenerate}
             style={{
@@ -402,7 +408,9 @@ export default function NuviHome({
               e.currentTarget.style.boxShadow = "0 4px 16px rgba(91,61,245,0.28)";
             }}
           >{T.ctaMain}</button>
+          </Magnetic>
 
+          <Magnetic as="span" strength={0.18} style={{ flex: 1, display: "flex" }}>
           <button
             onClick={onImport}
             style={{
@@ -422,9 +430,10 @@ export default function NuviHome({
               e.currentTarget.style.transform = "";
             }}
           >{T.ctaImport}</button>
-        </div>
+          </Magnetic>
+        </Reveal>
 
-      </div>
+      </Aurora>
 
       {/* ===== COACH FLOTTANT (bas-droite) ===== */}
       <button
