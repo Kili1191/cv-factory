@@ -299,30 +299,60 @@ export function Aurora({ children, style, className, ...rest }) {
       ref={ref}
       onPointerMove={onMove}
       className={className}
-      style={{
-        position: "relative",
-        // LA LIGNE QUI EVITE UN FAUX DEFILEMENT
-        //
-        // La lueur deborde de 80 pixels pour que son flou s'eteigne hors du
-        // cadre plutot que de laisser un bord net. Mais un element en
-        // position absolue qui depasse a droite ou en bas AJOUTE de la zone
-        // de defilement a son conteneur : sans ce recadrage, l'accueil
-        // gagnerait 80 pixels de defilement fantome vers le bas et vers la
-        // droite, sur un ecran ou il n'y a rien a voir.
-        overflow: "hidden",
-        ...style,
-      }}
+      style={{ position: "relative", ...style }}
       {...rest}
     >
+      {/*
+        LA LUEUR TIENT DANS SON CADRE, ET C'EST DELIBERE.
+
+        Premiere version : la tache debordait de 80 pixels pour que son flou
+        s'eteigne hors du cadre. Deux defauts, chacun visible.
+
+        Un element en position absolue qui depasse a droite ou en bas AJOUTE
+        de la zone de defilement a son conteneur : l'accueil gagnait 80 pixels
+        de defilement fantome. Recadrer reglait ca - mais coupait le flou net,
+        et la lueur devenait un rectangle de couleur pose sur la page.
+
+        inset:0 supprime les deux d'un coup : rien ne depasse, donc rien a
+        recadrer. Et le degre de douceur ne vient plus d'un flou applique
+        apres coup mais du degrade lui-meme, qui s'eteint bien avant le bord.
+        Une tache radiale est deja floue par nature ; la flouter etait une
+        depense de calcul pour un resultat moins bon.
+      */}
       <div aria-hidden="true" style={{
-        position: "absolute", inset: -80, zIndex: 0,
+        position: "absolute", inset: 0, zIndex: 0,
         pointerEvents: "none", borderRadius: "inherit",
+        // LE RAYON EST EN POURCENTAGE, ET C'EST TOUTE LA DIFFERENCE
+        //
+        // Avec un rayon en pixels, la tache atteignait le bord du bloc avant
+        // d'etre eteinte : le degrade se retrouvait coupe net, et la lueur
+        // devenait un rectangle de couleur pose sur la page - exactement ce
+        // qu'on ne veut pas.
+        //
+        // En pourcentage, le rayon suit la largeur du bloc : la tache
+        // s'eteint toujours a l'interieur, quelle que soit la taille de
+        // l'ecran. Un ellipse de 58% x 52% eteint a 72% de son rayon touche
+        // le vide bien avant le bord, sur un telephone comme sur un grand
+        // ecran.
         background:
-          "radial-gradient(420px circle at var(--mx, 50%) var(--my, 34%),"
-          + " color-mix(in srgb, var(--nuvi-purple) 22%, transparent), transparent 62%),"
-          + " radial-gradient(340px circle at calc(var(--mx, 50%) + 16%) calc(var(--my, 34%) + 22%),"
-          + " color-mix(in srgb, var(--nuvi-coral) 17%, transparent), transparent 60%)",
-        filter: "blur(26px)",
+          "radial-gradient(ellipse 58% 52% at var(--mx, 50%) var(--my, 30%),"
+          + " color-mix(in srgb, var(--nuvi-purple) 20%, transparent), transparent 72%),"
+          + " radial-gradient(ellipse 48% 46% at calc(var(--mx, 50%) + 16%) calc(var(--my, 30%) + 24%),"
+          + " color-mix(in srgb, var(--nuvi-coral) 15%, transparent), transparent 70%)",
+        // LE MASQUE, PARCE QUE LA TACHE BOUGE
+        //
+        // Le rayon en pourcentage garantit l'extinction quand la tache est au
+        // centre. Mais elle suit le pointeur : montez la souris vers le haut
+        // du bloc et la tache s'approche du bord, ou elle est de nouveau
+        // coupee net.
+        //
+        // Ce masque eteint les bords quoi qu'il arrive. C'est une garantie
+        // geometrique et non un reglage a la main : aucune position de
+        // pointeur ne peut faire reapparaitre le liseré.
+        maskImage:
+          "radial-gradient(ellipse 80% 78% at 50% 50%, #000 35%, transparent 100%)",
+        WebkitMaskImage:
+          "radial-gradient(ellipse 80% 78% at 50% 50%, #000 35%, transparent 100%)",
         transition: reduced ? "none" : "background 260ms linear",
         opacity: reduced ? 0.35 : 1,
       }}/>
