@@ -224,6 +224,48 @@ function nextAction(app, T) {
   }
 }
 
+// ETAT DE SANTE D'UNE CANDIDATURE
+//
+// Trois familles, calculees sans IA : c'est instantane, gratuit, et le
+// resultat ne change pas d'un appel a l'autre.
+//
+//   morte     refusee, sans nouvelles depuis trop longtemps, ou relancee sans
+//             reponse. Elle encombre, il faut la sortir de la tete.
+//   en cours  envoyee recemment, ou relance encore utile. C'est la que se
+//             joue le travail.
+//   ca avance entretien, offre, accepte. On protege ces dossiers-la.
+//
+// Les seuils suivent les usages du recrutement : sous une semaine il est trop
+// tot pour s'inquieter, au-dela de trois semaines sans reponse ni relance la
+// candidature est statistiquement finie.
+const HEALTH_GOOD = "good";
+const HEALTH_PENDING = "pending";
+const HEALTH_DEAD = "dead";
+
+function health(app) {
+  const days = daysSince(app.date);
+  switch (app.status) {
+    case "accepted":
+    case "offer":
+    case "interview":
+    case "phone":
+      return { key:HEALTH_GOOD };
+    case "rejected":
+      return { key:HEALTH_DEAD, why:"refusee" };
+    case "ghosted":
+      return { key:HEALTH_DEAD, why:"sans reponse" };
+    case "applied":
+    default: {
+      if (days === null) return { key:HEALTH_PENDING };
+      const followed = Boolean(app.followedUpAt);
+      if (days > 30) return { key:HEALTH_DEAD, why:`${days} jours sans reponse` };
+      if (days > 21 && followed) return { key:HEALTH_DEAD, why:"relancee, sans suite" };
+      if (days >= 7 && !followed) return { key:HEALTH_PENDING, why:"a relancer", act:true };
+      return { key:HEALTH_PENDING, why:days === 0 ? "envoyee aujourd hui" : `${days} j` };
+    }
+  }
+}
+
 function daysSince(dateStr) {
   if (!dateStr) return null;
   const then = Date.parse(dateStr);
@@ -234,6 +276,7 @@ function daysSince(dateStr) {
 function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
   const badge = statusBadge(app.status, T);
   const action = nextAction(app, T);
+  const h = health(app);
   return (
     <div style={{
       padding:"14px 16px",
@@ -269,6 +312,12 @@ function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
         fontSize:11, color:InkMuted, marginBottom: app.notes ? 8 : 10,
       }}>
         {app.date && <span>{app.date}</span>}
+        {h.why && (
+          <span style={{
+            color: h.key === "dead" ? InkMuted : h.act ? Coral : InkMuted,
+            fontWeight: h.act ? 600 : 400,
+          }}>{h.why}</span>
+        )}
         {app.link && (
           <a href={app.link} target="_blank" rel="noopener noreferrer"
             style={{color:Purple, textDecoration:"none"}}>
@@ -367,10 +416,23 @@ export default function ApplicationsTrackerModal({
     return { total, active, offers, rejected };
   }, [applications]);
 
+  // Tri de sante : ce qui avance, ce qui attend, ce qui est mort.
+  const triage = useMemo(() => {
+    const g = { good:[], pending:[], dead:[], toFollow:0 };
+    for (const a of applications) {
+      const h = health(a);
+      g[h.key].push(a);
+      if (h.act) g.toFollow += 1;
+    }
+    return g;
+  }, [applications]);
+
   // Filtre + tri par date desc.
   const visible = useMemo(() => {
     let v = applications;
-    if (filter !== "all") {
+    if (filter === "good" || filter === "pending" || filter === "dead") {
+      v = v.filter(a => health(a).key === filter);
+    } else if (filter !== "all") {
       v = v.filter(a => a.status === filter);
     }
     return [...v].sort((a, b) => {
@@ -432,6 +494,58 @@ export default function ApplicationsTrackerModal({
           <StatCard label={T.ap_stats_active}   value={stats.active}   color={Purple}/>
           <StatCard label={T.ap_stats_offers}   value={stats.offers}   color={Green}/>
           <StatCard label={T.ap_stats_rejected} value={stats.rejected} color={Coral}/>
+        </div>
+      )}
+
+      {/* Le point de la semaine. Trois familles, cliquables pour filtrer.
+          C'est ce qu'on veut savoir en ouvrant l'ecran : ou en suis-je, et
+          qu'est-ce qui reclame quelque chose de moi maintenant. */}
+      {applications.length > 0 && (
+        <div style={{marginBottom:16}}>
+          <div style={{display:"flex", gap:8}}>
+            {[
+              ["good",    T.ap_health_good    || "Ca avance", triage.good.length,    Green,  GreenSoft],
+              ["pending", T.ap_health_pending || "En cours",  triage.pending.length, Purple, PurpleSoft],
+              ["dead",    T.ap_health_dead    || "Mortes",    triage.dead.length,    InkMuted, Hairline],
+            ].map(([key, label, n, fg, bg]) => (
+              <button
+                key={key}
+                onClick={() => setFilter(filter === key ? "all" : key)}
+                style={{
+                  ...B({
+                    flex:1, padding:"12px 8px", borderRadius:RadiusMd,
+                    background: filter === key ? fg : bg,
+                    border: "0.5px solid " + (filter === key ? fg : Hairline),
+                    fontFamily:Sans, textAlign:"center", minHeight:64,
+                  }),
+                }}
+              >
+                <div style={{
+                  fontSize:22, fontWeight:600, lineHeight:1,
+                  color: filter === key ? "#fff" : fg,
+                  fontVariantNumeric:"tabular-nums",
+                }}>{n}</div>
+                <div style={{
+                  fontSize:11, marginTop:4,
+                  color: filter === key ? "rgba(255,255,255,.9)" : InkMuted,
+                }}>{label}</div>
+              </button>
+            ))}
+          </div>
+          {triage.toFollow > 0 && (
+            <div style={{
+              marginTop:8, padding:"10px 12px", borderRadius:RadiusSm,
+              background:CoralSoft, border:"0.5px solid "+Coral,
+              fontSize:12.5, color:Ink, fontFamily:Sans, lineHeight:1.45,
+            }}>
+              <strong>{triage.toFollow}</strong>{" "}
+              {triage.toFollow > 1
+                ? (T.ap_to_follow_many || "candidatures attendent une relance.")
+                : (T.ap_to_follow_one || "candidature attend une relance.")}
+              {" "}
+              {T.ap_to_follow_hint || "C'est le seul geste qui les fait repartir."}
+            </div>
+          )}
         </div>
       )}
 
