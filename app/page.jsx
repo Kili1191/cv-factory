@@ -3702,8 +3702,25 @@ export default function App() {
     cvResizeObs.current = ro;
   }, []);
 
-  const scale = cvW > 0 ? Math.min(1, (cvW-16)/794) : 1;
-  const cvH   = Math.round(1123 * scale);
+  // Hauteur reelle du CV, avant mise a l'echelle. Le conteneur qui defile a
+  // besoin de la hauteur APRES reduction, sinon on peut defiler dans le vide.
+  // ResizeObserver rapporte la taille de mise en page, jamais la taille
+  // transformee : c'est exactement ce qu'il faut ici.
+  const [cvNatH, setCvNatH] = useState(1123);
+  const cvInnerObs = useRef(null);
+  const cvInnerRef = useCallback((node) => {
+    if (cvInnerObs.current) { cvInnerObs.current.disconnect(); cvInnerObs.current = null; }
+    if (!node) return;
+    const read = () => setCvNatH(Math.max(1, node.offsetHeight || 1123));
+    read();
+    if (typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver(read);
+    ro.observe(node);
+    cvInnerObs.current = ro;
+  }, []);
+
+  const scale = cvW > 0 ? Math.min(1, (cvW - 16) / 794) : 1;
+  const cvH   = Math.round(Math.min(1123, cvNatH) * scale);
 
   const handleGen = useCallback(async p => {
     if (!apiKey) { notify(T.nk); return; }
@@ -8213,9 +8230,19 @@ export default function App() {
           }}
           >
             <div data-cvf="cv" style={{
-              // [FIX mobile scroll 2026-05-20] CV scrollable, plus de coupe.
-              // On utilise CSS zoom (reduit la hauteur de layout, donc le
-              // scroll fonctionne nativement). Fallback transform si zoom KO.
+              // [Fix] La reduction se faisait avec la propriete CSS `zoom`.
+              // WebKit la calcule mal sur une mise en page flex : il dessine
+              // les enfants a la taille reduite mais les positionne a la
+              // taille brute. Sur iPhone, la colonne laterale du modele par
+              // defaut, large de 200px fixes, restait donc dessinee a 200px
+              // sur un ecran de 390 - la moitie de l'ecran - et le texte de
+              // la colonne principale passait dessous, illisible.
+              //
+              // `transform: scale()` n'a pas ce defaut et est supporte
+              // partout. Il ne modifie pas la mise en page, en revanche : le
+              // bloc garde sa taille brute. D'ou la boite intermediaire, qui
+              // reserve la hauteur reduite pour que le defilement s'arrete au
+              // bon endroit.
               maxHeight: cvH,
               overflowY: "auto",
               overflowX: "hidden",
@@ -8224,10 +8251,22 @@ export default function App() {
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
               <div data-cvf-zoom style={{
-                zoom: scale,
                 width: "100%",
+                height: Math.round(cvNatH * scale),
+                position: "relative",
+                overflow: "hidden",
               }}>
-                {CVEl}
+                <div
+                  ref={cvInnerRef}
+                  style={{
+                    position: "absolute", top: 0, left: 0,
+                    width: 794,
+                    transform: `scale(${scale})`,
+                    transformOrigin: "top left",
+                  }}
+                >
+                  {CVEl}
+                </div>
               </div>
             </div>
           </div>
