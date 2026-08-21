@@ -1,0 +1,111 @@
+# Activer les comptes
+
+L'application marche sans compte. Tant que les deux variables ci-dessous sont
+absentes, rien ne change : le CV reste dans le navigateur, aucun bouton de
+connexion n'apparait, et personne ne voit de fonction qui ne repondrait pas.
+
+Cette page decrit les trois etapes pour activer les comptes. Compter dix
+minutes.
+
+## 1. Creer le projet
+
+Sur [supabase.com](https://supabase.com), cree un projet. L'offre gratuite
+suffit largement pour demarrer.
+
+Choisis une region **europeenne** (Frankfurt ou Paris) : les CV contiennent des
+noms, des adresses et des parcours professionnels, donc des donnees
+personnelles au sens du RGPD. Les heberger en Europe evite une discussion
+inutile plus tard.
+
+## 2. Creer la table
+
+Dans le projet, ouvre **SQL Editor** et execute ceci :
+
+```sql
+create table public.user_state (
+  user_id    uuid        not null references auth.users(id) on delete cascade,
+  key        text        not null,
+  value      jsonb       not null,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, key)
+);
+
+alter table public.user_state enable row level security;
+
+-- Chacun ne voit et ne modifie que ses propres lignes. Sans ces regles,
+-- n'importe quel visiteur pourrait lire le CV de n'importe qui : la cle
+-- publique du navigateur ne protege rien par elle-meme.
+create policy "lecture de ses propres donnees"
+  on public.user_state for select
+  using (auth.uid() = user_id);
+
+create policy "ecriture de ses propres donnees"
+  on public.user_state for insert
+  with check (auth.uid() = user_id);
+
+create policy "mise a jour de ses propres donnees"
+  on public.user_state for update
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create policy "suppression de ses propres donnees"
+  on public.user_state for delete
+  using (auth.uid() = user_id);
+```
+
+La securite tient entierement aux quatre regles `policy`. Ne les saute pas.
+
+## 3. Poser les deux variables
+
+Dans Supabase, **Project Settings > API**, releve :
+
+- `Project URL`
+- `anon public` (la cle publique, pas la cle `service_role`)
+
+Puis dans Vercel, **Settings > Environment Variables**, ajoute :
+
+```
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+```
+
+La cle `service_role` ne doit **jamais** sortir du serveur. Elle contourne les
+regles ci-dessus. Seule la cle `anon` va dans le navigateur, et c'est prevu
+pour.
+
+Redeploie. Le bouton de connexion apparait dans Reglages.
+
+## Connexion par Google
+
+Facultatif mais recommande, c'est le chemin le plus court pour l'utilisateur.
+Dans Supabase, **Authentication > Providers > Google**, active le fournisseur
+et colle les identifiants OAuth obtenus dans la console Google Cloud. Ajoute
+l'URL de redirection indiquee par Supabase aux origines autorisees.
+
+Sans cette etape, seul le lien par courriel fonctionne, ce qui suffit.
+
+## Ce qui se passe pour les utilisateurs actuels
+
+Personne ne perd rien.
+
+Un utilisateur qui a deja un CV dans son navigateur et qui se connecte pour la
+premiere fois voit son CV **envoye** vers son compte. Le compte etant vide, il
+ne peut pas ecraser quoi que ce soit : la regle de fusion donne toujours raison
+au navigateur quand le compte ne connait pas encore la donnee.
+
+Se deconnecter ne vide pas le navigateur non plus : on retrouve son CV comme
+avant d'avoir un compte.
+
+Ces deux garanties sont verifiees par `tests/accounts-never-lose-the-cv.mjs`,
+qui echoue si l'une des deux cesse d'etre vraie.
+
+## Comment la synchronisation se comporte
+
+La lecture ne passe jamais par le reseau. Le navigateur reste la source de
+verite pour l'affichage, donc ouvrir son CV n'attend rien, meme en 4G
+capricieuse. Les modifications partent vers le compte en arriere-plan, groupees
+toutes les 1,2 seconde.
+
+Entre deux appareils, la version la plus recente gagne, cle par cle. Quand une
+version plus recente arrive d'ailleurs, l'application le signale et se recharge
+pour repartir d'un etat coherent.

@@ -46,6 +46,8 @@ export default function SettingsPanel({
   darkMode, onToggleDark,
   onRelaunchTutorial, onClose,
   onOpenHistory, onClearAiCache,
+  cloudEnabled = false, cloudUser = null,
+  onSignIn = () => {}, onSignOut = () => {},
 }) {
 
   useEffect(() => {
@@ -67,6 +69,58 @@ export default function SettingsPanel({
       title={T.set_title}
       onClose={onClose}
     >
+      {/* Compte. Absent tant qu'aucun serveur n'est configure : mieux vaut
+          ne rien montrer qu'une fonction qui ne repondrait pas. */}
+      {cloudEnabled && (
+        <div style={{marginBottom:18}}>
+          <label style={{
+            display:"block", fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:Coral, marginBottom:8, fontFamily:Sans,
+          }}>{locale === "en" ? "Account" : "Compte"}</label>
+          {cloudUser ? (
+            <div style={{
+              display:"flex", alignItems:"center", gap:12,
+              padding:"12px 14px", borderRadius:12,
+              background:Paper, border:"0.5px solid "+Hairline,
+            }}>
+              <div style={{
+                width:34, height:34, borderRadius:"50%", flexShrink:0,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff", display:"flex", alignItems:"center",
+                justifyContent:"center", fontSize:14, fontWeight:600,
+              }}>{String(cloudUser.email || "?").charAt(0).toUpperCase()}</div>
+              <div style={{flex:1, minWidth:0}}>
+                <div style={{
+                  fontSize:13, fontWeight:600, color:Ink,
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                }}>{cloudUser.email}</div>
+                <div style={{fontSize:11.5, color:InkMuted}}>
+                  {locale === "en" ? "CV saved to your account" : "CV sauvegarde sur ton compte"}
+                </div>
+              </div>
+              <button onClick={onSignOut} style={{
+                ...B({
+                  padding:"8px 12px", borderRadius:RadiusPill,
+                  background:"transparent", border:"0.5px solid "+Hairline,
+                  color:InkMuted, fontSize:12, fontFamily:Sans, minHeight:36,
+                }),
+              }}>{locale === "en" ? "Sign out" : "Deconnexion"}</button>
+            </div>
+          ) : (
+            <button onClick={onSignIn} style={{
+              ...B({
+                width:"100%", minHeight:48, borderRadius:12,
+                background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                color:"#fff", fontSize:14, fontWeight:600, fontFamily:Sans,
+              }),
+            }}>
+              {locale === "en" ? "Sign in to keep your CV" : "Se connecter pour garder son CV"}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Lang switcher - selected = gradient violet→magenta */}
       <div style={{marginBottom:18}}>
         <label style={{

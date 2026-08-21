@@ -16,6 +16,7 @@ const GapRepairModal = dynamic(() => import("./components/GapRepairModal"), { ss
 const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ssr: false });
 const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr: false });
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
+const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
 const TranslateModal = dynamic(() => import("./components/TranslateModal"), { ssr: false });
 const AuditModal = dynamic(() => import("./components/AuditModal"), { ssr: false });
@@ -71,6 +72,8 @@ import {
 import FormatChoiceModal from "./components/FormatChoiceModal";
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
+import { initCloud, queuePush, signOut, subscribe as subscribeCloud } from "../lib/cloudSync.js";
+import { isCloudConfigured } from "../lib/supabaseClient.js";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 // La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
 // le navigateur la decouvre avant l'hydratation. Ne pas la re-injecter ici.
@@ -672,6 +675,10 @@ function lsG(k, fb=null) {
 function lsS(k, v) {
   if (typeof window === "undefined") return;
   try { localStorage.setItem(k, JSON.stringify(v)); } catch {}
+  // Le compte recoit la modification en arriere-plan. queuePush ne bloque
+  // jamais et ne fait rien tant que personne n'est connecte : l'ecriture
+  // locale reste exactement aussi rapide qu'avant.
+  try { queuePush(k, v); } catch { /* la sauvegarde locale a deja reussi */ }
 }
 
 const B = (x={}) => ({ border:"none", cursor:"pointer", fontFamily:"inherit", ...x });
@@ -3342,6 +3349,11 @@ export default function App() {
   // versionCustom est lu depuis cv.custom (par-version) si present.
   const [cvCustom, setCvCustom_]      = useState(null);
   const [showCustomize, setShowCustomize] = useState(false);
+  // --- Compte -------------------------------------------------------------
+  // L'app fonctionne sans compte, exactement comme avant. Quand le serveur est
+  // configure, le compte sert uniquement a retrouver son CV ailleurs.
+  const [showAuth, setShowAuth] = useState(false);
+  const [cloud, setCloud] = useState({ status: "off", user: null });
   // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
   // quand on arrive par l'entree Modeles de la barre laterale).
   const [customizeTab, setCustomizeTab] = useState("colors");
@@ -3654,6 +3666,27 @@ export default function App() {
   const notify = useCallback(msg => {
     setNotif(msg);
     setTimeout(() => setNotif(""), 3000);
+  }, []);
+
+  // Branchement du compte. Sans configuration serveur, initCloud sort tout de
+  // suite et l'application se comporte comme avant.
+  useEffect(() => {
+    const stop = initCloud((changedKeys) => {
+      // Des donnees plus recentes viennent d'un autre appareil. Elles sont
+      // deja ecrites dans le stockage local ; il reste a les faire remonter
+      // dans l'interface. Un rechargement garantit que les cinquante-sept
+      // endroits qui lisent le stockage repartent de la meme verite, ce
+      // qu'un rafraichissement partiel ne garantirait pas. Le cas est rare
+      // par nature : il ne se produit qu'en changeant d'appareil.
+      if (!changedKeys || !changedKeys.length) return;
+      notify(locale === "en"
+        ? "Updated from your other device"
+        : "Mis a jour depuis ton autre appareil");
+      setTimeout(() => { window.location.reload(); }, 1400);
+    });
+    const unsub = subscribeCloud(setCloud);
+    return () => { stop(); unsub(); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const pushH = useCallback(() => setCV_(c => {
@@ -7191,6 +7224,16 @@ export default function App() {
           </Suspense>
         </Sheet>
       )}
+      {isCloudConfigured() && (
+        <Suspense fallback={null}>
+          <AuthSheet
+            open={showAuth}
+            onClose={() => setShowAuth(false)}
+            locale={locale}
+          />
+        </Suspense>
+      )}
+
       {showCustomize && (
         <CustomizeSheet
           T={T} cv={cv} theme={theme}
@@ -7401,6 +7444,13 @@ export default function App() {
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
           onOpenHistory={() => { setShowSettings(false); setShowActivity(true); }}
           onClearAiCache={() => { clearAllAiCache(); notify(T.set_cache_done); }}
+          cloudEnabled={isCloudConfigured()}
+          cloudUser={cloud.user}
+          onSignIn={() => { setShowSettings(false); setShowAuth(true); }}
+          onSignOut={async () => {
+            await signOut();
+            notify(locale === "en" ? "Signed out" : "Deconnecte");
+          }}
           onClose={()=>setShowSettings(false)}
         />
         </Suspense>
