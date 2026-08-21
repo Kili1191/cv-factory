@@ -715,8 +715,12 @@ function sanDeep(v) {
 }
 
 async function aiCall(prompt, options = {}) {
-  // Options: { cv, max_tokens, temperature, task_name, messages }
-  const { cv, max_tokens, temperature, task_name = "unknown", messages } = options;
+  // Options: { cv, max_tokens, task_name, messages }
+  // [Migration Opus 5] `temperature` a disparu : les parametres
+  // d'echantillonnage sont retires sur cette generation de modeles et
+  // provoquent une erreur 400. La route ne le transmet plus ; on cesse aussi
+  // de l'envoyer, pour qu'aucun appelant ne croie encore pouvoir le regler.
+  const { cv, max_tokens, task_name = "unknown", messages } = options;
   
   // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
   let cv_context = null;
@@ -742,7 +746,6 @@ async function aiCall(prompt, options = {}) {
         messages,
         cv_context, 
         max_tokens, 
-        temperature,
         task_name,
       }),
       signal: ctrl.signal,

@@ -8,6 +8,7 @@
 
 const SUITES = [
   ["aucune dependance CDN a l'execution", "./no-runtime-cdn.mjs"],
+  ["la requete envoyee a l'IA est bien formee", "./the-ai-request-is-well-formed.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],

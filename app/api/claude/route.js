@@ -1,6 +1,23 @@
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
-const MODEL_DEFAULT = "claude-sonnet-4-6";
+// Modele courant. Claude Opus 5 est la generation actuelle : contexte d'un
+// million de jetons, et le raisonnement est actif par defaut, ce qui se voit
+// directement sur la qualite d'un CV genere.
+//
+// Deux contraintes gouvernent la configuration ci-dessous.
+//
+// 1. Les parametres d'echantillonnage (temperature, top_p, top_k) ont ete
+//    RETIRES sur cette generation : les envoyer renvoie une erreur 400. La
+//    route en envoyait un, herite de claude-sonnet-4-6. C'est la seule chose
+//    qui aurait casse tous les appels d'un coup lors de la migration.
+//
+// 2. Cette fonction serverless est plafonnee a 60 secondes (voir maxDuration
+//    en bas de fichier). Le raisonnement etant actif, l'effort est fixe a
+//    "medium" pour tenir dans ce budget sans sacrifier la qualite. Monter a
+//    "high" ameliore les reponses difficiles mais rapproche du plafond :
+//    a ne faire qu'en augmentant maxDuration en meme temps.
+const MODEL_DEFAULT = "claude-opus-5";
+const EFFORT_DEFAULT = "medium";
 
 const NO_DASH_BLOCK = `IMPORTANT FORMATTING RULE
 Never use em dash (U+2014) or en dash (U+2013) characters anywhere in your output.
@@ -38,11 +55,16 @@ ${cvContext}`,
   return blocks;
 }
 
+// Le raisonnement consomme des jetons de sortie, comptes dans max_tokens. Le
+// plafond precedent (8000 par defaut) laissait donc trop peu de place pour le
+// JSON du CV une fois la reflexion payee : la reponse aurait pu etre coupee en
+// plein milieu, ce qui se serait vu comme un JSON invalide, pas comme une
+// erreur d'API.
 function pickMaxTokens(requestedMax) {
-  if (typeof requestedMax === "number" && requestedMax > 0 && requestedMax <= 16000) {
+  if (typeof requestedMax === "number" && requestedMax > 0 && requestedMax <= 32000) {
     return requestedMax;
   }
-  return 8000;
+  return 16000;
 }
 
 export async function POST(request) {
@@ -56,7 +78,6 @@ export async function POST(request) {
       messages: providedMessages,
       cv_context: cvContext,
       max_tokens: requestedMaxTokens,
-      temperature: requestedTemperature,
       task_name: requestedTaskName,
     } = body || {};
 
@@ -73,12 +94,6 @@ export async function POST(request) {
     }
 
     const max_tokens = pickMaxTokens(requestedMaxTokens);
-    const temperature =
-      typeof requestedTemperature === "number" &&
-      requestedTemperature >= 0 &&
-      requestedTemperature <= 1
-        ? requestedTemperature
-        : 0.7;
 
     const messages = Array.isArray(providedMessages) && providedMessages.length > 0
       ? providedMessages
@@ -105,7 +120,7 @@ export async function POST(request) {
       body: JSON.stringify({
         model: MODEL_DEFAULT,
         max_tokens,
-        temperature,
+        output_config: { effort: EFFORT_DEFAULT },
         system,
         messages,
       }),
