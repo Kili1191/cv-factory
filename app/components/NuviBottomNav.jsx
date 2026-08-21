@@ -24,6 +24,9 @@ import { useInstallState } from "./InstallAppSheet";
  *   - lang: "fr" | "en"
  *   - onCoachOpen: () => void
  */
+// Le refus de la suggestion, garde d'une visite a l'autre.
+const DISMISS_KEY = "cvf_suggest_off";
+
 export default function NuviBottomNav({
   active = "home",
   onSelect = () => {},
@@ -36,6 +39,7 @@ export default function NuviBottomNav({
   hasNotification = {},
 }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
 
   // "Installer l'app" n'a de sens que la ou l'installation est possible :
   // sur un telephone deja equipe, ou sur un navigateur qui ne sait pas le
@@ -51,12 +55,60 @@ export default function NuviBottomNav({
   // adapte (voir --nuvi-bottom-inset dans page.jsx).
   const suggestRef = useRef(null);
 
-  // Si Nuvi change de suggestion, on re-affiche (meme si l'user avait ferme
-  // l'ancienne). Une nouvelle suggestion merite une nouvelle chance.
+  // QUITTER POUR DE BON
+  //
+  // La croix existait deja, mais son effet mourait avec l'onglet : au
+  // rechargement suivant la barre revenait, et il fallait la fermer encore.
+  // Une suggestion qu'on a explicitement refusee et qui revient n'est plus une
+  // suggestion, c'est une relance.
+  //
+  // Le refus est donc ecrit sur le disque du navigateur, et il porte sur CETTE
+  // suggestion-la. Une suggestion differente - un autre conseil, a une autre
+  // etape - reapparait : refuser "colle une annonce" ne doit pas rendre sourd
+  // a "prepare ton entretien" trois semaines plus tard.
   const suggestLabel = suggestedAction && suggestedAction.label;
+
   useEffect(() => {
-    setSuggestDismissed(false);
+    if (!suggestLabel) return;
+    let refused = null;
+    try { refused = localStorage.getItem(DISMISS_KEY); } catch { /* prive */ }
+    setSuggestDismissed(refused === suggestLabel);
   }, [suggestLabel]);
+
+  const dismissSuggestion = () => {
+    setSuggestDismissed(true);
+    try { localStorage.setItem(DISMISS_KEY, suggestLabel || ""); }
+    catch { /* navigation privee ou quota : le refus vaut pour la session */ }
+  };
+
+  // LA BARRE S'EFFACE PENDANT QU'ON FAIT DEFILER
+  //
+  // Elle est en position fixe : le contenu passe dessous, et sur un ecran de
+  // telephone elle coupe en deux le titre de la carte qu'on est en train de
+  // lire. Elle disparait donc tant que ca bouge, et revient des que ca
+  // s'arrete - la ou l'oeil se pose.
+  //
+  // L'ecoute se fait en phase de CAPTURE. Un evenement de defilement ne remonte
+  // pas depuis l'element qui defile ; il descend depuis le document. Sans le
+  // troisieme argument, la barre ne verrait que le defilement de la page
+  // entiere et resterait plantee la pendant qu'on parcourt l'apercu du CV ou
+  // n'importe quel bloc interieur - c'est-a-dire presque tout le temps.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    let timer = null;
+    const onScroll = () => {
+      setScrolling(true);
+      if (timer) clearTimeout(timer);
+      // Assez long pour ne pas clignoter entre deux poussees du pouce, assez
+      // court pour que la barre soit revenue quand on cherche ou taper.
+      timer = setTimeout(() => setScrolling(false), 650);
+    };
+    document.addEventListener("scroll", onScroll, true);
+    return () => {
+      document.removeEventListener("scroll", onScroll, true);
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   // Couleurs Nuvi (CSS variables - support dark mode)
   const Cream = "var(--nuvi-cream)";
@@ -423,7 +475,7 @@ export default function NuviBottomNav({
           avant selon l'etat du CV. Dismissable (amelioration 1). L'user reste
           libre : la barre 5-icones en dessous donne acces a tout. */}
       {suggestedAction && !suggestDismissed && !drawerOpen && (
-        <div ref={suggestRef} style={{
+        <div ref={suggestRef} data-nuvi="suggest-bar" style={{
           position: "fixed",
           bottom: "calc(70px + env(safe-area-inset-bottom, 0px))",
           left: 12, right: 12,
@@ -437,6 +489,17 @@ export default function NuviBottomNav({
           padding: "10px 12px",
           boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7), 0 8px 28px rgba(120,90,60,0.12)",
           animation: "nuviSuggestIn 320ms cubic-bezier(0.22,1,0.36,1)",
+          opacity: scrolling ? 0 : 1,
+          transform: scrolling ? "translateY(10px)" : "none",
+          // SANS CETTE LIGNE, LA BARRE EFFACEE VOLERAIT ENCORE LES TAPS
+          //
+          // Une opacite nulle ne rend pas un element transparent au doigt : il
+          // reste devant, et il intercepte. On aurait alors une barre
+          // invisible qui avale les taps destines a ce qu'elle recouvre -
+          // exactement le defaut qu'on vient de corriger ailleurs, en pire,
+          // puisque rien ne se verrait.
+          pointerEvents: scrolling ? "none" : "auto",
+          transition: "opacity 240ms ease, transform 240ms cubic-bezier(0.22,1,0.36,1)",
         }}>
           {/* Oeil Nuvi (petit) */}
           <span style={{
@@ -466,7 +529,7 @@ export default function NuviBottomNav({
           </button>
           {/* Fermer la suggestion (dismissable) */}
           <button
-            onClick={() => setSuggestDismissed(true)}
+            onClick={dismissSuggestion}
             aria-label={lang === "fr" ? "Masquer la suggestion" : "Dismiss"}
             style={{
               // Cible 44px (WCAG 2.5.5) ; le rond visible reste petit grace au
