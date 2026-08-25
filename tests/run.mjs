@@ -10,6 +10,7 @@ const SUITES = [
   ["aucune dependance CDN a l'execution", "./no-runtime-cdn.mjs"],
   ["la requete envoyee a l'IA est bien formee", "./the-ai-request-is-well-formed.mjs"],
   ["les comptes ne perdent jamais le CV", "./accounts-never-lose-the-cv.mjs"],
+  ["la page de mise en service nomme ce qui manque", "./the-setup-page-names-what-is-missing.mjs"],
   ["les sources d'offres rendent la meme forme", "./job-sources-normalise.mjs"],
   ["une offre trouvee devient une candidature", "./job-search-becomes-an-application.mjs"],
   ["l'extension lit une annonce", "./extension-reads-a-job-ad.mjs"],
