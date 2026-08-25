@@ -16,6 +16,8 @@
 // synchronisation avec un client simule.
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
+// On importe LA regle elle-meme, pas une copie. Voir le bloc 2.
+import { decideKey } from "../lib/cloudSync.js";
 
 export async function run() {
   const failures = [];
@@ -61,45 +63,58 @@ export async function run() {
     }
 
     // --- 2. La fusion ne doit jamais ecraser le local par du vide ---------
+    //
+    // POURQUOI CE BLOC N'OUVRE PAS DE NAVIGATEUR
+    //
+    // La version precedente de ce test recopiait la regle de fusion dans le
+    // test et interrogeait la copie. Elle passait donc au vert quoi qu'il
+    // arrive a lib/cloudSync.js : on pouvait supprimer la protection du
+    // compte vide sans qu'aucun test ne rougisse.
+    //
+    // On appelle maintenant decideKey, la fonction que pullAndMerge utilise
+    // vraiment. Changer la regle sans changer ce fichier fait rougir le test,
+    // ce qui est exactement le service qu'on lui demande.
     {
-      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
-      const page = await ctx.newPage();
-      await seedApp(page, SAMPLE_CV);
+      const cv = { name: "Jane Doe" };
+      const now = Date.now();
 
-      const verdict = await page.evaluate(async () => {
-        // Reproduit fidelement la regle de fusion : pour chaque cle, si le
-        // compte ne connait rien, le navigateur gagne et sera envoye.
-        const merge = (localValue, localAt, remoteRow) => {
-          if (!remoteRow) return { keepLocal: true, push: localValue !== null };
-          const remoteAt = Date.parse(remoteRow.updated_at) || 0;
-          if (remoteAt > localAt) return { keepLocal: false, write: remoteRow.value };
-          return { keepLocal: true, push: localAt > remoteAt };
-        };
-        const cv = JSON.parse(localStorage.getItem("cvf_d"));
-        const out = {};
-        out.emptyAccount = merge(cv, Date.now(), undefined);
-        out.olderRemote = merge(cv, Date.now(), {
-          value: { name: "Ancien" }, updated_at: new Date(Date.now() - 90000).toISOString(),
-        });
-        out.newerRemote = merge(cv, Date.now() - 90000, {
-          value: { name: "Recent" }, updated_at: new Date().toISOString(),
-        });
-        return out;
-      });
-
-      if (!verdict.emptyAccount.keepLocal || !verdict.emptyAccount.push) {
+      // Premiere connexion, compte vide : garder le local ET l'envoyer.
+      const emptyAccount = decideKey(cv, now, undefined);
+      if (emptyAccount.write || !emptyAccount.push) {
         failures.push(
           "premiere connexion sur un compte vide : le CV local doit etre conserve ET envoye. "
           + "Sans cela, tout utilisateur qui cree un compte perd son CV."
         );
       }
-      if (!verdict.olderRemote.keepLocal) {
+
+      // Compte plus ancien que le navigateur : le navigateur gagne.
+      const olderRemote = decideKey(cv, now, {
+        value: { name: "Ancien" }, updated_at: new Date(now - 90000).toISOString(),
+      });
+      if (olderRemote.write || !olderRemote.push) {
         failures.push("une version plus ancienne du compte ecrase la version locale plus recente");
       }
-      if (verdict.newerRemote.keepLocal) {
+
+      // Compte plus recent : on reprend sa valeur localement.
+      const newerRemote = decideKey(cv, now - 90000, {
+        value: { name: "Recent" }, updated_at: new Date(now).toISOString(),
+      });
+      if (!newerRemote.write || newerRemote.value.name !== "Recent") {
         failures.push("une version plus recente du compte n'est pas reprise localement");
       }
-      await ctx.close();
+
+      // Un compte qui rend une ligne sans date lisible ne doit rien ecraser :
+      // Date.parse rend NaN, qu'on ramene a 0, donc le navigateur gagne.
+      const brokenDate = decideKey(cv, now, { value: { name: "Casse" }, updated_at: "n'importe quoi" });
+      if (brokenDate.write) {
+        failures.push("une ligne du compte sans date valable ecrase le CV local");
+      }
+
+      // Navigateur vide, compte vide : il n'y a rien a envoyer.
+      const nothingAnywhere = decideKey(null, 0, undefined);
+      if (nothingAnywhere.push || nothingAnywhere.write) {
+        failures.push("une cle absente des deux cotes declenche quand meme une ecriture");
+      }
     }
 
     // --- 3. Se deconnecter ne doit rien effacer ---------------------------
