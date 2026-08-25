@@ -57,17 +57,37 @@ La securite tient entierement aux quatre regles `policy`. Ne les saute pas.
 
 ## 3. Poser les deux variables
 
-Dans Supabase, **Project Settings > API**, releve :
+Dans Supabase, **Project Settings > API** (ou le bouton **Connect** en haut),
+releve :
 
 - `Project URL`
-- `anon public` (la cle publique, pas la cle `service_role`)
+- la cle publique. Selon l'age du projet elle s'appelle `anon public` et
+  ressemble a `eyJ...`, ou `publishable` et ressemble a `sb_publishable_...`.
+  Les deux fonctionnent.
 
 Puis dans Vercel, **Settings > Environment Variables**, ajoute :
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 ```
+
+L'application accepte aussi `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, qui est le
+nom propose par le code d'exemple du tableau de bord Supabase. Suivre leur
+exemple sans le savoir posait la bonne cle sous un nom que l'application ne
+lisait pas : tout etait juste, et aucun bouton de connexion n'apparaissait.
+
+## Les adresses de retour
+
+Sans ce reglage, le lien recu par courriel renvoie vers `localhost:3000` et ne
+mene nulle part. C'est le premier obstacle que rencontre quiconque active les
+comptes.
+
+Dans Supabase, **Authentication > URL Configuration** :
+
+- **Site URL** : `https://thenuvi.com`
+- **Redirect URLs** : `https://thenuvi.com/**`, `https://www.thenuvi.com/**`,
+  et `https://*.vercel.app/**` pour pouvoir tester sur les apercus.
 
 La cle `service_role` ne doit **jamais** sortir du serveur. Elle contourne les
 regles ci-dessus. Seule la cle `anon` va dans le navigateur, et c'est prevu
