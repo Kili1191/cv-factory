@@ -5,9 +5,26 @@ import './globals.css';
 // une branche client-only, donc Fraunces et Inter ne commencaient a se
 // telecharger qu'APRES l'hydratation. Le navigateur les decouvre maintenant
 // des la premiere reponse HTML.
+//
+// L'AXE ital N'EST PAS FACULTATIF
+//
+// Sans lui, Google ne sert AUCUNE face italique - verifie : l'ancienne URL en
+// rendait zero, celle-ci en rend trois pour Fraunces. Le navigateur fabrique
+// alors un faux italique en PENCHANT les lettres droites.
+//
+// Une lettre penchee de force garde la largeur d'avance de la lettre droite :
+// son encre deborde a droite, et tout ce qui la contient - une boite a
+// overflow cache, un degrade pose par background-clip:text - lui coupe le
+// bout. C'est ce qui donnait des mots italiques amputes un peu partout.
+//
+// Le vrai italique de Fraunces n'a pas ce defaut : ses glyphes sont dessines
+// penches, avec les largeurs qui vont avec.
 const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100"
-  + "&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
+  "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT"
+  + "@0,9..144,300..900,30..100;1,9..144,300..900,30..100"
+  + "&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800"
+  + ";1,300;1,400;1,500;1,600;1,700;1,800"
+  + "&family=DM+Serif+Display:ital@0;1&display=swap";
 
 // L'ecran d'accueil d'un iPhone ne peut poser l'application que si le
 // document declare son manifeste, son icone et son titre court. Sans ces

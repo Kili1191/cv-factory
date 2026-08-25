@@ -318,26 +318,26 @@ const PAPER_PRESETS = [
 // Bibliotheque cur\u00e9e de polices titres (display / heading).
 // Chaque entree : { name, family (CSS), googleHref (sans https:), vibe, target }
 const HEADER_FONTS = [
-  { id:"playfair",  name:"Playfair Display",  family:"'Playfair Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap", vibe:"Premium classique", target:"Banque, conseil, juridique" },
-  { id:"fraunces",  name:"Fraunces",          family:"'Fraunces', serif",          googleHref:"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&display=swap", vibe:"Editorial moderne", target:"Strategie, branding" },
-  { id:"cormorant", name:"Cormorant Garamond",family:"'Cormorant Garamond', serif",googleHref:"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap", vibe:"Sobre intemporel", target:"Academique, art, recherche" },
-  { id:"dmserif",   name:"DM Serif Display",  family:"'DM Serif Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap", vibe:"Premium contemporain", target:"Marketing premium, luxe" },
+  { id:"playfair",  name:"Playfair Display",  family:"'Playfair Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Premium classique", target:"Banque, conseil, juridique" },
+  { id:"fraunces",  name:"Fraunces",          family:"'Fraunces', serif",          googleHref:"https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&display=swap", vibe:"Editorial moderne", target:"Strategie, branding" },
+  { id:"cormorant", name:"Cormorant Garamond",family:"'Cormorant Garamond', serif",googleHref:"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Sobre intemporel", target:"Academique, art, recherche" },
+  { id:"dmserif",   name:"DM Serif Display",  family:"'DM Serif Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap", vibe:"Premium contemporain", target:"Marketing premium, luxe" },
   { id:"space",     name:"Space Grotesk",     family:"'Space Grotesk', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap", vibe:"Tech minimal", target:"Tech, produit, design" },
-  { id:"montserrat",name:"Montserrat",        family:"'Montserrat', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap", vibe:"Geometrique", target:"Marketing, communication" },
-  { id:"inter",     name:"Inter",             family:"'Inter', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Sans-serif fort", target:"Corporate moderne, ATS" },
-  { id:"lora",      name:"Lora",              family:"'Lora', serif",              googleHref:"https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap", vibe:"Humain serif", target:"RH, coaching, social" },
+  { id:"montserrat",name:"Montserrat",        family:"'Montserrat', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&display=swap", vibe:"Geometrique", target:"Marketing, communication" },
+  { id:"inter",     name:"Inter",             family:"'Inter', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Sans-serif fort", target:"Corporate moderne, ATS" },
+  { id:"lora",      name:"Lora",              family:"'Lora', serif",              googleHref:"https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Humain serif", target:"RH, coaching, social" },
 ];
 
 // Bibliotheque curee de polices corps (body) - toutes ATS-friendly.
 const BODY_FONTS = [
-  { id:"inter",     name:"Inter",          family:"'Inter', sans-serif",       googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Tech moderne",       ats:"Excellent" },
-  { id:"lato",      name:"Lato",           family:"'Lato', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap", vibe:"Pro chaleureux",      ats:"Excellent" },
-  { id:"sourcesans",name:"Source Sans 3",  family:"'Source Sans 3', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap", vibe:"Corporate sobre",     ats:"Excellent" },
-  { id:"dmsans",    name:"DM Sans",        family:"'DM Sans', sans-serif",     googleHref:"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap", vibe:"Minimaliste",         ats:"Excellent" },
-  { id:"plex",      name:"IBM Plex Sans",  family:"'IBM Plex Sans', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap", vibe:"Tech premium",        ats:"Excellent" },
-  { id:"opensans",  name:"Open Sans",      family:"'Open Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap", vibe:"Universel",           ats:"Excellent" },
-  { id:"nunito",    name:"Nunito Sans",    family:"'Nunito Sans', sans-serif", googleHref:"https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap", vibe:"Doux moderne",        ats:"Excellent" },
-  { id:"work",      name:"Work Sans",      family:"'Work Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap", vibe:"Geometrique leger",   ats:"Excellent" },
+  { id:"inter",     name:"Inter",          family:"'Inter', sans-serif",       googleHref:"https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Tech moderne",       ats:"Excellent" },
+  { id:"lato",      name:"Lato",           family:"'Lato', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap", vibe:"Pro chaleureux",      ats:"Excellent" },
+  { id:"sourcesans",name:"Source Sans 3",  family:"'Source Sans 3', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Corporate sobre",     ats:"Excellent" },
+  { id:"dmsans",    name:"DM Sans",        family:"'DM Sans', sans-serif",     googleHref:"https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Minimaliste",         ats:"Excellent" },
+  { id:"plex",      name:"IBM Plex Sans",  family:"'IBM Plex Sans', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Tech premium",        ats:"Excellent" },
+  { id:"opensans",  name:"Open Sans",      family:"'Open Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Universel",           ats:"Excellent" },
+  { id:"nunito",    name:"Nunito Sans",    family:"'Nunito Sans', sans-serif", googleHref:"https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Doux moderne",        ats:"Excellent" },
+  { id:"work",      name:"Work Sans",      family:"'Work Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Geometrique leger",   ats:"Excellent" },
 ];
 
 // Empile theme + custom global + custom version. Chaque palier override le precedent.
