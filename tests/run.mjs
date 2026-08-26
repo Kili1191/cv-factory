@@ -22,6 +22,7 @@ const SUITES = [
   ["l'app s'installe sur l'ecran d'accueil", "./installs-on-the-home-screen.mjs"],
   ["l'accueil ne cache aucun texte", "./the-home-screen-hides-no-text.mjs"],
   ["la langue est demandee une fois", "./the-site-opens-in-english.mjs"],
+  ["une connexion qui echoue le dit", "./a-failed-sign-in-says-so.mjs"],
   ["Nuvi ne decide pas a la place du candidat", "./nuvi-does-not-decide.mjs"],
   ["une IA saturee n'est pas une IA en panne", "./a-busy-ai-is-not-a-broken-one.mjs"],
   ["le parcours arrive vraiment a l'ecran", "./the-career-record-reaches-the-screen.mjs"],

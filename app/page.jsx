@@ -54,6 +54,7 @@ const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: fal
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
 const LanguageAsk = dynamic(() => import("./components/LanguageAsk"), { ssr: false });
+const SignInFailed = dynamic(() => import("./components/SignInFailed"), { ssr: false });
 const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
 
@@ -3337,6 +3338,8 @@ export default function App() {
   // vrai apres le montage seulement si le stockage local est vide sur ce
   // point - voir l'effet d'hydratation plus bas.
   const [askLang, setAskLang] = useState(false);
+  // L'echec de connexion renvoye par le fournisseur, lu dans l'adresse.
+  const [signinErr, setSigninErr] = useState(null);
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
   const [load, setLoad]     = useState(false);
@@ -4055,6 +4058,37 @@ export default function App() {
     let params;
     try { params = new URLSearchParams(window.location.search); }
     catch { return; }
+    // L'ECHEC DE CONNEXION SE LIT DANS L'ADRESSE, ET NULLE PART AILLEURS
+    //
+    // Le fournisseur d'identite renvoie ici avec ?error=...&error_code=...
+    // &error_description=... Cet effet ne lisait que `go` et `gmail`, et
+    // sortait aussitot : la page se chargeait normalement et l'echec ne
+    // s'affichait nulle part. Quelqu'un qui venait d'accepter de donner son
+    // adresse revenait non connecte, sans un mot.
+    //
+    // Les deux emplacements comptent : la redirection met l'erreur dans la
+    // query, mais le flux implicite la met dans le fragment (#). N'en lire
+    // qu'un rend le message invisible une fois sur deux.
+    let erreur = params.get("error_description") || params.get("error");
+    let codeErr = params.get("error_code") || params.get("error");
+    if (!erreur && window.location.hash) {
+      try {
+        const h = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+        erreur = h.get("error_description") || h.get("error");
+        codeErr = h.get("error_code") || h.get("error");
+      } catch { /* fragment illisible */ }
+    }
+    if (erreur) {
+      setSigninErr({ code: codeErr || "", description: erreur });
+      try {
+        params.delete("error"); params.delete("error_code"); params.delete("error_description");
+        const q2 = params.toString();
+        // Le fragment part aussi : sinon un rafraichissement rejoue le
+        // message alors que la personne l'a deja lu et ecarte.
+        window.history.replaceState({}, "", window.location.pathname + (q2 ? "?" + q2 : ""));
+      } catch { /* l'historique refuse : sans importance */ }
+    }
+
     const go = params.get("go");
     const gmail = params.get("gmail");
     if (!go && !gmail) return;
@@ -8125,6 +8159,21 @@ export default function App() {
   // utilisable tant qu'on n'a pas repondu : quelqu'un qui commencerait a
   // saisir son CV avant de choisir se retrouverait avec des intitules dans
   // deux langues. setLc enregistre la reponse et referme l'ecran.
+  // L'echec de connexion passe devant le reste, mais n'interrompt pas : le
+  // CV reste utilisable derriere, et "continuer sans compte" est un vrai
+  // choix, pas une facon de faire taire le message.
+  const SignInErrEl = signinErr && (
+    <Suspense fallback={null}>
+      <SignInFailed
+        code={signinErr.code}
+        description={signinErr.description}
+        locale={locale}
+        onRetry={() => { setSigninErr(null); setShowAuth(true); }}
+        onClose={() => setSigninErr(null)}
+      />
+    </Suspense>
+  );
+
   const LangAskEl = askLang && (
     <Suspense fallback={null}>
       <LanguageAsk onChoose={setLc}/>
@@ -8239,6 +8288,7 @@ export default function App() {
         )}
         {Modals}
         {LangAskEl}
+        {SignInErrEl}
         {Onboard}
         {NuviHomeEl}
         {showIntro && (
@@ -8746,6 +8796,7 @@ export default function App() {
       )}
       {Modals}
       {LangAskEl}
+      {SignInErrEl}
       {Onboard}
       {showNuviHome && (
         <Suspense fallback={null}>
