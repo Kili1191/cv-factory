@@ -127,6 +127,117 @@ function balanceText(text) {
   return t;
 }
 
+// LA LIGNE QUI SE REECRIT
+//
+// Le mot est l'unite, pas la phrase. En faisant disparaitre puis reapparaitre
+// un bloc entier, l'oeil voit deux textes ; en changeant mot a mot, il voit UN
+// texte qui se corrige. C'est la meme donnee et ce n'est pas la meme promesse.
+//
+// Les chiffres sortent en dernier, plus gros et colores. Un recruteur balaie
+// un CV en six secondes et n'accroche que les intitules, les dates et les
+// chiffres : la demonstration doit accrocher l'oeil au meme endroit.
+//
+// La hauteur est reservee des le depart. Sans cela, la phrase "apres" etant
+// plus longue, tout ce qui suit - le bouton principal - sauterait vers le bas
+// au moment ou le visiteur s'apprete a cliquer.
+function RewriteLine({ avant, apres, phase, mob, reducedMotion }) {
+  const texte = phase === "avant" ? avant : apres;
+  const mots = String(texte || "").split(/\s+/).filter(Boolean);
+  const sorti = phase === "apres";
+
+  return (
+    <div style={{
+      fontFamily: "'Fraunces', Georgia, serif",
+      fontWeight: 400,
+      fontSize: mob ? "clamp(22px, 6.2vw, 30px)" : "clamp(30px, 3.6vw, 52px)",
+      lineHeight: 1.22,
+      letterSpacing: "-0.015em",
+      textAlign: "center",
+      maxWidth: mob ? "100%" : 940,
+      margin: "0 auto",
+      color: "var(--nuvi-ink)",
+      minHeight: mob ? 132 : 176,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexWrap: "wrap", gap: "0 0.28em",
+      padding: mob ? "0 4px" : 0,
+    }}>
+      {mots.map((m, i) => {
+        // Un mot porteur de chiffre : c'est lui qui fait la difference entre
+        // un CV qu'on lit et un CV qu'on repose.
+        const chiffre = sorti && /\d/.test(m);
+        return (
+          <span
+            key={phase + "-" + i + "-" + m}
+            style={{
+              display: "inline-block",
+              opacity: reducedMotion ? 1 : 0,
+              transform: reducedMotion ? "none" : "translateY(0.32em)",
+              animation: reducedMotion
+                ? "none"
+                : `nuviWordIn 520ms cubic-bezier(.22,1,.36,1) ${
+                    // Les chiffres attendent que le reste soit pose.
+                    (i * 42) + (chiffre ? 260 : 0)
+                  }ms forwards`,
+              color: chiffre ? "var(--nuvi-magenta)" : "inherit",
+              fontWeight: chiffre ? 600 : 400,
+              fontStyle: phase === "avant" ? "normal" : "normal",
+            }}
+          >{m}</span>
+        );
+      })}
+    </div>
+  );
+}
+
+// LE SCORE QUI GRIMPE
+//
+// C'est le seul element qui relie le spectacle au mecanisme reel : ce n'est
+// pas une jolie phrase qui fait passer un CV, c'est un score de tri. Le
+// montrer monter pendant que les mots changent explique le produit sans une
+// ligne de texte.
+function ScoreClimb({ from, to, go, mob, reducedMotion, label }) {
+  const [n, setN] = useState(from);
+  useEffect(() => {
+    if (!go) { setN(from); return undefined; }
+    if (reducedMotion) { setN(to); return undefined; }
+    const debut = performance.now();
+    const duree = 900;
+    let raf = 0;
+    const pas = (t) => {
+      const k = Math.min(1, (t - debut) / duree);
+      // Depart franc, arrivee douce : un compteur qui ralentit en fin de
+      // course se lit comme un resultat, pas comme une animation.
+      const doux = 1 - Math.pow(1 - k, 3);
+      setN(Math.round(from + (to - from) * doux));
+      if (k < 1) raf = requestAnimationFrame(pas);
+    };
+    raf = requestAnimationFrame(pas);
+    return () => cancelAnimationFrame(raf);
+  }, [go, from, to, reducedMotion]);
+
+  const vert = n >= 75;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+      marginTop: mob ? 10 : 16,
+      opacity: go ? 1 : 0.5,
+      transition: reducedMotion ? "none" : "opacity 500ms ease",
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <span style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
+        textTransform: "uppercase", color: "var(--nuvi-ink-muted)",
+      }}>{label}</span>
+      <span style={{
+        fontSize: mob ? 22 : 28, fontWeight: 700,
+        fontVariantNumeric: "tabular-nums",
+        color: vert ? "var(--nuvi-green)" : "var(--nuvi-ink-muted)",
+        transition: reducedMotion ? "none" : "color 400ms ease",
+      }}>{n}</span>
+    </div>
+  );
+}
+
 export default function NuviHome({
   lang = "en",
   mob = false,
@@ -297,108 +408,37 @@ export default function NuviHome({
           }}>{balanceText(T.sub)}</Reveal>
         </div>
 
-        {/* ===== TEMPS 2 : LE WOW (avant -> apres) ===== */}
-        <div style={{
-          display: "flex",
-          flexDirection: mob ? "column" : "row",
-          gap: mob ? 12 : 14,
-          alignItems: "stretch",
-        }}>
+        {/* ===== TEMPS 2 : LA PHRASE QUI SE REECRIT =====
 
-          {/* CARTE AVANT */}
-          <div style={{
-            flex: 1,
-            background: Paper,
-            border: "1px solid " + Hairline,
-            borderRadius: 14,
-            padding: cardPad,
-            position: "relative",
-            opacity: showAfter ? (mob ? 0.55 : 0.7) : 1,
-            transition: "opacity 400ms ease",
-          }}>
-            <span style={{
-              position: "absolute", top: 12, right: 12,
-              background: "#f1efe8", color: "#888780",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-              textTransform: "uppercase", padding: "3px 9px", borderRadius: 999,
-            }}>{T.before}</span>
-            <div style={{ fontSize: 15, fontWeight: 500, color: InkMuted, marginBottom: 2 }}>
-              {ex.name}
-            </div>
-            <div style={{ fontSize: 12, color: "#a89f8a", marginBottom: 14 }}>
-              {ex.beforeTitle}
-            </div>
-            {ex.before.map((line, i) => (
-              <p key={i} style={{
-                fontSize: 12, color: lineColBefore, lineHeight: 1.6,
-                margin: i === 0 ? "0 0 10px" : 0,
-              }}>{line}</p>
-            ))}
-          </div>
+            AVANT : deux cartes cote a cote, 326x197, texte a 13px. Mesure sur
+            un ecran de 1440 : le titre a 30px, 40% de la surface occupee,
+            295px de vide au-dessus. Ce qui PROUVE le produit etait rendu a la
+            taille d'un tweet.
 
-          {/* FLECHE NUVI (au centre) */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexDirection: mob ? "row" : "column", gap: 4,
-            ...(mob ? { padding: "2px 0" } : {}),
-          }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: "50%",
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: transforming ? "0 0 0 6px rgba(91,61,245,0.15)" : "0 2px 8px rgba(91,61,245,0.25)",
-              transition: "box-shadow 300ms ease",
-              animation: transforming ? "nuviArrowPulse 0.9s ease-in-out infinite" : "none",
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: mob ? "rotate(90deg)" : "none" }}>
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 10, color: Violet, fontWeight: 700, letterSpacing: "0.06em" }}>
-              {transforming ? T.transforming : "Nuvi"}
-            </span>
-          </div>
+            Deux cartes DECRIVENT la transformation. Une phrase qui se reecrit
+            sous les yeux la FAIT. C'est la meme information, a la difference
+            pres qu'on n'a plus rien a expliquer.
 
-          {/* CARTE APRES */}
-          <div style={{
-            flex: 1,
-            background: Paper,
-            border: "2px solid " + (showAfter ? Violet : Hairline),
-            borderRadius: 14,
-            padding: cardPad,
-            position: "relative",
-            opacity: showAfter ? 1 : (mob ? 0.4 : 0.5),
-            transition: "opacity 400ms ease, border-color 400ms ease",
-          }}>
-            <span style={{
-              position: "absolute", top: 12, right: 12,
-              background: showAfter ? "linear-gradient(135deg, " + Violet + ", " + Magenta + ")" : "#f1efe8",
-              color: showAfter ? "#fff" : "#888780",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-              textTransform: "uppercase", padding: "3px 9px", borderRadius: 999,
-              transition: "all 400ms ease",
-            }}>{T.after}</span>
-            <div style={{ fontSize: 15, fontWeight: 600, color: Ink, marginBottom: 2 }}>
-              {ex.name}
-            </div>
-            <div style={{
-              fontSize: 12, color: Coral, fontWeight: 500, marginBottom: 14,
-              minHeight: 16,
-            }}>
-              {showAfter ? ex.afterTitle : ""}
-            </div>
-            {ex.after.map((line, i) => (
-              <p key={i} style={{
-                fontSize: 12, color: lineColAfter, lineHeight: 1.6,
-                margin: i === 0 ? "0 0 8px" : 0,
-                opacity: showAfter ? 1 : 0,
-                transform: showAfter ? "translateY(0)" : "translateY(6px)",
-                transition: "opacity 500ms ease, transform 500ms ease",
-                transitionDelay: showAfter ? (i * 180 + 100) + "ms" : "0ms",
-              }}>{line}</p>
-            ))}
-          </div>
+            Les chiffres arrivent en dernier et plus gros : c'est ce que l'oeil
+            d'un recruteur accroche en six secondes, donc ce que l'oeil du
+            visiteur doit accrocher ici. */}
+        <div style={{ minHeight: mob ? 200 : 240 }}>
+          <RewriteLine
+            avant={ex.before[0]}
+            apres={ex.after[0]}
+            phase={showAfter ? "apres" : transforming ? "bascule" : "avant"}
+            mob={mob}
+            reducedMotion={reducedMotion}
+          />
+          {/* Le score suit la phrase au lieu de flotter dessus. Pose en absolu
+              en haut a droite, il se posait sur un mot - constate a l'ecran, a
+              1440 comme a 1280. Ici il se lit comme la consequence de ce qu'on
+              vient de voir, ce qui est exactement ce qu'il est. */}
+          <ScoreClimb
+            from={34} to={91} go={showAfter} mob={mob}
+            reducedMotion={reducedMotion}
+            label={T.atsLabel || "ATS"}
+          />
         </div>
 
         {/* Bouton Rejouer (apparait apres la 1ere transformation) */}
