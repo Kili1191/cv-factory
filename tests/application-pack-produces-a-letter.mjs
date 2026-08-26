@@ -50,8 +50,9 @@ async function fromMenu(browser) {
   await page.waitForTimeout(8000);
 
   const letter = await page.evaluate((needle) => document.body.innerText.includes(needle), LETTER);
+  const manquantes = await lireLesOnglets(page);
   await ctx.close();
-  return { errors, letter };
+  return { errors, letter, manquantes };
 }
 
 async function fromOfferAnalysis(browser) {
@@ -75,8 +76,52 @@ async function fromOfferAnalysis(browser) {
   await page.waitForTimeout(8000);
 
   const letter = await page.evaluate((needle) => document.body.innerText.includes(needle), LETTER);
+  const manquantes = await lireLesOnglets(page);
   await ctx.close();
-  return { errors, letter };
+  return { errors, letter, manquantes };
+}
+
+// LES CINQ PIECES, PAS SEULEMENT LA LETTRE
+//
+// Le pack promet cinq livrables : lettre, message LinkedIn, e-mail de
+// candidature, pitch d'entretien, reponses STAR. Ce test n'en verifiait
+// qu'un. Les quatre autres pouvaient etre vides, ou leur onglet muet, sans
+// que rien ne le signale - et on ne s'en apercevait qu'en cliquant soi-meme,
+// c'est-a-dire jamais.
+//
+// Le stub de l'IA renvoie les cinq. Tout ce qui manque a l'ecran manque donc
+// a l'affichage, pas au modele : la panne est chez nous, et nommee.
+const PIECES = [
+  { onglet: "lettre|cover", temoin: "Votre annonce de Head of Product a retenu mon attention", nom: "la lettre de motivation" },
+  { onglet: "linkedin", temoin: "je viens de postuler au poste de Head of Product", nom: "le message LinkedIn" },
+  { onglet: "e-?mail", temoin: "Candidature Head of Product", nom: "l'e-mail de candidature" },
+  { onglet: "pitch", temoin: "8 ans en produit SaaS B2B", nom: "le pitch d'entretien" },
+  { onglet: "star", temoin: "Un projet difficile", nom: "les reponses STAR" },
+];
+
+async function lireLesOnglets(page) {
+  const manquantes = [];
+  for (const piece of PIECES) {
+    const ouvert = await page.evaluate((motif) => {
+      const rx = new RegExp(motif, "i");
+      const cible = [...document.querySelectorAll("button")]
+        .filter((b) => {
+          const t = (b.innerText || "").trim();
+          return t.length > 0 && t.length < 30 && rx.test(t);
+        });
+      const b = cible[cible.length - 1];
+      if (!b) return false;
+      b.click();
+      return true;
+    }, piece.onglet);
+    // Un onglet absent est deja un constat : la piece est promise et
+    // introuvable.
+    if (!ouvert) { manquantes.push(`${piece.nom} : onglet introuvable`); continue; }
+    await page.waitForTimeout(700);
+    const vu = await page.evaluate((t) => (document.body.innerText || "").includes(t), piece.temoin);
+    if (!vu) manquantes.push(`${piece.nom} : onglet ouvert, mais son contenu ne s'affiche pas`);
+  }
+  return manquantes;
 }
 
 export async function run() {
@@ -89,14 +134,18 @@ export async function run() {
       failures.push("depuis le menu, aucune lettre de motivation produite" + (menu.reason ? ` (${menu.reason})` : ""));
     }
     if (menu.errors.length) failures.push("erreurs JS (menu) : " + menu.errors.slice(0, 2).join(" | "));
+    for (const m of (menu.manquantes || [])) failures.push("depuis le menu, " + m);
 
     const offer = await fromOfferAnalysis(browser);
     if (!offer.letter) {
       failures.push("depuis l'analyse d'offre, aucune lettre produite" + (offer.reason ? ` (${offer.reason})` : ""));
     }
     if (offer.errors.length) failures.push("erreurs JS (analyse d'offre) : " + offer.errors.slice(0, 2).join(" | "));
+    for (const m of (offer.manquantes || [])) failures.push("depuis l'analyse d'offre, " + m);
 
-    if (!failures.length) console.log("      lettre generee par les deux chemins, sans erreur JS");
+    if (!failures.length) {
+      console.log(`      les ${PIECES.length} pieces du pack s'affichent par les deux chemins, sans erreur JS`);
+    }
   } finally {
     await browser.close();
     await stopServer(server);
