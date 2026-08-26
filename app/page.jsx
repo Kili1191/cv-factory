@@ -1238,38 +1238,41 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           {T.ai_nk}
         </div>
       )}
+      {/* L'AVERTISSEMENT TENAIT 21% D'UN ECRAN DE TELEPHONE
+
+          Mesure : 174 pixels sur 844, pour deux phrases et un bouton - presque
+          autant que l'apercu du CV lui-meme, qui n'en occupait que 29%. On
+          donnait donc a une mise en garde presque la place du produit.
+
+          Il tient maintenant sur une ligne, avec l'action en lien plutot qu'en
+          gros bouton : c'est une precaution, pas une decision a prendre. Le
+          bouton Generer, juste au-dessus, reste le chemin principal. */}
       {!cvIsEmpty && (
         <div style={{
+          display:"flex", alignItems:"center", gap:10, flexWrap:"wrap",
           background:Paper,
-          borderRadius:RadiusMd,
-          padding:"16px 18px", marginBottom:18,
+          borderRadius:RadiusPill,
+          padding:"9px 14px", marginBottom:16,
           border:"0.5px solid "+Gray200,
-          boxShadow:ShadowSm,
+          fontFamily:Sans, fontSize:12.5, lineHeight:1.35, color:Gray600,
         }}>
-          <div style={{
-            fontSize:11, fontWeight:600,
-            letterSpacing:"0.12em", textTransform:"uppercase",
-            color:Coral, marginBottom:6,
-          }}>{T.ai_existing_title || "Tu as deja un CV"}</div>
-          <div style={{
-            fontFamily:Serif, fontWeight:400,
-            fontSize:18, lineHeight:1.25,
-            letterSpacing:"-0.01em",
-            color:Ink, marginBottom:10,
-          }}>{T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}</div>
+          <span style={{ flex:"1 1 180px", minWidth:0 }}>
+            {T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}
+          </span>
           <button onClick={onSwitchToAdjust} style={{
             ...B({
-              padding:"10px 18px", minHeight:44, borderRadius:RadiusPill,
-              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
-              color:"#fff",
-              border:"none",
-              fontSize:12, fontWeight:600,
-              fontFamily:Sans,
-              display:"inline-flex", alignItems:"center", gap:6,
+              // 44px : le minimum sous lequel un doigt rate sa cible. Le lien
+              // a l'air compact, sa zone tactile ne l'est pas.
+              padding:"7px 6px", minHeight:44, borderRadius:6,
+              background:"transparent", border:"none",
+              color:Purple, fontSize:12.5, fontWeight:600, fontFamily:Sans,
+              display:"inline-flex", alignItems:"center", gap:5,
+              textDecoration:"underline", textUnderlineOffset:3,
+              flexShrink:0,
             })
           }}>
             {T.ai_existing_btn || "Aller a Ajuster"}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
