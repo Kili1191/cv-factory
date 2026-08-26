@@ -72,7 +72,7 @@ export default function VerdictModal({
       ? "Real talk : you're past the threshold. More editing won't get you more interviews."
       : "Soyons direct : tu as franchi le seuil. Continuer a editer ne te decrochera pas plus d'entretiens.",
     proba_label: isEn ? "Probability of interview" : "Probabilite d'entretien",
-    proba_cap: isEn ? "(max possible — luck plays a role)" : "(max possible : la chance joue aussi)",
+    proba_cap: isEn ? "(max possible: luck plays a role)" : "(max possible : la chance joue aussi)",
     stats_title: isEn ? "What the numbers say" : "Ce que disent les chiffres",
     stat1_a: isEn ? "Recent edits :" : "Tes derniers edits :",
     stat1_b: isEn ? " pts per edit avg" : " pt par edit en moyenne",

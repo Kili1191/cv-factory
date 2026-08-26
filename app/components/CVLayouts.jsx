@@ -640,7 +640,7 @@ export function CVClassic({ cv, set, t, T, locale }) {
             marginBottom: 5,
           }}>
             <E value={ex.company} onChange={v => ux(ex.id, "company", v)}/>
-            {ex.company && ex.location ? " — " : ""}
+            {ex.company && ex.location ? " · " : ""}
             <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
           </div>
           <ul style={{ margin: "0 0 0 18px", padding: 0, listStyleType: "disc" }}>
@@ -701,7 +701,7 @@ export function CVClassic({ cv, set, t, T, locale }) {
           <div key={i} style={{ fontSize: 11, color: t.ti }}>
             <E value={l.lang} onChange={v => ul(i, "lang", v)}
               style={{ fontWeight: 700, fontSize: 11 }}/>
-            <span style={{ color: t.ac }}> — </span>
+            <span style={{ color: t.ac }}> · </span>
             <E value={l.level} onChange={v => ul(i, "level", v)}
               style={{ fontSize: 11 }}/>
           </div>
@@ -1116,7 +1116,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
             <div key={i} style={{ fontSize: 11, color: t.ti, marginBottom: 3 }}>
               <E value={l.lang} onChange={v => ul(i, "lang", v)}
                 style={{ fontWeight: 600, fontSize: 11 }}/>
-              <span style={{ color: t.ti, opacity: 0.5 }}> — </span>
+              <span style={{ color: t.ti, opacity: 0.5 }}> · </span>
               <E value={l.level} onChange={v => ul(i, "level", v)}
                 style={{ fontSize: 11, opacity: 0.7 }}/>
             </div>

@@ -34,7 +34,7 @@ export const metadata = {
   metadataBase: new URL("https://thenuvi.com"),
   applicationName: "Nuvi",
   title: {
-    default: "Nuvi — the CV that gets past the ATS",
+    default: "Nuvi · the CV that gets past the ATS",
     template: "%s · Nuvi",
   },
   description:
@@ -58,7 +58,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     siteName: "Nuvi",
-    title: "Nuvi — le CV qui passe l'ATS",
+    title: "Nuvi · le CV qui passe l'ATS",
     description:
       "Colle l'annonce, obtiens le CV qui correspond, et suis tes candidatures.",
     images: [{ url: "/icon-512.png", width: 512, height: 512 }],
@@ -104,7 +104,7 @@ export default function RootLayout({ children }) {
             layout, donc cote serveur : il ne peut pas connaitre la langue
             choisie par le visiteur. Il suit donc la langue par defaut du
             document, l'anglais. */}
-        <h1 className="sr-only">Nuvi — CV and resume editor</h1>
+        <h1 className="sr-only">Nuvi · CV and resume editor</h1>
         <main>{children}</main>
       </body>
     </html>
