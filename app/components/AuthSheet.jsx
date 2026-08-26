@@ -111,6 +111,17 @@ export default function AuthSheet({ open, onClose, locale = "en" }) {
         WebkitBackdropFilter: "blur(10px)", backdropFilter: "blur(10px)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 20, animation: "authFade 180ms ease-out",
+        // AUCUNE POLICE N'ETAIT DECLAREE ICI
+        //
+        // Rien dans la feuille de style ne pose de famille sur body, et cette
+        // feuille vit hors de [data-cvf="app"] : le navigateur retombait donc
+        // sur sa serif par defaut, Times New Roman. Ce n'etait pas un choix
+        // typographique discutable, c'etait l'absence de choix - et ca se voit
+        // exactement au moment ou l'on demande a quelqu'un de se connecter,
+        // c'est-a-dire au moment ou il decide si le site merite son adresse.
+        //
+        // Tous les enfants heritent, puisqu'ils declarent fontFamily:"inherit".
+        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <div
@@ -155,8 +166,9 @@ export default function AuthSheet({ open, onClose, locale = "en" }) {
         ) : (
           <>
             <h2 style={{
-              margin: "0 0 8px", fontSize: 25, fontWeight: 600,
+              margin: "0 0 8px", fontSize: 24, fontWeight: 650,
               letterSpacing: "-.025em", color: "var(--nuvi-ink, #0a0a0a)",
+              fontFamily: "inherit",
             }}>{T.title}</h2>
             <p style={{
               margin: "0 0 24px", fontSize: 15, lineHeight: 1.5,
