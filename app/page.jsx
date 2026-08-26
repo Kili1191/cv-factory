@@ -3364,6 +3364,11 @@ export default function App() {
   // Vrai uniquement au retour de l'autorisation Google, pour lancer le
   // balayage de la boite mail sans redemander un clic.
   const [gmailReturn, setGmailReturn] = useState(false);
+  // Le jeton Google vit une heure et Supabase ne le renouvelle pas : on ne
+  // demande donc pas "est-ce relie" a chaque rendu, on le note quand on le
+  // sait. Un faux ici ne casse rien - il propose simplement de relier a
+  // nouveau, ce qui est immediat quand le consentement est deja donne.
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
@@ -3701,6 +3706,21 @@ export default function App() {
     return () => { stop(); unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // La boite mail est-elle reliee ?
+  //
+  // On ne le devine pas : on demande le jeton Google de la session. Il vit une
+  // heure et Supabase ne le renouvelle pas, donc la reponse peut passer de
+  // "oui" a "non" pendant qu'on travaille - c'est normal, et l'interface doit
+  // le dire plutot que d'afficher un lien qui echouerait sans expliquer.
+  useEffect(() => {
+    let vivant = true;
+    if (!cloud.user || !isCloudConfigured()) { setGmailConnected(false); return undefined; }
+    getGmailToken()
+      .then(t => { if (vivant) setGmailConnected(Boolean(t)); })
+      .catch(() => { if (vivant) setGmailConnected(false); });
+    return () => { vivant = false; };
+  }, [cloud.user]);
 
   // Reception d'une annonce capturee par l'extension.
   //
@@ -7960,6 +7980,19 @@ export default function App() {
           background:"var(--nuvi-bg-gradient)", overflow:"hidden",
         }}>
           <NuviSidebar
+            cloudEnabled={isCloudConfigured()}
+            cloudUser={cloud.user}
+            cloudStatus={cloud.status}
+            cloudLastSyncAt={cloud.lastSyncAt}
+            cloudError={cloud.error}
+            gmailConnected={gmailConnected}
+            onSignIn={() => setShowAuth(true)}
+            onSignOut={async () => {
+              await signOut();
+              setGmailConnected(false);
+              notify(locale === "en" ? "Signed out" : "Deconnecte");
+            }}
+            onConnectGmail={() => { connectGmail().catch(() => {}); }}
             active={navSection}
             onSelect={(key) => {
               setNavSection(key);
@@ -8225,9 +8258,11 @@ export default function App() {
           <button
             onClick={handleDownloadClick}
             aria-label="Telecharger CV"
+            // La position horizontale vit dans globals.css : elle depend de la
+            // largeur de la barre laterale, que ce bouton ne connait pas.
+            className="nv-download-fab"
             style={{
               position: "fixed",
-              left: 100,
               bottom: 24,
               zIndex: 89,
               display: "flex",

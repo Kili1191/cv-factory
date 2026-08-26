@@ -20,6 +20,7 @@ const SUITES = [
   ["l'accueil ne cache aucun texte", "./the-home-screen-hides-no-text.mjs"],
   ["les mots en italique sont de vrais italiques", "./the-italics-are-real.mjs"],
   ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
+  ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],
   ["la barre de suggestion s'ecarte et sait partir", "./the-suggestion-bar-gets-out-of-the-way.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],

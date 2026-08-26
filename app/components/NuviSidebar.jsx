@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
+const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
 
 export default function NuviSidebar({
   active = "home",
@@ -14,10 +15,37 @@ export default function NuviSidebar({
   onSettingsOpen,
   onReset,
   hasNotification = {},
+  // Le compte. Absent tant qu'aucun serveur n'est configure : la barre se tait
+  // plutot que de proposer une entree qui ne repondrait pas.
+  cloudEnabled = false,
+  cloudUser = null,
+  cloudStatus = "off",
+  cloudLastSyncAt = null,
+  cloudError = null,
+  gmailConnected = false,
+  onSignIn = () => {},
+  onSignOut = () => {},
+  onConnectGmail = () => {},
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const closeTimerRef = useRef(null);
+
+  // LA BARRE DIT SA LARGEUR AU RESTE DE LA PAGE
+  //
+  // Le bouton Telecharger est en position fixe a gauche. Replie, la barre fait
+  // 56px et il passe a cote ; deployee, elle fait 240px et le bouton se pose
+  // DESSUS - avec un z-index superieur, donc il recouvre la ligne du compte et
+  // lui coupe son libelle. Defaut invisible au build, invisible aux tests,
+  // visible des qu'on regarde l'ecran.
+  //
+  // Plutot que de faire descendre l'etat a travers la moitie de page.jsx, la
+  // barre le pose sur <html>. Tout ce qui doit s'ecarter le lit en CSS.
+  useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    document.documentElement.dataset.nvRail = expanded ? "expanded" : "collapsed";
+    return () => { delete document.documentElement.dataset.nvRail; };
+  }, [expanded]);
 
   useEffect(() => {
     const onTutHover = (e) => {
@@ -475,6 +503,23 @@ export default function NuviSidebar({
               {L.settings}
             </span>
           </div>
+
+          {/* Le compte ferme la barre, sous les Reglages : c'est la place que
+              tout le monde connait deja, et elle reste visible en permanence. */}
+          {cloudEnabled && (
+            <AccountBadge
+              user={cloudUser}
+              status={cloudStatus}
+              lastSyncAt={cloudLastSyncAt}
+              error={cloudError}
+              gmailConnected={gmailConnected}
+              expanded={expanded}
+              lang={lang}
+              onSignIn={onSignIn}
+              onSignOut={onSignOut}
+              onConnectGmail={onConnectGmail}
+            />
+          )}
         </div>
       </aside>
 

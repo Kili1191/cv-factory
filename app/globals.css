@@ -199,3 +199,24 @@ button,
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   LE BOUTON TELECHARGER S'ECARTE QUAND LA BARRE S'OUVRE
+
+   Il est en position fixe a gauche, au-dessus de la barre laterale. Repliee
+   (56px) il passe a cote ; deployee (240px) il se posait dessus et recouvrait
+   la ligne du compte.
+
+   La barre annonce son etat sur <html data-nv-rail>. Le decalage se fait donc
+   ici, sans que le bouton ait a connaitre la barre.
+   ========================================================================== */
+.nv-download-fab {
+  left: 100px;
+  transition: left 240ms cubic-bezier(.22,.61,.36,1);
+}
+:root[data-nv-rail="expanded"] .nv-download-fab {
+  left: 268px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nv-download-fab { transition-duration: 0.01ms; }
+}
