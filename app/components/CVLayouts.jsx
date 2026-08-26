@@ -487,13 +487,13 @@ export function CVSidebar({ cv, set, t, T, locale }) {
                   {ex.location && String(ex.location).trim() ? <>
                     {" - "}
                     <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
-                      style={{fontSize:9.5, color:"#888"}}/>
+                      style={{fontSize:9.5, color:"#5a5a5a"}}/>
                   </> : null}
                 </div>
               </div>
-              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0, fontWeight:500}}>
+              <div style={{fontSize:9.5, color:"#5f5f5f", flexShrink:0, fontWeight:500}}>
                 <E value={ex.period} onChange={v=>ux(ex.id, "period", v)}
-                  style={{fontSize:8.5, color:"#aaa"}}/>
+                  style={{fontSize:9.5, color:"#5f5f5f"}}/>
               </div>
             </div>
             <ul style={{margin:"4px 0 0 13px", padding:0}}>
@@ -523,16 +523,16 @@ export function CVSidebar({ cv, set, t, T, locale }) {
               </div>
               {/* [FIX placeholder ... 2026-05-20] Render school seulement si non-vide */}
               {ed.school && String(ed.school).trim() && (
-                <div style={{fontSize:9, color:"#777", marginTop:1}}>
+                <div style={{fontSize:9.5, color:"#5a5a5a", marginTop:1}}>
                   <E value={ed.school} onChange={v=>ue(ed.id, "school", v)}
                     style={{fontSize:9}}/>
                 </div>
               )}
             </div>
             {ed.period && String(ed.period).trim() && (
-              <div style={{fontSize:8.5, color:"#aaa", flexShrink:0, fontWeight:500}}>
+              <div style={{fontSize:9.5, color:"#5f5f5f", flexShrink:0, fontWeight:500}}>
                 <E value={ed.period} onChange={v=>ue(ed.id, "period", v)}
-                  style={{fontSize:8.5}}/>
+                  style={{fontSize:9.5}}/>
               </div>
             )}
           </div>
