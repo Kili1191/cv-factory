@@ -24,6 +24,7 @@ const SUITES = [
   ["la langue est demandee une fois", "./the-site-opens-in-english.mjs"],
   ["Nuvi ne decide pas a la place du candidat", "./nuvi-does-not-decide.mjs"],
   ["une IA saturee n'est pas une IA en panne", "./a-busy-ai-is-not-a-broken-one.mjs"],
+  ["le parcours arrive vraiment a l'ecran", "./the-career-record-reaches-the-screen.mjs"],
   ["les mots en italique sont de vrais italiques", "./the-italics-are-real.mjs"],
   ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
   ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],

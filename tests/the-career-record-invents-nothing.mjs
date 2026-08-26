@@ -156,6 +156,55 @@ export async function run() {
     );
   }
 
+  // --- 4bis. Ce qui est annonce est MONTRABLE ---------------------------
+  //
+  // Le bouton disait "1 experience en plus" : un nombre, qui demande de faire
+  // confiance. L'ecran liste desormais ce qui a ete retrouve, pour que la
+  // personne reconnaisse son parcours - ou reperer une version d'essai qu'elle
+  // ne veut pas voir remonter, AVANT de depenser un appel.
+  //
+  // Le compte et la liste doivent donc dire la meme chose. S'ils divergent,
+  // l'ecran ment sur ce qu'il va utiliser, et c'est pire que de ne rien dire.
+  if (!Array.isArray(avec.listeExperiences)) {
+    failures.push(
+      "l'apport n'expose plus la liste des experiences retrouvees : l'ecran ne "
+      + "peut plus montrer ce qu'il annonce, seulement le compter."
+    );
+  } else {
+    if (avec.listeExperiences.length !== avec.experiences) {
+      failures.push(
+        `l'ecran annonce ${avec.experiences} experience(s) en plus mais peut en `
+        + `montrer ${avec.listeExperiences.length}. Il ment sur ce qu'il va utiliser.`
+      );
+    }
+    // Chaque ligne doit etre identifiable : un intitule vide et une entreprise
+    // vide ne se reconnaissent pas, et la liste ne sert plus a rien.
+    for (const e of avec.listeExperiences) {
+      if (!String(e.title || "").trim() && !String(e.company || "").trim()) {
+        failures.push(
+          `une experience retrouvee n'a ni intitule ni entreprise `
+          + `(${JSON.stringify(e)}) : impossible a reconnaitre a l'ecran.`
+        );
+      }
+    }
+    // Et elle doit vraiment venir du dossier, pas d'ailleurs.
+    const connues = new Set(d.experience.map(e => `${e.title}|${e.company}`));
+    for (const e of avec.listeExperiences) {
+      if (!connues.has(`${e.title}|${e.company}`)) {
+        failures.push(
+          `l'ecran montrerait "${e.title} / ${e.company}", qui ne figure dans `
+          + "aucune version enregistree. Ce serait une experience inventee."
+        );
+      }
+    }
+  }
+  if (!Array.isArray(avec.listeCompetences) || avec.listeCompetences.length !== avec.competences) {
+    failures.push(
+      `les competences annoncees (${avec.competences}) et montrables `
+      + `(${Array.isArray(avec.listeCompetences) ? avec.listeCompetences.length : "aucune"}) divergent`
+    );
+  }
+
   // --- 5. Le texte de consigne contient bien tout -----------------------
   const txt = dossierEnTexte(d);
   for (const attendu of ["Pernod Ricard", "Cost control", "WSET Level 2", "Titre Professionnel"]) {

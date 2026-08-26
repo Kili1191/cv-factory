@@ -174,11 +174,24 @@ export async function run() {
   for (const f of ECRANS) {
     let txt = "";
     try { txt = readFileSync(join(RACINE, f), "utf8"); } catch { continue; }
-    const m = txt.match(/"[^"\n]*sans inventer[^"\n]*"|"[^"\n]*without inventing[^"\n]*"/);
-    if (m) {
+    // Les formules de refus ne vivent pas toutes dans une chaine entre
+    // guillemets : dans du JSX elles sont du texte nu. On regarde donc le
+    // fichier, pas seulement ses litteraux.
+    const TOURNURES = [
+      /sans (rien )?inventer/i,
+      /without inventing/i,
+      /que l[ao] ou c'est vrai/i,
+      /only where it'?s true/i,
+    ];
+    for (const t of TOURNURES) {
+      const m = txt.match(t);
+      if (!m) continue;
+      const i = txt.indexOf(m[0]);
+      const extrait = txt.slice(Math.max(0, i - 60), i + 60).replace(/\s+/g, " ").trim();
       failures.push(
-        `${f} affiche ${m[0]} au candidat. C'est promettre que Nuvi refusera `
-        + "ce qu'il demande sur son propre CV."
+        `${f} affiche "${m[0]}" au candidat (…${extrait}…). C'est promettre que `
+        + "Nuvi refusera, ou lui rappeler ce qu'il a le droit d'ecrire sur son "
+        + "propre CV. Dire qui decide, pas ce qui est permis."
       );
     }
   }

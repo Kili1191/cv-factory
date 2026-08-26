@@ -7026,19 +7026,15 @@ export default function App() {
       )}
       {/* [Fix 2026-05-20] aiMode "adjust" supprime : on ouvre AdjustModal
           a la place via le useEffect ci-dessous. Un seul systeme Adjust. */}
-      {aiMode==="match" && (
-        <Suspense fallback={null}>
-        <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
-          pushH={pushH}
-          onPackRequest={requestPack}
-          initialResult={offerResult}
-          onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
-          onApplied={()=>setOfferResult(null)}
-          aiCall={aiCall}
-          parseJSON={parseJSON}
-          normCV={normCV}/>
-        </Suspense>
-      )}
+      {/* UN SECOND MATCHPANEL VIVAIT ICI, SUR aiMode === "match"
+          Ce mode n'existe plus : le selecteur ne propose que "generate" et
+          "adjust", tabFromPhase ne le rend jamais, et l'aiguillage de la
+          barre laterale envoie "match" sur setShowOffer(true). La branche ne
+          pouvait donc plus s'afficher.
+          Elle a quand meme coute : c'etait une deuxieme copie du panneau,
+          montee sans la liste des versions, et elle a fait croire pendant un
+          moment que le choix "tout mon parcours" etait casse sur ordinateur
+          alors qu'il marchait. Le seul montage vivant est OfferSheet. */}
     </div>
   );
 

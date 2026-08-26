@@ -402,7 +402,8 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           CV sur mesure pour une offre
         </div>
         <div style={{fontSize:12, color:InkMuted, lineHeight:1.6}}>
-          Colle l'offre, Nuvi adapte ton CV existant sans rien inventer.
+          Colle l'offre, Nuvi adapte ton CV existant. Tu gardes la main sur
+          ce qui y figure.
         </div>
       </div>
 
@@ -482,7 +483,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
               un mot-clef ajoute sans experience derriere est un mensonge que
               l'entretien decouvre en trente secondes. */}
           <div style={{fontSize:11, color:InkMuted, marginTop:10, lineHeight:1.5}}>
-            A n'ajouter que la ou c'est vrai.
+            Tu choisis lesquels ajouter.
           </div>
         </div>
       )}
@@ -525,9 +526,49 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             })}
           </div>
           {source === "parcours" && (
-            <div style={{fontSize:11, color:InkMuted, marginTop:8, lineHeight:1.5}}>
-              Nuvi choisit dans ce que tu as deja ecrit, garde ce qui sert
-              l&apos;offre et ecarte le reste.
+            <div style={{marginTop:8}}>
+              <div style={{fontSize:11, color:InkMuted, lineHeight:1.5}}>
+                Nuvi choisit dans ce que tu as deja ecrit, garde ce qui sert
+                l&apos;offre et ecarte le reste.
+              </div>
+              {/* CE QUE NUVI EST ALLE CHERCHER SE VOIT AVANT, PAS APRES
+                  Le bouton annoncait "3 experiences en plus" : un nombre, qui
+                  demande de faire confiance. C'est le parcours de la personne,
+                  elle doit pouvoir verifier d'un coup d'oeil ce qui va servir -
+                  et surtout reperer une version d'essai ou un poste qu'elle ne
+                  veut pas voir remonter, AVANT de depenser un appel. */}
+              {(apport.listeExperiences || []).length > 0 && (
+                <div style={{
+                  marginTop:8, padding:"9px 11px",
+                  background:CreamSoft, borderRadius:RadiusMd,
+                  border:"1px solid "+Hairline,
+                }}>
+                  <div style={{
+                    fontSize:9, fontWeight:700, color:InkMuted, marginBottom:6,
+                    letterSpacing:"0.06em", textTransform:"uppercase",
+                  }}>Ce que Nuvi ajoute a ta portee</div>
+                  {apport.listeExperiences.map((e, i) => (
+                    <div key={i} style={{
+                      fontSize:11.5, color:Ink, lineHeight:1.45,
+                      marginBottom: i === apport.listeExperiences.length - 1 ? 0 : 3,
+                    }}>
+                      {e.title || "Poste sans intitule"}
+                      {e.company ? <span style={{color:InkMuted}}>{" chez " + e.company}</span> : null}
+                      {e.period ? <span style={{color:InkMuted}}>{" (" + e.period + ")"}</span> : null}
+                    </div>
+                  ))}
+                  {(apport.listeCompetences || []).length > 0 && (
+                    <div style={{
+                      fontSize:11, color:InkMuted, marginTop:6, lineHeight:1.45,
+                    }}>
+                      {"Competences : " + apport.listeCompetences.slice(0, 12).join(", ")}
+                      {apport.listeCompetences.length > 12
+                        ? ` et ${apport.listeCompetences.length - 12} autres`
+                        : ""}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
