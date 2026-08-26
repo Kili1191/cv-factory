@@ -7684,6 +7684,7 @@ export default function App() {
             offer={interviewOffer}
             applications={applications}
             locale={locale}
+            onChangeCv={() => { setShowLive(false); setShowVersions(true); }}
           />
         </Suspense>
       )}

@@ -29,7 +29,7 @@ import { serializeCvForContext } from "../../lib/cvSerializer.js";
 const SILENCE_MS = 900;
 
 export default function LiveAssistModal({
-  open, onClose, cv, offer, locale = "en", applications = [],
+  open, onClose, cv, offer, locale = "en", applications = [], onChangeCv,
 }) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState("");
@@ -41,6 +41,10 @@ export default function LiveAssistModal({
   // poste en direct est pire que de perdre trois secondes a le choisir.
   const [confirmed, setConfirmed] = useState(false);
   const [chosen, setChosen] = useState(null);
+  // L'annonce collee ici meme, et l'intitule tape a la main. Voir plus bas
+  // pourquoi cet ecran doit les accepter au lieu de renvoyer ailleurs.
+  const [colle, setColle] = useState("");
+  const [posteTape, setPosteTape] = useState("");
 
   const recRef = useRef(null);
   const silenceRef = useRef(null);
@@ -89,7 +93,13 @@ export default function LiveAssistModal({
   // l'ecran precedent.
   const activeOffer = chosen ? chosen.offer : (offer || "");
   const activeLabel = chosen
-    ? [chosen.role, chosen.company].filter(Boolean).join(" - ")
+    // Une annonce collee sans intitule n'a ni poste ni entreprise a afficher.
+    // Laisser le libelle vide donnerait un bandeau muet, comme si rien
+    // n'avait ete choisi alors que l'annonce est bien prise en compte.
+    ? ([chosen.role, chosen.company].filter(Boolean).join(" - ")
+       || (chosen.offer
+            ? (locale === "en" ? "The ad you pasted" : "L'annonce que tu as collee")
+            : ""))
     : (offer ? (locale === "en" ? "The role from the previous screen" : "Le poste de l'ecran precedent") : "");
 
   const askFor = useCallback(async (question) => {
@@ -236,7 +246,23 @@ export default function LiveAssistModal({
     return (
       <div role="dialog" aria-modal="true" style={{
         position: "fixed", inset: 0, zIndex: 6500,
-        background: "rgba(8,8,10,.95)", overflowY: "auto",
+        background: "rgba(8,8,10,.97)", overflowY: "auto",
+        // LE CV NE DOIT PAS SE LIRE A TRAVERS CET ECRAN
+        //
+        // Le fond etait a 95% : les 5% restants laissaient passer une page
+        // blanche, et le texte sombre du CV se lisait en filigrane par-dessus
+        // les cartes. Sur la capture d'un utilisateur, le nom et les
+        // experiences traversaient l'ecran et le rendaient illisible.
+        //
+        // Ce n'est pas un probleme d'empilement : la mesure montre le dialogue
+        // a z-index 6500 sans ancetre limitant, bien au-dessus du CV a 1. C'est
+        // la transparence, et rien d'autre.
+        //
+        // Le flou est la vraie garantie : meme si quelqu'un rebaisse un jour
+        // l'opacite, un flou de 18px ne laisse plus aucun mot lisible. Cet
+        // ecran sert PENDANT un entretien - on n'y dechiffre pas, on y lit.
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
         padding: "max(22px, env(safe-area-inset-top)) 20px 24px",
         fontFamily: "'Inter', -apple-system, sans-serif",
       }}>
@@ -269,8 +295,25 @@ export default function LiveAssistModal({
             padding: "13px 15px", borderRadius: 12, marginBottom: 18,
             background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)",
           }}>
-            <div style={{ color: "rgba(255,255,255,.45)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase" }}>
-              {locale === "en" ? "CV used" : "CV utilise"}
+            {/* CHANGER DE CV DEPUIS ICI
+                La carte annoncait quel CV serait utilise sans donner aucun
+                moyen d'en prendre un autre. Quelqu'un qui garde une version
+                par metier voyait le mauvais nom juste avant son entretien et
+                n'avait que la croix pour sortir. */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ flex: 1, color: "rgba(255,255,255,.45)", fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase" }}>
+                {locale === "en" ? "CV used" : "CV utilise"}
+              </div>
+              {onChangeCv && (
+                <button onClick={onChangeCv} style={{
+                  minHeight: 44, padding: "0 12px", borderRadius: 999,
+                  border: "1px solid rgba(255,255,255,.22)", cursor: "pointer",
+                  background: "transparent", color: "rgba(255,255,255,.85)",
+                  fontSize: 12.5, fontWeight: 600, fontFamily: "inherit",
+                }}>
+                  {locale === "en" ? "Change" : "Changer"}
+                </button>
+              )}
             </div>
             <div style={{ color: "#fff", fontSize: 15, fontWeight: 600, marginTop: 4 }}>
               {cvName || (locale === "en" ? "Your CV" : "Ton CV")}
@@ -315,17 +358,78 @@ export default function LiveAssistModal({
             </button>
           )}
 
-          {!offer && withOffer.length === 0 && (
+          {/* L'ANNONCE SE COLLE ICI, PAS AILLEURS
+              Cet ecran nommait les trois choses qui manquent - le CV, le
+              poste, l'annonce - et n'en laissait corriger aucune. Il disait
+              "colle-en une dans le suivi", c'est-a-dire : ferme cet ecran, va
+              ailleurs, reviens. Deux minutes avant un entretien, personne ne
+              fait ca : on clique "continuer sans poste precis" et l'assistant
+              repond a cote pendant tout l'appel.
+              Le champ est donc ici, et il est propose meme quand des
+              candidatures existent : celle d'aujourd'hui n'est pas forcement
+              dans le suivi. */}
+          <div style={{
+            marginTop: withOffer.length || offer ? 14 : 0,
+            padding: "14px 16px", borderRadius: 12,
+            background: "rgba(255,255,255,.06)", border: "1px solid rgba(255,255,255,.1)",
+          }}>
             <div style={{
-              padding: "14px 16px", borderRadius: 12,
-              background: "rgba(255,255,255,.06)", color: "rgba(255,255,255,.7)",
-              fontSize: 13.5, lineHeight: 1.5,
+              color: "rgba(255,255,255,.45)", fontSize: 11, letterSpacing: ".08em",
+              textTransform: "uppercase", marginBottom: 8,
             }}>
-              {locale === "en"
-                ? "No application carries a job ad yet. Paste one in the tracker and the cues will match that role."
-                : "Aucune candidature ne porte encore d'annonce. Colle-en une dans le suivi et les reperes colleront a ce poste."}
+              {withOffer.length || offer
+                ? (locale === "en" ? "Or paste this interview's ad" : "Ou colle l'annonce de cet entretien")
+                : (locale === "en" ? "Paste this interview's ad" : "Colle l'annonce de cet entretien")}
             </div>
-          )}
+            <textarea
+              value={colle}
+              onChange={(e) => setColle(e.target.value)}
+              placeholder={locale === "en"
+                ? "Paste the job ad here. The cues will match this role."
+                : "Colle l'annonce ici. Les reperes colleront a ce poste."}
+              rows={4}
+              style={{
+                width: "100%", boxSizing: "border-box", resize: "vertical",
+                padding: "10px 12px", borderRadius: 10,
+                background: "rgba(0,0,0,.35)", color: "#fff",
+                border: "1px solid rgba(255,255,255,.15)",
+                fontSize: 13.5, lineHeight: 1.45, fontFamily: "inherit",
+              }}
+            />
+            <input
+              value={posteTape}
+              onChange={(e) => setPosteTape(e.target.value)}
+              placeholder={locale === "en"
+                ? "Job title, if you do not have the ad"
+                : "Intitule du poste, si tu n'as pas l'annonce"}
+              style={{
+                width: "100%", boxSizing: "border-box", marginTop: 8,
+                minHeight: 44, padding: "10px 12px", borderRadius: 10,
+                background: "rgba(0,0,0,.35)", color: "#fff",
+                border: "1px solid rgba(255,255,255,.15)",
+                fontSize: 13.5, fontFamily: "inherit",
+              }}
+            />
+            <button
+              disabled={!colle.trim() && !posteTape.trim()}
+              onClick={() => pick({
+                role: posteTape.trim() || null,
+                company: null,
+                offer: colle.trim(),
+              })}
+              style={{
+                width: "100%", minHeight: 46, marginTop: 10,
+                borderRadius: 10, border: "none",
+                cursor: (colle.trim() || posteTape.trim()) ? "pointer" : "not-allowed",
+                background: (colle.trim() || posteTape.trim())
+                  ? "linear-gradient(135deg,#5b3df5,#b91c8c)"
+                  : "rgba(255,255,255,.08)",
+                color: (colle.trim() || posteTape.trim()) ? "#fff" : "rgba(255,255,255,.35)",
+                fontSize: 14.5, fontWeight: 600, fontFamily: "inherit",
+              }}>
+              {locale === "en" ? "Use this role" : "Utiliser ce poste"}
+            </button>
+          </div>
 
           <button onClick={() => pick(null)} style={{
             width: "100%", minHeight: 46, marginTop: 12, border: "none",
@@ -391,7 +495,23 @@ export default function LiveAssistModal({
       aria-modal="true"
       style={{
         position: "fixed", inset: 0, zIndex: 6500,
-        background: "rgba(8,8,10,.93)",
+        background: "rgba(8,8,10,.97)",
+        // LE CV NE DOIT PAS SE LIRE A TRAVERS CET ECRAN
+        //
+        // Le fond etait a 95% : les 5% restants laissaient passer une page
+        // blanche, et le texte sombre du CV se lisait en filigrane par-dessus
+        // les cartes. Sur la capture d'un utilisateur, le nom et les
+        // experiences traversaient l'ecran et le rendaient illisible.
+        //
+        // Ce n'est pas un probleme d'empilement : la mesure montre le dialogue
+        // a z-index 6500 sans ancetre limitant, bien au-dessus du CV a 1. C'est
+        // la transparence, et rien d'autre.
+        //
+        // Le flou est la vraie garantie : meme si quelqu'un rebaisse un jour
+        // l'opacite, un flou de 18px ne laisse plus aucun mot lisible. Cet
+        // ecran sert PENDANT un entretien - on n'y dechiffre pas, on y lit.
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
         display: "flex", flexDirection: "column",
         padding: "max(18px, env(safe-area-inset-top)) 18px 18px",
         fontFamily: "'Inter', -apple-system, sans-serif",
