@@ -556,7 +556,7 @@ export default function AdjustModal({
       eyebrow={lang === "fr" ? "NUVI ADJUST" : "NUVI ADJUST"}
       title={lang === "fr" ? "Ajuster" : "Adjust"}
       titleAccent={lang === "fr" ? "avec Nuvi" : "with Nuvi"}
-      subtitle={lang === "fr" ? "Je modifie sans inventer." : "I edit without inventing."}
+      subtitle={lang === "fr" ? "Tu decides, j'ecris." : "You decide, I write."}
       headerActions={headerActions}
       footer={footerContent}
     >

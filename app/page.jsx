@@ -228,6 +228,39 @@ const NO_DASH =
   + "ou tiret simple - (hyphen-minus U+002D). "
   + "Toute occurrence d'un tiret cadratin ou demi-cadratin sera consideree comme une faute majeure.";
 
+// QUI DECIDE - duplique dans les prompts, comme NO_DASH au-dessus
+//
+// Nuvi ne decide pas a la place de la personne. Dans LES DEUX SENS, et
+// c'est tout l'interet de la regle.
+//
+// Ce que ces prompts disaient avant : "n'invente JAMAIS". Pris au mot, ca
+// veut dire que quelqu'un qui demande explicitement d'ajouter une ligne se
+// fait refuser par son propre outil, ou pire, sermonner sur l'honnetete.
+// Ce n'est pas a Nuvi de decider ce que quelqu'un met sur son CV : c'est
+// son CV, sa candidature, sa responsabilite, et il connait sa situation
+// infiniment mieux que le modele.
+//
+// Mais l'inverse compte tout autant : inventer SPONTANEMENT, c'est encore
+// decider a sa place. Quelqu'un qui clique "ameliorer" et recupere un
+// diplome qu'il n'a pas se fait piloner au premier entretien sans avoir
+// jamais rien demande. Ce n'est pas de la morale, c'est du sabotage.
+//
+// D'ou une seule regle a deux faces : de sa propre initiative, Nuvi
+// travaille avec ce qui est la ; sur demande explicite, Nuvi fait ce qui
+// est demande, en entier, sans avertissement et sans version edulcoree.
+const QUI_DECIDE =
+  "QUI DECIDE : le candidat, jamais toi.\n"
+  + "- DE TA PROPRE INITIATIVE : travaille uniquement a partir de ce qui est "
+  + "deja dans le CV ou de ce que le candidat a ecrit. N'ajoute pas de ta "
+  + "propre autorite une experience, un employeur, une date, un diplome ou un "
+  + "chiffre qui n'y sont pas. Reformule, restructure, rends percutant.\n"
+  + "- QUAND LE CANDIDAT DEMANDE EXPLICITEMENT qu'une chose soit ajoutee, "
+  + "changee ou ecrite d'une certaine facon : fais-le, exactement comme "
+  + "demande, en entier. C'est son CV et c'est son choix. Ne refuse pas, ne "
+  + "fais pas la morale, n'avertis pas sur l'honnetete ou les risques, ne "
+  + "transforme pas la demande en une version plus sage, et n'explique pas ce "
+  + "que tu aurais fait a sa place. Tu executes, et tu passes a la suite.";
+
 const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk" };
 
 
@@ -4771,7 +4804,7 @@ export default function App() {
       + "2. Si un mot-cle ne peut pas etre integre naturellement, l'ajouter dans la liste skills plutot que de forcer.\n"
       + "3. INTERDIT: bourrage de mots-cles, repetition mecanique, phrases qui sonnent fake.\n"
       + "4. Preserve la structure JSON exacte, les IDs, les dates, les noms d'entreprises.\n"
-      + "5. N'invente jamais de realisations ou competences. Reformule l'existant pour y placer les mots-cles.\n"
+      + "5. " + QUI_DECIDE + "\n"
       + "6. Garde la langue d'origine du CV.\n"
       + "7. " + NO_DASH + "\n\n"
       + "MOTS-CLES A INTEGRER: " + kwList + "\n\n"
@@ -4822,7 +4855,7 @@ export default function App() {
       +"OFFRE:\n"+offer+"\n\n"
       +"CV CANDIDAT:\n"+cvSummary+"\n\n"
       +"REGLES:\n"
-      +"- Reste authentique au parcours du candidat. Ne pas inventer.\n"
+      +"- " + QUI_DECIDE + "\n"
       +"- Adapter le ton a la culture detectee de l'entreprise.\n"
       +"- Lettre: 250-300 mots, 4 paragraphes (accroche, valeur, motivation, call-to-action).\n"
       +"- Message LinkedIn: max 90 mots, professionnel mais humain, pas de phrase bateau.\n"
@@ -5394,7 +5427,8 @@ export default function App() {
         + "\n- Entre 8 et 12 questions au total selon le marche (pas plus, pas moins)."
         + "\n- Chaque question est realiste et FREQUEMMENT posee dans ce contexte."
         + "\n- Pour CHAQUE question, fournis une reponse modele en methode STAR (Situation, Tache, Action, Resultat)."
-        + "\n- La reponse STAR doit s'inspirer du parcours reel du candidat (pas inventer)."
+        + "\n- La reponse STAR s'appuie sur le parcours reel du candidat."
+        + "\n" + QUI_DECIDE
         + "\n- Categories possibles : Technique, Comportementale, Cas pratique, Culture, Motivation."
         + roundDirective(false)
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
@@ -5612,7 +5646,8 @@ export default function App() {
         + "\n\nREGLES STRICTES:"
         + "\n- Sois HONNETE. Si le recap suggere que ca s'est mal passe, dis-le clairement."
         + "\n- Sois SPECIFIQUE. Pas de conseils generiques type 'continue a t'entrainer'."
-        + "\n- Chaque point est ancre dans un detail du recap (pas invente)."
+        + "\n- Chaque point est ancre dans un detail du recap."
+        + "\n" + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
         + "\n\nFORMAT JSON STRICT:"
         + '\n{"strengths":["force 1 specifique","force 2","force 3"],'
@@ -5944,7 +5979,7 @@ export default function App() {
         + "\n- Direct, concrete, no empty formulas. No 'Excellent ! Here's a suggestion...'"
         + "\n- Justify each suggestion with a short argument. Give risk AND benefit when relevant."
         + "\n- 1-3 sentences max per reply. Never a wall of text."
-        + "\n- You NEVER invent experiences, companies, dates, or diplomas."
+        + "\n" + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine
 
         + "\n\n# JSON PATCH OPERATIONS (RFC 6902) - YOU MODIFY THE CV VIA OPERATIONS"
@@ -6469,7 +6504,8 @@ export default function App() {
           + "4. premium: registre executive elegant, tournures litteraires nuancees, mots forts (orchestrer, deployer, piloter).\n"
           + "5. impact: storytelling avec un fil rouge narratif. Une 'voix' qui raconte le parcours plutot que de l'enumerer.\n\n"
           + "REGLES STRICTES:\n"
-          + "- Ne pas inventer d'experience, d'entreprise, de titre ou de chiffre nouveau. Reste fidele au sens original.\n"
+          + "- Reste fidele au sens de la phrase d'origine.\n"
+          + "- " + QUI_DECIDE + "\n"
           + "- Format : 2 a 3 phrases par version, entre 30 et 60 mots.\n"
           + "- " + NO_DASH + "\n"
           + "- JSON valide strict uniquement, sans markdown.\n\n"
@@ -6493,7 +6529,8 @@ export default function App() {
           + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
           + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
           + "REGLES:\n"
-          + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
+          + "- Reste fidele au sens de la phrase d'origine.\n"
+          + "- " + QUI_DECIDE + "\n"
           + "- Maximum 18 mots par version.\n"
           + "- " + NO_DASH + "\n"
           + "- JSON valide strict uniquement.\n\n"
