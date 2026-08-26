@@ -4,7 +4,7 @@
 //
 // Suivi des candidatures de l'utilisateur. CRUD local en localStorage.
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
@@ -644,20 +644,64 @@ export default function ApplicationsTrackerModal({
       )}
 
       {/* Liste */}
+      {/* L'ECRAN VIDE EST LE PREMIER QU'ON VOIT, PAS LE DERNIER
+          C'etait une boite grise avec deux phrases : "Aucune candidature." et
+          "Ajoute ta premiere candidature." Elle constatait le vide sans rien
+          en faire - et c'est pourtant l'ecran que rencontre TOUT nouveau
+          venu, avant d'avoir la moindre raison de rester.
+          Un ecran vide bien fait ne decrit pas le vide, il montre ce qui va
+          le remplir. Les trois etapes du suivi sont donc dessinees a l'avance,
+          en creux : on voit le parcours d'une candidature avant d'en avoir
+          une seule, et on comprend a quoi sert l'ecran sans le mode d'emploi. */}
       {!showForm && applications.length === 0 && (
         <div style={{
-          padding:"32px 18px",
+          padding:"26px 20px 24px",
           background:CreamSoft, borderRadius:RadiusMd,
           border:"0.5px solid "+Hairline,
           textAlign:"center",
         }}>
           <div style={{
-            fontFamily:Serif, fontSize:16, fontWeight:500,
-            color:Ink, letterSpacing:"-0.01em", marginBottom:6,
+            fontFamily:Serif, fontSize:17, fontWeight:500,
+            color:Ink, letterSpacing:"-0.01em", marginBottom:5,
           }}>{T.ap_empty_title}</div>
           <div style={{
-            fontSize:12, color:InkMuted, lineHeight:1.5,
+            fontSize:12.5, color:InkMuted, lineHeight:1.5, marginBottom:20,
           }}>{T.ap_empty_sub}</div>
+
+          {/* Les trois etapes, en creux. Les pastilles sont vides : rien n'est
+              encore arrive, et le dessin ne pretend pas le contraire. */}
+          <div style={{
+            display:"flex", alignItems:"flex-start", justifyContent:"center",
+            gap:0, maxWidth:340, margin:"0 auto",
+          }}>
+            {[
+              T.ap_step_sent || (locale === "en" ? "Sent" : "Envoyee"),
+              T.ap_step_reply || (locale === "en" ? "Reply" : "Reponse"),
+              T.ap_step_interview || (locale === "en" ? "Interview" : "Entretien"),
+            ].map((etape, i, tout) => (
+              <Fragment key={etape}>
+                <div style={{
+                  display:"flex", flexDirection:"column", alignItems:"center",
+                  gap:7, flexShrink:0, width:74,
+                }}>
+                  <span style={{
+                    width:13, height:13, borderRadius:"50%",
+                    border:"1.5px dashed "+Gray400, display:"block",
+                  }}/>
+                  <span style={{
+                    fontSize:10.5, fontWeight:600, letterSpacing:"0.04em",
+                    color:InkMuted, lineHeight:1.2,
+                  }}>{etape}</span>
+                </div>
+                {i < tout.length - 1 && (
+                  <span aria-hidden="true" style={{
+                    flex:1, height:1, marginTop:6, minWidth:18,
+                    backgroundImage:"repeating-linear-gradient(90deg,"+Gray400+" 0 4px,transparent 4px 9px)",
+                  }}/>
+                )}
+              </Fragment>
+            ))}
+          </div>
         </div>
       )}
 
