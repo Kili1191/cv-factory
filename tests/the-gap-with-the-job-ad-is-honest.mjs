@@ -121,6 +121,29 @@ export async function run() {
     }
   }
 
+  // --- 2b. Ni l'employeur, ni les adjectifs de prose ---------------------
+  //
+  // Les premieres lignes d'une annonce portent l'intitule, l'employeur et la
+  // ville. Proposer d'ajouter "Soho House" a son CV n'a aucun sens - et deux
+  // propositions absurdes suffisent a faire ignorer les vingt bonnes.
+  //
+  // Meme logique pour les intensificateurs : l'annonce ecrit "full stock
+  // control", le terme qu'un index cherche est "stock control". Garder les
+  // deux, c'est afficher la meme chose deux fois avec un mot en trop.
+  for (const interdit of ["soho house", "soho", "house london"]) {
+    if (phrases.includes(interdit)) {
+      failures.push(`"${interdit}" vient de l'en-tete de l'annonce : c'est l'employeur, pas une exigence`);
+    }
+  }
+  const INTENS = ["full", "strong", "proven", "excellent", "solid", "extensive"];
+  const avecAdjectif = phrases.find(p => INTENS.includes(p.split(" ")[0]) && p.includes(" "));
+  if (avecAdjectif) {
+    failures.push(
+      `"${avecAdjectif}" garde un adjectif de prose en tete. Le terme cherche par un `
+      + "index est celui qui suit, et le CV a une chance de le contenir tel quel."
+    );
+  }
+
   // --- 3. Le cas qui compte : deja la, mal nomme ------------------------
   const e = ecartMotsClefs(CV, ANNONCE, 40);
   if (!e.aReformuler.includes("stock control")) {

@@ -4,7 +4,8 @@
 //
 // Adapte le CV a une offre d'emploi.
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { rapport } from "../../lib/atsMatch.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
@@ -21,6 +22,23 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
   const [load, setLoad]   = useState(false);
   const [res, setRes]     = useState(initialResult || null);
   const [ph, setPh]       = useState(initialResult ? "done" : "input");
+
+  // L'ECART SE CALCULE AVANT DE DEPENSER UN APPEL
+  //
+  // Ce rapport ne coute rien, ne part nulle part, et ne peut rien inventer :
+  // il compare deux textes. Il n'a donc aucune raison d'attendre l'IA.
+  //
+  // Il repond a une question que l'IA ne pose pas : parmi ce qui manque,
+  // qu'est-ce que la personne a DEJA mais nomme autrement ? C'est le cas le
+  // plus frequent et le seul qu'on puisse corriger sans rien exagerer.
+  // Taleo indexe en booleen : "stock and wastage control" et "stock control"
+  // ne se rencontrent jamais, meme si c'est le meme travail.
+  //
+  // Le seuil de 120 caracteres evite d'analyser trois mots colles par erreur.
+  const ecart = useMemo(
+    () => (offer.trim().length > 120 ? rapport(cv, offer) : null),
+    [cv, offer]
+  );
 
   const analyze = async () => {
     if (!offer.trim()) { notify(T.off_no_offer); return; }
@@ -370,6 +388,72 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
         placeholder={"Colle l'offre d'emploi complete ici:\n- Intitule du poste\n- Missions\n- Profil recherche\n- Competences requises"}
         rows={11}
         style={{...IN({resize:"vertical", marginBottom:14, fontSize:12, lineHeight:1.7})}}/>
+      {ecart && (ecart.aReformuler.length > 0 || ecart.titre.etat !== "exact" || ecart.manquantes.length > 0) && (
+        <div style={{
+          border:"0.5px solid "+Hairline, borderRadius:RadiusMd,
+          padding:"12px 14px", marginBottom:14, background:Paper,
+        }}>
+          <div style={{
+            fontSize:9, fontWeight:700, color:InkMuted, marginBottom:9,
+            letterSpacing:"0.06em", textTransform:"uppercase",
+          }}>Lu dans l'offre, sans appeler l'IA</div>
+
+          {/* L'INTITULE D'ABORD : c'est le signal individuel le plus lourd
+              chez Workday et iCIMS, et un ecart de seniorite s'y voit. */}
+          {ecart.titre.etat !== "exact" && ecart.titre.vise && (
+            <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:10}}>
+              <strong>Intitule</strong>{" : l'offre dit "}
+              <span style={{background:CoralSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.vise}</span>
+              {ecart.titre.actuel ? <>{", ton CV dit "}<span style={{background:CreamSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.actuel}</span></> : null}
+              {ecart.titre.etat === "proche" ? ". Proche, mais pas identique." : "."}
+            </div>
+          )}
+
+          {/* LE COEUR : deja la, nomme autrement. */}
+          {ecart.aReformuler.length > 0 && (
+            <div style={{marginBottom: ecart.manquantes.length ? 10 : 0}}>
+              <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:6}}>
+                <strong>Tu l'as deja, ils l'appellent autrement.</strong>{" "}
+                <span style={{color:InkMuted}}>
+                  Les mots sont dans ton CV, pas dans cet ordre. Un tri automatique
+                  ne les rapproche pas.
+                </span>
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                {ecart.aReformuler.map((k,i) => (
+                  <span key={i} style={{
+                    background:"#fef3c7", color:"#92400e",
+                    borderRadius:3, padding:"3px 7px", fontSize:11,
+                  }}>{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {ecart.manquantes.length > 0 && (
+            <div>
+              <div style={{fontSize:12, color:InkMuted, lineHeight:1.5, marginBottom:6}}>
+                Absent de ton CV{ecart.manquantes.length > 6 ? " (les 6 premiers)" : ""} :
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                {ecart.manquantes.slice(0,6).map((k,i) => (
+                  <span key={i} style={{
+                    background:CreamSoft, color:InkMuted,
+                    borderRadius:3, padding:"3px 7px", fontSize:11,
+                  }}>{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* On ne propose jamais d'ecrire ces mots a la place de quelqu'un :
+              un mot-clef ajoute sans experience derriere est un mensonge que
+              l'entretien decouvre en trente secondes. */}
+          <div style={{fontSize:11, color:InkMuted, marginTop:10, lineHeight:1.5}}>
+            A n'ajouter que la ou c'est vrai.
+          </div>
+        </div>
+      )}
       <button onClick={analyze}
         disabled={load||!apiKey||!offer.trim()}
         style={{
