@@ -63,58 +63,86 @@ const TEXT = {
 const EXAMPLES = {
   fr: [
     {
-      name: "Thomas Martin",
-      beforeTitle: "Commercial",
-      afterTitle: "Responsable Commercial B2B : +40% de CA en 2 ans",
-      before: [
-        "Responsable des ventes dans une entreprise. J'ai vendu des produits aux clients et gere mon secteur.",
-        "Charge de developper le portefeuille clients et d'atteindre les objectifs commerciaux fixes.",
-      ],
-      after: [
-        "Developpe un portefeuille de 45 comptes grands groupes, generant 1,2M EUR de CA annuel (+40% en 2 ans).",
-        "Pilote une equipe de 4 commerciaux, depassant les objectifs de 18% trois trimestres consecutifs.",
-      ],
+      beforeTitle: "Serveur",
+      before: "Serveur en restaurant. Je prenais les commandes et je servais les clients.",
+      after: "Assure 120 couverts par service sur un rang de 14 tables, avec une vente additionnelle en vins qui a fait monter le ticket moyen de 22%.",
     },
     {
-      name: "Sarah Dubois",
-      beforeTitle: "Cheffe de projet",
-      afterTitle: "Cheffe de projet digital : 12 projets livres dans les delais",
-      before: [
-        "Gestion de projets pour differents clients. Coordination des equipes et suivi de l'avancement.",
-        "Participation aux reunions et redaction de comptes-rendus reguliers.",
-      ],
-      after: [
-        "Pilote 12 projets digitaux (budget cumule 800K EUR), tous livres dans les delais et le budget.",
-        "Coordonne des equipes de 8 personnes en mode agile, reduisant les retards de livraison de 30%.",
-      ],
+      beforeTitle: "Vendeuse",
+      before: "Travail en magasin, aide aux clients et tenue de la caisse.",
+      after: "Atteint 118% de l'objectif magasin six mois d'affilee, en convertissant un visiteur sur trois en vente.",
+    },
+    {
+      beforeTitle: "Aide-soignant",
+      before: "Je m'occupais des residents dans une maison de retraite.",
+      after: "Accompagne 18 residents au quotidien et fait baisser les chutes signalees de 40% en revoyant la ronde de nuit.",
+    },
+    {
+      beforeTitle: "Chauffeur-livreur",
+      before: "Livraison de colis pour une entreprise.",
+      after: "Effectue 140 livraisons par jour sur trois secteurs, avec 99,2% de remises reussies du premier coup.",
+    },
+    {
+      beforeTitle: "Preparateur de commandes",
+      before: "Preparation des commandes dans un entrepot.",
+      after: "Prepare 400 commandes par vacation en gardant un taux d'erreur sous 0,3% pendant 18 mois.",
+    },
+    {
+      beforeTitle: "Receptionniste",
+      before: "Accueil telephonique et physique des visiteurs.",
+      after: "Gere 90 appels et 40 visiteurs par jour, en ramenant l'attente moyenne de 6 a 2 minutes.",
+    },
+    {
+      beforeTitle: "Cuisinier",
+      before: "Preparation des plats en cuisine.",
+      after: "Tenu le poste grillade sur 200 couverts par service et reduit le gaspillage alimentaire de 25% par le controle des portions.",
+    },
+    {
+      beforeTitle: "Assistant administratif",
+      before: "Taches administratives et classement des dossiers.",
+      after: "Traite 250 factures par mois sans un seul retard de paiement, en economisant 6 heures par semaine grace aux relances automatisees.",
     },
   ],
   en: [
     {
-      name: "Thomas Martin",
-      beforeTitle: "Sales rep",
-      afterTitle: "B2B Sales Manager : +40% revenue in 2 years",
-      before: [
-        "Responsible for sales at a company. I sold products to clients and managed my territory.",
-        "In charge of growing the client portfolio and hitting the assigned sales targets.",
-      ],
-      after: [
-        "Grew a portfolio of 45 enterprise accounts, generating 1.2M EUR annual revenue (+40% in 2 years).",
-        "Led a team of 4 sales reps, beating targets by 18% three quarters in a row.",
-      ],
+      beforeTitle: "Waiter",
+      before: "Restaurant server. I took orders and served customers.",
+      after: "Served 120 covers a night across a 14-table section, lifting average spend 22% through wine upselling.",
     },
     {
-      name: "Sarah Dubois",
-      beforeTitle: "Project manager",
-      afterTitle: "Digital Project Manager : 12 projects delivered on time",
-      before: [
-        "Managed projects for various clients. Coordinated teams and tracked progress.",
-        "Attended meetings and wrote regular status reports.",
-      ],
-      after: [
-        "Delivered 12 digital projects (800K EUR combined budget), all on time and on budget.",
-        "Coordinated agile teams of 8 people, cutting delivery delays by 30%.",
-      ],
+      beforeTitle: "Sales assistant",
+      before: "Worked in a shop, helped customers and handled the till.",
+      after: "Hit 118% of store target six months running, converting one in three walk-ins into a sale.",
+    },
+    {
+      beforeTitle: "Carer",
+      before: "Looked after residents in a care home.",
+      after: "Cared for 18 residents daily and cut reported falls by 40% by redesigning the night-check routine.",
+    },
+    {
+      beforeTitle: "Delivery driver",
+      before: "Delivered parcels for a company.",
+      after: "Completed 140 drops a day across three boroughs, holding a 99.2% first-time delivery rate.",
+    },
+    {
+      beforeTitle: "Warehouse operative",
+      before: "Worked in a warehouse picking orders.",
+      after: "Picked and packed 400 orders a shift, keeping the error rate under 0.3% for 18 months.",
+    },
+    {
+      beforeTitle: "Receptionist",
+      before: "Answered the phone and welcomed visitors.",
+      after: "Handled 90 calls and 40 visitors a day, cutting average wait time from 6 minutes to 2.",
+    },
+    {
+      beforeTitle: "Chef de partie",
+      before: "Worked in a kitchen preparing dishes.",
+      after: "Ran the grill section for 200 covers a service and cut food waste 25% through portion control.",
+    },
+    {
+      beforeTitle: "Admin assistant",
+      before: "Did administrative tasks and filing.",
+      after: "Processed 250 invoices a month with zero late payments, saving six hours a week by automating chasers.",
     },
   ],
 };
@@ -308,17 +336,54 @@ export default function NuviHome({
     }, 2100));
   };
 
-  // Au montage : fade-in puis joue la transformation une fois.
+  // LE PREMIER METIER EST TIRE AU SORT, ET LES SUIVANTS S'ENCHAINENT
+  //
+  // Huit metiers ordinaires - serveur, aide-soignant, chauffeur-livreur,
+  // receptionniste - et chaque visiteur tombe sur un autre. Un exemple de
+  // commercial affiche a tout le monde fait croire que l'outil est fait pour
+  // les cadres, et les trois quarts des gens passent leur chemin.
+  //
+  // Le tirage se fait dans un effet, jamais au rendu : Next.js dessine cette
+  // page une fois sur le serveur et une fois dans le navigateur, et deux
+  // Math.random() differents produisent un ecart d'hydratation - React jette
+  // alors le rendu serveur et le refait, avec un clignotement visible.
+  //
+  // L'enchainement se fait tout seul. Attendre un clic sur "Rejouer" pour
+  // montrer un deuxieme metier, c'est ne le montrer a presque personne : on
+  // reste quelques secondes sur une page d'accueil, pas assez pour avoir
+  // l'idee de cliquer.
   useEffect(() => {
     setEntered(true);
+    let vivant = true;
+    const tire = Math.floor(Math.random() * examples.length);
+
     // Le reglage "reduire les animations" est lu par un media query, donc
     // connu un instant APRES le premier rendu. On relance donc la sequence
     // quand la reponse arrive : sans ce declencheur, la toute premiere
     // lecture (false par defaut) resterait figee et le decompte partirait
     // quand meme.
-    const t = setTimeout(() => playTransform(0), reducedMotion ? 0 : 500);
+    const t = setTimeout(() => { if (vivant) playTransform(tire); },
+      reducedMotion ? 0 : 500);
     timers.current.push(t);
-    return clearTimers;
+
+    // Mouvement refuse : on montre UN metier, fixe. Faire defiler huit
+    // exemples devant quelqu'un qui a demande le calme est exactement ce
+    // qu'il ne veut pas.
+    if (reducedMotion) return () => { vivant = false; clearTimers(); };
+
+    // 5,6 secondes par metier : 1,2s pour lire l'avant, 0,9s de bascule, et
+    // 3,5s sur l'apres - le temps de lire la phrase ET de voir le score
+    // arriver, qui est le dernier element a se poser.
+    const boucle = setInterval(() => {
+      if (!vivant) return;
+      setExampleIdx((i) => {
+        const suivant = (i + 1) % examples.length;
+        playTransform(suivant);
+        return suivant;
+      });
+    }, 5600);
+
+    return () => { vivant = false; clearInterval(boucle); clearTimers(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
 
@@ -424,8 +489,8 @@ export default function NuviHome({
             visiteur doit accrocher ici. */}
         <div style={{ minHeight: mob ? 200 : 240 }}>
           <RewriteLine
-            avant={ex.before[0]}
-            apres={ex.after[0]}
+            avant={ex.before}
+            apres={ex.after}
             phase={showAfter ? "apres" : transforming ? "bascule" : "avant"}
             mob={mob}
             reducedMotion={reducedMotion}

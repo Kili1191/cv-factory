@@ -53,6 +53,7 @@ const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay
 const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
+const LanguageAsk = dynamic(() => import("./components/LanguageAsk"), { ssr: false });
 const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
 
@@ -3185,6 +3186,10 @@ export default function App() {
   // Le choix deja fait par quelqu'un reste prioritaire : il est relu depuis
   // le stockage local juste apres, et n'est jamais ecrase.
   const [locale, setLc_]   = useState("en");
+  // askLang : personne n'a encore repondu a la question de la langue. Mis a
+  // vrai apres le montage seulement si le stockage local est vide sur ce
+  // point - voir l'effet d'hydratation plus bas.
+  const [askLang, setAskLang] = useState(false);
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
   const [load, setLoad]     = useState(false);
@@ -3473,8 +3478,17 @@ export default function App() {
     if (savedLy !== "sidebar") setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
     if (savedKy) setAK_(savedKy);
-    const savedLc = lsG(SK.LC, "en");
-    if (savedLc !== "en") setLc_(savedLc);
+    // ABSENT n'est pas la meme chose que "en". lsG rend la valeur par defaut
+    // dans les deux cas, donc on regarde la cle brute : tant qu'elle n'existe
+    // pas, personne n'a choisi, et on pose la question.
+    let lcBrut = null;
+    try { lcBrut = localStorage.getItem(SK.LC); } catch { /* stockage refuse */ }
+    if (lcBrut == null) {
+      setAskLang(true);
+    } else {
+      const savedLc = lsG(SK.LC, "en");
+      if (savedLc !== "en") setLc_(savedLc);
+    }
     const savedVs = lsG(SK.VS, []);
     if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
     const savedCt = lsG(SK.CT, null);
@@ -3682,7 +3696,19 @@ export default function App() {
   const setTh = useCallback(v => { setThN_(v); lsS(SK.TH, v); }, []);
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
-  const setLc = useCallback(v => { setLc_(v);  lsS(SK.LC, v); }, []);
+  const setLc = useCallback(v => { setLc_(v);  lsS(SK.LC, v); setAskLang(false); }, []);
+
+  // LE DOCUMENT DOIT DECLARER LA LANGUE QU'IL AFFICHE
+  //
+  // <html lang> est ecrit en dur a "en" dans le gabarit, parce que c'est la
+  // langue par defaut. Quand quelqu'un passe au francais, l'interface change
+  // mais l'attribut reste : un lecteur d'ecran lit alors du francais avec un
+  // accent anglais, mot par mot, et devient inutilisable. On le tient donc a
+  // jour ici, seul endroit qui connaisse la langue reellement affichee.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   // === v17 : phase router ===
   // Expose un setPhase qui pilote le couple (tab, aiMode) pour rester compat
@@ -7926,6 +7952,18 @@ export default function App() {
     </Suspense>
   );
 
+  // LA QUESTION DE LA LANGUE PASSE DEVANT TOUT LE RESTE
+  //
+  // Elle se pose une seule fois, a la premiere visite, et rien derriere n'est
+  // utilisable tant qu'on n'a pas repondu : quelqu'un qui commencerait a
+  // saisir son CV avant de choisir se retrouverait avec des intitules dans
+  // deux langues. setLc enregistre la reponse et referme l'ecran.
+  const LangAskEl = askLang && (
+    <Suspense fallback={null}>
+      <LanguageAsk onChoose={setLc}/>
+    </Suspense>
+  );
+
   // Cinematique premium d'arrivee
   const NuviHomeEl = showNuviHome && (
     <Suspense fallback={null}>
@@ -8033,6 +8071,7 @@ export default function App() {
           </div>
         )}
         {Modals}
+        {LangAskEl}
         {Onboard}
         {NuviHomeEl}
         {showIntro && (
@@ -8507,6 +8546,7 @@ export default function App() {
         </div>
       )}
       {Modals}
+      {LangAskEl}
       {Onboard}
       {showNuviHome && (
         <Suspense fallback={null}>

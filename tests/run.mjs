@@ -21,7 +21,7 @@ const SUITES = [
   ["Gmail rend au suivi son vrai etat", "./gmail-reads-the-replies.mjs"],
   ["l'app s'installe sur l'ecran d'accueil", "./installs-on-the-home-screen.mjs"],
   ["l'accueil ne cache aucun texte", "./the-home-screen-hides-no-text.mjs"],
-  ["le site s'ouvre en anglais", "./the-site-opens-in-english.mjs"],
+  ["la langue est demandee une fois", "./the-site-opens-in-english.mjs"],
   ["les mots en italique sont de vrais italiques", "./the-italics-are-real.mjs"],
   ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
   ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],
