@@ -33,7 +33,7 @@ export default function ResetCVModal({
   onAccountStub,
   onResetWithoutSave,
   T,
-  lang = "fr",
+  lang = "en",
   mob = false,
 }) {
   // Couleurs Nuvi v3 (CSS variables - support dark mode)

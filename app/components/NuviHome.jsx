@@ -38,8 +38,12 @@ const TEXT = {
     coachLabel: "Coach",
   },
   en: {
+    // "CV" et non "resume" : Nuvi vise le Royaume-Uni et la France, deux
+    // marches ou l'on dit CV. "Resume" est americain, et le bouton juste en
+    // dessous disait deja "I already have a CV" - le titre et le bouton se
+    // contredisaient sur le mot le plus important de la page.
     title: "Here's what I do to a",
-    titleAccent: "resume",
+    titleAccent: "CV",
     sub: "See the difference. No signup, just a preview.",
     before: "Before",
     after: "After",
@@ -124,7 +128,7 @@ function balanceText(text) {
 }
 
 export default function NuviHome({
-  lang = "fr",
+  lang = "en",
   mob = false,
   userName = null,
   onGenerate = () => {},

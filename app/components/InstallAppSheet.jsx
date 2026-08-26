@@ -188,7 +188,7 @@ function Step({ n, children, icon }) {
   );
 }
 
-export default function InstallAppSheet({ lang = "fr", onClose = () => {} }) {
+export default function InstallAppSheet({ lang = "en", onClose = () => {} }) {
   const t = T[lang] || T.fr;
   const { platform, installed, canPromptDirectly, promptInstall } = useInstallState();
   const [busy, setBusy] = useState(false);

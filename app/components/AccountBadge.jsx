@@ -83,7 +83,7 @@ export default function AccountBadge({
   error = null,
   gmailConnected = false,
   expanded = false,
-  lang = "fr",
+  lang = "en",
   onSignIn = () => {},
   onSignOut = () => {},
   onConnectGmail = () => {},

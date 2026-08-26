@@ -34,11 +34,11 @@ export const metadata = {
   metadataBase: new URL("https://thenuvi.com"),
   applicationName: "Nuvi",
   title: {
-    default: "Nuvi — le CV qui passe l'ATS",
+    default: "Nuvi — the CV that gets past the ATS",
     template: "%s · Nuvi",
   },
   description:
-    "Colle l'annonce, obtiens le CV qui correspond, et suis tes candidatures.",
+    "Paste the job ad, get the CV that matches it, and track your applications.",
   manifest: "/manifest.webmanifest",
   // Le nom sous l'icone. Sans lui, iOS affiche le <title> entier, tronque a
   // une douzaine de caracteres : "Nuvi — le CV..." au lieu de "Nuvi".
@@ -80,8 +80,11 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  // La langue par defaut du document est l'anglais : c'est ce que lisent
+  // Google et les lecteurs d'ecran quand personne n'a encore choisi. Le
+  // francais reste a un clic dans les reglages.
   return (
-    <html lang="fr">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -97,7 +100,11 @@ export default function RootLayout({ children }) {
           aucune accroche. Le titre est masque visuellement (il ferait doublon
           avec le logo) mais reste expose aux technologies d'assistance.
         */}
-        <h1 className="sr-only">Nuvi — editeur de CV</h1>
+        {/* Le seul titre que voient les robots d'indexation. Il vit dans le
+            layout, donc cote serveur : il ne peut pas connaitre la langue
+            choisie par le visiteur. Il suit donc la langue par defaut du
+            document, l'anglais. */}
+        <h1 className="sr-only">Nuvi — CV and resume editor</h1>
         <main>{children}</main>
       </body>
     </html>

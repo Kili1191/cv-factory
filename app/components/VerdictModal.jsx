@@ -31,7 +31,7 @@ export default function VerdictModal({
   isOpen, onClose,
   score = 85, editsCount = 0, recentDelta = 0.4,
   onReady, onFear, onContinue,
-  locale = "fr",
+  locale = "en",
 }) {
   const [scoreAnim, setScoreAnim] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);

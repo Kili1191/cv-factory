@@ -45,7 +45,7 @@ export default function AdjustModal({
   pushH,
   apiKey,
   T,
-  lang = "fr",
+  lang = "en",
   aiCall,
   parseJSON,
   notify,

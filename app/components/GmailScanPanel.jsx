@@ -98,7 +98,7 @@ function tone(outcome) {
 }
 
 export default function GmailScanPanel({
-  locale = "fr",
+  locale = "en",
   applications = [],
   onApply = () => {},
   connectGmail,

@@ -30,7 +30,7 @@ const DISMISS_KEY = "cvf_suggest_off";
 export default function NuviBottomNav({
   active = "home",
   onSelect = () => {},
-  lang = "fr",
+  lang = "en",
   onCoachOpen,
   onSettingsOpen,
   onInstallOpen,

@@ -30,7 +30,7 @@ export default function ExportPDFModal({
   onLongPage,
   pageCount = 1.4,
   T = {},
-  lang = "fr",
+  lang = "en",
   mob = false,
 }) {
   const Cream = "var(--nuvi-cream)";

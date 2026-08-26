@@ -62,7 +62,7 @@ function formatTime(ts, locale) {
   });
 }
 
-export default function ActivityModal({ locale = "fr", onClose, notify }) {
+export default function ActivityModal({ locale = "en", onClose, notify }) {
   const isEn = locale === "en";
   const [filter, setFilter] = useState("all");
   // `version` force un recalcul apres un effacement, sans relire a chaque rendu.

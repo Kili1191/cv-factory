@@ -21,7 +21,7 @@ export default function NuviLoadingOverlay({
   active = false,
   series = "generic",
   user = {},
-  lang = "fr",
+  lang = "en",
   mob = false,
 }) {
   const [shouldRender, setShouldRender] = useState(active);

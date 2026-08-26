@@ -20,7 +20,7 @@ export default function AccountSoonModal({
   open,
   onClose,
   T,
-  lang = "fr",
+  lang = "en",
   mob = false,
 }) {
   const Cream = "var(--nuvi-cream)";

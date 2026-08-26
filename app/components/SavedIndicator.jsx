@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 
 export default function SavedIndicator({
   lastSavedAt = null,
-  lang = "fr",
+  lang = "en",
   compact = false,
 }) {
   // Tick toutes les 10s pour rafraichir le texte

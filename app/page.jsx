@@ -1164,7 +1164,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [sec, setSec]   = useState(0);
   const [yrs, setYrs]   = useState("");
   const [tone, setTone] = useState("p");
-  const [lang, setLang] = useState("fr");
+  const [lang, setLang] = useState("en");
   const [parc, setParc] = useState("");
   const [offre, setOffre] = useState("");
 
@@ -3172,7 +3172,15 @@ export default function App() {
   const [thN, setThN_]     = useState("executive");
   const [layout, setLy_]   = useState("sidebar");
   const [apiKey, setAK_]   = useState("server-managed");
-  const [locale, setLc_]   = useState("fr");
+  // L'ANGLAIS PAR DEFAUT, LE FRANCAIS EN UN CLIC
+  //
+  // Nuvi vise le marche francais ET le marche britannique. Ouvrir en francais
+  // pour un Londonien lui demande de trouver un reglage avant de comprendre
+  // ce qu'il regarde - et la plupart ferment l'onglet avant.
+  //
+  // Le choix deja fait par quelqu'un reste prioritaire : il est relu depuis
+  // le stockage local juste apres, et n'est jamais ecrase.
+  const [locale, setLc_]   = useState("en");
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
   const [load, setLoad]     = useState(false);
@@ -3461,8 +3469,8 @@ export default function App() {
     if (savedLy !== "sidebar") setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
     if (savedKy) setAK_(savedKy);
-    const savedLc = lsG(SK.LC, "fr");
-    if (savedLc !== "fr") setLc_(savedLc);
+    const savedLc = lsG(SK.LC, "en");
+    if (savedLc !== "en") setLc_(savedLc);
     const savedVs = lsG(SK.VS, []);
     if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
     const savedCt = lsG(SK.CT, null);

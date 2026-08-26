@@ -21,7 +21,7 @@ import {
   Purple, Magenta, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
 } from "./tokens";
 
-export default function JobSearchModal({ T, locale = "fr", onTrack, onClose }) {
+export default function JobSearchModal({ T, locale = "en", onTrack, onClose }) {
   const [what, setWhat] = useState("");
   const [where, setWhere] = useState("");
   const [country, setCountry] = useState("fr");

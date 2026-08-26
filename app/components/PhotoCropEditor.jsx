@@ -127,7 +127,7 @@ export default function PhotoCropEditor({
   onSave,
   onRemove,
   T,
-  lang = "fr",
+  lang = "en",
   defaultRatio = "1:1",
 }) {
   const photo = cv?.photo || {};

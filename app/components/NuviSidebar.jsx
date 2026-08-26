@@ -10,7 +10,7 @@ export default function NuviSidebar({
   active = "home",
   onSelect = () => {},
   onSubSelect = () => {},
-  lang = "fr",
+  lang = "en",
   onCoachOpen,
   onSettingsOpen,
   onReset,
