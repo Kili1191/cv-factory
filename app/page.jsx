@@ -8390,10 +8390,41 @@ export default function App() {
               L'action remonte donc au-dessus du document, la ou tous les
               editeurs la mettent. Elle ne recouvre plus rien par construction,
               et elle se trouve sans avoir a la chercher. */}
+          {/* LA BANDE PORTE AUSSI CE QU'ON EDITE
+              Elle ne contenait que Telecharger, cale a droite : la moitie
+              gauche etait vide, et le bouton flottait dans le coin sans rien
+              pour l'ancrer. Mesure a 1440x900 : le bouton en (1290,14), seul.
+              Un filet et le nom du document en font une vraie ligne d'en-tete
+              - c'est ce qui separe une page composee d'un bouton pose dans un
+              angle, et c'est la meme regle que la manchette de l'accueil.
+              Le nom sert aussi a quelque chose : quelqu'un qui garde une
+              version par metier voyait son CV sans jamais lire lequel. */}
           <div style={{
-            flexShrink:0, display:"flex", justifyContent:"flex-end",
-            alignItems:"center", gap:10, padding:"14px 22px 0",
+            flexShrink:0, display:"flex", justifyContent:"space-between",
+            alignItems:"center", gap:10, padding:"12px 22px 12px",
+            borderBottom:"1px solid "+Gray200,
           }}>
+            <div style={{minWidth:0, display:"flex", alignItems:"baseline", gap:9}}>
+              <span style={{
+                fontFamily:Sans, fontSize:9.5, fontWeight:700,
+                letterSpacing:"0.12em", textTransform:"uppercase",
+                color:Gray400, flexShrink:0,
+              }}>{locale === "en" ? "Editing" : "En cours"}</span>
+              <span style={{
+                fontFamily:Serif, fontSize:15, fontWeight:600,
+                color:Ink, letterSpacing:"-0.01em",
+                overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+              }}>
+                {cv.name || (locale === "en" ? "Untitled CV" : "CV sans nom")}
+              </span>
+              {cv.title && (
+                <span style={{
+                  fontFamily:Sans, fontSize:12, color:Gray600,
+                  overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
+                }}>{cv.title}</span>
+              )}
+            </div>
+            <div style={{display:"flex", alignItems:"center", gap:10, flexShrink:0}}>
             {/* La meme condition que portait l'ancien bouton flottant, et que
                 j'avais laissee tomber en le deplacant : l'action principale
                 doit s'effacer des qu'une fenetre s'ouvre. Sinon elle flotte
@@ -8446,6 +8477,7 @@ export default function App() {
                 {locale === "en" ? "Download" : "Telecharger"}
               </button>
             )}
+            </div>
           </div>
           <div ref={attachDeskZone} style={{
             flex:1, overflow:"auto", padding:"14px 22px 22px",
