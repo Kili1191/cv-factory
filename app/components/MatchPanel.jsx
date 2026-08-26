@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { rapport } from "../../lib/atsMatch.js";
+import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
@@ -13,7 +14,7 @@ import {
   B, IN, LBL, NO_DASH,
 } from "./sharedTokens";
 
-function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
+function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
   aiCall, parseJSON, normCV, pushH }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
@@ -39,6 +40,21 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
     () => (offer.trim().length > 120 ? rapport(cv, offer) : null),
     [cv, offer]
   );
+
+  // DEUX CHEMINS, ET LE SECOND N'APPARAIT QUE S'IL CHANGE QUELQUE CHOSE
+  //
+  //   "actuel"   on part du CV a l'ecran. Rapide, previsible.
+  //   "parcours" on part de TOUT ce qui a ete enregistre : le CV courant plus
+  //              chaque version sauvegardee. Quelqu'un qui garde une version
+  //              hotellerie et une version commerciale, et qui postule au
+  //              commercial avec la premiere chargee, obtient sinon une
+  //              adaptation batie sur le mauvais materiau. Son experience
+  //              existe, elle est enregistree, et personne ne va la chercher.
+  //
+  // Le choix ne s'affiche que si le dossier apporte reellement quelque chose.
+  // Proposer une option qui rend le meme resultat decoit plus qu'elle n'aide.
+  const [source, setSource] = useState("actuel");
+  const apport = useMemo(() => apportDuDossier(cv, versions), [cv, versions]);
 
   const analyze = async () => {
     if (!offer.trim()) { notify(T.off_no_offer); return; }
@@ -66,8 +82,24 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
     const eduJ = cv.education.map((e,i) =>
       JSON.stringify({id:i+1, degree:e.degree, school:e.school, period:e.period})
     ).join(",");
+    // Le materiau change selon le chemin. En mode "parcours", on ne donne plus
+    // le seul CV a l'ecran mais tout ce que la personne a deja ecrit, et on
+    // demande de CHOISIR dedans. Choisir dans ce qu'on a fait n'est pas
+    // inventer : c'est ce que fait quiconque adapte son CV a la main.
+    const materiau = source === "parcours"
+      ? dossierEnTexte(dossierParcours(cv, versions))
+      : cvT;
+
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
-      +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
+      +"OFFRE:\n"+offer+"\n"
+      +(source === "parcours"
+        ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"
+          + materiau + "\n"
+          + "Construis le CV de CETTE offre en CHOISISSANT dans ce parcours : garde ce "
+          + "qui sert l'offre, ecarte le reste, et quand une experience a plusieurs "
+          + "formulations retiens celle qui parle le plus la langue de l'offre. "
+          + "N'ajoute rien qui ne figure pas ci-dessus.\n"
+        : "CV:\n"+cvT+"\n")
       +"REGLES: ne pas inventer, adapter mots-cles offre. " + NO_DASH + "\n"
       +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
       // C'est la promesse du produit : coller une offre et obtenir un CV qui
@@ -452,6 +484,52 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
           <div style={{fontSize:11, color:InkMuted, marginTop:10, lineHeight:1.5}}>
             A n'ajouter que la ou c'est vrai.
           </div>
+        </div>
+      )}
+      {apport.utile && (
+        <div style={{marginBottom:14}}>
+          <div style={{
+            fontSize:9, fontWeight:700, color:InkMuted, marginBottom:8,
+            letterSpacing:"0.06em", textTransform:"uppercase",
+          }}>A partir de quoi</div>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+            {[
+              { id:"actuel", titre:"Mon CV actuel",
+                sous:"Celui affiche a l'ecran." },
+              { id:"parcours", titre:"Tout mon parcours",
+                sous: [
+                  apport.experiences ? `${apport.experiences} experience${apport.experiences > 1 ? "s" : ""} en plus` : null,
+                  apport.competences ? `${apport.competences} competence${apport.competences > 1 ? "s" : ""}` : null,
+                  apport.formulations ? `${apport.formulations} formulation${apport.formulations > 1 ? "s" : ""}` : null,
+                ].filter(Boolean).join(", ") },
+            ].map(o => {
+              const actif = source === o.id;
+              return (
+                <button key={o.id} onClick={() => setSource(o.id)} style={{
+                  ...B({
+                    textAlign:"left", padding:"11px 13px", minHeight:44,
+                    borderRadius:RadiusMd, fontFamily:Sans, cursor:"pointer",
+                    background: actif ? PurpleSoft : Paper,
+                    border: "1px solid " + (actif ? Purple : Hairline),
+                    boxShadow: actif ? "none" : ShadowSm,
+                  })
+                }}>
+                  <div style={{fontSize:12.5, fontWeight:600, color: actif ? Purple : Ink}}>
+                    {o.titre}
+                  </div>
+                  <div style={{fontSize:10.5, color:InkMuted, marginTop:2, lineHeight:1.35}}>
+                    {o.sous}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {source === "parcours" && (
+            <div style={{fontSize:11, color:InkMuted, marginTop:8, lineHeight:1.5}}>
+              Nuvi choisit dans ce que tu as deja ecrit, garde ce qui sert
+              l&apos;offre et ecarte le reste.
+            </div>
+          )}
         </div>
       )}
       <button onClick={analyze}

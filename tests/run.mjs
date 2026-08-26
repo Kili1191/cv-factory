@@ -14,6 +14,7 @@ const SUITES = [
   ["la page de mise en service nomme ce qui manque", "./the-setup-page-names-what-is-missing.mjs"],
   ["les sources d'offres rendent la meme forme", "./job-sources-normalise.mjs"],
   ["l'ecart avec l'annonce est honnete", "./the-gap-with-the-job-ad-is-honest.mjs"],
+  ["le dossier de parcours n'invente rien", "./the-career-record-invents-nothing.mjs"],
   ["une offre trouvee devient une candidature", "./job-search-becomes-an-application.mjs"],
   ["l'extension lit une annonce", "./extension-reads-a-job-ad.mjs"],
   ["l'assistant d'entretien repond", "./live-assist-answers.mjs"],

@@ -1655,7 +1655,7 @@ function BottomNav({ active, onPhase, T }) {
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
+function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
   initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
@@ -1684,6 +1684,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
       <Suspense fallback={null}>
       <MatchPanel
         cv={cv}
+        versions={versions}
         setCVFn={setCVFn}
         notify={notify}
         apiKey={apiKey}
@@ -7419,7 +7420,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           initialOffer={pendingOffer}
-          T={T} cv={cv} setCVFn={setCVFn}
+          T={T} cv={cv} versions={versions} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
