@@ -112,7 +112,7 @@ export default function RootLayout({ children }) {
         {/* Version servie, lisible sans ouvrir l'app : curl -s thenuvi.com | grep app-build */}
         <meta name="app-build" content={process.env.NEXT_PUBLIC_BUILD_ID || "unknown"} />
       </head>
-      <body style={{ margin: 0, padding: 0 }}>
+      <body className="nuvi-grain" style={{ margin: 0, padding: 0 }}>
         {/*
           L'application n'avait aucun titre de niveau 1 ni aucun point de
           repere : les titres etaient des <div> stylises. Un lecteur d'ecran

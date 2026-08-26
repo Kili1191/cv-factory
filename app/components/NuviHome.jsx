@@ -32,6 +32,7 @@ const TEXT = {
     before: "Avant",
     after: "Apres",
     replay: "Rejouer",
+    masthead: "Le CV qui passe l'ATS",
     transforming: "Nuvi reecrit...",
     ctaMain: "Envie de ca pour le mien",
     ctaImport: "J'ai deja un CV",
@@ -48,6 +49,7 @@ const TEXT = {
     before: "Before",
     after: "After",
     replay: "Replay",
+    masthead: "The CV that gets past the ATS",
     transforming: "Nuvi is rewriting...",
     ctaMain: "I want this for mine",
     ctaImport: "I already have a CV",
@@ -168,12 +170,53 @@ function balanceText(text) {
 // La hauteur est reservee des le depart. Sans cela, la phrase "apres" etant
 // plus longue, tout ce qui suit - le bouton principal - sauterait vers le bas
 // au moment ou le visiteur s'apprete a cliquer.
-function RewriteLine({ avant, apres, phase, mob, reducedMotion }) {
+function RewriteLine({ avant, apres, phase, mob, reducedMotion, titre }) {
   const texte = phase === "avant" ? avant : apres;
   const mots = String(texte || "").split(/\s+/).filter(Boolean);
   const sorti = phase === "apres";
 
   return (
+    <>
+    {/* LA PHRASE D'AVANT RESTE VISIBLE APRES LA BASCULE
+        Une fois l'animation finie, on ne voyait plus que le resultat. Or ce
+        que Nuvi vend n'est pas une belle phrase : c'est l'ECART entre celle
+        qu'on aurait ecrite et celle-la. Sans le point de depart sous les
+        yeux, le visiteur arrive sur une phrase deja bonne et n'a aucune
+        raison de croire qu'elle vient de lui.
+        Elle reste donc au-dessus, petite et barree : le "avant" et le
+        "apres" se lisent d'un seul coup d'oeil, meme a l'arret, meme pour
+        quelqu'un qui a rate l'animation. */}
+    <div style={{
+      textAlign: "center",
+      minHeight: mob ? 34 : 40,
+      marginBottom: mob ? 4 : 8,
+      opacity: sorti ? 1 : 0,
+      transition: "opacity 420ms ease-out 180ms",
+    }}>
+      {titre && (
+        <span style={{
+          display: "inline-block",
+          fontFamily: "'Inter', sans-serif",
+          fontSize: mob ? 9.5 : 10,
+          fontWeight: 700,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          color: "var(--nuvi-ink-muted)",
+          marginRight: 8,
+          verticalAlign: "middle",
+        }}>{titre}</span>
+      )}
+      <span style={{
+        fontFamily: "'Inter', sans-serif",
+        fontSize: mob ? 11.5 : 13,
+        lineHeight: 1.4,
+        color: "var(--nuvi-ink-muted)",
+        textDecoration: "line-through",
+        textDecorationThickness: "1px",
+        textDecorationColor: "var(--nuvi-hairline)",
+        verticalAlign: "middle",
+      }}>{avant}</span>
+    </div>
     <div style={{
       fontFamily: "'Fraunces', Georgia, serif",
       fontWeight: 400,
@@ -214,6 +257,7 @@ function RewriteLine({ avant, apres, phase, mob, reducedMotion }) {
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -244,24 +288,50 @@ function ScoreClimb({ from, to, go, mob, reducedMotion, label }) {
   }, [go, from, to, reducedMotion]);
 
   const vert = n >= 75;
+  // Le score etait un petit nombre vert perdu sous la phrase. C'est pourtant
+  // la SEULE chose de cet ecran qui relie le spectacle au mecanisme reel :
+  // ce n'est pas une jolie tournure qui fait passer un CV, c'est un score de
+  // tri. Il merite d'etre la recompense de l'animation, pas sa note de bas
+  // de page. Une barre montre le chemin parcouru, ce qu'un nombre seul ne
+  // fait pas : 91 ne veut rien dire, 34 devenu 91 veut tout dire.
+  const largeur = Math.max(0, Math.min(100, n));
   return (
     <div style={{
-      display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
-      marginTop: mob ? 10 : 16,
-      opacity: go ? 1 : 0.5,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      gap: 7, marginTop: mob ? 12 : 20,
+      opacity: go ? 1 : 0.45,
       transition: reducedMotion ? "none" : "opacity 500ms ease",
       fontFamily: "'Inter', sans-serif",
     }}>
-      <span style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: "var(--nuvi-ink-muted)",
-      }}>{label}</span>
-      <span style={{
-        fontSize: mob ? 22 : 28, fontWeight: 700,
-        fontVariantNumeric: "tabular-nums",
-        color: vert ? "var(--nuvi-green)" : "var(--nuvi-ink-muted)",
-        transition: reducedMotion ? "none" : "color 400ms ease",
-      }}>{n}</span>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+        <span style={{
+          fontSize: mob ? 9.5 : 10, fontWeight: 700, letterSpacing: "0.14em",
+          textTransform: "uppercase", color: "var(--nuvi-ink-muted)",
+        }}>{label}</span>
+        <span style={{
+          fontSize: mob ? 34 : 46, fontWeight: 700, lineHeight: 1,
+          fontVariantNumeric: "tabular-nums", letterSpacing: "-0.03em",
+          color: vert ? "var(--nuvi-green)" : "var(--nuvi-ink-muted)",
+          transition: reducedMotion ? "none" : "color 400ms ease",
+        }}>{n}</span>
+        <span style={{
+          fontSize: mob ? 10 : 11, fontWeight: 600,
+          color: "var(--nuvi-ink-muted)", opacity: go ? 1 : 0,
+          transition: "opacity 400ms ease 300ms",
+        }}>{go ? `\u2191 ${to - from}` : ""}</span>
+      </div>
+      <div style={{
+        width: mob ? 150 : 210, height: 3, borderRadius: 2,
+        background: "var(--nuvi-hairline)", overflow: "hidden",
+      }}>
+        <div style={{
+          width: largeur + "%", height: "100%", borderRadius: 2,
+          background: vert
+            ? "var(--nuvi-green)"
+            : "linear-gradient(90deg, var(--nuvi-purple), var(--nuvi-magenta))",
+          transition: reducedMotion ? "none" : "background 400ms ease",
+        }}/>
+      </div>
     </div>
   );
 }
@@ -423,6 +493,41 @@ export default function NuviHome({
       }}
     >
       <ScrollProgress targetRef={scrollRef}/>
+
+      {/* LA MANCHETTE : CE QUI FAIT D'UN DIAPORAMA UNE PAGE
+          Mesure sur 1440x900 : 160px de vide en haut, 100px en bas, et pas
+          un seul trait. Tout flottait au centre d'une surface sans bord -
+          et une composition sans bord se lit comme une diapositive, pas
+          comme une page.
+          Deux filets et un nom suffisent a ancrer le reste. C'est le
+          principe d'une une de journal : la matiere n'a de place que parce
+          que la page en a une.
+          Au passage, l'ecran d'arrivee ne portait AUCUNE marque - le premier
+          ecran que voit un visiteur ne disait pas chez qui il etait. */}
+      <div aria-hidden="true" style={{
+        position: "fixed", top: 0, left: 0, right: 0,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: mob ? "14px 16px" : "18px 26px",
+        borderBottom: "1px solid " + Hairline,
+        pointerEvents: "none", zIndex: 2,
+        fontFamily: "'Inter', sans-serif",
+      }}>
+        <span style={{
+          fontFamily: "'Fraunces', Georgia, serif",
+          fontSize: mob ? 17 : 19, fontWeight: 600,
+          letterSpacing: "-0.02em", color: Ink,
+        }}>Nuvi</span>
+        <span style={{
+          fontSize: mob ? 9 : 10, fontWeight: 600,
+          letterSpacing: "0.14em", textTransform: "uppercase",
+          color: InkMuted,
+        }}>{T.masthead}</span>
+      </div>
+      <div aria-hidden="true" style={{
+        position: "fixed", bottom: 0, left: 0, right: 0,
+        height: 1, background: Hairline, pointerEvents: "none", zIndex: 2,
+      }}/>
+
       <Aurora style={{ width: "100%", maxWidth: mob ? "100%" : 720 }}>
 
         {/* ===== TEMPS 1 : ACCUEIL (instantane) ===== */}
@@ -491,6 +596,7 @@ export default function NuviHome({
           <RewriteLine
             avant={ex.before}
             apres={ex.after}
+            titre={ex.beforeTitle}
             phase={showAfter ? "apres" : transforming ? "bascule" : "avant"}
             mob={mob}
             reducedMotion={reducedMotion}

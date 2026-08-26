@@ -220,3 +220,60 @@ button,
     to   { opacity: 1; transform: none; }
   }
 }
+
+/* ============================================================
+ * LE GRAIN
+ * ============================================================
+ *
+ * Le fond etait #faf8f3 pur. Un aplat parfaitement lisse se lit comme
+ * une valeur par defaut : l'oeil n'y accroche rien, et la page a beau
+ * etre bien composee, elle a l'air non finie.
+ *
+ * Une trame de bruit tres faible suffit a la faire lire comme du papier.
+ * C'est la difference entre un fond et une matiere, et c'est ce qui
+ * separe une interface correcte d'une interface qu'on remarque.
+ *
+ * TROIS CONTRAINTES, TOUTES RESPECTEES ICI
+ *
+ * 1. Aucune requete. Le bruit est un SVG feTurbulence en data URI : rien
+ *    a telecharger, rien qui puisse manquer, rien qui bloque le rendu.
+ *    L'application interdit deja toute dependance CDN a l'execution, et
+ *    une suite le verifie.
+ * 2. Aucun cout de composition. La couche est fixed, sans animation, et
+ *    pointer-events:none - elle ne repeint jamais et n'avale aucun clic.
+ * 3. Invisible a l'impression. Le CV exporte ne doit pas recevoir de
+ *    grain : il part chez un recruteur et passe dans des moteurs
+ *    d'extraction.
+ *
+ * L'opacite est deliberement basse. A 0.055 on ne "voit" pas le grain,
+ * on voit une surface qui a une texture. Au-dessus, ca devient un effet,
+ * et un effet se demode.
+ */
+.nuvi-grain::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.055;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* En sombre, multiply noircirait tout : on eclaircit au lieu d'assombrir,
+   et plus discretement encore - le bruit se voit davantage sur un fond
+   sombre. */
+[data-theme="dark"] .nuvi-grain::after,
+body.cvf-dark.nuvi-grain::after {
+  mix-blend-mode: overlay;
+  opacity: 0.035;
+}
+
+/* Le CV n'a jamais de grain. Il est imprime, exporte, et lu par des
+   robots de tri : sa surface doit rester exactement celle du papier
+   qu'on envoie. */
+[data-cvf="cv"] { isolation: isolate; }
+
+@media print {
+  .nuvi-grain::after { display: none !important; }
+}
