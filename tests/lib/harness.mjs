@@ -83,15 +83,40 @@ export async function stopServer(server) {
   // Tuer le GROUPE : sinon next-server survit a la mort de npx et garde le
   // port, ce qui fait echouer le run suivant sur un build perime.
   const killGroup = (sig) => { try { process.kill(-server.pid, sig); } catch (e) {} };
+
+  // ON VERIFIE EXACTEMENT CE QUE LA SUITE SUIVANTE VERIFIERA
+  //
+  // La version precedente sondait le port avec 300 ms de patience et se
+  // declarait satisfaite des que la requete echouait. Or un serveur encore
+  // vivant mais lent echoue aussi a 300 ms : stopServer rendait la main en
+  // croyant l'avoir tue, et la suite suivante - qui sonde avec 1500 ms - le
+  // trouvait bien debout et refusait de demarrer.
+  //
+  // Le message d'echec accusait alors "un run precedent", alors que le
+  // coupable etait la suite d'avant, dans le MEME run. Un test qui se trompe
+  // de coupable coute plus cher qu'un test absent : on cherche la panne la ou
+  // elle n'est pas.
+  //
+  // On reutilise donc portAnswers(), la fonction meme dont depend le demarrage
+  // suivant. Le critere d'arret devient identique au critere d'entree, et les
+  // deux ne peuvent plus diverger.
   killGroup("SIGTERM");
   for (let i = 0; i < 20; i += 1) {
     await new Promise(r => setTimeout(r, 200));
-    try {
-      await fetch(BASE_URL, { signal: AbortSignal.timeout(300) });
-    } catch (e) { return; }   // ne repond plus : c'est bon
+    if (!(await portAnswers())) return;
   }
+
   killGroup("SIGKILL");
-  await new Promise(r => setTimeout(r, 300));
+  for (let i = 0; i < 15; i += 1) {
+    await new Promise(r => setTimeout(r, 200));
+    if (!(await portAnswers())) return;
+  }
+
+  // Se taire ici rendrait la suite suivante incomprehensible.
+  throw new Error(
+    `le serveur de test tient encore le port ${PORT} apres SIGKILL. ` +
+    "Les suites suivantes vont echouer en accusant un run precedent."
+  );
 }
 
 export async function launchBrowser() {
