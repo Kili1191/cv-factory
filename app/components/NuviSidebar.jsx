@@ -31,21 +31,6 @@ export default function NuviSidebar({
   const [hoveredItem, setHoveredItem] = useState(null);
   const closeTimerRef = useRef(null);
 
-  // LA BARRE DIT SA LARGEUR AU RESTE DE LA PAGE
-  //
-  // Le bouton Telecharger est en position fixe a gauche. Replie, la barre fait
-  // 56px et il passe a cote ; deployee, elle fait 240px et le bouton se pose
-  // DESSUS - avec un z-index superieur, donc il recouvre la ligne du compte et
-  // lui coupe son libelle. Defaut invisible au build, invisible aux tests,
-  // visible des qu'on regarde l'ecran.
-  //
-  // Plutot que de faire descendre l'etat a travers la moitie de page.jsx, la
-  // barre le pose sur <html>. Tout ce qui doit s'ecarter le lit en CSS.
-  useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    document.documentElement.dataset.nvRail = expanded ? "expanded" : "collapsed";
-    return () => { delete document.documentElement.dataset.nvRail; };
-  }, [expanded]);
 
   useEffect(() => {
     const onTutHover = (e) => {

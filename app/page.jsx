@@ -3363,6 +3363,36 @@ export default function App() {
   const [showInstall, setShowInstall] = useState(false);
   // Vrai uniquement au retour de l'autorisation Google, pour lancer le
   // balayage de la boite mail sans redemander un clic.
+  // --- AJUSTEMENT DU CV A L'ECRAN (bureau) ---------------------------------
+  //
+  // Trois valeurs, et une regle simple : le CV s'ajuste a la largeur
+  // disponible, sans jamais retrecir et sans jamais depasser DESK_MAX.
+  //
+  // Pas de retrecissement : sur un petit ecran, reduire le CV le rendrait
+  // illisible alors qu'on peut simplement defiler. Un plafond : sur un ecran
+  // ultra-large, l'agrandir sans fin ferait perdre le rapport a la page
+  // imprimee, qui est precisement ce que l'utilisateur doit juger.
+  const deskFitRef = useRef(null);
+  const deskCvRef = useRef(null);
+  const [deskScale, setDeskScale] = useState(1);
+  const [deskNatH, setDeskNatH] = useState(0);
+  // Les deux boites n'existent pas au premier rendu : l'editeur n'est monte
+  // qu'apres l'accueil. Un effet qui ne dependrait que de `mob` sortirait donc
+  // par sa porte de sortie et, `mob` ne changeant jamais ensuite, ne se
+  // rejouerait PLUS JAMAIS - le CV resterait a l'echelle 1 pour toujours.
+  // C'est exactement ce qui s'est produit, et que la mesure a montre.
+  //
+  // Ces refs de rappel signalent l'attachement reel des noeuds. Enveloppees
+  // dans useCallback avec une liste vide, React ne les appelle qu'au montage
+  // et au demontage : pas de boucle.
+  const [deskNodes, setDeskNodes] = useState(0);
+  const attachDeskZone = useCallback((n) => {
+    deskFitRef.current = n; setDeskNodes(k => k + 1);
+  }, []);
+  const attachDeskCv = useCallback((n) => {
+    deskCvRef.current = n; setDeskNodes(k => k + 1);
+  }, []);
+
   const [gmailReturn, setGmailReturn] = useState(false);
   // Le jeton Google vit une heure et Supabase ne le renouvelle pas : on ne
   // demande donc pas "est-ce relie" a chaque rendu, on le note quand on le
@@ -3706,6 +3736,41 @@ export default function App() {
     return () => { stop(); unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Mesure et recalcule l'ajustement du CV.
+  //
+  // Deux observateurs, parce que deux choses bougent independamment : la
+  // fenetre (on redimensionne, on ouvre les outils de developpement) et le CV
+  // lui-meme (on ajoute une experience, il grandit). Un seul des deux
+  // laisserait la moitie des cas avec une hauteur reservee fausse, donc un
+  // bas de CV inatteignable.
+  useEffect(() => {
+    if (mob) { setDeskScale(1); return undefined; }
+    const zone = deskFitRef.current;
+    const cv = deskCvRef.current;
+    if (!zone || !cv || typeof ResizeObserver === "undefined") return undefined;
+
+    const DESK_MAX = 1.35;      // au-dela, on perd le rapport a la page A4
+    const MARGE = 44;           // le padding de la zone, des deux cotes
+
+    const recalculer = () => {
+      const dispo = zone.clientWidth - MARGE;
+      if (dispo <= 0) return;
+      // Jamais en dessous de 1 : mieux vaut defiler qu'un CV illisible.
+      const f = Math.min(DESK_MAX, Math.max(1, dispo / 794));
+      setDeskScale(prev => (Math.abs(prev - f) < 0.01 ? prev : f));
+      // Hauteur naturelle, mesuree AVANT agrandissement : offsetHeight ignore
+      // le transform, c'est exactement ce qu'il nous faut ici.
+      const h = cv.offsetHeight;
+      setDeskNatH(prev => (prev === h ? prev : h));
+    };
+
+    recalculer();
+    const obs = new ResizeObserver(recalculer);
+    obs.observe(zone);
+    obs.observe(cv);
+    return () => obs.disconnect();
+  }, [mob, deskNodes]);
 
   // La boite mail est-elle reliee ?
   //
@@ -8069,21 +8134,126 @@ export default function App() {
           />
           {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
               accessibles via NuviSidebar v2 + ses sub-items + AdjustModal */}
+          {/* LE CV OCCUPE L'ECRAN, COMME UN DOCUMENT DANS UN VRAI EDITEUR
+
+              Mesure avant : sur 1440x900, le CV faisait 794 de large pour
+              1383 disponibles - 589 pixels de vide, 43% de la largeur - et
+              restait colle en haut, laissant 270 pixels de vide en dessous.
+              On passait son temps a lire un document minuscule au milieu du
+              neant, avec deux boutons orphelins dans les coins.
+
+              Il s'ajuste maintenant a la largeur, comme le fait n'importe
+              quel traitement de texte. Le facteur est plafonne : sans plafond,
+              un ecran ultra-large gonflerait le CV a des tailles absurdes et
+              on perdrait le rapport a la page imprimee, qui est justement ce
+              que l'utilisateur doit juger.
+
+              POURQUOI transform ET PAS zoom
+
+              Le CV se modifie directement au clic. `zoom` recalcule la mise en
+              page et deplace le curseur de saisie ; `transform: scale()` ne
+              touche a rien - il agrandit le rendu, point. C'est deja le choix
+              fait pour le telephone, et pour la meme raison. */}
           <div style={{
-            flex:1, overflow:"auto", padding:22,
+            flex:1, minWidth:0, display:"flex", flexDirection:"column",
             position:"relative", zIndex:1,
+          }}>
+          {/* LA BARRE D'OUTILS, PARCE QU'UN BOUTON FLOTTANT NE TIENT PLUS
+
+              Telecharger flottait en bas a gauche, par-dessus tout. Tant que
+              le CV n'occupait que 57% de la largeur, il tombait dans le vide
+              et personne ne le remarquait. Le CV rempli, il se pose SUR le
+              document - mesure a 1280x800 : recouvrement confirme.
+
+              Il n'y a pas de contournement : le bouton et la page se disputent
+              la meme bande. Le decaler ne fait que deplacer le probleme d'un
+              format d'ecran a l'autre.
+
+              L'action remonte donc au-dessus du document, la ou tous les
+              editeurs la mettent. Elle ne recouvre plus rien par construction,
+              et elle se trouve sans avoir a la chercher. */}
+          <div style={{
+            flexShrink:0, display:"flex", justifyContent:"flex-end",
+            alignItems:"center", gap:10, padding:"14px 22px 0",
+          }}>
+            {/* La meme condition que portait l'ancien bouton flottant, et que
+                j'avais laissee tomber en le deplacant : l'action principale
+                doit s'effacer des qu'une fenetre s'ouvre. Sinon elle flotte
+                par-dessus la fenetre de choix du format - visuellement faux,
+                et deux boutons nommes "Telecharger" a l'ecran en meme temps. */}
+            {!cvIsEmpty && !(
+              showCoach || showAudit || showTranslate || showPack
+              || showPos || showTruth || showVersions
+              || showOffer || showScore || showGapRepair || showInterview
+              || showCustomize || !!modal
+              || showLinkedIn || showCompare || showApplications
+              || showMultiCV || showTutorial || showSettings || showActivity
+              // La fenetre de choix du format, que l'ancienne liste ne
+              // mentionnait pas : elle est ouverte PAR ce bouton, donc lui
+              // seul peut la faire apparaitre. Sans elle, on se retrouve avec
+              // deux boutons "Telecharger" a l'ecran en meme temps - constate
+              // en le mesurant, pas en le supposant.
+              || showFormatChoice
+            ) && (
+              <button
+                onClick={handleDownloadClick}
+                aria-label="Telecharger CV"
+                style={{
+                  display:"flex", alignItems:"center", gap:9,
+                  padding:"10px 20px", minHeight:42, boxSizing:"border-box",
+                  background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+                  color:"#fff", border:"none", borderRadius:999, cursor:"pointer",
+                  fontFamily:"'Inter', sans-serif", fontSize:13, fontWeight:600,
+                  letterSpacing:0.2,
+                  boxShadow:"0 6px 18px rgba(91,61,245,.28), 0 1px 4px rgba(91,61,245,.2)",
+                  transition:"transform 220ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease",
+                  userSelect:"none",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 10px 26px rgba(91,61,245,.38), 0 3px 8px rgba(91,61,245,.26)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "";
+                  e.currentTarget.style.boxShadow = "0 6px 18px rgba(91,61,245,.28), 0 1px 4px rgba(91,61,245,.2)";
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.2"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {locale === "en" ? "Download" : "Telecharger"}
+              </button>
+            )}
+          </div>
+          <div ref={attachDeskZone} style={{
+            flex:1, overflow:"auto", padding:"14px 22px 22px",
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
-            <div data-cvf="cv" style={{
-              // [FIX bande blanche 2026-05-20] Le wrapper ne force PLUS de
-              // minHeight 1123px ni de background blanc. Il epouse le contenu
-              // du CV. Le shadow effet papier reste, mais sur la taille reelle.
-              width:794,
-              boxShadow:"0 8px 48px rgba(0,0,0,.14)",
-              borderRadius:4, overflow:"hidden",
+            {/* La boite exterieure reserve la taille APRES agrandissement :
+                transform ne modifiant pas la mise en page, sans elle le
+                defilement s'arreterait a la taille d'origine et le bas du CV
+                serait inatteignable. */}
+            <div style={{
+              width: Math.round(794 * deskScale),
+              height: deskNatH ? Math.round(deskNatH * deskScale) : undefined,
+              position: "relative",
             }}>
-              {CVEl}
+              <div data-cvf="cv" ref={attachDeskCv} style={{
+                position: "absolute", top: 0, left: 0,
+                width:794,
+                transform: deskScale === 1 ? "none" : `scale(${deskScale})`,
+                transformOrigin: "top left",
+                boxShadow:"0 8px 48px rgba(0,0,0,.14)",
+                borderRadius:4, overflow:"hidden",
+              }}>
+                {CVEl}
+              </div>
             </div>
+          </div>
           </div>
         </div>
         {/* Bouton Coach intelligent : drag (long press), shrink apres N usages, scroll-hide */}
@@ -8246,63 +8416,9 @@ export default function App() {
             ` }} />
           </button>
         )}
-        {/* === BOUTON TELECHARGER PERSISTANT (Desktop) === */}
-        {!cvIsEmpty && !(
-          showCoach || showAudit || showTranslate || showPack
-          || showPos || showTruth || showVersions
-          || showOffer || showScore || showGapRepair || showInterview
-          || showCustomize || !!modal
-          || showLinkedIn || showCompare || showApplications
-          || showMultiCV || showTutorial || showSettings || showActivity
-        ) && (
-          <button
-            onClick={handleDownloadClick}
-            aria-label="Telecharger CV"
-            // La position horizontale vit dans globals.css : elle depend de la
-            // largeur de la barre laterale, que ce bouton ne connait pas.
-            className="nv-download-fab"
-            style={{
-              position: "fixed",
-              bottom: 24,
-              zIndex: 89,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "12px 22px",
-              minHeight: 44,
-              boxSizing: "border-box",
-              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 999,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: 0.2,
-              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
-              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
-              userSelect: "none",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            {locale === "en" ? "Download" : "Telecharger"}
-          </button>
-        )}
+        {/* Le bouton Telecharger flottant a ete remplace par la barre d'outils
+            au-dessus du document : voir le commentaire la-bas. Un bouton en
+            position fixe finit toujours par se poser sur quelque chose. */}
         <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div

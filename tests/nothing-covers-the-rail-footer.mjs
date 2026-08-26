@@ -56,6 +56,17 @@ export async function run() {
       return { largeur: Math.round(rail.getBoundingClientRect().width), bloques: out };
     });
 
+    // LE CURSEUR DOIT ETRE AILLEURS AVANT DE MESURER L'ETAT REPLIE
+    //
+    // Playwright demarre sa souris en (0,0) - c'est-a-dire SUR la barre, qui
+    // s'ouvre au survol. Le test mesurait donc une barre deja ouverte et
+    // croyait qu'elle ne s'ouvrait plus. Il passait ici et rougissait en CI,
+    // selon l'endroit ou le curseur avait fini sa course.
+    //
+    // On l'ecarte explicitement, et on attend la fin de l'animation.
+    await page.mouse.move(1200, 450);
+    await page.waitForTimeout(900);
+
     const replie = await balayer();
     if (replie.absent) {
       failures.push("la barre laterale n'existe plus : ce test ne verifie plus rien");
@@ -66,7 +77,7 @@ export async function run() {
     }
 
     // Deploie la barre en la survolant, comme le fait un utilisateur.
-    await page.locator("aside").first().hover();
+    await page.locator("aside").first().hover({ position: { x: 25, y: 300 } });
     await page.waitForTimeout(1200);
 
     const deploye = await balayer();

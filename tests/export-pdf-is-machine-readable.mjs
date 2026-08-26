@@ -52,7 +52,20 @@ const MUST_CONTAIN = [
 ];
 
 // Telecharge un PDF depuis l'application dans la mise en page demandee.
-async function exportOnce(browser, layout) {
+// LE PREMIER EXPORT PAIE UN DEMARRAGE QUE LES SUIVANTS NE PAIENT PAS
+//
+// La generation du PDF charge ses modules au premier appel. Sur une machine
+// de CI, ce chargement s'ajoute a l'export lui-meme et a deja fait depasser
+// les 90 secondes - une seule fois, sur le premier modele, les cinq suivants
+// passant sans probleme.
+//
+// On donne donc au premier un budget plus large, et on AFFICHE la duree de
+// chacun. Elargir un delai sans regarder ce qu'il couvre, c'est se rendre
+// aveugle a un vrai ralentissement ; l'afficher permet de le voir venir.
+const BUDGET_PREMIER = 180_000;
+const BUDGET_SUIVANTS = 90_000;
+
+async function exportOnce(browser, layout, premier = false) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, acceptDownloads: true });
   const page = await ctx.newPage();
   // Seules les exceptions JS comptent. Les erreurs de chargement de
@@ -67,8 +80,9 @@ async function exportOnce(browser, layout) {
   // promesse de telechargement reste pendante et sa rejection masque la
   // vraie erreur au moment ou le navigateur se ferme.
   let downloadErr = null;
+  const debut = Date.now();
   const downloadPromise = page
-    .waitForEvent("download", { timeout: 90_000 })
+    .waitForEvent("download", { timeout: premier ? BUDGET_PREMIER : BUDGET_SUIVANTS })
     .catch((e) => { downloadErr = e; return null; });
 
   let clickErrMsg = null;
@@ -93,13 +107,14 @@ async function exportOnce(browser, layout) {
         "      " + (downloadErr ? downloadErr.message.split("\n")[0] : ""),
     };
   }
+  const secondes = Math.round((Date.now() - debut) / 100) / 10;
   const dir = mkdtempSync(join(tmpdir(), "cvf-export-"));
   const pdfPath = join(dir, "cv.pdf");
   await download.saveAs(pdfPath);
   const bytes = readFileSync(pdfPath);
   await ctx.close();
   const { text, pages } = await extractPdfText(bytes);
-  return { errors, bytes, text, pages };
+  return { errors, bytes, text, pages, secondes };
 }
 
 // Les controles qui valent pour toute mise en page.
@@ -179,8 +194,10 @@ export async function run() {
   const browser = await launchBrowser();
   const sizes = [];
   try {
-    for (const layout of LAYOUTS) {
-      const out = await exportOnce(browser, layout);
+    const durees = [];
+    for (const [i, layout] of LAYOUTS.entries()) {
+      const out = await exportOnce(browser, layout, i === 0);
+      if (out.secondes !== undefined) durees.push(`${layout} ${out.secondes}s`);
       if (out.failed) { failures.push(`modele ${layout} : ` + out.failed); continue; }
       checkCommon(`modele ${layout}`, out, failures);
       for (const [what, needle] of MUST_CONTAIN) {
@@ -194,6 +211,10 @@ export async function run() {
     if (!failures.length) {
       console.log(`      ${LAYOUTS.length} modeles exportes, nom en tete, accents intacts, `
         + `image conservee (caracteres extraits : ${sizes.join(", ")})`);
+      // La duree du PREMIER export dit le cout du demarrage. S'il grimpe d'une
+      // livraison a l'autre, quelque chose ralentit l'application - et on le
+      // verra ici avant que la CI ne se mette a rougir par intermittence.
+      console.log(`      duree par modele : ${durees.join("  ")}`);
     }
   } finally {
     await browser.close();
