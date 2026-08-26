@@ -139,7 +139,21 @@ export async function POST(request) {
             type: (data && data.error && data.error.type) || "api_error",
           },
         }),
-        { status: upstreamRes.status, headers: { "Content-Type": "application/json" } }
+        {
+          status: upstreamRes.status,
+          // RETRY-AFTER DOIT TRAVERSER
+          //
+          // Quand l'API est saturee elle dit souvent quand revenir. Cet
+          // en-tete vaut mieux que la progression que le client calcule dans
+          // le vide : le laisser tomber ici, c'est obliger le navigateur a
+          // deviner une attente que le serveur connaissait.
+          headers: (() => {
+            const h = { "Content-Type": "application/json" };
+            const quand = upstreamRes.headers.get("retry-after");
+            if (quand) h["Retry-After"] = quand;
+            return h;
+          })(),
+        }
       );
     }
 
