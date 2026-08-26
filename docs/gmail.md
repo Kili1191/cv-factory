@@ -68,7 +68,7 @@ par Google est immediat et silencieux.
 
 C'est une limite reelle et assumee. La lever demanderait de conserver le
 jeton de renouvellement cote serveur, donc de detenir un acces permanent a la
-boite mail de chaque utilisateur — exactement ce que la conception ci-dessus
+boite mail de chaque utilisateur, exactement ce que la conception ci-dessus
 evite.
 
 ## Verification

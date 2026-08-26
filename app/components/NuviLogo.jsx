@@ -3,7 +3,7 @@
 import React from 'react';
 
 /**
- * NuviLogo — Animated brand wordmark for Nuvi
+ * NuviLogo - Animated brand wordmark for Nuvi
  *
  * Self-contained React component with all CSS animations inlined.
  * Drop this file into your app and import it: <NuviLogo size={32} />
@@ -289,7 +289,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     14%   { transform: translateX(-50%) translate(0, -0.03em) scale(1.4); }
     15.4% { transform: translateX(-50%) translate(0, 0) scale(1); }
 
-    /* CLIN D'ŒIL — le dot s'écrase verticalement */
+    /* CLIN D'ŒIL - le dot s'écrase verticalement */
     16% { transform: translateX(-50%) translate(0, 0) scale(1, 1); opacity: 1; }
     17% { transform: translateX(-50%) translate(0, 0) scale(1, 0.05); opacity: 1; }
     18% { transform: translateX(-50%) translate(0, 0) scale(0.5, 0.05); opacity: 0; }
@@ -304,7 +304,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     28.5% { transform: translateX(-50%) translate(0, 0) scale(0); opacity: 0; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
     29.2% { transform: translateX(-50%) translate(0, 0) scale(1); background: #6d3fc4; opacity: 1; }
 
-    /* BALLE QUI REBONDIT — vrais grands bonds dégressifs */
+    /* BALLE QUI REBONDIT - vrais grands bonds dégressifs */
     29.5% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0); }
     30.5% { transform: translateX(-50%) translate(0, 0.66em) scale(1.3, 0.7); opacity: 1; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
     31.3% { transform: translateX(-50%) translate(0, -0.20em) scale(0.92, 1.15); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0); }

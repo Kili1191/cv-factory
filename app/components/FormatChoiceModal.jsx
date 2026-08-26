@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 
 /**
- * FormatChoiceModal — Liquid Glass dialog asking user for PDF format.
+ * FormatChoiceModal - Liquid Glass dialog asking user for PDF format.
  * Triggered before downloading the CV. Memorizes choice if "Toujours utiliser".
  *
  * Props:

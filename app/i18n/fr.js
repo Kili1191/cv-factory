@@ -1,4 +1,4 @@
-// Nuvi — Dictionnaire de traduction français
+// Nuvi - Dictionnaire de traduction français
 // Extrait de page.jsx pour réduire le bundle First Paint
 // Si tu modifies ce fichier, vérifie la parité avec en.js
 //

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 
 /**
- * VerdictModal — Fullscreen Liquid Glass moment of truth.
+ * VerdictModal - Fullscreen Liquid Glass moment of truth.
  * Triggered when CV score crosses 85+. Tells user "STOP editing, send now".
  *
  * Synthesis of expert council brainstorm :

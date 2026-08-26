@@ -1,7 +1,7 @@
 // Copie le worker pdf.js depuis node_modules vers public/ avant chaque build.
 //
 // L'import de CV chargeait ce worker depuis cdnjs. Quand cette requete
-// echoue — bloqueur de contenu sur mobile, filtrage reseau, CSP — pdf.js
+// echoue - bloqueur de contenu sur mobile, filtrage reseau, CSP - pdf.js
 // bascule sur un "fake worker" qui retente la MEME url, echoue, et l'import
 // ne produit rien. La lecture d'un CV est la premiere etape du produit :
 // elle ne doit dependre d'aucun tiers.

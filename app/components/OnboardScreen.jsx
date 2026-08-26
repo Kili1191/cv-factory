@@ -46,7 +46,7 @@ async function extractCvText(file, T) {
     // le resultat de sa mise en place de worker, donc un premier echec reste
     // definitif pour toute la vie de la page. Cette entree pose
     // window.pdfjsWorker, que pdf.js utilise directement si le chargement du
-    // script echoue — le code du worker vient alors du bundle, sans reseau.
+    // script echoue - le code du worker vient alors du bundle, sans reseau.
     try { await import("pdfjs-dist/build/pdf.worker.entry"); } catch (e) {}
     pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 

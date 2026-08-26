@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useInstallState } from "./InstallAppSheet";
 
 /**
- * NuviBottomNav — Bottom navigation mobile (5 icônes)
+ * NuviBottomNav - Bottom navigation mobile (5 icônes)
  *
  * Style : Apple Human Interface Guidelines
  * - Icônes 24px

@@ -3973,8 +3973,8 @@ export default function App() {
   //
   // Parcourt les noeuds de texte reellement affiches dans le CV et ecrit
   // chacun dans le PDF en mode "invisible", a la position qu'il occupe a
-  // l'ecran. Rien ne change visuellement — l'image JPEG reste au-dessus du
-  // rendu — mais le fichier contient desormais du texte selectionnable,
+  // l'ecran. Rien ne change visuellement - l'image JPEG reste au-dessus du
+  // rendu - mais le fichier contient desormais du texte selectionnable,
   // cherchable, et surtout analysable par les robots de tri de CV.
   //
   // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
@@ -4169,7 +4169,7 @@ export default function App() {
       // candidat. On le cherche par son texte : se fier au plus gros
       // caractere ne marche pas, le monogramme d'initiales du modele par
       // defaut ("JD") est dessine plus grand que le nom, et il est dans la
-      // colonne laterale — c'est ainsi que le PDF continuait de commencer
+      // colonne laterale - c'est ainsi que le PDF continuait de commencer
       // par "JD Contact jane.doe@...". A defaut de nom, on retombe sur le
       // plus grand fragment d'au moins quatre caracteres, ce qui exclut les
       // monogrammes.
@@ -4455,7 +4455,7 @@ export default function App() {
         // [ATS] Couche de texte invisible par-dessus l'image.
         //
         // Le PDF exporte etait une seule photo JPEG du CV : zero texte. Un ATS
-        // lit du texte, pas des pixels — le CV arrivait donc vide devant le
+        // lit du texte, pas des pixels - le CV arrivait donc vide devant le
         // premier filtre, ce qui est exactement ce que ce produit promet
         // d'eviter. Le rendu visuel doit rester au pixel pres, donc on garde
         // l'image et on superpose le texte en mode invisible, a sa vraie
@@ -8723,10 +8723,25 @@ export default function App() {
           </div>
         )}
         <div style={{flex:1, overflowY:"auto",
-          // Degage la nav ET la barre de suggestion, toutes deux en position
-          // fixed. La hauteur reelle est publiee par NuviBottomNav ; 96px
-          // en dur ne couvrait que la nav, le reste du contenu passait dessous.
-          padding:"13px 13px calc(var(--nuvi-bottom-inset, 96px) + 24px)",
+          // LA ZONE DE DEFILEMENT S'ARRETE AU-DESSUS DU MOBILIER
+          //
+          // Avant, elle allait jusqu'au bas de l'ecran et reservait la place de
+          // la nav et de la barre de suggestion en PADDING. Le dernier element
+          // finissait donc bien degage - mais tout ce qui defilait passait
+          // SOUS elles en chemin.
+          //
+          // Consequence mesuree : les trois boutons de ton, entierement
+          // visibles a l'ecran, recevaient un tap qui atterrissait sur
+          // "Renforcer mon profil". On voit un bouton, on le touche, on obtient
+          // autre chose - le pire des defauts d'interface, parce que
+          // l'utilisateur croit que c'est lui qui a rate.
+          //
+          // La marge remplace le padding : la zone se termine physiquement au
+          // ras du mobilier. Plus rien ne defile dessous. On perd une centaine
+          // de pixels de hauteur visible, et on gagne que tout ce qu'on voit
+          // repond.
+          marginBottom:"var(--nuvi-bottom-inset, 96px)",
+          padding:"13px 13px 20px",
           position:"relative", zIndex:1}}>
           {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
               Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales

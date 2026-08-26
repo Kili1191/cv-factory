@@ -41,7 +41,7 @@ export const metadata = {
     "Paste the job ad, get the CV that matches it, and track your applications.",
   manifest: "/manifest.webmanifest",
   // Le nom sous l'icone. Sans lui, iOS affiche le <title> entier, tronque a
-  // une douzaine de caracteres : "Nuvi — le CV..." au lieu de "Nuvi".
+  // une douzaine de caracteres : "Nuvi - le CV..." au lieu de "Nuvi".
   appleWebApp: {
     capable: true,
     title: "Nuvi",

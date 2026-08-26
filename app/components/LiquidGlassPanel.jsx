@@ -14,7 +14,7 @@ import React from "react";
 // "dark"  : lettres blanches + halo, pour du verre pose sur le CV.
 // "light" : lettres encre, pour un en-tete cream opaque. C'etait la vraie
 //           situation dans le Coach, ou le blanc sur cream ne laissait voir
-//           que les ombres portees — le mot ressortait comme une tache.
+//           que les ombres portees - le mot ressortait comme une tache.
 export function NuviLogoAnimated({ size = 26, tone = "dark" }) {
   const light = tone === "light";
   return (
