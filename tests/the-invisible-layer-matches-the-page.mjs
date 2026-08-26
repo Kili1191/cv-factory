@@ -34,10 +34,33 @@ import { startServer, stopServer, launchBrowser, exportCvPdf, SAMPLE_CV } from "
 
 const LAYOUTS = ["sidebar", "ats", "classic", "timeline", "swiss", "compact"];
 
-// Part des mots de la couche que l'OCR doit confirmer. Mesure sur les six
-// modeles : de 84% (modele a la typographie la plus fine) a 100%. En dessous
-// de 75%, ce n'est plus du bruit d'OCR : c'est du texte qui n'est pas la.
-const MIN_CONFIRMED = 0.75;
+// DEUX CONTROLES, PARCE QU'IL Y A DEUX RISQUES ET UN SEUL NE LES COUVRE PAS
+//
+// 1. LE TEXTE FANTOME - la couche invisible contient un mot qui n'est pas sur
+//    la page. C'est du bourrage de mots-cles : tromper le logiciel de tri sur
+//    ce que le candidat a reellement ecrit. C'est le risque grave, et il se
+//    verifie EXACTEMENT en comparant la couche au DOM du CV. Zero tolerance.
+//
+// 2. LA COUCHE DETACHEE - la couche ne dit plus rien de ce que la page
+//    montre. Seul l'OCR peut le voir, puisqu'il lit l'image rendue.
+//
+// POURQUOI L'OCR NE PEUT PAS SERVIR AU PREMIER
+//
+// Ce test gardait le premier risque avec un pourcentage d'OCR a 75%. Il a
+// bloque une mise en ligne pour une raison qui n'avait rien a voir avec le
+// produit : sur la machine de developpement, le reseau bloque Google Fonts,
+// le CV se rend donc avec des polices de secours, et tesseract les lit BIEN
+// (sidebar 79%, timeline 79%). En integration continue les vraies polices se
+// chargent - Fraunces est une serif fine - et tesseract les lit MOINS bien
+// (70% et 74%). Le meme commit, le meme CV, deux verdicts opposes.
+//
+// Aucun des mots manquants n'etait invente : "profil", "2021", "linkedin",
+// "france" sont tous imprimes sur la page. L'OCR ne savait pas les lire.
+//
+// Autrement dit le pourcentage mesurait la lisibilite de la police par un
+// moteur d'OCR, pas l'honnetete de la couche. Il garde donc le seul role qu'il
+// peut tenir : constater que la couche n'est pas detachee de la page.
+const MIN_CONFIRMED = 0.55;
 
 function available(cmd, args) {
   try { execFileSync(cmd, args, { stdio: "pipe" }); return true; }
@@ -91,7 +114,7 @@ export async function run() {
     for (const layout of LAYOUTS) {
       const out = await exportCvPdf(browser, SAMPLE_CV, layout);
       if (out.failed) { failures.push(`modele ${layout} : ${out.failed}`); continue; }
-      exported.push({ layout, pdfPath: out.pdfPath });
+      exported.push({ layout, pdfPath: out.pdfPath, domText: out.domText || "" });
     }
   } finally {
     await browser.close();
@@ -99,7 +122,7 @@ export async function run() {
   }
 
   try {
-    for (const { layout, pdfPath } of exported) {
+    for (const { layout, pdfPath, domText } of exported) {
       const out = { pdfPath };
 
       const dir = mkdtempSync(join(tmpdir(), "cvf-ocr-"));
@@ -118,21 +141,45 @@ export async function run() {
       const inLayer = words(execFileSync("pdftotext", ["-enc", "UTF-8", out.pdfPath, "-"], { encoding: "utf8" }));
       if (inLayer.size === 0) { failures.push(`modele ${layout} : couche de texte vide`); continue; }
 
+      // --- 1. AUCUN MOT FANTOME (exact, sans OCR) --------------------
+      const onPage = words(domText);
+      if (onPage.size === 0) {
+        failures.push(
+          `modele ${layout} : le texte du CV n'a pas pu etre lu dans la page. `
+          + "Le controle du bourrage de mots-cles n'a donc PAS eu lieu."
+        );
+      } else {
+        const fantomes = [...inLayer].filter(w => !onPage.has(w));
+        if (fantomes.length) {
+          failures.push(
+            `modele ${layout} : la couche de texte invisible contient `
+            + `${fantomes.length} mot(s) absents de la page : ${fantomes.slice(0, 10).join(", ")}. `
+            + "C'est du bourrage de mots-cles - tromper le logiciel de tri sur ce "
+            + "que le candidat a reellement ecrit. L'application ne doit jamais faire ca."
+          );
+        }
+      }
+
+      // --- 2. LA COUCHE N'EST PAS DETACHEE DE LA PAGE (OCR) ----------
       const confirmed = [...inLayer].filter(w => seenByEye.has(w));
       const share = confirmed.length / inLayer.size;
       scores.push(`${layout}:${Math.round(share * 100)}%`);
 
       if (share < MIN_CONFIRMED) {
-        const phantom = [...inLayer].filter(w => !seenByEye.has(w)).slice(0, 8);
+        const nonVus = [...inLayer].filter(w => !seenByEye.has(w)).slice(0, 8);
         failures.push(
-          `modele ${layout} : seulement ${Math.round(share * 100)}% des mots de la couche `
-          + `invisible sont visibles sur la page. Mots non vus : ${phantom.join(", ")}. `
-          + `Soit la page a perdu du texte, soit la couche en contient qui n'y est pas.`
+          `modele ${layout} : l'oeil ne retrouve que ${Math.round(share * 100)}% des mots `
+          + `de la couche invisible sur la page. Mots non vus : ${nonVus.join(", ")}. `
+          + "A ce niveau la couche ne decrit plus ce qui est imprime : soit la page "
+          + "a perdu du texte, soit la couche s'est desolidarisee du rendu."
         );
       }
     }
     if (!failures.length) {
-      console.log(`      couche invisible confirmee par l'oeil : ${scores.join("  ")}`);
+      console.log(
+        `      aucun mot invente dans la couche invisible sur ${exported.length} modeles ; `
+        + `part relue par l'oeil : ${scores.join("  ")}`
+      );
     }
   } catch (err) {
     failures.push(`analyse impossible : ${err.message.split("\n")[0]}`);

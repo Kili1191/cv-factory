@@ -281,6 +281,26 @@ export async function exportCvPdf(browser, cv, layout) {
     clickErrMsg = clickErr.message.split("\n")[0];
   }
 
+  // CE QUE LA PAGE AFFICHE VRAIMENT, LU DANS LE DOCUMENT
+  //
+  // Sert a repondre exactement a la question "la couche de texte invisible
+  // du PDF contient-elle un mot qui n'est pas sur la page ?". L'OCR y
+  // repondait approximativement : il ne lit pas les petits caracteres d'une
+  // serif fine, et son taux de reussite change avec les polices reellement
+  // chargees - donc avec le reseau de la machine. Le DOM, lui, dit la verite
+  // sans marge d'erreur.
+  //
+  // [data-cvf="cv"] est le CV seul, sans l'interface autour : prendre toute
+  // la page laisserait un mot invente passer pour vu s'il figurait par
+  // hasard dans un menu.
+  let domText = "";
+  try {
+    domText = await page.evaluate(() => {
+      const el = document.querySelector('[data-cvf="cv"]');
+      return el ? (el.innerText || "") : "";
+    });
+  } catch { /* la page a disparu : domText reste vide, le test le dira */ }
+
   const download = await downloadPromise;
   if (!download) {
     await ctx.close();
@@ -298,5 +318,5 @@ export async function exportCvPdf(browser, cv, layout) {
   const bytes = readFileSync(pdfPath);
   await ctx.close();
   const { text, pages } = await extractPdfText(bytes);
-  return { errors, bytes, text, pages, pdfPath };
+  return { errors, bytes, text, pages, pdfPath, domText };
 }
