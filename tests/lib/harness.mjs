@@ -144,14 +144,29 @@ export const SAMPLE_CV = {
   labels: {},
 };
 
-export async function seedApp(page, cv = SAMPLE_CV, { layout } = {}) {
+// LA LANGUE EST FIXEE, ET C'EST DELIBERE
+//
+// La plupart des tests cherchent des boutons par leur libelle francais :
+// "Generer", "Reglages", "Trouver un poste". Tant que le francais etait la
+// langue par defaut, ils marchaient par accident.
+//
+// Le jour ou l'anglais est devenu le defaut, huit suites se sont mises a
+// chercher des mots qui n'existaient plus - et le message parlait d'un clic
+// qui expire, pas d'une langue qui a change. Une heure perdue a chercher au
+// mauvais endroit.
+//
+// La langue est donc posee explicitement. Un test qui affirme du texte doit
+// dire dans quelle langue il l'attend ; il ne doit pas dependre d'un reglage
+// que le produit a le droit de changer.
+export async function seedApp(page, cv = SAMPLE_CV, { layout, locale = "fr" } = {}) {
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.evaluate(({ data, layout }) => {
+  await page.evaluate(({ data, layout, locale }) => {
     localStorage.setItem("cvf_d", JSON.stringify(data));
     localStorage.setItem("cvf_k", JSON.stringify("sk-test-not-used"));
     localStorage.setItem("cvf_tu", JSON.stringify(true));
+    localStorage.setItem("cvf_c", JSON.stringify(locale));
     if (layout) localStorage.setItem("cvf_l", JSON.stringify(layout));
-  }, { data: cv, layout: layout || null });
+  }, { data: cv, layout: layout || null, locale });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2500);
 }
