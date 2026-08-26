@@ -42,7 +42,18 @@ async function importOnce(browser, { blockWorker }) {
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2600);
-  await page.getByRole("button", { name: /J'ai deja un CV/i }).first().click();
+  // LES DEUX LANGUES, PARCE QUE CE TEST N'EN JUGE AUCUNE
+  //
+  // Il part de l'ecran d'arrivee, donc avant tout seedApp : il ne beneficie
+  // pas de la langue epinglee par le harnais. Le jour ou l'anglais est devenu
+  // la langue par defaut, il a cherche un bouton francais qui n'existait plus
+  // et a rendu "locator.click: Timeout 30000ms exceeded" - un message qui ne
+  // dit rien de la vraie cause.
+  //
+  // Ce qu'il veut, c'est l'entree d'import. Peu lui importe le mot.
+  await page
+    .getByRole("button", { name: /J'ai deja un CV|I already have a CV/i })
+    .first().click();
   await page.waitForTimeout(2200);
 
   const dir = mkdtempSync(join(tmpdir(), "cvf-import-"));
