@@ -81,8 +81,12 @@ const CV_MONSTRE = {
 const SITUATIONS = [
   {
     nom: "visiteur neuf",
-    pourquoi: "personne n'a de CV a sa premiere visite, et c'est l'ecran que tout le monde voit en premier",
-    stockage: { cvf_c: "fr", cvf_tu: true },
+    // Rien du tout, pas meme la langue : c'est le vrai premier ecran, celui
+    // que tout le monde voit et que personne ne teste, parce qu'on developpe
+    // toujours avec un navigateur deja rempli. La question de la langue en
+    // fait partie et le balayage y repond avant de continuer.
+    pourquoi: "personne n'a de CV ni de reglage a sa premiere visite, et c'est l'ecran que tout le monde voit en premier",
+    stockage: {},
   },
   {
     nom: "utilisateur normal",

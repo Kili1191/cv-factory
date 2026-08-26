@@ -171,6 +171,33 @@ export async function seedApp(page, cv = SAMPLE_CV, { layout, locale = "fr" } = 
   await page.waitForTimeout(2500);
 }
 
+// LA QUESTION DE LA LANGUE BARRE LA ROUTE, ET C'EST VOULU
+//
+// A la premiere visite, Nuvi demande la langue et rend tout le reste
+// inutilisable tant qu'on n'a pas repondu - sinon on peut commencer a saisir
+// son CV dans une langue et basculer dans l'autre juste apres.
+//
+// Un test qui part d'un navigateur vierge doit donc y repondre, comme une
+// vraie personne. Sans ca, Playwright signale "locator.click: Timeout" sur le
+// bouton suivant : un message qui parle d'un clic et pas de langue, et qui
+// envoie chercher la panne au mauvais endroit. C'est exactement ce qui est
+// arrive a l'import de PDF.
+//
+// seedApp n'en a pas besoin : il epingle deja cvf_c avant que l'application
+// demarre, donc la question ne se pose jamais.
+export async function answerLanguageIfAsked(page, lc = "fr") {
+  const sel = '[data-nuvi-lang-ask="1"]';
+  try {
+    await page.waitForSelector(sel, { timeout: 4000 });
+  } catch {
+    return false; // pas de question posee : rien a faire
+  }
+  await page.locator(`${sel} button[lang="${lc}"]`).click();
+  await page.waitForSelector(sel, { state: "detached", timeout: 5000 });
+  await page.waitForTimeout(600);
+  return true;
+}
+
 // Extrait le texte d'un PDF comme le ferait un robot de tri de CV.
 export async function extractPdfText(bytes) {
   const mod = await import("pdfjs-dist/legacy/build/pdf.js");

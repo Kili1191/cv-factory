@@ -8,7 +8,7 @@
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, answerLanguageIfAsked } from "./lib/harness.mjs";
 
 function buildPdf(lines) {
   const objs = [
@@ -42,6 +42,11 @@ async function importOnce(browser, { blockWorker }) {
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2600);
+  // Navigateur vierge, donc Nuvi demande la langue et bloque tout le reste
+  // tant qu'on n'a pas repondu. On repond, comme une vraie personne : sinon
+  // le clic suivant expire et le message parle d'un bouton au lieu de la
+  // langue.
+  await answerLanguageIfAsked(page, "fr");
   // LES DEUX LANGUES, PARCE QUE CE TEST N'EN JUGE AUCUNE
   //
   // Il part de l'ecran d'arrivee, donc avant tout seedApp : il ne beneficie
