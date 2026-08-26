@@ -87,6 +87,36 @@ function measure(page) {
       // legitimement recouvert par une barre fixe.
       if (r.top < 0 || r.left < 0 || r.right > W || r.bottom > H) continue;
 
+      // UN RECTANGLE DANS L'ECRAN NE VEUT PAS DIRE VISIBLE
+      //
+      // getBoundingClientRect rend une GEOMETRIE, pas une visibilite. Un
+      // bouton pousse hors de son conteneur defilant garde un rectangle
+      // parfaitement situe dans l'ecran, alors qu'il est decoupe et n'est
+      // peint nulle part.
+      //
+      // Sans ce controle, le test affirmait "visible mais injoignable" sur
+      // trois boutons qui n'etaient pas affiches du tout - et il le disait aux
+      // memes coordonnees avant et apres la correction, ce qui a failli faire
+      // corriger deux fois une application qui allait bien.
+      //
+      // On coupe donc le rectangle par celui de chaque ancetre qui decoupe.
+      // S'il ne reste rien, le bouton n'est pas a l'ecran.
+      let vis = { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        const decoupe = /(auto|scroll|hidden|clip)/.test(cs.overflowY + " " + cs.overflowX);
+        if (!decoupe) continue;
+        const ar = a.getBoundingClientRect();
+        vis.top = Math.max(vis.top, ar.top);
+        vis.bottom = Math.min(vis.bottom, ar.bottom);
+        vis.left = Math.max(vis.left, ar.left);
+        vis.right = Math.min(vis.right, ar.right);
+      }
+      // On exige que le CENTRE survive au decoupage : c'est le point qu'on va
+      // interroger juste apres, et le seul dont la reponse ait un sens.
+      const ccx = r.left + r.width / 2, ccy = r.top + r.height / 2;
+      if (ccy < vis.top || ccy > vis.bottom || ccx < vis.left || ccx > vis.right) continue;
+
       const s = getComputedStyle(el);
       if (s.visibility === "hidden" || s.display === "none" || s.opacity === "0") continue;
       if (el.disabled) continue;

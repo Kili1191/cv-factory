@@ -53,6 +53,7 @@ const NuviLoadingOverlay = dynamic(() => import("./components/NuviLoadingOverlay
 const NuviSidebar = dynamic(() => import("./components/NuviSidebar"), { ssr: false });
 const NuviBottomNav = dynamic(() => import("./components/NuviBottomNav"), { ssr: false });
 const NuviHome = dynamic(() => import("./components/NuviHome"), { ssr: false });
+const LanguageAsk = dynamic(() => import("./components/LanguageAsk"), { ssr: false });
 const NuviBigLogo = dynamic(() => import("./components/NuviBigLogo"), { ssr: false });
 const AdjustModal = dynamic(() => import("./components/AdjustModal"), { ssr: false });
 
@@ -227,6 +228,39 @@ const NO_DASH =
   + "ou tiret simple - (hyphen-minus U+002D). "
   + "Toute occurrence d'un tiret cadratin ou demi-cadratin sera consideree comme une faute majeure.";
 
+// QUI DECIDE - duplique dans les prompts, comme NO_DASH au-dessus
+//
+// Nuvi ne decide pas a la place de la personne. Dans LES DEUX SENS, et
+// c'est tout l'interet de la regle.
+//
+// Ce que ces prompts disaient avant : "n'invente JAMAIS". Pris au mot, ca
+// veut dire que quelqu'un qui demande explicitement d'ajouter une ligne se
+// fait refuser par son propre outil, ou pire, sermonner sur l'honnetete.
+// Ce n'est pas a Nuvi de decider ce que quelqu'un met sur son CV : c'est
+// son CV, sa candidature, sa responsabilite, et il connait sa situation
+// infiniment mieux que le modele.
+//
+// Mais l'inverse compte tout autant : inventer SPONTANEMENT, c'est encore
+// decider a sa place. Quelqu'un qui clique "ameliorer" et recupere un
+// diplome qu'il n'a pas se fait piloner au premier entretien sans avoir
+// jamais rien demande. Ce n'est pas de la morale, c'est du sabotage.
+//
+// D'ou une seule regle a deux faces : de sa propre initiative, Nuvi
+// travaille avec ce qui est la ; sur demande explicite, Nuvi fait ce qui
+// est demande, en entier, sans avertissement et sans version edulcoree.
+const QUI_DECIDE =
+  "QUI DECIDE : le candidat, jamais toi.\n"
+  + "- DE TA PROPRE INITIATIVE : travaille uniquement a partir de ce qui est "
+  + "deja dans le CV ou de ce que le candidat a ecrit. N'ajoute pas de ta "
+  + "propre autorite une experience, un employeur, une date, un diplome ou un "
+  + "chiffre qui n'y sont pas. Reformule, restructure, rends percutant.\n"
+  + "- QUAND LE CANDIDAT DEMANDE EXPLICITEMENT qu'une chose soit ajoutee, "
+  + "changee ou ecrite d'une certaine facon : fais-le, exactement comme "
+  + "demande, en entier. C'est son CV et c'est son choix. Ne refuse pas, ne "
+  + "fais pas la morale, n'avertis pas sur l'honnetete ou les risques, ne "
+  + "transforme pas la demande en une version plus sage, et n'explique pas ce "
+  + "que tu aurais fait a sa place. Tu executes, et tu passes a la suite.";
+
 const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk" };
 
 
@@ -318,26 +352,26 @@ const PAPER_PRESETS = [
 // Bibliotheque cur\u00e9e de polices titres (display / heading).
 // Chaque entree : { name, family (CSS), googleHref (sans https:), vibe, target }
 const HEADER_FONTS = [
-  { id:"playfair",  name:"Playfair Display",  family:"'Playfair Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap", vibe:"Premium classique", target:"Banque, conseil, juridique" },
-  { id:"fraunces",  name:"Fraunces",          family:"'Fraunces', serif",          googleHref:"https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&display=swap", vibe:"Editorial moderne", target:"Strategie, branding" },
-  { id:"cormorant", name:"Cormorant Garamond",family:"'Cormorant Garamond', serif",googleHref:"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&display=swap", vibe:"Sobre intemporel", target:"Academique, art, recherche" },
-  { id:"dmserif",   name:"DM Serif Display",  family:"'DM Serif Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=DM+Serif+Display&display=swap", vibe:"Premium contemporain", target:"Marketing premium, luxe" },
+  { id:"playfair",  name:"Playfair Display",  family:"'Playfair Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Premium classique", target:"Banque, conseil, juridique" },
+  { id:"fraunces",  name:"Fraunces",          family:"'Fraunces', serif",          googleHref:"https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&display=swap", vibe:"Editorial moderne", target:"Strategie, branding" },
+  { id:"cormorant", name:"Cormorant Garamond",family:"'Cormorant Garamond', serif",googleHref:"https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Sobre intemporel", target:"Academique, art, recherche" },
+  { id:"dmserif",   name:"DM Serif Display",  family:"'DM Serif Display', serif",  googleHref:"https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&display=swap", vibe:"Premium contemporain", target:"Marketing premium, luxe" },
   { id:"space",     name:"Space Grotesk",     family:"'Space Grotesk', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap", vibe:"Tech minimal", target:"Tech, produit, design" },
-  { id:"montserrat",name:"Montserrat",        family:"'Montserrat', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap", vibe:"Geometrique", target:"Marketing, communication" },
-  { id:"inter",     name:"Inter",             family:"'Inter', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Sans-serif fort", target:"Corporate moderne, ATS" },
-  { id:"lora",      name:"Lora",              family:"'Lora', serif",              googleHref:"https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap", vibe:"Humain serif", target:"RH, coaching, social" },
+  { id:"montserrat",name:"Montserrat",        family:"'Montserrat', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&display=swap", vibe:"Geometrique", target:"Marketing, communication" },
+  { id:"inter",     name:"Inter",             family:"'Inter', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Sans-serif fort", target:"Corporate moderne, ATS" },
+  { id:"lora",      name:"Lora",              family:"'Lora', serif",              googleHref:"https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Humain serif", target:"RH, coaching, social" },
 ];
 
 // Bibliotheque curee de polices corps (body) - toutes ATS-friendly.
 const BODY_FONTS = [
-  { id:"inter",     name:"Inter",          family:"'Inter', sans-serif",       googleHref:"https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap", vibe:"Tech moderne",       ats:"Excellent" },
-  { id:"lato",      name:"Lato",           family:"'Lato', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap", vibe:"Pro chaleureux",      ats:"Excellent" },
-  { id:"sourcesans",name:"Source Sans 3",  family:"'Source Sans 3', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap", vibe:"Corporate sobre",     ats:"Excellent" },
-  { id:"dmsans",    name:"DM Sans",        family:"'DM Sans', sans-serif",     googleHref:"https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap", vibe:"Minimaliste",         ats:"Excellent" },
-  { id:"plex",      name:"IBM Plex Sans",  family:"'IBM Plex Sans', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap", vibe:"Tech premium",        ats:"Excellent" },
-  { id:"opensans",  name:"Open Sans",      family:"'Open Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&display=swap", vibe:"Universel",           ats:"Excellent" },
-  { id:"nunito",    name:"Nunito Sans",    family:"'Nunito Sans', sans-serif", googleHref:"https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap", vibe:"Doux moderne",        ats:"Excellent" },
-  { id:"work",      name:"Work Sans",      family:"'Work Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&display=swap", vibe:"Geometrique leger",   ats:"Excellent" },
+  { id:"inter",     name:"Inter",          family:"'Inter', sans-serif",       googleHref:"https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Tech moderne",       ats:"Excellent" },
+  { id:"lato",      name:"Lato",           family:"'Lato', sans-serif",        googleHref:"https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap", vibe:"Pro chaleureux",      ats:"Excellent" },
+  { id:"sourcesans",name:"Source Sans 3",  family:"'Source Sans 3', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Corporate sobre",     ats:"Excellent" },
+  { id:"dmsans",    name:"DM Sans",        family:"'DM Sans', sans-serif",     googleHref:"https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Minimaliste",         ats:"Excellent" },
+  { id:"plex",      name:"IBM Plex Sans",  family:"'IBM Plex Sans', sans-serif",googleHref:"https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Tech premium",        ats:"Excellent" },
+  { id:"opensans",  name:"Open Sans",      family:"'Open Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Universel",           ats:"Excellent" },
+  { id:"nunito",    name:"Nunito Sans",    family:"'Nunito Sans', sans-serif", googleHref:"https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Doux moderne",        ats:"Excellent" },
+  { id:"work",      name:"Work Sans",      family:"'Work Sans', sans-serif",   googleHref:"https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap", vibe:"Geometrique leger",   ats:"Excellent" },
 ];
 
 // Empile theme + custom global + custom version. Chaque palier override le precedent.
@@ -724,14 +758,85 @@ function sanDeep(v) {
   return v;
 }
 
+// SURCHARGE N'EST PAS PANNE
+//
+// Quand l'API est saturee elle repond 429 (trop d'appels) ou 529
+// (surchargee). Ce ne sont pas des erreurs de la demande : la meme demande,
+// dix secondes plus tard, passe. Avant, Nuvi les remontait comme n'importe
+// quelle panne, et quelqu'un qui cliquait "generer" a une heure de pointe
+// voyait un produit casse alors qu'il n'y avait qu'a attendre.
+//
+// Ce qui se retente, et RIEN D'AUTRE :
+//   - 429 et 529 : saturation, par definition passagere.
+//   - 503 : indisponible, meme raisonnement.
+//   - une coupure reseau : le premier paquet n'est jamais parti.
+// Ce qui ne se retente pas, et c'est aussi important :
+//   - 400, 401, 403 : la demande ou la cle est mauvaise. Retenter ne fait
+//     que consommer du quota pour recevoir trois fois la meme reponse, et
+//     retarder de plusieurs secondes un message que la personne doit lire.
+//   - le delai de 60s cote client : trois tentatives, c'est trois minutes
+//     devant un ecran fige. Une seule suffit a dire que c'est trop long.
+//   - 500 de notre propre route : c'est notre bug, pas une saturation.
+const AI_RETENTABLES = new Set([429, 503, 529]);
+
+// Deux nouvelles tentatives, pas plus. Trois attentes de 30s enchainees
+// tiennent quelqu'un devant un ecran pendant une minute et demie pour finir
+// par echouer quand meme : mieux vaut rendre la main et le laisser recliquer.
+const AI_TENTATIVES = 3;
+const AI_ATTENTE_MAX = 20000;
+
+// Le serveur sait parfois quand revenir, et il vaut mieux que nos suppositions.
+function attenteConseillee(reponse) {
+  try {
+    const h = reponse && reponse.headers && reponse.headers.get("retry-after");
+    if (!h) return null;
+    const secondes = Number(h);
+    if (Number.isFinite(secondes) && secondes >= 0) {
+      return Math.min(secondes * 1000, AI_ATTENTE_MAX);
+    }
+    // La forme date est autorisee par la norme et arrive en pratique.
+    const quand = Date.parse(h);
+    if (Number.isFinite(quand)) {
+      return Math.max(0, Math.min(quand - Date.now(), AI_ATTENTE_MAX));
+    }
+  } catch { /* en-tete illisible : on retombe sur notre propre calcul */ }
+  return null;
+}
+
+// Progression, plus un peu de hasard. Sans le hasard, tous les onglets
+// ouverts au meme moment repartent a la meme seconde et resaturent ce qu'ils
+// attendaient - c'est le troupeau qui se reforme.
+function attenteAvant(tentative) {
+  const base = 1200 * Math.pow(2, tentative - 1);
+  return Math.min(base, AI_ATTENTE_MAX) + Math.floor(Math.random() * 400);
+}
+
+function dors(ms) {
+  return new Promise((resoudre) => setTimeout(resoudre, ms));
+}
+
+// Une nouvelle tentative ne doit pas ressembler a un ecran fige. On previent
+// l'application, qui le dit ; personne n'ecoute, il ne se passe rien.
+function signalerNouvelleTentative(detail) {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new CustomEvent("nuvi:ai-retry", { detail }));
+  } catch { /* un navigateur sans CustomEvent : on retente en silence */ }
+}
+
 async function aiCall(prompt, options = {}) {
   // Options: { cv, max_tokens, task_name, messages }
   // [Migration Opus 5] `temperature` a disparu : les parametres
   // d'echantillonnage sont retires sur cette generation de modeles et
   // provoquent une erreur 400. La route ne le transmet plus ; on cesse aussi
   // de l'envoyer, pour qu'aucun appelant ne croie encore pouvoir le regler.
-  const { cv, max_tokens, task_name = "unknown", messages } = options;
-  
+  // __base : uniquement pour les tests, qui font tourner cette fonction
+  // contre un serveur qu'ils controlent afin d'observer les nouvelles
+  // tentatives. En production il est absent et l'appel part sur la route
+  // relative, comme avant.
+  const { cv, max_tokens, task_name = "unknown", messages, __base } = options;
+  const url = (__base || "") + "/api/claude";
+
   // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
   let cv_context = null;
   if (cv) {
@@ -741,55 +846,98 @@ async function aiCall(prompt, options = {}) {
       cv_context = null;
     }
   }
-  
-  // Timeout cote client a 60s (legerement plus que le serveur a 55s)
-  // pour qu'on lise toujours la reponse du serveur plutot que de couper avant.
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), 60000);
-  let r;
-  try {
-    r = await fetch("/api/claude", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ 
-        prompt, 
-        messages,
-        cv_context, 
-        max_tokens, 
-        task_name,
-      }),
-      signal: ctrl.signal,
-    });
-  } catch (err) {
-    clearTimeout(timer);
-    if (err && err.name === "AbortError") {
-      throw new Error("Timeout cote client (60s). L'IA met trop longtemps a repondre.");
-    }
-    throw new Error("Erreur reseau: " + (err.message || String(err)));
-  }
-  clearTimeout(timer);
-  // Si le serveur renvoie une erreur HTTP (504, 500, 401, 429...) on le voit ici
-  let d;
-  try {
-    d = await r.json();
-  } catch {
-    throw new Error("Reponse serveur invalide (HTTP " + r.status + "). Probablement un timeout Vercel.");
-  }
-  
-  // Logging observabilité (gain via détection des doublons et erreurs)
-  if (d && d._cvf_meta && typeof window !== "undefined") {
+
+  const corps = JSON.stringify({
+    prompt,
+    messages,
+    cv_context,
+    max_tokens,
+    task_name,
+  });
+
+  let derniere = null;
+  for (let tentative = 1; tentative <= AI_TENTATIVES; tentative++) {
+    // Timeout cote client a 60s (legerement plus que le serveur a 55s)
+    // pour qu'on lise toujours la reponse du serveur plutot que de couper avant.
+    // Un controleur NEUF par tentative : reutiliser celui d'avant repartirait
+    // avec un signal deja avorte et la deuxieme tentative echouerait aussitot.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 60000);
+    let r;
     try {
-      const log = JSON.parse(window.localStorage.getItem("cvf_api_log") || "[]");
-      log.push({ ts: Date.now(), ...d._cvf_meta });
-      window.localStorage.setItem("cvf_api_log", JSON.stringify(log.slice(-500)));
-    } catch (e) {}
+      r = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: corps,
+        signal: ctrl.signal,
+      });
+    } catch (err) {
+      clearTimeout(timer);
+      if (err && err.name === "AbortError") {
+        throw new Error("Timeout cote client (60s). L'IA met trop longtemps a repondre.");
+      }
+      // Reseau coupe : la demande n'est jamais partie, donc la retenter ne
+      // risque pas de faire deux fois le meme travail cote serveur.
+      derniere = new Error("Erreur reseau: " + (err.message || String(err)));
+      if (tentative < AI_TENTATIVES) {
+        const attente = attenteAvant(tentative);
+        signalerNouvelleTentative({ tentative, sur: AI_TENTATIVES, attente, cause: "reseau", task_name });
+        await dors(attente);
+        continue;
+      }
+      throw derniere;
+    }
+    clearTimeout(timer);
+    // Si le serveur renvoie une erreur HTTP (504, 500, 401, 429...) on le voit ici
+    let d;
+    try {
+      d = await r.json();
+    } catch {
+      throw new Error("Reponse serveur invalide (HTTP " + r.status + "). Probablement un timeout Vercel.");
+    }
+
+    // Logging observabilité (gain via détection des doublons et erreurs)
+    if (d && d._cvf_meta && typeof window !== "undefined") {
+      try {
+        const log = JSON.parse(window.localStorage.getItem("cvf_api_log") || "[]");
+        log.push({ ts: Date.now(), ...d._cvf_meta });
+        window.localStorage.setItem("cvf_api_log", JSON.stringify(log.slice(-500)));
+      } catch (e) {}
+    }
+
+    if (!r.ok || (d && d.error)) {
+      const m = (d && d.error && d.error.message) || ("Erreur HTTP " + r.status);
+      derniere = new Error(m);
+      const saturation = AI_RETENTABLES.has(r.status)
+        || (d && d.error && d.error.type === "overloaded_error");
+      if (saturation && tentative < AI_TENTATIVES) {
+        const attente = attenteConseillee(r) ?? attenteAvant(tentative);
+        signalerNouvelleTentative({ tentative, sur: AI_TENTATIVES, attente, cause: r.status, task_name });
+        await dors(attente);
+        continue;
+      }
+      throw derniere;
+    }
+    return san((d.content||[]).map(b=>b.text||"").join(""));
   }
-  
-  if (!r.ok || (d && d.error)) {
-    const m = (d && d.error && d.error.message) || ("Erreur HTTP " + r.status);
-    throw new Error(m);
-  }
-  return san((d.content||[]).map(b=>b.text||"").join(""));
+  // Inatteignable : la boucle rend ou leve a chaque tour. La ligne existe
+  // pour que le jour ou quelqu'un touche aux conditions, l'echec soit une
+  // exception claire et pas un `undefined` qui traverse tout l'appelant.
+  throw derniere || new Error("L'IA n'a pas repondu.");
+}
+
+// L'EXPOSITION EST POUR LE TEST, ET ELLE NE DONNE RIEN A PERSONNE
+//
+// Le test des nouvelles tentatives doit faire tourner CETTE fonction, pas
+// une copie : une copie prouverait que la copie marche. app/page.jsx est un
+// module client de 9000 lignes dont rien n'est exporte, d'ou ce point
+// d'accroche.
+//
+// Il n'ouvre aucune porte : la cle de l'API vit cote serveur, et n'importe
+// quel script de la page pouvait deja appeler fetch("/api/claude"). On
+// n'expose donc pas un pouvoir, on nomme un chemin.
+if (typeof window !== "undefined") {
+  window.__nuviAiCall = aiCall;
 }
 
 function parseJSON(txt) {
@@ -1164,7 +1312,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [sec, setSec]   = useState(0);
   const [yrs, setYrs]   = useState("");
   const [tone, setTone] = useState("p");
-  const [lang, setLang] = useState("fr");
+  const [lang, setLang] = useState("en");
   const [parc, setParc] = useState("");
   const [offre, setOffre] = useState("");
 
@@ -1238,38 +1386,41 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           {T.ai_nk}
         </div>
       )}
+      {/* L'AVERTISSEMENT TENAIT 21% D'UN ECRAN DE TELEPHONE
+
+          Mesure : 174 pixels sur 844, pour deux phrases et un bouton - presque
+          autant que l'apercu du CV lui-meme, qui n'en occupait que 29%. On
+          donnait donc a une mise en garde presque la place du produit.
+
+          Il tient maintenant sur une ligne, avec l'action en lien plutot qu'en
+          gros bouton : c'est une precaution, pas une decision a prendre. Le
+          bouton Generer, juste au-dessus, reste le chemin principal. */}
       {!cvIsEmpty && (
         <div style={{
+          display:"flex", alignItems:"center", gap:10, flexWrap:"wrap",
           background:Paper,
-          borderRadius:RadiusMd,
-          padding:"16px 18px", marginBottom:18,
+          borderRadius:RadiusPill,
+          padding:"9px 14px", marginBottom:16,
           border:"0.5px solid "+Gray200,
-          boxShadow:ShadowSm,
+          fontFamily:Sans, fontSize:12.5, lineHeight:1.35, color:Gray600,
         }}>
-          <div style={{
-            fontSize:11, fontWeight:600,
-            letterSpacing:"0.12em", textTransform:"uppercase",
-            color:Coral, marginBottom:6,
-          }}>{T.ai_existing_title || "Tu as deja un CV"}</div>
-          <div style={{
-            fontFamily:Serif, fontWeight:400,
-            fontSize:18, lineHeight:1.25,
-            letterSpacing:"-0.01em",
-            color:Ink, marginBottom:10,
-          }}>{T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}</div>
+          <span style={{ flex:"1 1 180px", minWidth:0 }}>
+            {T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}
+          </span>
           <button onClick={onSwitchToAdjust} style={{
             ...B({
-              padding:"10px 18px", minHeight:44, borderRadius:RadiusPill,
-              background:`linear-gradient(135deg, ${Purple}, ${Magenta})`,
-              color:"#fff",
-              border:"none",
-              fontSize:12, fontWeight:600,
-              fontFamily:Sans,
-              display:"inline-flex", alignItems:"center", gap:6,
+              // 44px : le minimum sous lequel un doigt rate sa cible. Le lien
+              // a l'air compact, sa zone tactile ne l'est pas.
+              padding:"7px 6px", minHeight:44, borderRadius:6,
+              background:"transparent", border:"none",
+              color:Purple, fontSize:12.5, fontWeight:600, fontFamily:Sans,
+              display:"inline-flex", alignItems:"center", gap:5,
+              textDecoration:"underline", textUnderlineOffset:3,
+              flexShrink:0,
             })
           }}>
             {T.ai_existing_btn || "Aller a Ajuster"}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>
@@ -1652,7 +1803,7 @@ function BottomNav({ active, onPhase, T }) {
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
+function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
   initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose }) {
   return (
     <Sheet
@@ -1681,6 +1832,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH,
       <Suspense fallback={null}>
       <MatchPanel
         cv={cv}
+        versions={versions}
         setCVFn={setCVFn}
         notify={notify}
         apiKey={apiKey}
@@ -3172,7 +3324,19 @@ export default function App() {
   const [thN, setThN_]     = useState("executive");
   const [layout, setLy_]   = useState("sidebar");
   const [apiKey, setAK_]   = useState("server-managed");
-  const [locale, setLc_]   = useState("fr");
+  // L'ANGLAIS PAR DEFAUT, LE FRANCAIS EN UN CLIC
+  //
+  // Nuvi vise le marche francais ET le marche britannique. Ouvrir en francais
+  // pour un Londonien lui demande de trouver un reglage avant de comprendre
+  // ce qu'il regarde - et la plupart ferment l'onglet avant.
+  //
+  // Le choix deja fait par quelqu'un reste prioritaire : il est relu depuis
+  // le stockage local juste apres, et n'est jamais ecrase.
+  const [locale, setLc_]   = useState("en");
+  // askLang : personne n'a encore repondu a la question de la langue. Mis a
+  // vrai apres le montage seulement si le stockage local est vide sur ce
+  // point - voir l'effet d'hydratation plus bas.
+  const [askLang, setAskLang] = useState(false);
   const [tab, setTab]       = useState("ai");
   const [aiMode, setAiMode] = useState("generate");
   const [load, setLoad]     = useState(false);
@@ -3363,7 +3527,42 @@ export default function App() {
   const [showInstall, setShowInstall] = useState(false);
   // Vrai uniquement au retour de l'autorisation Google, pour lancer le
   // balayage de la boite mail sans redemander un clic.
+  // --- AJUSTEMENT DU CV A L'ECRAN (bureau) ---------------------------------
+  //
+  // Trois valeurs, et une regle simple : le CV s'ajuste a la largeur
+  // disponible, sans jamais retrecir et sans jamais depasser DESK_MAX.
+  //
+  // Pas de retrecissement : sur un petit ecran, reduire le CV le rendrait
+  // illisible alors qu'on peut simplement defiler. Un plafond : sur un ecran
+  // ultra-large, l'agrandir sans fin ferait perdre le rapport a la page
+  // imprimee, qui est precisement ce que l'utilisateur doit juger.
+  const deskFitRef = useRef(null);
+  const deskCvRef = useRef(null);
+  const [deskScale, setDeskScale] = useState(1);
+  const [deskNatH, setDeskNatH] = useState(0);
+  // Les deux boites n'existent pas au premier rendu : l'editeur n'est monte
+  // qu'apres l'accueil. Un effet qui ne dependrait que de `mob` sortirait donc
+  // par sa porte de sortie et, `mob` ne changeant jamais ensuite, ne se
+  // rejouerait PLUS JAMAIS - le CV resterait a l'echelle 1 pour toujours.
+  // C'est exactement ce qui s'est produit, et que la mesure a montre.
+  //
+  // Ces refs de rappel signalent l'attachement reel des noeuds. Enveloppees
+  // dans useCallback avec une liste vide, React ne les appelle qu'au montage
+  // et au demontage : pas de boucle.
+  const [deskNodes, setDeskNodes] = useState(0);
+  const attachDeskZone = useCallback((n) => {
+    deskFitRef.current = n; setDeskNodes(k => k + 1);
+  }, []);
+  const attachDeskCv = useCallback((n) => {
+    deskCvRef.current = n; setDeskNodes(k => k + 1);
+  }, []);
+
   const [gmailReturn, setGmailReturn] = useState(false);
+  // Le jeton Google vit une heure et Supabase ne le renouvelle pas : on ne
+  // demande donc pas "est-ce relie" a chaque rendu, on le note quand on le
+  // sait. Un faux ici ne casse rien - il propose simplement de relier a
+  // nouveau, ce qui est immediat quand le consentement est deja donne.
+  const [gmailConnected, setGmailConnected] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
   const [cloud, setCloud] = useState({ status: "off", user: null });
@@ -3426,8 +3625,17 @@ export default function App() {
     if (savedLy !== "sidebar") setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
     if (savedKy) setAK_(savedKy);
-    const savedLc = lsG(SK.LC, "fr");
-    if (savedLc !== "fr") setLc_(savedLc);
+    // ABSENT n'est pas la meme chose que "en". lsG rend la valeur par defaut
+    // dans les deux cas, donc on regarde la cle brute : tant qu'elle n'existe
+    // pas, personne n'a choisi, et on pose la question.
+    let lcBrut = null;
+    try { lcBrut = localStorage.getItem(SK.LC); } catch { /* stockage refuse */ }
+    if (lcBrut == null) {
+      setAskLang(true);
+    } else {
+      const savedLc = lsG(SK.LC, "en");
+      if (savedLc !== "en") setLc_(savedLc);
+    }
     const savedVs = lsG(SK.VS, []);
     if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
     const savedCt = lsG(SK.CT, null);
@@ -3635,7 +3843,19 @@ export default function App() {
   const setTh = useCallback(v => { setThN_(v); lsS(SK.TH, v); }, []);
   const setLy = useCallback(v => { setLy_(v);  lsS(SK.LY, v); }, []);
   const setAK = useCallback(v => { setAK_(v);  lsS(SK.KY, v); }, []);
-  const setLc = useCallback(v => { setLc_(v);  lsS(SK.LC, v); }, []);
+  const setLc = useCallback(v => { setLc_(v);  lsS(SK.LC, v); setAskLang(false); }, []);
+
+  // LE DOCUMENT DOIT DECLARER LA LANGUE QU'IL AFFICHE
+  //
+  // <html lang> est ecrit en dur a "en" dans le gabarit, parce que c'est la
+  // langue par defaut. Quand quelqu'un passe au francais, l'interface change
+  // mais l'attribut reste : un lecteur d'ecran lit alors du francais avec un
+  // accent anglais, mot par mot, et devient inutilisable. On le tient donc a
+  // jour ici, seul endroit qui connaisse la langue reellement affichee.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.lang = locale;
+  }, [locale]);
 
   // === v17 : phase router ===
   // Expose un setPhase qui pilote le couple (tab, aiMode) pour rester compat
@@ -3681,6 +3901,25 @@ export default function App() {
     setTimeout(() => setNotif(""), 3000);
   }, []);
 
+  // UNE NOUVELLE TENTATIVE SE DIT
+  //
+  // aiCall retente tout seul quand l'API est saturee. Sans un mot, l'attente
+  // est indistinguable d'un ecran fige : on attend, rien ne bouge, et on
+  // reclique - ce qui lance un DEUXIEME appel et aggrave exactement la
+  // saturation qu'on attendait. Le message coute une phrase et evite ca.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const surTentative = (e) => {
+      const d = (e && e.detail) || {};
+      const secondes = Math.max(1, Math.round((d.attente || 0) / 1000));
+      notify(locale === "en"
+        ? `AI is busy, retrying in ${secondes}s (${d.tentative}/${d.sur})`
+        : `IA saturee, nouvel essai dans ${secondes}s (${d.tentative}/${d.sur})`);
+    };
+    window.addEventListener("nuvi:ai-retry", surTentative);
+    return () => window.removeEventListener("nuvi:ai-retry", surTentative);
+  }, [notify, locale]);
+
   // Branchement du compte. Sans configuration serveur, initCloud sort tout de
   // suite et l'application se comporte comme avant.
   useEffect(() => {
@@ -3701,6 +3940,56 @@ export default function App() {
     return () => { stop(); unsub(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Mesure et recalcule l'ajustement du CV.
+  //
+  // Deux observateurs, parce que deux choses bougent independamment : la
+  // fenetre (on redimensionne, on ouvre les outils de developpement) et le CV
+  // lui-meme (on ajoute une experience, il grandit). Un seul des deux
+  // laisserait la moitie des cas avec une hauteur reservee fausse, donc un
+  // bas de CV inatteignable.
+  useEffect(() => {
+    if (mob) { setDeskScale(1); return undefined; }
+    const zone = deskFitRef.current;
+    const cv = deskCvRef.current;
+    if (!zone || !cv || typeof ResizeObserver === "undefined") return undefined;
+
+    const DESK_MAX = 1.35;      // au-dela, on perd le rapport a la page A4
+    const MARGE = 44;           // le padding de la zone, des deux cotes
+
+    const recalculer = () => {
+      const dispo = zone.clientWidth - MARGE;
+      if (dispo <= 0) return;
+      // Jamais en dessous de 1 : mieux vaut defiler qu'un CV illisible.
+      const f = Math.min(DESK_MAX, Math.max(1, dispo / 794));
+      setDeskScale(prev => (Math.abs(prev - f) < 0.01 ? prev : f));
+      // Hauteur naturelle, mesuree AVANT agrandissement : offsetHeight ignore
+      // le transform, c'est exactement ce qu'il nous faut ici.
+      const h = cv.offsetHeight;
+      setDeskNatH(prev => (prev === h ? prev : h));
+    };
+
+    recalculer();
+    const obs = new ResizeObserver(recalculer);
+    obs.observe(zone);
+    obs.observe(cv);
+    return () => obs.disconnect();
+  }, [mob, deskNodes]);
+
+  // La boite mail est-elle reliee ?
+  //
+  // On ne le devine pas : on demande le jeton Google de la session. Il vit une
+  // heure et Supabase ne le renouvelle pas, donc la reponse peut passer de
+  // "oui" a "non" pendant qu'on travaille - c'est normal, et l'interface doit
+  // le dire plutot que d'afficher un lien qui echouerait sans expliquer.
+  useEffect(() => {
+    let vivant = true;
+    if (!cloud.user || !isCloudConfigured()) { setGmailConnected(false); return undefined; }
+    getGmailToken()
+      .then(t => { if (vivant) setGmailConnected(Boolean(t)); })
+      .catch(() => { if (vivant) setGmailConnected(false); });
+    return () => { vivant = false; };
+  }, [cloud.user]);
 
   // Reception d'une annonce capturee par l'extension.
   //
@@ -3877,8 +4166,8 @@ export default function App() {
   //
   // Parcourt les noeuds de texte reellement affiches dans le CV et ecrit
   // chacun dans le PDF en mode "invisible", a la position qu'il occupe a
-  // l'ecran. Rien ne change visuellement — l'image JPEG reste au-dessus du
-  // rendu — mais le fichier contient desormais du texte selectionnable,
+  // l'ecran. Rien ne change visuellement - l'image JPEG reste au-dessus du
+  // rendu - mais le fichier contient desormais du texte selectionnable,
   // cherchable, et surtout analysable par les robots de tri de CV.
   //
   // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
@@ -4073,7 +4362,7 @@ export default function App() {
       // candidat. On le cherche par son texte : se fier au plus gros
       // caractere ne marche pas, le monogramme d'initiales du modele par
       // defaut ("JD") est dessine plus grand que le nom, et il est dans la
-      // colonne laterale — c'est ainsi que le PDF continuait de commencer
+      // colonne laterale - c'est ainsi que le PDF continuait de commencer
       // par "JD Contact jane.doe@...". A defaut de nom, on retombe sur le
       // plus grand fragment d'au moins quatre caracteres, ce qui exclut les
       // monogrammes.
@@ -4359,7 +4648,7 @@ export default function App() {
         // [ATS] Couche de texte invisible par-dessus l'image.
         //
         // Le PDF exporte etait une seule photo JPEG du CV : zero texte. Un ATS
-        // lit du texte, pas des pixels — le CV arrivait donc vide devant le
+        // lit du texte, pas des pixels - le CV arrivait donc vide devant le
         // premier filtre, ce qui est exactement ce que ce produit promet
         // d'eviter. Le rendu visuel doit rester au pixel pres, donc on garde
         // l'image et on superpose le texte en mode invisible, a sa vraie
@@ -4648,7 +4937,7 @@ export default function App() {
       + "2. Si un mot-cle ne peut pas etre integre naturellement, l'ajouter dans la liste skills plutot que de forcer.\n"
       + "3. INTERDIT: bourrage de mots-cles, repetition mecanique, phrases qui sonnent fake.\n"
       + "4. Preserve la structure JSON exacte, les IDs, les dates, les noms d'entreprises.\n"
-      + "5. N'invente jamais de realisations ou competences. Reformule l'existant pour y placer les mots-cles.\n"
+      + "5. " + QUI_DECIDE + "\n"
       + "6. Garde la langue d'origine du CV.\n"
       + "7. " + NO_DASH + "\n\n"
       + "MOTS-CLES A INTEGRER: " + kwList + "\n\n"
@@ -4699,7 +4988,7 @@ export default function App() {
       +"OFFRE:\n"+offer+"\n\n"
       +"CV CANDIDAT:\n"+cvSummary+"\n\n"
       +"REGLES:\n"
-      +"- Reste authentique au parcours du candidat. Ne pas inventer.\n"
+      +"- " + QUI_DECIDE + "\n"
       +"- Adapter le ton a la culture detectee de l'entreprise.\n"
       +"- Lettre: 250-300 mots, 4 paragraphes (accroche, valeur, motivation, call-to-action).\n"
       +"- Message LinkedIn: max 90 mots, professionnel mais humain, pas de phrase bateau.\n"
@@ -5271,7 +5560,8 @@ export default function App() {
         + "\n- Entre 8 et 12 questions au total selon le marche (pas plus, pas moins)."
         + "\n- Chaque question est realiste et FREQUEMMENT posee dans ce contexte."
         + "\n- Pour CHAQUE question, fournis une reponse modele en methode STAR (Situation, Tache, Action, Resultat)."
-        + "\n- La reponse STAR doit s'inspirer du parcours reel du candidat (pas inventer)."
+        + "\n- La reponse STAR s'appuie sur le parcours reel du candidat."
+        + "\n" + QUI_DECIDE
         + "\n- Categories possibles : Technique, Comportementale, Cas pratique, Culture, Motivation."
         + roundDirective(false)
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
@@ -5489,7 +5779,8 @@ export default function App() {
         + "\n\nREGLES STRICTES:"
         + "\n- Sois HONNETE. Si le recap suggere que ca s'est mal passe, dis-le clairement."
         + "\n- Sois SPECIFIQUE. Pas de conseils generiques type 'continue a t'entrainer'."
-        + "\n- Chaque point est ancre dans un detail du recap (pas invente)."
+        + "\n- Chaque point est ancre dans un detail du recap."
+        + "\n" + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
         + "\n\nFORMAT JSON STRICT:"
         + '\n{"strengths":["force 1 specifique","force 2","force 3"],'
@@ -5821,7 +6112,7 @@ export default function App() {
         + "\n- Direct, concrete, no empty formulas. No 'Excellent ! Here's a suggestion...'"
         + "\n- Justify each suggestion with a short argument. Give risk AND benefit when relevant."
         + "\n- 1-3 sentences max per reply. Never a wall of text."
-        + "\n- You NEVER invent experiences, companies, dates, or diplomas."
+        + "\n" + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine
 
         + "\n\n# JSON PATCH OPERATIONS (RFC 6902) - YOU MODIFY THE CV VIA OPERATIONS"
@@ -6346,7 +6637,8 @@ export default function App() {
           + "4. premium: registre executive elegant, tournures litteraires nuancees, mots forts (orchestrer, deployer, piloter).\n"
           + "5. impact: storytelling avec un fil rouge narratif. Une 'voix' qui raconte le parcours plutot que de l'enumerer.\n\n"
           + "REGLES STRICTES:\n"
-          + "- Ne pas inventer d'experience, d'entreprise, de titre ou de chiffre nouveau. Reste fidele au sens original.\n"
+          + "- Reste fidele au sens de la phrase d'origine.\n"
+          + "- " + QUI_DECIDE + "\n"
           + "- Format : 2 a 3 phrases par version, entre 30 et 60 mots.\n"
           + "- " + NO_DASH + "\n"
           + "- JSON valide strict uniquement, sans markdown.\n\n"
@@ -6370,7 +6662,8 @@ export default function App() {
           + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
           + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
           + "REGLES:\n"
-          + "- Ne pas inventer de fait nouveau ou d'entreprise. Reste fidele au sens original.\n"
+          + "- Reste fidele au sens de la phrase d'origine.\n"
+          + "- " + QUI_DECIDE + "\n"
           + "- Maximum 18 mots par version.\n"
           + "- " + NO_DASH + "\n"
           + "- JSON valide strict uniquement.\n\n"
@@ -6733,19 +7026,15 @@ export default function App() {
       )}
       {/* [Fix 2026-05-20] aiMode "adjust" supprime : on ouvre AdjustModal
           a la place via le useEffect ci-dessous. Un seul systeme Adjust. */}
-      {aiMode==="match" && (
-        <Suspense fallback={null}>
-        <MatchPanel cv={cv} setCVFn={setCVFn} notify={notify} apiKey={apiKey} T={T}
-          pushH={pushH}
-          onPackRequest={requestPack}
-          initialResult={offerResult}
-          onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
-          onApplied={()=>setOfferResult(null)}
-          aiCall={aiCall}
-          parseJSON={parseJSON}
-          normCV={normCV}/>
-        </Suspense>
-      )}
+      {/* UN SECOND MATCHPANEL VIVAIT ICI, SUR aiMode === "match"
+          Ce mode n'existe plus : le selecteur ne propose que "generate" et
+          "adjust", tabFromPhase ne le rend jamais, et l'aiguillage de la
+          barre laterale envoie "match" sur setShowOffer(true). La branche ne
+          pouvait donc plus s'afficher.
+          Elle a quand meme coute : c'etait une deuxieme copie du panneau,
+          montee sans la liste des versions, et elle a fait croire pendant un
+          moment que le choix "tout mon parcours" etait casse sur ordinateur
+          alors qu'il marchait. Le seul montage vivant est OfferSheet. */}
     </div>
   );
 
@@ -7323,7 +7612,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           initialOffer={pendingOffer}
-          T={T} cv={cv} setCVFn={setCVFn}
+          T={T} cv={cv} versions={versions} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
@@ -7829,6 +8118,18 @@ export default function App() {
     </Suspense>
   );
 
+  // LA QUESTION DE LA LANGUE PASSE DEVANT TOUT LE RESTE
+  //
+  // Elle se pose une seule fois, a la premiere visite, et rien derriere n'est
+  // utilisable tant qu'on n'a pas repondu : quelqu'un qui commencerait a
+  // saisir son CV avant de choisir se retrouverait avec des intitules dans
+  // deux langues. setLc enregistre la reponse et referme l'ecran.
+  const LangAskEl = askLang && (
+    <Suspense fallback={null}>
+      <LanguageAsk onChoose={setLc}/>
+    </Suspense>
+  );
+
   // Cinematique premium d'arrivee
   const NuviHomeEl = showNuviHome && (
     <Suspense fallback={null}>
@@ -7936,6 +8237,7 @@ export default function App() {
           </div>
         )}
         {Modals}
+        {LangAskEl}
         {Onboard}
         {NuviHomeEl}
         {showIntro && (
@@ -7960,6 +8262,19 @@ export default function App() {
           background:"var(--nuvi-bg-gradient)", overflow:"hidden",
         }}>
           <NuviSidebar
+            cloudEnabled={isCloudConfigured()}
+            cloudUser={cloud.user}
+            cloudStatus={cloud.status}
+            cloudLastSyncAt={cloud.lastSyncAt}
+            cloudError={cloud.error}
+            gmailConnected={gmailConnected}
+            onSignIn={() => setShowAuth(true)}
+            onSignOut={async () => {
+              await signOut();
+              setGmailConnected(false);
+              notify(locale === "en" ? "Signed out" : "Deconnecte");
+            }}
+            onConnectGmail={() => { connectGmail().catch(() => {}); }}
             active={navSection}
             onSelect={(key) => {
               setNavSection(key);
@@ -8036,21 +8351,126 @@ export default function App() {
           />
           {/* [Nuvi v2] Ancien panneau 300px supprime - toutes les features sont
               accessibles via NuviSidebar v2 + ses sub-items + AdjustModal */}
+          {/* LE CV OCCUPE L'ECRAN, COMME UN DOCUMENT DANS UN VRAI EDITEUR
+
+              Mesure avant : sur 1440x900, le CV faisait 794 de large pour
+              1383 disponibles - 589 pixels de vide, 43% de la largeur - et
+              restait colle en haut, laissant 270 pixels de vide en dessous.
+              On passait son temps a lire un document minuscule au milieu du
+              neant, avec deux boutons orphelins dans les coins.
+
+              Il s'ajuste maintenant a la largeur, comme le fait n'importe
+              quel traitement de texte. Le facteur est plafonne : sans plafond,
+              un ecran ultra-large gonflerait le CV a des tailles absurdes et
+              on perdrait le rapport a la page imprimee, qui est justement ce
+              que l'utilisateur doit juger.
+
+              POURQUOI transform ET PAS zoom
+
+              Le CV se modifie directement au clic. `zoom` recalcule la mise en
+              page et deplace le curseur de saisie ; `transform: scale()` ne
+              touche a rien - il agrandit le rendu, point. C'est deja le choix
+              fait pour le telephone, et pour la meme raison. */}
           <div style={{
-            flex:1, overflow:"auto", padding:22,
+            flex:1, minWidth:0, display:"flex", flexDirection:"column",
             position:"relative", zIndex:1,
+          }}>
+          {/* LA BARRE D'OUTILS, PARCE QU'UN BOUTON FLOTTANT NE TIENT PLUS
+
+              Telecharger flottait en bas a gauche, par-dessus tout. Tant que
+              le CV n'occupait que 57% de la largeur, il tombait dans le vide
+              et personne ne le remarquait. Le CV rempli, il se pose SUR le
+              document - mesure a 1280x800 : recouvrement confirme.
+
+              Il n'y a pas de contournement : le bouton et la page se disputent
+              la meme bande. Le decaler ne fait que deplacer le probleme d'un
+              format d'ecran a l'autre.
+
+              L'action remonte donc au-dessus du document, la ou tous les
+              editeurs la mettent. Elle ne recouvre plus rien par construction,
+              et elle se trouve sans avoir a la chercher. */}
+          <div style={{
+            flexShrink:0, display:"flex", justifyContent:"flex-end",
+            alignItems:"center", gap:10, padding:"14px 22px 0",
+          }}>
+            {/* La meme condition que portait l'ancien bouton flottant, et que
+                j'avais laissee tomber en le deplacant : l'action principale
+                doit s'effacer des qu'une fenetre s'ouvre. Sinon elle flotte
+                par-dessus la fenetre de choix du format - visuellement faux,
+                et deux boutons nommes "Telecharger" a l'ecran en meme temps. */}
+            {!cvIsEmpty && !(
+              showCoach || showAudit || showTranslate || showPack
+              || showPos || showTruth || showVersions
+              || showOffer || showScore || showGapRepair || showInterview
+              || showCustomize || !!modal
+              || showLinkedIn || showCompare || showApplications
+              || showMultiCV || showTutorial || showSettings || showActivity
+              // La fenetre de choix du format, que l'ancienne liste ne
+              // mentionnait pas : elle est ouverte PAR ce bouton, donc lui
+              // seul peut la faire apparaitre. Sans elle, on se retrouve avec
+              // deux boutons "Telecharger" a l'ecran en meme temps - constate
+              // en le mesurant, pas en le supposant.
+              || showFormatChoice
+            ) && (
+              <button
+                onClick={handleDownloadClick}
+                aria-label="Telecharger CV"
+                style={{
+                  display:"flex", alignItems:"center", gap:9,
+                  padding:"10px 20px", minHeight:42, boxSizing:"border-box",
+                  background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
+                  color:"#fff", border:"none", borderRadius:999, cursor:"pointer",
+                  fontFamily:"'Inter', sans-serif", fontSize:13, fontWeight:600,
+                  letterSpacing:0.2,
+                  boxShadow:"0 6px 18px rgba(91,61,245,.28), 0 1px 4px rgba(91,61,245,.2)",
+                  transition:"transform 220ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease",
+                  userSelect:"none",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow = "0 10px 26px rgba(91,61,245,.38), 0 3px 8px rgba(91,61,245,.26)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = "";
+                  e.currentTarget.style.boxShadow = "0 6px 18px rgba(91,61,245,.28), 0 1px 4px rgba(91,61,245,.2)";
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.2"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="7 10 12 15 17 10"/>
+                  <line x1="12" y1="15" x2="12" y2="3"/>
+                </svg>
+                {locale === "en" ? "Download" : "Telecharger"}
+              </button>
+            )}
+          </div>
+          <div ref={attachDeskZone} style={{
+            flex:1, overflow:"auto", padding:"14px 22px 22px",
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
-            <div data-cvf="cv" style={{
-              // [FIX bande blanche 2026-05-20] Le wrapper ne force PLUS de
-              // minHeight 1123px ni de background blanc. Il epouse le contenu
-              // du CV. Le shadow effet papier reste, mais sur la taille reelle.
-              width:794,
-              boxShadow:"0 8px 48px rgba(0,0,0,.14)",
-              borderRadius:4, overflow:"hidden",
+            {/* La boite exterieure reserve la taille APRES agrandissement :
+                transform ne modifiant pas la mise en page, sans elle le
+                defilement s'arreterait a la taille d'origine et le bas du CV
+                serait inatteignable. */}
+            <div style={{
+              width: Math.round(794 * deskScale),
+              height: deskNatH ? Math.round(deskNatH * deskScale) : undefined,
+              position: "relative",
             }}>
-              {CVEl}
+              <div data-cvf="cv" ref={attachDeskCv} style={{
+                position: "absolute", top: 0, left: 0,
+                width:794,
+                transform: deskScale === 1 ? "none" : `scale(${deskScale})`,
+                transformOrigin: "top left",
+                boxShadow:"0 8px 48px rgba(0,0,0,.14)",
+                borderRadius:4, overflow:"hidden",
+              }}>
+                {CVEl}
+              </div>
             </div>
+          </div>
           </div>
         </div>
         {/* Bouton Coach intelligent : drag (long press), shrink apres N usages, scroll-hide */}
@@ -8213,61 +8633,9 @@ export default function App() {
             ` }} />
           </button>
         )}
-        {/* === BOUTON TELECHARGER PERSISTANT (Desktop) === */}
-        {!cvIsEmpty && !(
-          showCoach || showAudit || showTranslate || showPack
-          || showPos || showTruth || showVersions
-          || showOffer || showScore || showGapRepair || showInterview
-          || showCustomize || !!modal
-          || showLinkedIn || showCompare || showApplications
-          || showMultiCV || showTutorial || showSettings || showActivity
-        ) && (
-          <button
-            onClick={handleDownloadClick}
-            aria-label="Telecharger CV"
-            style={{
-              position: "fixed",
-              left: 100,
-              bottom: 24,
-              zIndex: 89,
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "12px 22px",
-              minHeight: 44,
-              boxSizing: "border-box",
-              background: "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
-              color: "#fff",
-              border: "none",
-              borderRadius: 999,
-              cursor: "pointer",
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: 0.2,
-              boxShadow: "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)",
-              transition: "transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms ease",
-              userSelect: "none",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.transform = "translateY(-2px) scale(1.03)";
-              e.currentTarget.style.boxShadow = "0 12px 32px rgba(91, 61, 245, 0.45), 0 4px 10px rgba(91, 61, 245, 0.3)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.transform = "";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(91, 61, 245, 0.35), 0 2px 6px rgba(91, 61, 245, 0.25)";
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-              stroke="currentColor" strokeWidth="2.2"
-              strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="7 10 12 15 17 10"/>
-              <line x1="12" y1="15" x2="12" y2="3"/>
-            </svg>
-            {locale === "en" ? "Download" : "Telecharger"}
-          </button>
-        )}
+        {/* Le bouton Telecharger flottant a ete remplace par la barre d'outils
+            au-dessus du document : voir le commentaire la-bas. Un bouton en
+            position fixe finit toujours par se poser sur quelque chose. */}
         <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (
           <div
@@ -8344,6 +8712,7 @@ export default function App() {
         </div>
       )}
       {Modals}
+      {LangAskEl}
       {Onboard}
       {showNuviHome && (
         <Suspense fallback={null}>
@@ -8561,10 +8930,25 @@ export default function App() {
           </div>
         )}
         <div style={{flex:1, overflowY:"auto",
-          // Degage la nav ET la barre de suggestion, toutes deux en position
-          // fixed. La hauteur reelle est publiee par NuviBottomNav ; 96px
-          // en dur ne couvrait que la nav, le reste du contenu passait dessous.
-          padding:"13px 13px calc(var(--nuvi-bottom-inset, 96px) + 24px)",
+          // LA ZONE DE DEFILEMENT S'ARRETE AU-DESSUS DU MOBILIER
+          //
+          // Avant, elle allait jusqu'au bas de l'ecran et reservait la place de
+          // la nav et de la barre de suggestion en PADDING. Le dernier element
+          // finissait donc bien degage - mais tout ce qui defilait passait
+          // SOUS elles en chemin.
+          //
+          // Consequence mesuree : les trois boutons de ton, entierement
+          // visibles a l'ecran, recevaient un tap qui atterrissait sur
+          // "Renforcer mon profil". On voit un bouton, on le touche, on obtient
+          // autre chose - le pire des defauts d'interface, parce que
+          // l'utilisateur croit que c'est lui qui a rate.
+          //
+          // La marge remplace le padding : la zone se termine physiquement au
+          // ras du mobilier. Plus rien ne defile dessous. On perd une centaine
+          // de pixels de hauteur visible, et on gagne que tout ce qu'on voit
+          // repond.
+          marginBottom:"var(--nuvi-bottom-inset, 96px)",
+          padding:"13px 13px 20px",
           position:"relative", zIndex:1}}>
           {/* Sur mobile, le contenu inline est l'AITabContent (Demarrer) par defaut.
               Les autres sections (Coach, Cibler, Pack, Score, etc.) ouvrent des modales

@@ -398,7 +398,7 @@ export default function ApplicationsTrackerModal({
   // Gmail est facultatif : sans compte configure, ces trois-la restent nuls
   // et le panneau ne s'affiche pas. Le suivi fonctionne exactement comme
   // avant, a la main.
-  locale = "fr",
+  locale = "en",
   connectGmail = null,
   getGmailToken = null,
   gmailAutoScan = false,

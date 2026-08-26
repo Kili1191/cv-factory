@@ -21,7 +21,7 @@ export default function NuviLoadingOverlay({
   active = false,
   series = "generic",
   user = {},
-  lang = "fr",
+  lang = "en",
   mob = false,
 }) {
   const [shouldRender, setShouldRender] = useState(active);
@@ -42,7 +42,7 @@ export default function NuviLoadingOverlay({
       // propriete sur un nombre leve une TypeError en mode strict, et les
       // modules ES le sont toujours. Chaque fin de chargement jetait donc
       // "Cannot create property '_fadeTimer' on number", et le nettoyage ne
-      // pouvait jamais annuler le fondu — le minuteur survivait au demontage
+      // pouvait jamais annuler le fondu - le minuteur survivait au demontage
       // et venait modifier l'etat d'un composant disparu.
       let fadeTimer = null;
       const renderDelay = setTimeout(() => {

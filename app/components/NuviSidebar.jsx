@@ -4,20 +4,33 @@ import dynamic from "next/dynamic";
 
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
+const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
 
 export default function NuviSidebar({
   active = "home",
   onSelect = () => {},
   onSubSelect = () => {},
-  lang = "fr",
+  lang = "en",
   onCoachOpen,
   onSettingsOpen,
   onReset,
   hasNotification = {},
+  // Le compte. Absent tant qu'aucun serveur n'est configure : la barre se tait
+  // plutot que de proposer une entree qui ne repondrait pas.
+  cloudEnabled = false,
+  cloudUser = null,
+  cloudStatus = "off",
+  cloudLastSyncAt = null,
+  cloudError = null,
+  gmailConnected = false,
+  onSignIn = () => {},
+  onSignOut = () => {},
+  onConnectGmail = () => {},
 }) {
   const [expanded, setExpanded] = useState(false);
   const [hoveredItem, setHoveredItem] = useState(null);
   const closeTimerRef = useRef(null);
+
 
   useEffect(() => {
     const onTutHover = (e) => {
@@ -475,6 +488,23 @@ export default function NuviSidebar({
               {L.settings}
             </span>
           </div>
+
+          {/* Le compte ferme la barre, sous les Reglages : c'est la place que
+              tout le monde connait deja, et elle reste visible en permanence. */}
+          {cloudEnabled && (
+            <AccountBadge
+              user={cloudUser}
+              status={cloudStatus}
+              lastSyncAt={cloudLastSyncAt}
+              error={cloudError}
+              gmailConnected={gmailConnected}
+              expanded={expanded}
+              lang={lang}
+              onSignIn={onSignIn}
+              onSignOut={onSignOut}
+              onConnectGmail={onConnectGmail}
+            />
+          )}
         </div>
       </aside>
 

@@ -1,4 +1,4 @@
-// Nuvi — English translation dictionary
+// Nuvi - English translation dictionary
 // Extracted from page.jsx to reduce First Paint bundle size
 // If you modify this file, check parity with fr.js
 //

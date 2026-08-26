@@ -374,7 +374,13 @@ export function GlassButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+        // 44px : le plancher de zone tactile. Ce bouton porte les actions
+        // principales des modales ("Ajuster mon CV" et les autres) : avec un
+        // simple rembourrage de 10px il tombait a 35px de haut, et sur
+        // telephone le doigt couvre plus que la cible.
         padding: "10px 16px",
+        minHeight: 44,
+        boxSizing: "border-box",
         borderRadius: 999,
         background: bg,
         color: color,

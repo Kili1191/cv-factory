@@ -45,7 +45,7 @@ const LABELS = {
 };
 
 export default function NuviIntro({
-  lang = "fr",
+  lang = "en",
   onComplete,
   onSkip,
   mob = false,

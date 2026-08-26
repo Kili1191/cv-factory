@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useInstallState } from "./InstallAppSheet";
 
 /**
- * NuviBottomNav — Bottom navigation mobile (5 icônes)
+ * NuviBottomNav - Bottom navigation mobile (5 icônes)
  *
  * Style : Apple Human Interface Guidelines
  * - Icônes 24px
@@ -30,7 +30,7 @@ const DISMISS_KEY = "cvf_suggest_off";
 export default function NuviBottomNav({
   active = "home",
   onSelect = () => {},
-  lang = "fr",
+  lang = "en",
   onCoachOpen,
   onSettingsOpen,
   onInstallOpen,

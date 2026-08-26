@@ -5,9 +5,26 @@ import './globals.css';
 // une branche client-only, donc Fraunces et Inter ne commencaient a se
 // telecharger qu'APRES l'hydratation. Le navigateur les decouvre maintenant
 // des la premiere reponse HTML.
+//
+// L'AXE ital N'EST PAS FACULTATIF
+//
+// Sans lui, Google ne sert AUCUNE face italique - verifie : l'ancienne URL en
+// rendait zero, celle-ci en rend trois pour Fraunces. Le navigateur fabrique
+// alors un faux italique en PENCHANT les lettres droites.
+//
+// Une lettre penchee de force garde la largeur d'avance de la lettre droite :
+// son encre deborde a droite, et tout ce qui la contient - une boite a
+// overflow cache, un degrade pose par background-clip:text - lui coupe le
+// bout. C'est ce qui donnait des mots italiques amputes un peu partout.
+//
+// Le vrai italique de Fraunces n'a pas ce defaut : ses glyphes sont dessines
+// penches, avec les largeurs qui vont avec.
 const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT@9..144,300..900,30..100"
-  + "&family=Inter:wght@300;400;500;600;700;800&family=DM+Serif+Display&display=swap";
+  "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT"
+  + "@0,9..144,300..900,30..100;1,9..144,300..900,30..100"
+  + "&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800"
+  + ";1,300;1,400;1,500;1,600;1,700;1,800"
+  + "&family=DM+Serif+Display:ital@0;1&display=swap";
 
 // L'ecran d'accueil d'un iPhone ne peut poser l'application que si le
 // document declare son manifeste, son icone et son titre court. Sans ces
@@ -17,14 +34,14 @@ export const metadata = {
   metadataBase: new URL("https://thenuvi.com"),
   applicationName: "Nuvi",
   title: {
-    default: "Nuvi — le CV qui passe l'ATS",
+    default: "Nuvi · the CV that gets past the ATS",
     template: "%s · Nuvi",
   },
   description:
-    "Colle l'annonce, obtiens le CV qui correspond, et suis tes candidatures.",
+    "Paste the job ad, get the CV that matches it, and track your applications.",
   manifest: "/manifest.webmanifest",
   // Le nom sous l'icone. Sans lui, iOS affiche le <title> entier, tronque a
-  // une douzaine de caracteres : "Nuvi — le CV..." au lieu de "Nuvi".
+  // une douzaine de caracteres : "Nuvi - le CV..." au lieu de "Nuvi".
   appleWebApp: {
     capable: true,
     title: "Nuvi",
@@ -38,13 +55,33 @@ export const metadata = {
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
+  // LA VIGNETTE DE PARTAGE DOIT PARLER LA MEME LANGUE QUE LE SITE
+  //
+  // Elle etait restee en francais alors que le site s'ouvre en anglais. Un
+  // lien colle sur LinkedIn ou envoye par message affichait donc une carte
+  // francaise, et la page qui s'ouvrait derriere etait anglaise. C'est
+  // exactement le moment ou l'on decide de cliquer ou non, et le seul endroit
+  // ou personne ne voit jamais l'incoherence : la vignette est fabriquee par
+  // le reseau social, pas par nous.
+  //
+  // Elle suit donc la langue par defaut du document. Elle ne peut pas suivre
+  // le choix du visiteur : elle est lue par un robot, avant toute visite.
   openGraph: {
     type: "website",
     siteName: "Nuvi",
-    title: "Nuvi — le CV qui passe l'ATS",
+    title: "Nuvi · the CV that gets past the ATS",
     description:
-      "Colle l'annonce, obtiens le CV qui correspond, et suis tes candidatures.",
+      "Paste the job ad, get the CV that matches it, and track your applications.",
     images: [{ url: "/icon-512.png", width: 512, height: 512 }],
+  },
+  // Sans carte declaree, X n'affiche qu'un lien nu. summary_large_image donne
+  // la meme vignette que partout ailleurs.
+  twitter: {
+    card: "summary_large_image",
+    title: "Nuvi · the CV that gets past the ATS",
+    description:
+      "Paste the job ad, get the CV that matches it, and track your applications.",
+    images: ["/icon-512.png"],
   },
 };
 
@@ -63,8 +100,11 @@ export const viewport = {
 };
 
 export default function RootLayout({ children }) {
+  // La langue par defaut du document est l'anglais : c'est ce que lisent
+  // Google et les lecteurs d'ecran quand personne n'a encore choisi. Le
+  // francais reste a un clic dans les reglages.
   return (
-    <html lang="fr">
+    <html lang="en">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -80,7 +120,11 @@ export default function RootLayout({ children }) {
           aucune accroche. Le titre est masque visuellement (il ferait doublon
           avec le logo) mais reste expose aux technologies d'assistance.
         */}
-        <h1 className="sr-only">Nuvi — editeur de CV</h1>
+        {/* Le seul titre que voient les robots d'indexation. Il vit dans le
+            layout, donc cote serveur : il ne peut pas connaitre la langue
+            choisie par le visiteur. Il suit donc la langue par defaut du
+            document, l'anglais. */}
+        <h1 className="sr-only">Nuvi · CV and resume editor</h1>
         <main>{children}</main>
       </body>
     </html>

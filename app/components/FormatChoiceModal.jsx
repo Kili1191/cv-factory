@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 
 /**
- * FormatChoiceModal — Liquid Glass dialog asking user for PDF format.
+ * FormatChoiceModal - Liquid Glass dialog asking user for PDF format.
  * Triggered before downloading the CV. Memorizes choice if "Toujours utiliser".
  *
  * Props:
@@ -11,7 +11,7 @@ import React, { useState } from "react";
  *   onConfirm: (format: "a4"|"letter"|"legal", alwaysUse: boolean) => void
  *   locale: "fr"|"en"
  */
-export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale = "fr" }) {
+export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale = "en" }) {
   const [selected, setSelected] = useState("a4");
   const [alwaysUse, setAlwaysUse] = useState(false);
 

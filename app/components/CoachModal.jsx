@@ -681,7 +681,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
 
 // CoachModal v4
 export default function CoachModal({
-  T, cv, apiKey, lang = "fr",
+  T, cv, apiKey, lang = "en",
   loading, messages,
   coachStatus,  // [Glass Coach v2] NEW prop
   onSend, onClear, onAdopt, onClose, onAction,

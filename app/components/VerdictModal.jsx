@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 
 /**
- * VerdictModal — Fullscreen Liquid Glass moment of truth.
+ * VerdictModal - Fullscreen Liquid Glass moment of truth.
  * Triggered when CV score crosses 85+. Tells user "STOP editing, send now".
  *
  * Synthesis of expert council brainstorm :
@@ -31,7 +31,7 @@ export default function VerdictModal({
   isOpen, onClose,
   score = 85, editsCount = 0, recentDelta = 0.4,
   onReady, onFear, onContinue,
-  locale = "fr",
+  locale = "en",
 }) {
   const [scoreAnim, setScoreAnim] = useState(0);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -72,7 +72,7 @@ export default function VerdictModal({
       ? "Real talk : you're past the threshold. More editing won't get you more interviews."
       : "Soyons direct : tu as franchi le seuil. Continuer a editer ne te decrochera pas plus d'entretiens.",
     proba_label: isEn ? "Probability of interview" : "Probabilite d'entretien",
-    proba_cap: isEn ? "(max possible — luck plays a role)" : "(max possible : la chance joue aussi)",
+    proba_cap: isEn ? "(max possible: luck plays a role)" : "(max possible : la chance joue aussi)",
     stats_title: isEn ? "What the numbers say" : "Ce que disent les chiffres",
     stat1_a: isEn ? "Recent edits :" : "Tes derniers edits :",
     stat1_b: isEn ? " pts per edit avg" : " pt par edit en moyenne",

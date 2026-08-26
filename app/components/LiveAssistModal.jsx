@@ -29,7 +29,7 @@ import { serializeCvForContext } from "../../lib/cvSerializer.js";
 const SILENCE_MS = 900;
 
 export default function LiveAssistModal({
-  open, onClose, cv, offer, locale = "fr", applications = [],
+  open, onClose, cv, offer, locale = "en", applications = [],
 }) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState("");

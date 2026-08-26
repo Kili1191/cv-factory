@@ -40,7 +40,7 @@ export default function CVPhoto({
   variant = "round",
   size = 52,
   T = {},
-  locale = "fr",
+  locale = "en",
 }) {
   // Telephone : le menu doit sortir du CV et s'afficher au centre de l'ecran.
   const [narrow, setNarrow] = useState(false);

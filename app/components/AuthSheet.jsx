@@ -22,7 +22,7 @@ import { signInWithEmail, signInWithGoogle } from "../../lib/cloudSync.js";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-export default function AuthSheet({ open, onClose, locale = "fr" }) {
+export default function AuthSheet({ open, onClose, locale = "en" }) {
   const [email, setEmail] = useState("");
   const [phase, setPhase] = useState("idle"); // idle | sending | sent | error
   const [message, setMessage] = useState("");

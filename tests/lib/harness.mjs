@@ -83,15 +83,40 @@ export async function stopServer(server) {
   // Tuer le GROUPE : sinon next-server survit a la mort de npx et garde le
   // port, ce qui fait echouer le run suivant sur un build perime.
   const killGroup = (sig) => { try { process.kill(-server.pid, sig); } catch (e) {} };
+
+  // ON VERIFIE EXACTEMENT CE QUE LA SUITE SUIVANTE VERIFIERA
+  //
+  // La version precedente sondait le port avec 300 ms de patience et se
+  // declarait satisfaite des que la requete echouait. Or un serveur encore
+  // vivant mais lent echoue aussi a 300 ms : stopServer rendait la main en
+  // croyant l'avoir tue, et la suite suivante - qui sonde avec 1500 ms - le
+  // trouvait bien debout et refusait de demarrer.
+  //
+  // Le message d'echec accusait alors "un run precedent", alors que le
+  // coupable etait la suite d'avant, dans le MEME run. Un test qui se trompe
+  // de coupable coute plus cher qu'un test absent : on cherche la panne la ou
+  // elle n'est pas.
+  //
+  // On reutilise donc portAnswers(), la fonction meme dont depend le demarrage
+  // suivant. Le critere d'arret devient identique au critere d'entree, et les
+  // deux ne peuvent plus diverger.
   killGroup("SIGTERM");
   for (let i = 0; i < 20; i += 1) {
     await new Promise(r => setTimeout(r, 200));
-    try {
-      await fetch(BASE_URL, { signal: AbortSignal.timeout(300) });
-    } catch (e) { return; }   // ne repond plus : c'est bon
+    if (!(await portAnswers())) return;
   }
+
   killGroup("SIGKILL");
-  await new Promise(r => setTimeout(r, 300));
+  for (let i = 0; i < 15; i += 1) {
+    await new Promise(r => setTimeout(r, 200));
+    if (!(await portAnswers())) return;
+  }
+
+  // Se taire ici rendrait la suite suivante incomprehensible.
+  throw new Error(
+    `le serveur de test tient encore le port ${PORT} apres SIGKILL. ` +
+    "Les suites suivantes vont echouer en accusant un run precedent."
+  );
 }
 
 export async function launchBrowser() {
@@ -119,16 +144,58 @@ export const SAMPLE_CV = {
   labels: {},
 };
 
-export async function seedApp(page, cv = SAMPLE_CV, { layout } = {}) {
+// LA LANGUE EST FIXEE, ET C'EST DELIBERE
+//
+// La plupart des tests cherchent des boutons par leur libelle francais :
+// "Generer", "Reglages", "Trouver un poste". Tant que le francais etait la
+// langue par defaut, ils marchaient par accident.
+//
+// Le jour ou l'anglais est devenu le defaut, huit suites se sont mises a
+// chercher des mots qui n'existaient plus - et le message parlait d'un clic
+// qui expire, pas d'une langue qui a change. Une heure perdue a chercher au
+// mauvais endroit.
+//
+// La langue est donc posee explicitement. Un test qui affirme du texte doit
+// dire dans quelle langue il l'attend ; il ne doit pas dependre d'un reglage
+// que le produit a le droit de changer.
+export async function seedApp(page, cv = SAMPLE_CV, { layout, locale = "fr" } = {}) {
   await page.goto(BASE_URL, { waitUntil: "networkidle" });
-  await page.evaluate(({ data, layout }) => {
+  await page.evaluate(({ data, layout, locale }) => {
     localStorage.setItem("cvf_d", JSON.stringify(data));
     localStorage.setItem("cvf_k", JSON.stringify("sk-test-not-used"));
     localStorage.setItem("cvf_tu", JSON.stringify(true));
+    localStorage.setItem("cvf_c", JSON.stringify(locale));
     if (layout) localStorage.setItem("cvf_l", JSON.stringify(layout));
-  }, { data: cv, layout: layout || null });
+  }, { data: cv, layout: layout || null, locale });
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2500);
+}
+
+// LA QUESTION DE LA LANGUE BARRE LA ROUTE, ET C'EST VOULU
+//
+// A la premiere visite, Nuvi demande la langue et rend tout le reste
+// inutilisable tant qu'on n'a pas repondu - sinon on peut commencer a saisir
+// son CV dans une langue et basculer dans l'autre juste apres.
+//
+// Un test qui part d'un navigateur vierge doit donc y repondre, comme une
+// vraie personne. Sans ca, Playwright signale "locator.click: Timeout" sur le
+// bouton suivant : un message qui parle d'un clic et pas de langue, et qui
+// envoie chercher la panne au mauvais endroit. C'est exactement ce qui est
+// arrive a l'import de PDF.
+//
+// seedApp n'en a pas besoin : il epingle deja cvf_c avant que l'application
+// demarre, donc la question ne se pose jamais.
+export async function answerLanguageIfAsked(page, lc = "fr") {
+  const sel = '[data-nuvi-lang-ask="1"]';
+  try {
+    await page.waitForSelector(sel, { timeout: 4000 });
+  } catch {
+    return false; // pas de question posee : rien a faire
+  }
+  await page.locator(`${sel} button[lang="${lc}"]`).click();
+  await page.waitForSelector(sel, { state: "detached", timeout: 5000 });
+  await page.waitForTimeout(600);
+  return true;
 }
 
 // Extrait le texte d'un PDF comme le ferait un robot de tri de CV.

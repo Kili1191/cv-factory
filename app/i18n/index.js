@@ -1,4 +1,4 @@
-// Nuvi — Router i18n
+// Nuvi - Router i18n
 //
 // Phase 1 : extraction simple synchrone (zéro risque).
 // Les 2 dictionnaires (FR_T et EN_T) sont déplacés depuis page.jsx

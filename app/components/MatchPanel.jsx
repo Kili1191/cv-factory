@@ -4,7 +4,9 @@
 //
 // Adapte le CV a une offre d'emploi.
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { rapport } from "../../lib/atsMatch.js";
+import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
@@ -12,7 +14,7 @@ import {
   B, IN, LBL, NO_DASH,
 } from "./sharedTokens";
 
-function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
+function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
   aiCall, parseJSON, normCV, pushH }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
@@ -21,6 +23,38 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
   const [load, setLoad]   = useState(false);
   const [res, setRes]     = useState(initialResult || null);
   const [ph, setPh]       = useState(initialResult ? "done" : "input");
+
+  // L'ECART SE CALCULE AVANT DE DEPENSER UN APPEL
+  //
+  // Ce rapport ne coute rien, ne part nulle part, et ne peut rien inventer :
+  // il compare deux textes. Il n'a donc aucune raison d'attendre l'IA.
+  //
+  // Il repond a une question que l'IA ne pose pas : parmi ce qui manque,
+  // qu'est-ce que la personne a DEJA mais nomme autrement ? C'est le cas le
+  // plus frequent et le seul qu'on puisse corriger sans rien exagerer.
+  // Taleo indexe en booleen : "stock and wastage control" et "stock control"
+  // ne se rencontrent jamais, meme si c'est le meme travail.
+  //
+  // Le seuil de 120 caracteres evite d'analyser trois mots colles par erreur.
+  const ecart = useMemo(
+    () => (offer.trim().length > 120 ? rapport(cv, offer) : null),
+    [cv, offer]
+  );
+
+  // DEUX CHEMINS, ET LE SECOND N'APPARAIT QUE S'IL CHANGE QUELQUE CHOSE
+  //
+  //   "actuel"   on part du CV a l'ecran. Rapide, previsible.
+  //   "parcours" on part de TOUT ce qui a ete enregistre : le CV courant plus
+  //              chaque version sauvegardee. Quelqu'un qui garde une version
+  //              hotellerie et une version commerciale, et qui postule au
+  //              commercial avec la premiere chargee, obtient sinon une
+  //              adaptation batie sur le mauvais materiau. Son experience
+  //              existe, elle est enregistree, et personne ne va la chercher.
+  //
+  // Le choix ne s'affiche que si le dossier apporte reellement quelque chose.
+  // Proposer une option qui rend le meme resultat decoit plus qu'elle n'aide.
+  const [source, setSource] = useState("actuel");
+  const apport = useMemo(() => apportDuDossier(cv, versions), [cv, versions]);
 
   const analyze = async () => {
     if (!offer.trim()) { notify(T.off_no_offer); return; }
@@ -48,8 +82,24 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
     const eduJ = cv.education.map((e,i) =>
       JSON.stringify({id:i+1, degree:e.degree, school:e.school, period:e.period})
     ).join(",");
+    // Le materiau change selon le chemin. En mode "parcours", on ne donne plus
+    // le seul CV a l'ecran mais tout ce que la personne a deja ecrit, et on
+    // demande de CHOISIR dedans. Choisir dans ce qu'on a fait n'est pas
+    // inventer : c'est ce que fait quiconque adapte son CV a la main.
+    const materiau = source === "parcours"
+      ? dossierEnTexte(dossierParcours(cv, versions))
+      : cvT;
+
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
-      +"OFFRE:\n"+offer+"\nCV:\n"+cvT+"\n"
+      +"OFFRE:\n"+offer+"\n"
+      +(source === "parcours"
+        ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"
+          + materiau + "\n"
+          + "Construis le CV de CETTE offre en CHOISISSANT dans ce parcours : garde ce "
+          + "qui sert l'offre, ecarte le reste, et quand une experience a plusieurs "
+          + "formulations retiens celle qui parle le plus la langue de l'offre. "
+          + "N'ajoute rien qui ne figure pas ci-dessus.\n"
+        : "CV:\n"+cvT+"\n")
       +"REGLES: ne pas inventer, adapter mots-cles offre. " + NO_DASH + "\n"
       +"Sois precis et actionnable. Le decodage de l'offre doit reveler des elements caches.\n"
       // C'est la promesse du produit : coller une offre et obtenir un CV qui
@@ -352,7 +402,8 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
           CV sur mesure pour une offre
         </div>
         <div style={{fontSize:12, color:InkMuted, lineHeight:1.6}}>
-          Colle l'offre, Nuvi adapte ton CV existant sans rien inventer.
+          Colle l'offre, Nuvi adapte ton CV existant. Tu gardes la main sur
+          ce qui y figure.
         </div>
       </div>
 
@@ -370,6 +421,158 @@ function MatchPanel({ cv, setCVFn, notify, apiKey, T, onPackRequest,
         placeholder={"Colle l'offre d'emploi complete ici:\n- Intitule du poste\n- Missions\n- Profil recherche\n- Competences requises"}
         rows={11}
         style={{...IN({resize:"vertical", marginBottom:14, fontSize:12, lineHeight:1.7})}}/>
+      {ecart && (ecart.aReformuler.length > 0 || ecart.titre.etat !== "exact" || ecart.manquantes.length > 0) && (
+        <div style={{
+          border:"0.5px solid "+Hairline, borderRadius:RadiusMd,
+          padding:"12px 14px", marginBottom:14, background:Paper,
+        }}>
+          <div style={{
+            fontSize:9, fontWeight:700, color:InkMuted, marginBottom:9,
+            letterSpacing:"0.06em", textTransform:"uppercase",
+          }}>Lu dans l'offre, sans appeler l'IA</div>
+
+          {/* L'INTITULE D'ABORD : c'est le signal individuel le plus lourd
+              chez Workday et iCIMS, et un ecart de seniorite s'y voit. */}
+          {ecart.titre.etat !== "exact" && ecart.titre.vise && (
+            <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:10}}>
+              <strong>Intitule</strong>{" : l'offre dit "}
+              <span style={{background:CoralSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.vise}</span>
+              {ecart.titre.actuel ? <>{", ton CV dit "}<span style={{background:CreamSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.actuel}</span></> : null}
+              {ecart.titre.etat === "proche" ? ". Proche, mais pas identique." : "."}
+            </div>
+          )}
+
+          {/* LE COEUR : deja la, nomme autrement. */}
+          {ecart.aReformuler.length > 0 && (
+            <div style={{marginBottom: ecart.manquantes.length ? 10 : 0}}>
+              <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:6}}>
+                <strong>Tu l'as deja, ils l'appellent autrement.</strong>{" "}
+                <span style={{color:InkMuted}}>
+                  Les mots sont dans ton CV, pas dans cet ordre. Un tri automatique
+                  ne les rapproche pas.
+                </span>
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                {ecart.aReformuler.map((k,i) => (
+                  <span key={i} style={{
+                    background:"#fef3c7", color:"#92400e",
+                    borderRadius:3, padding:"3px 7px", fontSize:11,
+                  }}>{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {ecart.manquantes.length > 0 && (
+            <div>
+              <div style={{fontSize:12, color:InkMuted, lineHeight:1.5, marginBottom:6}}>
+                Absent de ton CV{ecart.manquantes.length > 6 ? " (les 6 premiers)" : ""} :
+              </div>
+              <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                {ecart.manquantes.slice(0,6).map((k,i) => (
+                  <span key={i} style={{
+                    background:CreamSoft, color:InkMuted,
+                    borderRadius:3, padding:"3px 7px", fontSize:11,
+                  }}>{k}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* On ne propose jamais d'ecrire ces mots a la place de quelqu'un :
+              un mot-clef ajoute sans experience derriere est un mensonge que
+              l'entretien decouvre en trente secondes. */}
+          <div style={{fontSize:11, color:InkMuted, marginTop:10, lineHeight:1.5}}>
+            Tu choisis lesquels ajouter.
+          </div>
+        </div>
+      )}
+      {apport.utile && (
+        <div style={{marginBottom:14}}>
+          <div style={{
+            fontSize:9, fontWeight:700, color:InkMuted, marginBottom:8,
+            letterSpacing:"0.06em", textTransform:"uppercase",
+          }}>A partir de quoi</div>
+          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+            {[
+              { id:"actuel", titre:"Mon CV actuel",
+                sous:"Celui affiche a l'ecran." },
+              { id:"parcours", titre:"Tout mon parcours",
+                sous: [
+                  apport.experiences ? `${apport.experiences} experience${apport.experiences > 1 ? "s" : ""} en plus` : null,
+                  apport.competences ? `${apport.competences} competence${apport.competences > 1 ? "s" : ""}` : null,
+                  apport.formulations ? `${apport.formulations} formulation${apport.formulations > 1 ? "s" : ""}` : null,
+                ].filter(Boolean).join(", ") },
+            ].map(o => {
+              const actif = source === o.id;
+              return (
+                <button key={o.id} onClick={() => setSource(o.id)} style={{
+                  ...B({
+                    textAlign:"left", padding:"11px 13px", minHeight:44,
+                    borderRadius:RadiusMd, fontFamily:Sans, cursor:"pointer",
+                    background: actif ? PurpleSoft : Paper,
+                    border: "1px solid " + (actif ? Purple : Hairline),
+                    boxShadow: actif ? "none" : ShadowSm,
+                  })
+                }}>
+                  <div style={{fontSize:12.5, fontWeight:600, color: actif ? Purple : Ink}}>
+                    {o.titre}
+                  </div>
+                  <div style={{fontSize:10.5, color:InkMuted, marginTop:2, lineHeight:1.35}}>
+                    {o.sous}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          {source === "parcours" && (
+            <div style={{marginTop:8}}>
+              <div style={{fontSize:11, color:InkMuted, lineHeight:1.5}}>
+                Nuvi choisit dans ce que tu as deja ecrit, garde ce qui sert
+                l&apos;offre et ecarte le reste.
+              </div>
+              {/* CE QUE NUVI EST ALLE CHERCHER SE VOIT AVANT, PAS APRES
+                  Le bouton annoncait "3 experiences en plus" : un nombre, qui
+                  demande de faire confiance. C'est le parcours de la personne,
+                  elle doit pouvoir verifier d'un coup d'oeil ce qui va servir -
+                  et surtout reperer une version d'essai ou un poste qu'elle ne
+                  veut pas voir remonter, AVANT de depenser un appel. */}
+              {(apport.listeExperiences || []).length > 0 && (
+                <div style={{
+                  marginTop:8, padding:"9px 11px",
+                  background:CreamSoft, borderRadius:RadiusMd,
+                  border:"1px solid "+Hairline,
+                }}>
+                  <div style={{
+                    fontSize:9, fontWeight:700, color:InkMuted, marginBottom:6,
+                    letterSpacing:"0.06em", textTransform:"uppercase",
+                  }}>Ce que Nuvi ajoute a ta portee</div>
+                  {apport.listeExperiences.map((e, i) => (
+                    <div key={i} style={{
+                      fontSize:11.5, color:Ink, lineHeight:1.45,
+                      marginBottom: i === apport.listeExperiences.length - 1 ? 0 : 3,
+                    }}>
+                      {e.title || "Poste sans intitule"}
+                      {e.company ? <span style={{color:InkMuted}}>{" chez " + e.company}</span> : null}
+                      {e.period ? <span style={{color:InkMuted}}>{" (" + e.period + ")"}</span> : null}
+                    </div>
+                  ))}
+                  {(apport.listeCompetences || []).length > 0 && (
+                    <div style={{
+                      fontSize:11, color:InkMuted, marginTop:6, lineHeight:1.45,
+                    }}>
+                      {"Competences : " + apport.listeCompetences.slice(0, 12).join(", ")}
+                      {apport.listeCompetences.length > 12
+                        ? ` et ${apport.listeCompetences.length - 12} autres`
+                        : ""}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       <button onClick={analyze}
         disabled={load||!apiKey||!offer.trim()}
         style={{

@@ -1,24 +1,24 @@
-# Mise en service — ce qui est branché, et ce qui attend une clé
+# Mise en service : ce qui est branché, et ce qui attend une clé
 
 Tout le code est écrit, testé et déployé. Ce document liste les **quatre
 réglages** qui restent, et ce que chacun allume.
 
 Le principe de conception est le même partout : **sans la clé, la
 fonctionnalité disparaît proprement**. Aucun écran d'erreur, aucune
-fonctionnalité cassée — simplement une option qui ne s'affiche pas. Une
+fonctionnalité cassée, simplement une option qui ne s'affiche pas. Une
 variable oubliée au déploiement ne peut donc pas casser l'application pour
 les utilisateurs déjà là.
 
 ---
 
-## 1. L'IA — `ANTHROPIC_API_KEY` — **déjà en place**
+## 1. L'IA, `ANTHROPIC_API_KEY` : **déjà en place**
 
 Sans elle, aucune analyse, aucune réécriture, aucune lettre. C'est la seule
 variable indispensable, et elle est configurée.
 
 ---
 
-## 2. Les comptes — Supabase — **à faire, ~10 min**
+## 2. Les comptes, Supabase : **à faire, ~10 min**
 
 | Variable | Où |
 |---|---|
@@ -38,7 +38,7 @@ Marche à suivre détaillée : **`docs/comptes.md`**.
 
 ---
 
-## 3. Les réponses des recruteurs — Google — **à faire après Supabase**
+## 3. Les réponses des recruteurs, Google : **à faire après Supabase**
 
 Rien à ajouter côté Vercel : l'autorisation Gmail se demande par-dessus le
 compte Supabase. Il faut activer l'API Gmail dans Google Cloud et coller le
@@ -54,7 +54,7 @@ Marche à suivre détaillée : **`docs/gmail.md`**.
 
 ---
 
-## 4. La recherche d'offres — **facultatif, ~2 min par source**
+## 4. La recherche d'offres : **facultatif, ~2 min par source**
 
 | Source | Variables | Coût | Couverture |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Marche à suivre détaillée : **`docs/gmail.md`**.
 | Reed | `REED_API_KEY` | gratuit | UK |
 
 Les clés restent **côté serveur** : elles ne sont jamais envoyées au
-navigateur. Chaque source est indépendante — en configurer une suffit, et
+navigateur. Chaque source est indépendante : en configurer une suffit, et
 `availableSources()` n'expose que celles qui répondent.
 
 **Tant que c'est absent** : l'écran « Trouver un poste » indique qu'aucune
@@ -72,7 +72,7 @@ main, l'extension) fonctionne normalement.
 
 ---
 
-## 5. L'extension Chrome — **prête, non publiée**
+## 5. L'extension Chrome : **prête, non publiée**
 
 Le dossier `extension/` est complet : manifeste, icônes tirées de l'œil de
 Nuvi, lecture de l'annonce (JSON-LD → balises → texte de la page).

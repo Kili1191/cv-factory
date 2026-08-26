@@ -199,3 +199,24 @@ button,
     scroll-behavior: auto !important;
   }
 }
+
+
+
+/* ==========================================================================
+   LA PHRASE QUI SE REECRIT, MOT A MOT
+
+   Chaque mot arrive avec un decalage. Le mouvement est court et vers le haut :
+   assez pour qu'on voie le mot se poser, assez peu pour qu'on lise avant la
+   fin de l'animation. Un mot qui glisse longtemps se fait attendre, et on
+   attend mal quand on vient juste d'arriver sur un site.
+   ========================================================================== */
+@keyframes nuviWordIn {
+  from { opacity: 0; transform: translateY(0.32em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes nuviWordIn {
+    from { opacity: 1; transform: none; }
+    to   { opacity: 1; transform: none; }
+  }
+}

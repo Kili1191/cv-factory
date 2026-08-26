@@ -38,8 +38,12 @@ const TEXT = {
     coachLabel: "Coach",
   },
   en: {
+    // "CV" et non "resume" : Nuvi vise le Royaume-Uni et la France, deux
+    // marches ou l'on dit CV. "Resume" est americain, et le bouton juste en
+    // dessous disait deja "I already have a CV" - le titre et le bouton se
+    // contredisaient sur le mot le plus important de la page.
     title: "Here's what I do to a",
-    titleAccent: "resume",
+    titleAccent: "CV",
     sub: "See the difference. No signup, just a preview.",
     before: "Before",
     after: "After",
@@ -59,58 +63,86 @@ const TEXT = {
 const EXAMPLES = {
   fr: [
     {
-      name: "Thomas Martin",
-      beforeTitle: "Commercial",
-      afterTitle: "Responsable Commercial B2B : +40% de CA en 2 ans",
-      before: [
-        "Responsable des ventes dans une entreprise. J'ai vendu des produits aux clients et gere mon secteur.",
-        "Charge de developper le portefeuille clients et d'atteindre les objectifs commerciaux fixes.",
-      ],
-      after: [
-        "Developpe un portefeuille de 45 comptes grands groupes, generant 1,2M EUR de CA annuel (+40% en 2 ans).",
-        "Pilote une equipe de 4 commerciaux, depassant les objectifs de 18% trois trimestres consecutifs.",
-      ],
+      beforeTitle: "Serveur",
+      before: "Serveur en restaurant. Je prenais les commandes et je servais les clients.",
+      after: "Assure 120 couverts par service sur un rang de 14 tables, avec une vente additionnelle en vins qui a fait monter le ticket moyen de 22%.",
     },
     {
-      name: "Sarah Dubois",
-      beforeTitle: "Cheffe de projet",
-      afterTitle: "Cheffe de projet digital : 12 projets livres dans les delais",
-      before: [
-        "Gestion de projets pour differents clients. Coordination des equipes et suivi de l'avancement.",
-        "Participation aux reunions et redaction de comptes-rendus reguliers.",
-      ],
-      after: [
-        "Pilote 12 projets digitaux (budget cumule 800K EUR), tous livres dans les delais et le budget.",
-        "Coordonne des equipes de 8 personnes en mode agile, reduisant les retards de livraison de 30%.",
-      ],
+      beforeTitle: "Vendeuse",
+      before: "Travail en magasin, aide aux clients et tenue de la caisse.",
+      after: "Atteint 118% de l'objectif magasin six mois d'affilee, en convertissant un visiteur sur trois en vente.",
+    },
+    {
+      beforeTitle: "Aide-soignant",
+      before: "Je m'occupais des residents dans une maison de retraite.",
+      after: "Accompagne 18 residents au quotidien et fait baisser les chutes signalees de 40% en revoyant la ronde de nuit.",
+    },
+    {
+      beforeTitle: "Chauffeur-livreur",
+      before: "Livraison de colis pour une entreprise.",
+      after: "Effectue 140 livraisons par jour sur trois secteurs, avec 99,2% de remises reussies du premier coup.",
+    },
+    {
+      beforeTitle: "Preparateur de commandes",
+      before: "Preparation des commandes dans un entrepot.",
+      after: "Prepare 400 commandes par vacation en gardant un taux d'erreur sous 0,3% pendant 18 mois.",
+    },
+    {
+      beforeTitle: "Receptionniste",
+      before: "Accueil telephonique et physique des visiteurs.",
+      after: "Gere 90 appels et 40 visiteurs par jour, en ramenant l'attente moyenne de 6 a 2 minutes.",
+    },
+    {
+      beforeTitle: "Cuisinier",
+      before: "Preparation des plats en cuisine.",
+      after: "Tenu le poste grillade sur 200 couverts par service et reduit le gaspillage alimentaire de 25% par le controle des portions.",
+    },
+    {
+      beforeTitle: "Assistant administratif",
+      before: "Taches administratives et classement des dossiers.",
+      after: "Traite 250 factures par mois sans un seul retard de paiement, en economisant 6 heures par semaine grace aux relances automatisees.",
     },
   ],
   en: [
     {
-      name: "Thomas Martin",
-      beforeTitle: "Sales rep",
-      afterTitle: "B2B Sales Manager : +40% revenue in 2 years",
-      before: [
-        "Responsible for sales at a company. I sold products to clients and managed my territory.",
-        "In charge of growing the client portfolio and hitting the assigned sales targets.",
-      ],
-      after: [
-        "Grew a portfolio of 45 enterprise accounts, generating 1.2M EUR annual revenue (+40% in 2 years).",
-        "Led a team of 4 sales reps, beating targets by 18% three quarters in a row.",
-      ],
+      beforeTitle: "Waiter",
+      before: "Restaurant server. I took orders and served customers.",
+      after: "Served 120 covers a night across a 14-table section, lifting average spend 22% through wine upselling.",
     },
     {
-      name: "Sarah Dubois",
-      beforeTitle: "Project manager",
-      afterTitle: "Digital Project Manager : 12 projects delivered on time",
-      before: [
-        "Managed projects for various clients. Coordinated teams and tracked progress.",
-        "Attended meetings and wrote regular status reports.",
-      ],
-      after: [
-        "Delivered 12 digital projects (800K EUR combined budget), all on time and on budget.",
-        "Coordinated agile teams of 8 people, cutting delivery delays by 30%.",
-      ],
+      beforeTitle: "Sales assistant",
+      before: "Worked in a shop, helped customers and handled the till.",
+      after: "Hit 118% of store target six months running, converting one in three walk-ins into a sale.",
+    },
+    {
+      beforeTitle: "Carer",
+      before: "Looked after residents in a care home.",
+      after: "Cared for 18 residents daily and cut reported falls by 40% by redesigning the night-check routine.",
+    },
+    {
+      beforeTitle: "Delivery driver",
+      before: "Delivered parcels for a company.",
+      after: "Completed 140 drops a day across three boroughs, holding a 99.2% first-time delivery rate.",
+    },
+    {
+      beforeTitle: "Warehouse operative",
+      before: "Worked in a warehouse picking orders.",
+      after: "Picked and packed 400 orders a shift, keeping the error rate under 0.3% for 18 months.",
+    },
+    {
+      beforeTitle: "Receptionist",
+      before: "Answered the phone and welcomed visitors.",
+      after: "Handled 90 calls and 40 visitors a day, cutting average wait time from 6 minutes to 2.",
+    },
+    {
+      beforeTitle: "Chef de partie",
+      before: "Worked in a kitchen preparing dishes.",
+      after: "Ran the grill section for 200 covers a service and cut food waste 25% through portion control.",
+    },
+    {
+      beforeTitle: "Admin assistant",
+      before: "Did administrative tasks and filing.",
+      after: "Processed 250 invoices a month with zero late payments, saving six hours a week by automating chasers.",
     },
   ],
 };
@@ -123,8 +155,119 @@ function balanceText(text) {
   return t;
 }
 
+// LA LIGNE QUI SE REECRIT
+//
+// Le mot est l'unite, pas la phrase. En faisant disparaitre puis reapparaitre
+// un bloc entier, l'oeil voit deux textes ; en changeant mot a mot, il voit UN
+// texte qui se corrige. C'est la meme donnee et ce n'est pas la meme promesse.
+//
+// Les chiffres sortent en dernier, plus gros et colores. Un recruteur balaie
+// un CV en six secondes et n'accroche que les intitules, les dates et les
+// chiffres : la demonstration doit accrocher l'oeil au meme endroit.
+//
+// La hauteur est reservee des le depart. Sans cela, la phrase "apres" etant
+// plus longue, tout ce qui suit - le bouton principal - sauterait vers le bas
+// au moment ou le visiteur s'apprete a cliquer.
+function RewriteLine({ avant, apres, phase, mob, reducedMotion }) {
+  const texte = phase === "avant" ? avant : apres;
+  const mots = String(texte || "").split(/\s+/).filter(Boolean);
+  const sorti = phase === "apres";
+
+  return (
+    <div style={{
+      fontFamily: "'Fraunces', Georgia, serif",
+      fontWeight: 400,
+      fontSize: mob ? "clamp(22px, 6.2vw, 30px)" : "clamp(30px, 3.6vw, 52px)",
+      lineHeight: 1.22,
+      letterSpacing: "-0.015em",
+      textAlign: "center",
+      maxWidth: mob ? "100%" : 940,
+      margin: "0 auto",
+      color: "var(--nuvi-ink)",
+      minHeight: mob ? 132 : 176,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      flexWrap: "wrap", gap: "0 0.28em",
+      padding: mob ? "0 4px" : 0,
+    }}>
+      {mots.map((m, i) => {
+        // Un mot porteur de chiffre : c'est lui qui fait la difference entre
+        // un CV qu'on lit et un CV qu'on repose.
+        const chiffre = sorti && /\d/.test(m);
+        return (
+          <span
+            key={phase + "-" + i + "-" + m}
+            style={{
+              display: "inline-block",
+              opacity: reducedMotion ? 1 : 0,
+              transform: reducedMotion ? "none" : "translateY(0.32em)",
+              animation: reducedMotion
+                ? "none"
+                : `nuviWordIn 520ms cubic-bezier(.22,1,.36,1) ${
+                    // Les chiffres attendent que le reste soit pose.
+                    (i * 42) + (chiffre ? 260 : 0)
+                  }ms forwards`,
+              color: chiffre ? "var(--nuvi-magenta)" : "inherit",
+              fontWeight: chiffre ? 600 : 400,
+              fontStyle: phase === "avant" ? "normal" : "normal",
+            }}
+          >{m}</span>
+        );
+      })}
+    </div>
+  );
+}
+
+// LE SCORE QUI GRIMPE
+//
+// C'est le seul element qui relie le spectacle au mecanisme reel : ce n'est
+// pas une jolie phrase qui fait passer un CV, c'est un score de tri. Le
+// montrer monter pendant que les mots changent explique le produit sans une
+// ligne de texte.
+function ScoreClimb({ from, to, go, mob, reducedMotion, label }) {
+  const [n, setN] = useState(from);
+  useEffect(() => {
+    if (!go) { setN(from); return undefined; }
+    if (reducedMotion) { setN(to); return undefined; }
+    const debut = performance.now();
+    const duree = 900;
+    let raf = 0;
+    const pas = (t) => {
+      const k = Math.min(1, (t - debut) / duree);
+      // Depart franc, arrivee douce : un compteur qui ralentit en fin de
+      // course se lit comme un resultat, pas comme une animation.
+      const doux = 1 - Math.pow(1 - k, 3);
+      setN(Math.round(from + (to - from) * doux));
+      if (k < 1) raf = requestAnimationFrame(pas);
+    };
+    raf = requestAnimationFrame(pas);
+    return () => cancelAnimationFrame(raf);
+  }, [go, from, to, reducedMotion]);
+
+  const vert = n >= 75;
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", justifyContent: "center", gap: 9,
+      marginTop: mob ? 10 : 16,
+      opacity: go ? 1 : 0.5,
+      transition: reducedMotion ? "none" : "opacity 500ms ease",
+      fontFamily: "'Inter', sans-serif",
+    }}>
+      <span style={{
+        fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
+        textTransform: "uppercase", color: "var(--nuvi-ink-muted)",
+      }}>{label}</span>
+      <span style={{
+        fontSize: mob ? 22 : 28, fontWeight: 700,
+        fontVariantNumeric: "tabular-nums",
+        color: vert ? "var(--nuvi-green)" : "var(--nuvi-ink-muted)",
+        transition: reducedMotion ? "none" : "color 400ms ease",
+      }}>{n}</span>
+    </div>
+  );
+}
+
 export default function NuviHome({
-  lang = "fr",
+  lang = "en",
   mob = false,
   userName = null,
   onGenerate = () => {},
@@ -193,17 +336,54 @@ export default function NuviHome({
     }, 2100));
   };
 
-  // Au montage : fade-in puis joue la transformation une fois.
+  // LE PREMIER METIER EST TIRE AU SORT, ET LES SUIVANTS S'ENCHAINENT
+  //
+  // Huit metiers ordinaires - serveur, aide-soignant, chauffeur-livreur,
+  // receptionniste - et chaque visiteur tombe sur un autre. Un exemple de
+  // commercial affiche a tout le monde fait croire que l'outil est fait pour
+  // les cadres, et les trois quarts des gens passent leur chemin.
+  //
+  // Le tirage se fait dans un effet, jamais au rendu : Next.js dessine cette
+  // page une fois sur le serveur et une fois dans le navigateur, et deux
+  // Math.random() differents produisent un ecart d'hydratation - React jette
+  // alors le rendu serveur et le refait, avec un clignotement visible.
+  //
+  // L'enchainement se fait tout seul. Attendre un clic sur "Rejouer" pour
+  // montrer un deuxieme metier, c'est ne le montrer a presque personne : on
+  // reste quelques secondes sur une page d'accueil, pas assez pour avoir
+  // l'idee de cliquer.
   useEffect(() => {
     setEntered(true);
+    let vivant = true;
+    const tire = Math.floor(Math.random() * examples.length);
+
     // Le reglage "reduire les animations" est lu par un media query, donc
     // connu un instant APRES le premier rendu. On relance donc la sequence
     // quand la reponse arrive : sans ce declencheur, la toute premiere
     // lecture (false par defaut) resterait figee et le decompte partirait
     // quand meme.
-    const t = setTimeout(() => playTransform(0), reducedMotion ? 0 : 500);
+    const t = setTimeout(() => { if (vivant) playTransform(tire); },
+      reducedMotion ? 0 : 500);
     timers.current.push(t);
-    return clearTimers;
+
+    // Mouvement refuse : on montre UN metier, fixe. Faire defiler huit
+    // exemples devant quelqu'un qui a demande le calme est exactement ce
+    // qu'il ne veut pas.
+    if (reducedMotion) return () => { vivant = false; clearTimers(); };
+
+    // 5,6 secondes par metier : 1,2s pour lire l'avant, 0,9s de bascule, et
+    // 3,5s sur l'apres - le temps de lire la phrase ET de voir le score
+    // arriver, qui est le dernier element a se poser.
+    const boucle = setInterval(() => {
+      if (!vivant) return;
+      setExampleIdx((i) => {
+        const suivant = (i + 1) % examples.length;
+        playTransform(suivant);
+        return suivant;
+      });
+    }, 5600);
+
+    return () => { vivant = false; clearInterval(boucle); clearTimers(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reducedMotion]);
 
@@ -293,117 +473,50 @@ export default function NuviHome({
           }}>{balanceText(T.sub)}</Reveal>
         </div>
 
-        {/* ===== TEMPS 2 : LE WOW (avant -> apres) ===== */}
-        <div style={{
-          display: "flex",
-          flexDirection: mob ? "column" : "row",
-          gap: mob ? 12 : 14,
-          alignItems: "stretch",
-        }}>
+        {/* ===== TEMPS 2 : LA PHRASE QUI SE REECRIT =====
 
-          {/* CARTE AVANT */}
-          <div style={{
-            flex: 1,
-            background: Paper,
-            border: "1px solid " + Hairline,
-            borderRadius: 14,
-            padding: cardPad,
-            position: "relative",
-            opacity: showAfter ? (mob ? 0.55 : 0.7) : 1,
-            transition: "opacity 400ms ease",
-          }}>
-            <span style={{
-              position: "absolute", top: 12, right: 12,
-              background: "#f1efe8", color: "#888780",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-              textTransform: "uppercase", padding: "3px 9px", borderRadius: 999,
-            }}>{T.before}</span>
-            <div style={{ fontSize: 15, fontWeight: 500, color: InkMuted, marginBottom: 2 }}>
-              {ex.name}
-            </div>
-            <div style={{ fontSize: 12, color: "#a89f8a", marginBottom: 14 }}>
-              {ex.beforeTitle}
-            </div>
-            {ex.before.map((line, i) => (
-              <p key={i} style={{
-                fontSize: 12, color: lineColBefore, lineHeight: 1.6,
-                margin: i === 0 ? "0 0 10px" : 0,
-              }}>{line}</p>
-            ))}
-          </div>
+            AVANT : deux cartes cote a cote, 326x197, texte a 13px. Mesure sur
+            un ecran de 1440 : le titre a 30px, 40% de la surface occupee,
+            295px de vide au-dessus. Ce qui PROUVE le produit etait rendu a la
+            taille d'un tweet.
 
-          {/* FLECHE NUVI (au centre) */}
-          <div style={{
-            display: "flex", alignItems: "center", justifyContent: "center",
-            flexDirection: mob ? "row" : "column", gap: 4,
-            ...(mob ? { padding: "2px 0" } : {}),
-          }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: "50%",
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              boxShadow: transforming ? "0 0 0 6px rgba(91,61,245,0.15)" : "0 2px 8px rgba(91,61,245,0.25)",
-              transition: "box-shadow 300ms ease",
-              animation: transforming ? "nuviArrowPulse 0.9s ease-in-out infinite" : "none",
-            }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                style={{ transform: mob ? "rotate(90deg)" : "none" }}>
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
-            </div>
-            <span style={{ fontSize: 10, color: Violet, fontWeight: 700, letterSpacing: "0.06em" }}>
-              {transforming ? T.transforming : "Nuvi"}
-            </span>
-          </div>
+            Deux cartes DECRIVENT la transformation. Une phrase qui se reecrit
+            sous les yeux la FAIT. C'est la meme information, a la difference
+            pres qu'on n'a plus rien a expliquer.
 
-          {/* CARTE APRES */}
-          <div style={{
-            flex: 1,
-            background: Paper,
-            border: "2px solid " + (showAfter ? Violet : Hairline),
-            borderRadius: 14,
-            padding: cardPad,
-            position: "relative",
-            opacity: showAfter ? 1 : (mob ? 0.4 : 0.5),
-            transition: "opacity 400ms ease, border-color 400ms ease",
-          }}>
-            <span style={{
-              position: "absolute", top: 12, right: 12,
-              background: showAfter ? "linear-gradient(135deg, " + Violet + ", " + Magenta + ")" : "#f1efe8",
-              color: showAfter ? "#fff" : "#888780",
-              fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-              textTransform: "uppercase", padding: "3px 9px", borderRadius: 999,
-              transition: "all 400ms ease",
-            }}>{T.after}</span>
-            <div style={{ fontSize: 15, fontWeight: 600, color: Ink, marginBottom: 2 }}>
-              {ex.name}
-            </div>
-            <div style={{
-              fontSize: 12, color: Coral, fontWeight: 500, marginBottom: 14,
-              minHeight: 16,
-            }}>
-              {showAfter ? ex.afterTitle : ""}
-            </div>
-            {ex.after.map((line, i) => (
-              <p key={i} style={{
-                fontSize: 12, color: lineColAfter, lineHeight: 1.6,
-                margin: i === 0 ? "0 0 8px" : 0,
-                opacity: showAfter ? 1 : 0,
-                transform: showAfter ? "translateY(0)" : "translateY(6px)",
-                transition: "opacity 500ms ease, transform 500ms ease",
-                transitionDelay: showAfter ? (i * 180 + 100) + "ms" : "0ms",
-              }}>{line}</p>
-            ))}
-          </div>
+            Les chiffres arrivent en dernier et plus gros : c'est ce que l'oeil
+            d'un recruteur accroche en six secondes, donc ce que l'oeil du
+            visiteur doit accrocher ici. */}
+        <div style={{ minHeight: mob ? 200 : 240 }}>
+          <RewriteLine
+            avant={ex.before}
+            apres={ex.after}
+            phase={showAfter ? "apres" : transforming ? "bascule" : "avant"}
+            mob={mob}
+            reducedMotion={reducedMotion}
+          />
+          {/* Le score suit la phrase au lieu de flotter dessus. Pose en absolu
+              en haut a droite, il se posait sur un mot - constate a l'ecran, a
+              1440 comme a 1280. Ici il se lit comme la consequence de ce qu'on
+              vient de voir, ce qui est exactement ce qu'il est. */}
+          <ScoreClimb
+            from={34} to={91} go={showAfter} mob={mob}
+            reducedMotion={reducedMotion}
+            label={T.atsLabel || "ATS"}
+          />
         </div>
 
         {/* Bouton Rejouer (apparait apres la 1ere transformation) */}
-        <div style={{ textAlign: "center", height: 28, marginTop: 12 }}>
+        {/* 48px, et non 28 : "Rejouer" ne faisait que 16px de haut, ce qui
+            est sous le plancher tactile. La hauteur du conteneur est reservee
+            en permanence pour que rien ne saute quand le bouton apparait. */}
+        <div style={{ textAlign: "center", height: 48, marginTop: 12 }}>
           {showAfter && (
             <button
               onClick={handleReplay}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                minHeight: 44, padding: "0 14px", boxSizing: "border-box",
                 background: "transparent", border: "none", cursor: "pointer",
                 color: InkMuted, fontSize: 12, fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
@@ -435,7 +548,8 @@ export default function NuviHome({
               flex: 1,
               background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
               color: "#fff", border: "none", borderRadius: 12,
-              padding: "13px 18px", fontSize: 14, fontWeight: 500,
+              padding: "13px 18px", minHeight: 44, boxSizing: "border-box",
+              fontSize: 14, fontWeight: 500,
               cursor: "pointer", fontFamily: "'Inter', sans-serif",
               boxShadow: "0 4px 16px rgba(91,61,245,0.28)",
               transition: "transform 180ms ease, box-shadow 180ms ease",
@@ -458,7 +572,8 @@ export default function NuviHome({
               flex: 1,
               background: Paper, color: Ink,
               border: "1px solid " + Hairline, borderRadius: 12,
-              padding: "13px 18px", fontSize: 14, fontWeight: 500,
+              padding: "13px 18px", minHeight: 44, boxSizing: "border-box",
+              fontSize: 14, fontWeight: 500,
               cursor: "pointer", fontFamily: "'Inter', sans-serif",
               transition: "border-color 180ms ease, transform 180ms ease",
             }}

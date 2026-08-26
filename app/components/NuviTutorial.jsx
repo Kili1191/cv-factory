@@ -6,7 +6,7 @@ import dynamic from "next/dynamic";
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
 // ============================================================
-// NuviTutorial v7 — Sub-menu visible + highlight panel
+// NuviTutorial v7 - Sub-menu visible + highlight panel
 //
 // Nouveautes vs v6 :
 //   - Highlight aussi le panel flottant (pas juste l'onglet)

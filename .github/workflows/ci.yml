@@ -19,7 +19,18 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    # 90 et non 60. La suite est passee de 27 a 31 controles, dont le crash
+    # test avant mise en ligne qui ouvre 127 ecrans sur deux appareils et
+    # prend a lui seul une dizaine de minutes. En ajoutant l'installation des
+    # dependances, de Chromium, de poppler/MuPDF/tesseract et de Tika, le
+    # travail complet frolait le plafond precedent - sur un runner a deux
+    # coeurs, plus lent que la machine de developpement.
+    #
+    # Une CI qui expire ne dit pas "le produit est casse", elle dit "je n'ai
+    # pas eu le temps de regarder". C'est le pire des verdicts : il bloque la
+    # fusion sans rien apprendre, et il pousse a desactiver des controles pour
+    # rentrer dans le temps imparti.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
