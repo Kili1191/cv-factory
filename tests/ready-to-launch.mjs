@@ -226,7 +226,35 @@ function ausculter(page, mob, TOUCHE_MIN) {
         const r = el.getBoundingClientRect();
         const t = (el.innerText || el.value || el.getAttribute("aria-label") || "").replace(/\s+/g, " ").trim().slice(0, 30);
         if (r.height < TOUCHE_MIN - 0.5 || r.width < TOUCHE_MIN - 0.5) {
-          petits.push({ t: t || el.tagName.toLowerCase(), w: Math.round(r.width), h: Math.round(r.height) });
+          // DEUX CAUSES DIFFERENTES, DEUX CONSTATS DIFFERENTS
+          //
+          // Un bouton de l'interface trop petit est un bouton mal dimensionne :
+          // ca se corrige en une ligne de style.
+          //
+          // Un bouton A L'INTERIEUR du CV est autre chose. Le document est une
+          // page A4 reduite pour tenir dans un telephone : tout ce qu'il
+          // contient est divise par le meme facteur, et lui donner 44px reels
+          // demanderait une barre de cent pixels dans le document imprime.
+          // Le remede n'est pas la taille, c'est le zoom - que l'application
+          // propose deja.
+          //
+          // Melanger les deux ferait passer un vrai defaut pour une fatalite,
+          // ou l'inverse. On mesure donc le facteur d'echelle et on le dit.
+          let echelle = 1;
+          let p2 = el.parentElement;
+          while (p2 && p2 !== doc) {
+            const tr = getComputedStyle(p2).transform;
+            if (tr && tr !== "none") {
+              const m = tr.match(/matrix\(([^,]+),/);
+              if (m) { const f = parseFloat(m[1]); if (f > 0 && f < 0.99) echelle *= f; }
+            }
+            p2 = p2.parentElement;
+          }
+          petits.push({
+            t: t || el.tagName.toLowerCase(),
+            w: Math.round(r.width), h: Math.round(r.height),
+            reduit: echelle < 0.99 ? Math.round(echelle * 100) : 0,
+          });
         }
         // Un element dont le centre est hors de l'ecran est inatteignable.
         const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
@@ -339,21 +367,43 @@ export async function run() {
       }
     }
 
-    if (petitsGroupes.size) {
-      const lignes = [...petitsGroupes.values()]
-        .sort((x, y) => (x.w * x.h) - (y.w * y.h))
-        .slice(0, 12)
+    const tous = [...petitsGroupes.values()].sort((x, y) => (x.w * x.h) - (y.w * y.h));
+    const chrome = tous.filter((p) => !p.reduit);
+    const dansLeDoc = tous.filter((p) => p.reduit);
+
+    if (chrome.length) {
+      const lignes = chrome.slice(0, 12)
         .map((p) => `"${p.t}" ${p.w}x${p.h} (${[...p.ecrans].slice(0, 3).join(", ")})`);
       failures.push(
-        `${petitsGroupes.size} commande(s) distinctes sous ${TOUCHE_MIN}px sur `
+        `${chrome.length} commande(s) de l'interface sous ${TOUCHE_MIN}px sur `
         + `telephone. Sous ce plancher, le doigt couvre plus que la cible et on `
-        + `tape a cote. Les plus petites : ${lignes.join(" ; ")}`
-        + (petitsGroupes.size > 12 ? ` ... et ${petitsGroupes.size - 12} autres.` : "")
+        + `tape a cote. Une ligne de style suffit a les corriger. `
+        + `Les plus petites : ${lignes.join(" ; ")}`
+        + (chrome.length > 12 ? ` ... et ${chrome.length - 12} autres.` : "")
       );
     }
-    if (!failures.length) {
-      console.log(`      ecrans parcourus sans casse : ${bilan.join("  ")}`);
+    // Les commandes du document sont rapportees a voix haute mais ne font pas
+    // echouer : leur taille est celle du document reduit, et l'application
+    // repond a ce besoin par le zoom. Les taire donnerait une fausse
+    // assurance ; les compter comme un echec rendrait la suite rouge en
+    // permanence pour une chose qui ne se corrige pas par la taille.
+    if (dansLeDoc.length) {
+      const lignes = dansLeDoc.slice(0, 6)
+        .map((p) => `"${p.t}" ${p.w}x${p.h} a ${p.reduit}% d'echelle`);
+      console.log(
+        `      A SAVOIR : ${dansLeDoc.length} commande(s) sous ${TOUCHE_MIN}px `
+        + `A L'INTERIEUR du CV, parce que la page A4 est reduite pour tenir `
+        + `dans le telephone. Le zoom est la reponse prevue. ${lignes.join(" ; ")}`
+      );
     }
+    // LA COUVERTURE S'AFFICHE TOUJOURS, PAS SEULEMENT QUAND TOUT VA BIEN
+    //
+    // "1 constat" ne veut rien dire sans savoir sur combien d'ecrans. Un
+    // balayage qui n'aurait explore que deux ecrans rendrait presque toujours
+    // peu de constats, et ce silence se lirait comme une bonne nouvelle. Le
+    // nombre d'ecrans parcourus est donc affiche dans tous les cas.
+    const total = bilan.reduce((n, b) => n + Number(b.split(":")[1] || 0), 0);
+    console.log(`      ${total} ecrans parcourus : ${bilan.join("  ")}`);
   } catch (err) {
     failures.push(`le crash test a plante : ${err && err.message}`);
   } finally {

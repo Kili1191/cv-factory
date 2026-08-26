@@ -254,7 +254,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
               <button key={lc} onClick={()=>setLocale(lc)} style={{
                 ...B({
-                  padding:"6px 14px", borderRadius:RadiusPill,
+                  padding:"6px 14px", minHeight:44, boxSizing:"border-box",
+                  display:"inline-flex", alignItems:"center", justifyContent:"center",
+                  borderRadius:RadiusPill,
                   fontSize:12, fontWeight:500,
                   color:locale===lc ? Cream : Gray600,
                   background:locale===lc ? Ink : Paper,
@@ -287,7 +289,8 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           ...B({
             background:"none", color:Gray600, fontSize:13,
             fontFamily:Sans, fontWeight:500,
-            textAlign:"left", padding:"4px 0", marginBottom:14,
+            textAlign:"left", padding:"4px 8px 4px 0", marginBottom:10,
+            minHeight:44, boxSizing:"border-box",
             display:"inline-flex", alignItems:"center", gap:6,
           })
         }}>
@@ -546,7 +549,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
             <button key={lc} onClick={()=>setLocale(lc)} style={{
               ...B({
-                padding:"6px 14px", borderRadius:RadiusPill,
+                padding:"6px 14px", minHeight:44, boxSizing:"border-box",
+                display:"inline-flex", alignItems:"center", justifyContent:"center",
+                borderRadius:RadiusPill,
                 fontSize:12, fontWeight:500,
                 color:locale===lc ? Cream : Gray600,
                 background:locale===lc ? Ink : Paper,

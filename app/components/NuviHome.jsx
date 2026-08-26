@@ -507,12 +507,16 @@ export default function NuviHome({
         </div>
 
         {/* Bouton Rejouer (apparait apres la 1ere transformation) */}
-        <div style={{ textAlign: "center", height: 28, marginTop: 12 }}>
+        {/* 48px, et non 28 : "Rejouer" ne faisait que 16px de haut, ce qui
+            est sous le plancher tactile. La hauteur du conteneur est reservee
+            en permanence pour que rien ne saute quand le bouton apparait. */}
+        <div style={{ textAlign: "center", height: 48, marginTop: 12 }}>
           {showAfter && (
             <button
               onClick={handleReplay}
               style={{
-                display: "inline-flex", alignItems: "center", gap: 6,
+                display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6,
+                minHeight: 44, padding: "0 14px", boxSizing: "border-box",
                 background: "transparent", border: "none", cursor: "pointer",
                 color: InkMuted, fontSize: 12, fontWeight: 500,
                 fontFamily: "'Inter', sans-serif",
@@ -544,7 +548,8 @@ export default function NuviHome({
               flex: 1,
               background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
               color: "#fff", border: "none", borderRadius: 12,
-              padding: "13px 18px", fontSize: 14, fontWeight: 500,
+              padding: "13px 18px", minHeight: 44, boxSizing: "border-box",
+              fontSize: 14, fontWeight: 500,
               cursor: "pointer", fontFamily: "'Inter', sans-serif",
               boxShadow: "0 4px 16px rgba(91,61,245,0.28)",
               transition: "transform 180ms ease, box-shadow 180ms ease",
@@ -567,7 +572,8 @@ export default function NuviHome({
               flex: 1,
               background: Paper, color: Ink,
               border: "1px solid " + Hairline, borderRadius: 12,
-              padding: "13px 18px", fontSize: 14, fontWeight: 500,
+              padding: "13px 18px", minHeight: 44, boxSizing: "border-box",
+              fontSize: 14, fontWeight: 500,
               cursor: "pointer", fontFamily: "'Inter', sans-serif",
               transition: "border-color 180ms ease, transform 180ms ease",
             }}
