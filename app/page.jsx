@@ -6,6 +6,7 @@ import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
+import { estTelephone } from "../lib/breakpoint.js";
 
 // === LAZY MODALS ===
 // Ces modals ne sont rendus que sur action utilisateur (showXxx === true).
@@ -1041,7 +1042,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
   // Backdrop subtil + frosted glass
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => setIsMobile(estTelephone());
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
@@ -4133,7 +4134,7 @@ export default function App() {
   useEffect(() => { undoRef.current = undo; }, [undo]);
 
   useEffect(() => {
-    const c = () => setMob(window.innerWidth < 800);
+    const c = () => setMob(estTelephone());
     c();
     window.addEventListener("resize", c);
     return () => window.removeEventListener("resize", c);
@@ -8499,7 +8500,7 @@ export default function App() {
                 aria-label="Telecharger CV"
                 style={{
                   display:"flex", alignItems:"center", gap:9,
-                  padding:"10px 20px", minHeight:42, boxSizing:"border-box",
+                  padding:"10px 20px", minHeight:44, boxSizing:"border-box",
                   background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
                   color:"#fff", border:"none", borderRadius:999, cursor:"pointer",
                   fontFamily:"'Inter', sans-serif", fontSize:13, fontWeight:600,

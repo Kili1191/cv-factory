@@ -9,6 +9,7 @@
 
 import { useEffect, useState } from "react";
 import LiquidGlassPanel from "./LiquidGlassPanel";
+import { estTelephone } from "../../lib/breakpoint.js";
 
 const Ink       = "var(--nuvi-ink)";
 const InkMuted  = "var(--nuvi-ink-muted)";
@@ -45,7 +46,7 @@ export default function LiquidGlassModal({
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const check = () => setIsMobile(window.innerWidth < 900);
+    const check = () => setIsMobile(estTelephone());
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);

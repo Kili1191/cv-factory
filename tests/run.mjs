@@ -28,6 +28,7 @@ const SUITES = [
   ["le parcours arrive vraiment a l'ecran", "./the-career-record-reaches-the-screen.mjs"],
   ["le lien partage dit la verite", "./the-shared-link-tells-the-truth.mjs"],
   ["crash test avant mise en ligne", "./ready-to-launch.mjs"],
+  ["toutes les largeurs d'ecran tiennent", "./every-screen-size-works.mjs"],
   ["les mots en italique sont de vrais italiques", "./the-italics-are-real.mjs"],
   ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
   ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],

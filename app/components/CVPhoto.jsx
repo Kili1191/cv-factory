@@ -20,6 +20,7 @@
 import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
+import { estTelephone } from "../../lib/breakpoint.js";
 
 const PhotoCropEditor = dynamic(() => import("./PhotoCropEditor"), { ssr: false });
 
@@ -45,7 +46,7 @@ export default function CVPhoto({
   // Telephone : le menu doit sortir du CV et s'afficher au centre de l'ecran.
   const [narrow, setNarrow] = useState(false);
   useEffect(() => {
-    const read = () => setNarrow(window.innerWidth < 768);
+    const read = () => setNarrow(estTelephone());
     read();
     window.addEventListener("resize", read);
     return () => window.removeEventListener("resize", read);

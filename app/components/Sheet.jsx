@@ -18,6 +18,7 @@
 //   showLogo : afficher le NuviLogo en haut a gauche (default: true)
 
 import { useEffect, useState } from "react";
+import { estTelephone } from "../../lib/breakpoint.js";
 import dynamic from "next/dynamic";
 import {
   Ink, Cream, CreamSoft, Paper, Coral,
@@ -41,7 +42,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
   // feuille qui colle au bas est exactement ce qu'il faut.
   const [surOrdinateur, setSurOrdinateur] = useState(false);
   useEffect(() => {
-    const voir = () => setSurOrdinateur(window.innerWidth >= 768);
+    const voir = () => setSurOrdinateur(!estTelephone());
     voir();
     window.addEventListener("resize", voir);
     return () => window.removeEventListener("resize", voir);
