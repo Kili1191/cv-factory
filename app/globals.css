@@ -538,7 +538,18 @@ body.cvf-dark.nuvi-grain::after {
   transition:
     transform 200ms cubic-bezier(.22, 1, .36, 1),
     box-shadow 200ms cubic-bezier(.22, 1, .36, 1);
-  will-change: transform;
+}
+
+/* will-change PROMET UNE COUCHE, ET LA COUCHE SE PAYE
+   Cette promesse etait posee sans condition sur les trois appels a l action.
+   Elle ne sert qu au survol - qui n existe pas au doigt. Sur telephone,
+   c etaient donc trois couches de composition reservees en permanence, pour
+   un effet qui ne peut pas s y produire. La memoire graphique d un telephone
+   d entree de gamme est comptee : quand elle manque, le compositeur evince
+   des tuiles et le defilement montre des eclairs gris.
+   La promesse n est donc faite que la ou l effet existe. */
+@media (hover: hover) and (pointer: fine) {
+  .nuvi-cta { will-change: transform; }
 }
 .nuvi-cta:hover {
   transform: translateY(-2px);

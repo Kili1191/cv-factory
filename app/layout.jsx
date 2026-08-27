@@ -19,9 +19,40 @@ import './globals.css';
 //
 // Le vrai italique de Fraunces n'a pas ce defaut : ses glyphes sont dessines
 // penches, avec les largeurs qui vont avec.
+// L'AXE opsz ETAIT PAYE ET JAMAIS UTILISE
+//
+// Fraunces se demandait avec quatre axes. Trois servent : l'italique, la
+// graisse, la douceur. Le quatrieme, opsz (taille optique), n'est regle nulle
+// part dans le produit - il ne l'etait que dans l'adresse qui le telecharge.
+//
+// Mesure faite sur les fichiers reellement servis par Google, en se declarant
+// Android, et en ne comptant QUE le sous-ensemble latin - un visiteur
+// britannique ou francais ne telecharge jamais le cyrillique ni le grec, et
+// les compter gonflerait le gain d'un facteur deux :
+//
+//     avant   405 564 octets
+//     apres   275 644 octets
+//     gagne   129 920 octets, 32%
+//
+// Pour un reglage que personne n'utilise. Sur une connexion faible c'est
+// environ deux secondes et demie de plus ou tous les titres de la page sont
+// en Georgia avant de sauter dans Fraunces.
+//
+// A savoir : reduire la PLAGE d'un axe ne sert a rien - mesure identique
+// avec 9..144 et avec 9..72. Google sert la fonte variable entiere. Seul le
+// retrait de l'axe compte.
+//
+// Ce qu'on perd : le navigateur ne fait plus varier automatiquement le dessin
+// selon la taille (font-optical-sizing vaut auto par defaut). Le titre a 64px
+// et une legende a 11px partagent donc le meme dessin. C'est un raffinement ;
+// 275 ko sur le telephone d'une aide-soignante n'en est pas un.
+//
+// L'italique reste : il est utilise 59 fois dans le produit, et un vrai
+// italique dessine ne se remplace pas par une inclinaison mecanique - une
+// suite le verifie.
 const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT"
-  + "@0,9..144,300..900,30..100;1,9..144,300..900,30..100"
+  "https://fonts.googleapis.com/css2?family=Fraunces:ital,wght,SOFT"
+  + "@0,300..900,30..100;1,300..900,30..100"
   + "&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800"
   + ";1,300;1,400;1,500;1,600;1,700;1,800"
   + "&family=DM+Serif+Display:ital@0;1&display=swap";
