@@ -91,14 +91,15 @@ const REECRIT = {
 // phrase : c'est le chiffre le plus honnete de la page.
 const RETENU = { en: "hospitality", fr: "restauration" };
 
-export default function ScanHero({ lang = "en", labels, mode = "perte" }) {
+export default function ScanHero({ lang = "en", labels, mode = "perte", pilote = false }) {
   const garde = mode === "garde";
   const source = garde ? REECRIT : PHRASE;
   const lignes = source[lang] || source.en;
   const total = lignes.reduce((n, l) => n + l.length, 0);
 
   return (
-    <div style={{ position: "relative", width: "100%" }}>
+    <div className={pilote ? "nuvi-scan-pilote" : undefined}
+      style={{ position: "relative", width: "100%" }}>
 
       <div style={{ position: "relative", overflow: "hidden", padding: "6px 0 10px" }}>
         {/* La ligne de lecture */}
@@ -126,7 +127,8 @@ export default function ScanHero({ lang = "en", labels, mode = "perte" }) {
                   // Le retard suit la position du mot dans la phrase, donc la
                   // descente de la ligne : chaque mot meurt quand elle
                   // l'atteint, pas avant.
-                  const retard = 0.5 + ((avant + mi) / total) * 2.7;
+                  const part = (avant + mi) / total;
+                  const retard = 0.5 + part * 2.7;
                   if (!mot.f) {
                     return (
                       <span key={mi} style={{
@@ -140,7 +142,9 @@ export default function ScanHero({ lang = "en", labels, mode = "perte" }) {
                       style={{
                         position: "relative", display: "inline-block",
                         marginRight: "0.26em",
-                        opacity: 0.17, "--retard": retard + "s",
+                        opacity: 0.17,
+                        "--retard": retard + "s",
+                        "--part": part,
                       }}>
                       {mot.m}
                       <i aria-hidden="true" style={{

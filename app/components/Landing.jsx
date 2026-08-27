@@ -152,7 +152,7 @@ export default function Landing({ lang = "en" }) {
 
   const lien = (etiquette, sousTitre, gros) => (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9 }}>
-      <a href="/app" style={{
+      <a href="/app" className="nuvi-cta" style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         minHeight: gros ? 56 : 48, padding: gros ? "0 34px" : "0 26px",
         borderRadius: 999, textDecoration: "none",
@@ -187,11 +187,11 @@ export default function Landing({ lang = "en" }) {
         background: "var(--nuvi-cream, #faf8f3)",
       }}>
         <span style={{ fontFamily: Serif, fontSize: 20, fontWeight: 600, letterSpacing: "-0.02em" }}>Nuvi</span>
-        <a href="/app" style={{
+        <a href="/app" className="nuvi-fleche" style={{
           fontFamily: Sans, fontSize: 13, fontWeight: 600, color: Ink,
           textDecoration: "none", minHeight: 44, display: "inline-flex", alignItems: "center",
-          padding: "0 6px",
-        }}>{t.cta} &rarr;</a>
+          gap: 6, padding: "0 6px",
+        }}>{t.cta}<span aria-hidden="true">&rarr;</span></a>
       </header>
 
       {/* ===== 1. CE QUE C'EST ===== */}
@@ -210,9 +210,12 @@ export default function Landing({ lang = "en" }) {
             lecture traverse une phrase de CV, et ce que le logiciel ne sait
             pas ranger meurt sur son passage.
             Le titre vient APRES, comme legende de ce qu'on vient de voir. */}
-        {eyebrow(t.scanLead)}
-        <ScanHero lang={lang} labels={{ kept: t.kept, keptSub: t.keptSub }}/>
-        <h1 style={{
+        <div className="nuvi-arrivee" style={{ "--pose": "0ms" }}>{eyebrow(t.scanLead)}</div>
+        <div className="nuvi-arrivee" style={{ "--pose": "90ms", width: "100%" }}>
+          <ScanHero lang={lang} labels={{ kept: t.kept, keptSub: t.keptSub }}/>
+        </div>
+        <h1 className="nuvi-arrivee" style={{
+          "--pose": "260ms",
           fontFamily: Serif, fontWeight: 400,
           fontSize: "clamp(21px, 2.9vw, 34px)",
           lineHeight: 1.18, letterSpacing: "-0.025em",
@@ -226,11 +229,14 @@ export default function Landing({ lang = "en" }) {
             backgroundClip: "text", paddingRight: "0.12em",
           }}>{t.h1b}</em>
         </h1>
-        <p style={{
+        <p className="nuvi-arrivee" style={{
+          "--pose": "340ms",
           fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.55,
           color: Muted, maxWidth: 52 + "ch", margin: "0 0 30px",
         }}>{t.sub}</p>
-        {lien(t.cta, t.ctaSub, true)}
+        <div className="nuvi-arrivee" style={{ "--pose": "420ms" }}>
+          {lien(t.cta, t.ctaSub, true)}
+        </div>
       </section>
 
       {/* Le bandeau. Deux copies : quand la premiere quitte l'ecran, la
@@ -283,7 +289,7 @@ export default function Landing({ lang = "en" }) {
         maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
       }}>
         {eyebrow(t.answerLead)}
-        <ScanHero lang={lang} mode="garde"
+        <ScanHero lang={lang} mode="garde" pilote
           labels={{ kept: t.kept, keptSub: t.keptAll ? "" : t.keptSub, keptAll: t.keptAll }}/>
         <h2 style={{
           fontFamily: Serif, fontWeight: 400,

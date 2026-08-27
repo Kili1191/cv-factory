@@ -430,3 +430,139 @@ body.cvf-dark.nuvi-grain::after {
   .nuvi-mot-faible,
   .nuvi-mot-faible > i { animation: none; }
 }
+
+/* ============================================================
+ * LE BALAYAGE PILOTE PAR LE DEFILEMENT
+ * ============================================================
+ *
+ * Dans le heros, la ligne de lecture descend toute seule : il n y a pas
+ * encore de defilement a suivre, et il faut que ca se voie sans rien faire.
+ *
+ * Plus bas, c est l inverse. La ligne suit LE DEFILEMENT : on descend, elle
+ * descend, on remonte, elle remonte. Le visiteur ne regarde plus une
+ * animation, il actionne la machine - et c est exactement ce que le produit
+ * fait dans son dos a chaque candidature.
+ *
+ * animation-timeline: view() lie la progression a la position du bloc dans
+ * la fenetre, nativement. Rien a telecharger, rien a executer avant le
+ * premier pixel, et le navigateur peut le faire tourner hors du fil
+ * principal - donc ca ne saccade pas pendant que le reste travaille.
+ *
+ * MEME REGLE DE REPLI QUE PARTOUT AILLEURS
+ *
+ * L etat par defaut est l etat FINAL - tout est visible, la ligne est
+ * cachee. Un navigateur qui ne connait pas animation-timeline montre donc
+ * la phrase complete, ce qui est correct. Ecrit dans l autre sens, il
+ * afficherait une ligne figee en haut et une phrase a moitie morte.
+ */
+.nuvi-scan-pilote .nuvi-scan-ligne {
+  /* Sans la fonctionnalite : pas de ligne du tout, plutot qu une barre
+     immobile posee au milieu du texte. */
+  display: none;
+}
+
+@supports (animation-timeline: view()) {
+  .nuvi-scan-pilote .nuvi-scan-ligne {
+    display: block;
+    animation: nuviScanDescend 1s linear both;
+    animation-timeline: view();
+    /* Le balayage occupe la traversee du bloc : il commence quand le bloc
+       entre par le bas et finit quand il sort par le haut. */
+    animation-range: entry 15% exit 85%;
+  }
+  /* Chaque mot meurt quand la ligne l atteint. Le retard devient une
+     fraction de la plage, pas un delai en secondes : c est le defilement
+     qui donne le tempo. */
+  .nuvi-scan-pilote .nuvi-mot-faible {
+    animation: nuviMotMeurt linear both;
+    animation-timeline: view();
+    animation-range: entry calc(15% + var(--part) * 60%) entry calc(22% + var(--part) * 60%);
+    animation-delay: 0s;
+  }
+  .nuvi-scan-pilote .nuvi-mot-faible > i {
+    animation: nuviBarre linear both;
+    animation-timeline: view();
+    animation-range: entry calc(15% + var(--part) * 60%) entry calc(21% + var(--part) * 60%);
+    animation-delay: 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-scan-pilote .nuvi-scan-ligne { display: none; }
+  .nuvi-scan-pilote .nuvi-mot-faible,
+  .nuvi-scan-pilote .nuvi-mot-faible > i { animation: none; }
+}
+
+/* ============================================================
+ * L ARRIVEE DE LA PAGE
+ * ============================================================
+ *
+ * Tout apparaissait d un bloc. Une entree echelonnee donne le sens de
+ * lecture sans une fleche ni un mot : l oeil suit ce qui arrive.
+ *
+ * Elle ne joue qu une fois, au chargement, et jamais au retour sur la page :
+ * une entree qui se rejoue est une entree qui agace.
+ */
+@keyframes nuviArrivee {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.nuvi-arrivee {
+  animation: nuviArrivee 620ms cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: var(--pose, 0ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-arrivee { animation: none; }
+}
+
+/* ============================================================
+ * LES COMMANDES REPONDENT AU DOIGT
+ * ============================================================
+ *
+ * Le bouton principal de la vitrine ne bougeait pas. Un element qui ne
+ * repond a rien se lit comme une image, pas comme une commande - et sur une
+ * page ou tout le reste bouge, c est celui-la qui doit repondre le mieux.
+ *
+ * Trois etats, et chacun dit quelque chose :
+ *   survol  : il se souleve, son ombre s ecarte. Il est atteignable.
+ *   appui   : il redescend SOUS sa position de repos. C est le detail qui
+ *             donne la sensation d un vrai bouton : on l enfonce.
+ *   clavier : un anneau net, parce qu un cadre de focus efface rend la page
+ *             impraticable a qui n a pas de souris.
+ *
+ * La transition porte sur transform et box-shadow uniquement : ce sont les
+ * deux seules proprietes que le navigateur sait animer sans recalculer la
+ * mise en page.
+ */
+.nuvi-cta {
+  transition:
+    transform 200ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 200ms cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+.nuvi-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 38px rgba(91, 61, 245, .34);
+}
+.nuvi-cta:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 14px rgba(91, 61, 245, .28);
+  transition-duration: 90ms;
+}
+.nuvi-cta:focus-visible {
+  outline: 2px solid var(--nuvi-ink, #0a0a0a);
+  outline-offset: 3px;
+}
+
+/* La fleche du lien d en-tete avance au survol : un mouvement de deux
+   pixels suffit a dire que ca mene quelque part. */
+.nuvi-fleche > span {
+  display: inline-block;
+  transition: transform 200ms cubic-bezier(.22, 1, .36, 1);
+}
+.nuvi-fleche:hover > span { transform: translateX(3px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-cta, .nuvi-fleche > span { transition: none; }
+  .nuvi-cta:hover, .nuvi-cta:active { transform: none; }
+}
