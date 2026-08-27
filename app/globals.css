@@ -660,3 +660,72 @@ body.cvf-dark.nuvi-grain::after {
     transition: none;
   }
 }
+
+/* ============================================================
+ * LE MORPHING : LES LETTRES FONDENT ET SE REFORMENT
+ * ============================================================
+ *
+ * Un fondu enchaine n est pas un morphing. Deux textes qui se croisent en
+ * transparence restent deux textes ; l oeil voit une substitution, pas une
+ * transformation.
+ *
+ * Ici les glyphes se deforment vraiment, par deux moyens qui se completent :
+ *
+ * 1. LES AXES DE LA FONTE. Fraunces est une fonte variable : sa graisse
+ *    (wght 300 a 900) et sa douceur (SOFT 30 a 100) sont des nombres qu on
+ *    peut animer. Pendant la transformation, les lettres epaississent et
+ *    s arrondissent - ce sont les contours qui bougent, pas leur opacite.
+ *
+ * 2. LE FILTRE GOUTTE. Un flou suivi d un fort contraste sur la couche alpha
+ *    fait fusionner ce qui est proche : les lettres voisines se collent en
+ *    une masse liquide, puis se reseparent en formant les nouvelles. C est
+ *    ce qui donne la sensation de matiere qui coule d un mot vers l autre.
+ *
+ * Le filtre coute cher : il n est pose que pendant la transformation, et
+ * retire des qu elle finit. Au repos, le texte est net et sans filtre.
+ */
+.nuvi-morph-goutte {
+  filter: url(#nuvi-goutte);
+}
+
+.nuvi-morph-lettre {
+  display: inline-block;
+  white-space: pre;
+  transition:
+    transform 520ms cubic-bezier(.7, 0, .3, 1),
+    opacity 380ms ease,
+    font-variation-settings 520ms cubic-bezier(.7, 0, .3, 1);
+  transition-delay: var(--pas, 0ms);
+}
+
+/* L etat sortant : la lettre s ecrase vers la ligne de fusion en gonflant.
+   Elle grossit avant de disparaitre, sinon elle s evapore au lieu de fondre. */
+.nuvi-morph-sort {
+  opacity: 0;
+  transform: translateY(-.34em) scaleY(.24) scaleX(1.35);
+  font-variation-settings: "wght" 900, "SOFT" 100;
+}
+
+/* L etat entrant : la lettre nait de la masse, encore ecrasee et molle,
+   puis reprend sa forme. */
+.nuvi-morph-entre {
+  opacity: 0;
+  transform: translateY(.34em) scaleY(.24) scaleX(1.35);
+  font-variation-settings: "wght" 900, "SOFT" 100;
+}
+
+.nuvi-morph-pose {
+  opacity: 1;
+  transform: none;
+  font-variation-settings: "wght" 500, "SOFT" 40;
+}
+
+/* Le mouvement se refuse : aucune deformation, aucun filtre, et le document
+   garde son etat final - la version reecrite, qui est deja la bonne. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-morph-goutte { filter: none; }
+  .nuvi-morph-lettre { transition: none; }
+  .nuvi-morph-sort { opacity: 0; transform: none; }
+  .nuvi-morph-entre,
+  .nuvi-morph-pose { opacity: 1; transform: none; }
+}

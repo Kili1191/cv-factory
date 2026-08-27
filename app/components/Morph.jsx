@@ -1,39 +1,84 @@
 "use client";
 
 /**
- * LES MEMES FAITS, QUI SE RANGENT AUTREMENT
+ * LES MEMES FAITS, QUI SE RANGENT AUTREMENT - EN SE DEFORMANT
  *
- * La vitrine montrait une phrase mourir, puis, deux sections plus bas, sa
- * version reecrite. Le rapprochement entre les deux etait a la charge du
- * visiteur : il fallait retenir la premiere en descendant vers la seconde.
- * Presque personne ne le fait.
+ * Premiere version : un fondu enchaine entre deux textes. Ce n'etait pas un
+ * morphing. Deux textes qui se croisent en transparence restent deux textes,
+ * et l'oeil lit une substitution, pas une transformation. Le commentaire qui
+ * justifiait ce choix - "deformer les glyphes coute cher et reste illisible a
+ * mi-chemin" - decrivait surtout la solution la plus facile.
  *
- * Ici la transformation se produit sur place. "une decennie d'experience"
- * devient "10 ans" sous les yeux, au meme endroit de la page. Ce n'est pas un
- * effet pose sur du texte : c'est exactement la these du produit - rien
- * d'invente, seulement range autrement - rendue visible en une seconde.
+ * Les lettres se deforment maintenant pour de bon, par deux moyens :
  *
- * POURQUOI CE N'EST PAS UN VRAI MORPHING DE LETTRES
+ *   LES AXES DE LA FONTE. Fraunces est variable, et le document charge deja
+ *   ses axes de graisse (300 a 900) et de douceur (30 a 100). Ce sont des
+ *   nombres, donc ils s'animent : pendant la transformation les contours
+ *   epaississent et s'arrondissent. Rien n'est simule, c'est le dessin de la
+ *   lettre qui bouge.
  *
- * Deformer les glyphes d'un mot vers un autre demande de tracer les contours
- * et coute cher pour un resultat souvent illisible a mi-chemin. La sensation
- * de metamorphose vient d'ailleurs : le bloc garde sa taille, l'ancien texte
- * se trouble en partant, le nouveau se precise en arrivant. L'oeil lit une
- * transformation, et chaque etat reste lisible.
+ *   LE FILTRE GOUTTE. Un flou suivi d'un fort contraste alpha fait fusionner
+ *   ce qui est proche. Les lettres voisines se collent en une masse liquide
+ *   puis s'en detachent en formant les nouvelles - la matiere coule d'un mot
+ *   a l'autre au lieu de se substituer.
+ *
+ * POURQUOI AUCUNE LETTRE NE VOYAGE D'UN MOT A L'AUTRE
+ *
+ * On peut apparier les lettres communes et les faire glisser de leur ancienne
+ * place a la nouvelle. Sur ces paires-la, "une decennie d'experience" contre
+ * "10 ans", les lettres communes sont rares et eloignees : un "e" traverserait
+ * la ligne pour aller se ranger vingt caracteres plus loin. Le resultat est
+ * agite, pas transforme. La fusion par le filtre donne la continuite de
+ * matiere sans ce desordre.
  *
  * CE QUI RESTE VRAI SANS ANIMATION
  *
- * L'etat par defaut est la version REECRITE. Un navigateur sans observateur
- * d'intersection, ou quelqu'un qui refuse le mouvement, voit la reponse -
- * pas une phrase molle figee a mi-course.
+ * L'etat par defaut du document est la version REECRITE, sans filtre ni
+ * deformation. Un navigateur sans observateur d'intersection, ou quelqu'un
+ * qui refuse le mouvement, voit la reponse - pas une phrase figee a
+ * mi-course.
  */
 
 import React, { useEffect, useRef, useState } from "react";
 
+// Le filtre est pose une seule fois par page : plusieurs definitions du meme
+// identifiant se disputeraient la reference et le rendu deviendrait
+// dependant de l'ordre de montage.
+function DefsGoutte() {
+  return (
+    <svg aria-hidden="true" focusable="false" width="0" height="0"
+      style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
+      <defs>
+        <filter id="nuvi-goutte">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="flou"/>
+          {/* Le contraste sur l'alpha : tout ce qui est a demi opaque devient
+              opaque ou disparait. C'est ce seuil qui recolle les lettres
+              voisines en une seule masse. */}
+          <feColorMatrix in="flou" mode="matrix"
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 21 -8" result="goutte"/>
+          <feBlend in="SourceGraphic" in2="goutte"/>
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
+function Lettres({ texte, etat, sens }) {
+  return [...texte].map((c, i) => (
+    <span key={i} aria-hidden="true"
+      className={"nuvi-morph-lettre " + etat}
+      style={{
+        // Le decalage suit la lecture : la masse se forme de gauche a droite
+        // au lieu de gonfler d'un bloc.
+        "--pas": (sens === "sort" ? i * 16 : i * 16 + 150) + "ms",
+      }}>{c}</span>
+  ));
+}
+
 export default function Morph({ paires, lang = "en", labels }) {
-  // `null` = l'etat de repos, c'est-a-dire la version reecrite. On ne
-  // redescend vers la version faible que si l'animation peut vraiment jouer.
-  const [etape, setEtape] = useState(null);
+  // "repos" : la version rangee, nette, sans filtre. C'est l'etat du document
+  // au chargement et celui vers lequel on revient toujours.
+  const [phase, setPhase] = useState("repos");
   const cadre = useRef(null);
 
   useEffect(() => {
@@ -44,17 +89,20 @@ export default function Morph({ paires, lang = "en", labels }) {
     if (typeof IntersectionObserver !== "function") return;
 
     let minuteurs = [];
+    const poser = (f, ms) => minuteurs.push(setTimeout(f, ms));
+
     const jouer = () => {
-      setEtape(0);                                   // on repart du texte faible
-      minuteurs.push(setTimeout(() => setEtape(1), 900));
+      minuteurs.forEach(clearTimeout);
+      minuteurs = [];
+      setPhase("avant");                 // on montre la formule molle
+      poser(() => setPhase("fond"), 950); // elle fond, l'autre nait
+      // Le filtre est retire des que la transformation finit : au repos, le
+      // texte doit etre net. Un flou permanent sur du serif se voit.
+      poser(() => setPhase("repos"), 1750);
     };
+
     const obs = new IntersectionObserver((entrees) => {
-      for (const e of entrees) {
-        // Rejoue a chaque entree dans le champ : redescendre pour revoir la
-        // transformation est le premier reflexe, et ne rien obtenir donne
-        // l'impression que la page est cassee.
-        if (e.isIntersecting) jouer();
-      }
+      for (const e of entrees) if (e.isIntersecting) jouer();
     }, { threshold: 0.55 });
     obs.observe(el);
     return () => {
@@ -64,11 +112,13 @@ export default function Morph({ paires, lang = "en", labels }) {
     };
   }, []);
 
-  // etape null ou 1 : on affiche la version rangee.
-  const apres = etape !== 0;
+  const avant = phase === "avant";
+  const fond = phase === "fond";
 
   return (
     <div ref={cadre} style={{ width: "100%" }}>
+      <DefsGoutte/>
+
       {labels && labels.lead ? (
         <p style={{
           margin: "0 0 18px",
@@ -79,40 +129,59 @@ export default function Morph({ paires, lang = "en", labels }) {
       ) : null}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        {paires.map((p, i) => (
-          <div key={i} style={{
-            // La grille superpose les deux etats dans la meme cellule : le
-            // bloc prend la taille du plus grand et ne bouge plus. Sans ca,
-            // chaque transformation decalerait tout ce qui suit.
-            display: "inline-grid", justifyItems: "start", alignItems: "baseline",
-            fontFamily: "'Fraunces', 'DM Serif Display', Georgia, serif",
-            fontSize: "clamp(20px, 3.1vw, 38px)",
-            lineHeight: 1.16, letterSpacing: "-0.025em",
-          }}>
-            <span aria-hidden={apres ? "true" : undefined} style={{
-              gridArea: "1 / 1",
-              color: "var(--nuvi-ink-muted, #5a5a62)",
-              opacity: apres ? 0 : 1,
-              filter: apres ? "blur(7px)" : "blur(0)",
-              transform: apres ? "translateY(-7px) scale(.97)" : "none",
-              transition: "opacity 620ms ease, filter 620ms ease, transform 620ms ease",
-              transitionDelay: (i * 130) + "ms",
-              textDecoration: "line-through",
-              textDecorationColor: "var(--nuvi-coral, #d97757)",
-              textDecorationThickness: "1px",
-            }}>{p.avant[lang] || p.avant.en}</span>
+        {paires.map((p, i) => {
+          const txtAvant = p.avant[lang] || p.avant.en;
+          const txtApres = p.apres[lang] || p.apres.en;
+          return (
+            <div key={i}
+              // Le filtre n'est pose que pendant la fusion, et sur la cellule
+              // entiere : c'est ce qui permet aux deux textes de se coller.
+              className={(avant || fond) ? "nuvi-morph-goutte" : undefined}
+              style={{
+                // La grille superpose les deux etats dans la meme cellule :
+                // le bloc prend la taille du plus grand et ne bouge plus.
+                display: "inline-grid", justifyItems: "start",
+                alignItems: "baseline",
+                fontFamily: "'Fraunces', 'DM Serif Display', Georgia, serif",
+                fontSize: "clamp(20px, 3.1vw, 38px)",
+                lineHeight: 1.16, letterSpacing: "-0.025em",
+                // Marge de securite pour que le flou du filtre ne soit pas
+                // coupe par la boite : une goutte tronquee au ras du texte
+                // se voit immediatement.
+                padding: "0 10px", margin: "0 -10px",
+              }}>
+              {/* Le morphing decoupe ses phrases en lettres pour les
+                  deformer une a une, et chaque lettre est masquee aux
+                  lecteurs d'ecran : une lettre seule ne se lit pas. La
+                  transformation leur est donc donnee ici, en clair et une
+                  seule fois - c'est elle qui porte le sens, pas le seul
+                  resultat. */}
+              <span className="sr-only" style={{ gridArea: "1 / 1" }}>
+                {txtAvant + " \u2192 " + txtApres}
+              </span>
 
-            <span style={{
-              gridArea: "1 / 1",
-              color: "var(--nuvi-purple, #5b3df5)", fontWeight: 500,
-              opacity: apres ? 1 : 0,
-              filter: apres ? "blur(0)" : "blur(7px)",
-              transform: apres ? "none" : "translateY(9px) scale(1.03)",
-              transition: "opacity 620ms ease, filter 620ms ease, transform 620ms ease",
-              transitionDelay: (i * 130 + 90) + "ms",
-            }}>{p.apres[lang] || p.apres.en}</span>
-          </div>
-        ))}
+              {/* La formule que la machine ne sait pas ranger. */}
+              <span style={{
+                gridArea: "1 / 1", color: "var(--nuvi-ink-muted, #5a5a62)",
+                // Presente seulement le temps de la transformation : hors de
+                // ce moment elle n'a pas a occuper le document.
+                visibility: (avant || fond) ? "visible" : "hidden",
+              }}>
+                <Lettres texte={txtAvant} sens="sort"
+                  etat={avant ? "nuvi-morph-pose" : "nuvi-morph-sort"}/>
+              </span>
+
+              {/* Le meme fait, dans la forme que la machine range. */}
+              <span style={{
+                gridArea: "1 / 1",
+                color: "var(--nuvi-purple, #5b3df5)",
+              }}>
+                <Lettres texte={txtApres} sens="entre"
+                  etat={avant ? "nuvi-morph-entre" : "nuvi-morph-pose"}/>
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {labels && labels.note ? (
