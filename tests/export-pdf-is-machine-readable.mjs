@@ -123,7 +123,7 @@ function checkCommon(label, out, failures) {
     failures.push(
       `${label} : le PDF exporte ne contient AUCUN texte extractible.\n` +
       "      C'est le bug de la couche image : un ATS ne lira rien du CV.\n" +
-      "      Verifier overlayTextLayer dans app/page.jsx."
+      "      Verifier overlayTextLayer dans app/AppRoot.jsx."
     );
     return;
   }

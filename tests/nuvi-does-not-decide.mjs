@@ -36,7 +36,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const RACINE = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PAGE = join(RACINE, "app/page.jsx");
+const PAGE = join(RACINE, "app/AppRoot.jsx");
 
 // Les deux faces de la regle, chacune reconnue par ce qu'elle interdit.
 const FACES = [
@@ -92,7 +92,7 @@ export async function run() {
   const i = source.indexOf("const QUI_DECIDE");
   if (i < 0) {
     failures.push(
-      "la regle QUI_DECIDE a disparu de app/page.jsx. Nuvi n'a plus rien qui "
+      "la regle QUI_DECIDE a disparu de app/AppRoot.jsx. Nuvi n'a plus rien qui "
       + "lui dise a qui appartient la decision, ni dans un sens ni dans l'autre."
     );
     return failures;
@@ -154,7 +154,7 @@ export async function run() {
       if (EXCLUS.some((e) => e.test(extrait))) continue;
       const ligne = source.slice(0, m.index).split("\n").length;
       failures.push(
-        `app/page.jsx:${ligne} a retrouve un "n'invente jamais" solitaire : `
+        `app/AppRoot.jsx:${ligne} a retrouve un "n'invente jamais" solitaire : `
         + `"${extrait.trim()}". Cette formule, seule, fait refuser Nuvi quand `
         + "le candidat demande quelque chose sur son propre CV. Utiliser "
         + "QUI_DECIDE, qui dit les deux faces."

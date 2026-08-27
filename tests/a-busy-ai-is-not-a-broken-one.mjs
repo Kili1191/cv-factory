@@ -112,7 +112,7 @@ export async function run() {
       failures.push(
         "window.__nuviAiCall n'existe pas : ce test ne peut pas atteindre la "
         + "fonction du produit et ne prouve donc RIEN. Soit l'exposition a ete "
-        + "retiree de app/page.jsx, soit elle n'a jamais ete branchee."
+        + "retiree de app/AppRoot.jsx, soit elle n'a jamais ete branchee."
       );
       await ctx.close();
       return failures;

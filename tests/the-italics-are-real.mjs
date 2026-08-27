@@ -36,7 +36,7 @@ const SANS_ITALIQUE = ["Space+Grotesk"];
 
 function urlsDuDepot() {
   const found = new Set();
-  for (const f of ["app/layout.jsx", "app/page.jsx"]) {
+  for (const f of ["app/layout.jsx", "app/AppRoot.jsx", "app/components/Landing.jsx"]) {
     const src = readFileSync(f, "utf8");
     const utile = src
       // Les lignes de commentaire contiennent des URL d'EXEMPLE, qui ne sont
