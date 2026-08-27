@@ -39,6 +39,7 @@ const SUITES = [
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],
   ["le pack candidature produit une lettre", "./application-pack-produces-a-letter.mjs"],
+  ["le diagnostic ne coute rien et ne bouge pas", "./the-diagnosis-costs-nothing.mjs"],
   ["chaque fonctionnalite produit un resultat", "./every-feature-produces-output.mjs"],
   ["le telephone atteint toutes les fonctionnalites", "./mobile-reaches-every-feature.mjs"],
 ];

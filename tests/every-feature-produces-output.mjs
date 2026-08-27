@@ -75,8 +75,16 @@ const AI_STUB = JSON.stringify({ content: [{ type: "text", text: JSON.stringify(
 // expect : texte qui ne peut venir que de la reponse de l'IA.
 const FEATURES = [
   {
+    // Ce panneau ne passe plus par l'IA : il mesure sur place. On attend donc
+    // un des verdicts que seule la mesure produit, et non le texte bouchon.
+    // Le motif couvre les cinq bandes de note, pour qu'un changement de
+    // ponderation ne fasse pas echouer un test qui parle de l'affichage.
+    // cta null : le panneau se lance seul. Il ne le pouvait pas tant qu'un
+    // appel partait au reseau - on ne depense pas sans qu'on le demande - et
+    // il le peut depuis que la mesure est locale et immediate.
     name: "Score recruteur", nav: "Score & Audits", sub: "Score recruteur",
-    cta: /Analyser mon CV/i, expect: /Profil credible, chiffres absents|Chiffre chaque bullet/,
+    cta: null,
+    expect: /Ce CV tient|une faiblesse nette|fragile devant un logiciel|le tri l'ecartera|presque rien a ranger/,
   },
   {
     name: "Audit ATS", nav: "Score & Audits", sub: "Audit ATS",

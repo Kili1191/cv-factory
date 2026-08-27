@@ -6,6 +6,7 @@ import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
+import { diagnostiquer } from "../lib/diagnostic";
 import { estTelephone } from "../lib/breakpoint.js";
 
 // === LAZY MODALS ===
@@ -3468,6 +3469,8 @@ export default function App() {
     }
   }, []);
 
+  // Le meme aiguillage sert au tutoriel et aux tests : piloter une
+  // fonctionnalite par son nom evite de dependre de la position d'un bouton.
   const tutOpenModal = useCallback((modalKey) => {
     if (modalKey === "open-coach") setShowCoach(true);
     else if (modalKey === "open-match") setShowOffer(true);
@@ -5293,91 +5296,38 @@ export default function App() {
   // Demande a l'IA d'evaluer 8 dimensions distinctes du CV. Retour : 8 scores
   // entre 0 et 100, une recommandation actionnable par axe, un verdict global,
   // et la priorite numero 1 a corriger.
-  const runScoreDashboard = useCallback(async () => {
-    if (!apiKey) { notify(T.nk); return; }
+  // LE TABLEAU DE BORD NE DEMANDE PLUS RIEN A PERSONNE
+  //
+  // Les huit axes etaient notes par le modele. Le meme CV n'obtenait donc pas
+  // deux fois la meme note : un score qui bouge sans que rien n'ait change
+  // n'est pas un score, c'est un tirage. Et l'axe "design" demandait de juger
+  // une mise en page a partir d'un bloc de texte - ce chiffre etait invente.
+  //
+  // Tout cela se COMPTE. lib/diagnostic.js le compte sur place :
+  //   - le resultat s'affiche immediatement, sans attente et sans cout ;
+  //   - le meme CV rend toujours exactement le meme rapport ;
+  //   - il n'y a plus besoin de cle d'API pour savoir ou l'on en est.
+  //
+  // Chaque note arrive avec la mesure qui la justifie. "3 puces sur 11
+  // portent un chiffre" se verifie d'un coup d'oeil et se corrige ;
+  // "ameliore l'impact de tes puces" ne se verifie pas.
+  const runScoreDashboard = useCallback(() => {
     if (cvIsEmpty) { notify(T.sd_no_cv); return; }
-    setDashLoading(true);
-    try {
-      const expT = (cv.experience || []).map(e =>
-        (e.title||"") + " chez " + (e.company||"")
-        + " (" + (e.period||"") + "): "
-        + (e.bullets||[]).filter(b=>b).join("; ")
-      ).join(" | ");
-      const cvT = "Nom: " + (cv.name||"")
-        + "\nTitre actuel: " + (cv.title||"")
-        + "\nLocalisation: " + (cv.location||"")
-        + "\nLinkedIn: " + (cv.linkedin ? "present" : "absent")
-        + "\nAccroche: " + (cv.summary||"")
-        + "\nExperiences: " + expT
-        + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
-        + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ")
-        + "\nCertifications: " + (cv.certifications||[]).filter(c=>c).join(", ")
-        + "\nLayout actuel: " + layout;
-      const langLine = locale === "en"
-        ? "Reponds STRICTEMENT en anglais. "
-        : "Reponds STRICTEMENT en francais. ";
-      const p = "Tu es expert RH senior, recruteur international avec 15 ans d'experience."
-        + " Analyse le CV ci-dessous selon 8 axes distincts."
-        + "\n\nCV:\n" + cvT
-        + "\n\nREGLES STRICTES:"
-        + "\n- Score chaque axe entre 0 et 100 (sois honnete et exigeant, pas complaisant)."
-        + "\n- Pour chaque axe, ecris une recommandation ACTIONNABLE en 1 phrase (max 25 mots)."
-        + "\n- La recommandation doit etre concrete : 'Reformule X', 'Ajoute Y', pas 'ameliore'."
-        + "\n- Le verdict global est une phrase synthese de 1 a 2 phrases (max 200 caracteres)."
-        + "\n- Le top_priority est l'action numero 1 si l'utilisateur ne fait QU'UNE chose (max 30 mots)."
-        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-        + "\n\nLES 8 AXES:"
-        + "\n1. title : Clarte du titre. Le titre rend-il le metier evident en 1 seconde ?"
-        + "\n2. bullets : Impact des bullets. Chiffres, verbes d'action, resultats concrets ?"
-        + "\n3. ats : Compatibilite ATS. Mots-cles metier, format propre (pas de tableaux pieges) ?"
-        + "\n4. relevance : Pertinence du parcours. Coherence avec le metier actuel/vise ?"
-        + "\n5. credibility : Credibilite. Phrases solides, sans bullshit ni exagerations vagues ?"
-        + "\n6. design : Style et design. Hierarchie visuelle, lisibilite, presentation pro ?"
-        + "\n7. readability : Lisibilite. Longueur appropriee, densite equilibree, sections proportionnees ?"
-        + "\n8. differentiation : Differenciation. Y-a-t-il un angle qui sort du lot, ou est-ce interchangeable ?"
-        + "\n\nFORMAT DE REPONSE (JSON strict) :"
-        + '\n{"global_score":75,"verdict_global":"phrase synthese","top_priority":"action numero 1 a faire","scores":['
-        + '{"id":"title","score":80,"reco":"phrase actionnable"},'
-        + '{"id":"bullets","score":60,"reco":"phrase actionnable"},'
-        + '{"id":"ats","score":75,"reco":"phrase actionnable"},'
-        + '{"id":"relevance","score":85,"reco":"phrase actionnable"},'
-        + '{"id":"credibility","score":70,"reco":"phrase actionnable"},'
-        + '{"id":"design","score":65,"reco":"phrase actionnable"},'
-        + '{"id":"readability","score":80,"reco":"phrase actionnable"},'
-        + '{"id":"differentiation","score":55,"reco":"phrase actionnable"}'
-        + ']}';
-      const txt = await aiCall(p);
-      const parsed = parseJSON(txt);
-      // [Fix] Le meme nombre portait trois noms. Le prompt demande
-      // `global_score`, ScoreDashboard lit `global_score`, mais le suivi de
-      // progression lisait `dashResult.score` et la reaction de Nuvi lisait
-      // `r.total`. Les deux derniers valaient donc toujours undefined :
-      // l'historique de score n'enregistrait jamais rien (la garde
-      // `typeof dashResult.score !== "number"` sortait a chaque fois), la
-      // modale Verdict ne se declenchait jamais, et Nuvi felicitait de la
-      // meme facon un CV a 20 et un CV a 95. On aligne les trois ici.
-      const r = parsed && typeof parsed === "object" ? { ...parsed } : parsed;
-      if (r && typeof r === "object") {
-        const g = [r.global_score, r.score, r.total]
-          .find(v => typeof v === "number" && !Number.isNaN(v));
-        if (typeof g === "number") {
-          r.global_score = g;
-          r.score = g;
-          r.total = g;
-        }
-      }
-      setDashResult(r);
-      // Nuvi reaction selon score
-      if (typeof nuviTrigger === 'function' && r && typeof r.total === "number") {
-        if (r.total >= 80) nuviTrigger('audit-excellent', { score: r.total });
-        else if (r.total < 50) nuviTrigger('audit-low', { score: r.total });
-        else nuviTrigger('feature-completed');
-      }
-    } catch (err) {
-      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    const r = diagnostiquer(cv, locale === "en" ? "en" : "fr");
+    // Le meme nombre porte trois noms selon les lecteurs de cet objet.
+    r.score = r.global_score;
+    r.total = r.global_score;
+    setDashResult(r);
+    // Expose le rapport pour la verification, comme aiCall plus haut :
+    // un test doit pouvoir prouver qu'aucun appel n'a eu lieu ET que
+    // deux passages rendent le meme chiffre.
+    if (typeof window !== "undefined") window.__nuviDernierDiagnostic = r;
+    if (typeof nuviTrigger === "function") {
+      if (r.total >= 80) nuviTrigger("audit-excellent", { score: r.total });
+      else if (r.total < 50) nuviTrigger("audit-low", { score: r.total });
+      else nuviTrigger("feature-completed");
     }
-    setDashLoading(false);
-  }, [apiKey, cv, cvIsEmpty, layout, locale, notify, T]);
+  }, [cv, cvIsEmpty, locale, notify, T]);
 
   // v17 chantier 4 : dispatcher des CTAs des cards de score vers le bon outil.
   // Chaque axe a un CTA different (ex "Editer le titre" -> ouvre SheetId).
@@ -6443,6 +6393,27 @@ export default function App() {
     }
     setLinkedInLoading(false);
   }, [apiKey, cv, cvIsEmpty, locale, notify, T]);
+
+  // Rejouer le diagnostic sur commande : c'est ce qui permet de prouver, de
+  // l'exterieur, que deux passages du meme CV rendent le meme chiffre.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.__nuviOpenModal = tutOpenModal;
+    window.__nuviRelancerDiagnostic = runScoreDashboard;
+  }, [tutOpenModal, runScoreDashboard]);
+
+  // LE PANNEAU CALCULE EN S'OUVRANT
+  //
+  // Il fallait cliquer "Analyser mon CV" puis attendre. C'etait justifie tant
+  // qu'un appel partait au reseau : on ne depense pas sans que l'utilisateur
+  // le demande. La mesure est locale et immediate, donc l'attente et le clic
+  // ne protegent plus rien - ils ne font que retarder une reponse deja prete.
+  // On recalcule a chaque ouverture, jamais une seule fois : le CV a pu
+  // changer entre deux consultations, et un chiffre perime est pire que pas
+  // de chiffre.
+  useEffect(() => {
+    if (showScore && !cvIsEmpty) runScoreDashboard();
+  }, [showScore, cvIsEmpty, runScoreDashboard]);
 
   // v17 chantier 9 : CV Compare.
   // Compare 2 versions du CV (selectionnees par leur id dans la liste 'versions')
