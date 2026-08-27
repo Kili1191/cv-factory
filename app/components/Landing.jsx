@@ -39,9 +39,9 @@ const T = {
     s2kicker: "The machine's turn",
     s2title: "This is what the software sees",
     s2body: "A tracking system does not read your CV. It extracts fields. What it cannot place, it drops - and what it drops was never in front of a human.",
-    s3kicker: "What survives",
-    s3title: "Same person. Different outcome.",
-    s3body: "Nothing here is invented. The facts are identical - only the words the machine looks for have changed.",
+    s3kicker: "Who this is for",
+    s3title: "The jobs nobody writes templates for.",
+    s3body: "CV tools are built for engineers and consultants. Most people are not. Nuvi is written for the shifts, the rounds and the rotas.",
     finalTitle: "Your turn.",
     finalSub: "Paste a job ad. Get the CV that matches it.",
     finalCta: "Open Nuvi",
@@ -49,6 +49,10 @@ const T = {
     kept: "What the software kept",
     keptSub: "out of twenty-two words.",
     scanLead: "Watch a tracking system read a CV.",
+    keptAll: "all of it",
+    answerLead: "The same person, written so the machine can file it.",
+    answerTitle: "Nothing invented. Only re-filed.",
+    answerBody: "Ten years is still ten years. The job title is one the software recognises, the result is a number instead of an adjective. Same facts, different fate.",
   },
   fr: {
     kicker: "Le CV qui passe l'ATS",
@@ -61,9 +65,9 @@ const T = {
     s2kicker: "Au tour de la machine",
     s2title: "Voila ce que le logiciel voit",
     s2body: "Un logiciel de tri ne lit pas ton CV. Il en extrait des champs. Ce qu'il n'arrive pas a ranger, il l'ecarte - et ce qu'il ecarte n'est jamais passe devant un humain.",
-    s3kicker: "Ce qui reste",
-    s3title: "Meme personne. Autre resultat.",
-    s3body: "Rien n'est invente ici. Les faits sont identiques : seuls les mots que la machine cherche ont change.",
+    s3kicker: "Pour qui",
+    s3title: "Les metiers pour qui personne n'ecrit de modele.",
+    s3body: "Les outils de CV sont faits pour les ingenieurs et les consultants. La plupart des gens ne le sont pas. Nuvi est ecrit pour les services, les tournees et les plannings.",
     finalTitle: "A toi.",
     finalSub: "Colle une annonce. Recupere le CV qui lui correspond.",
     finalCta: "Ouvrir Nuvi",
@@ -71,6 +75,10 @@ const T = {
     kept: "Ce que le logiciel a retenu",
     keptSub: "sur vingt-deux mots.",
     scanLead: "Regarde un logiciel de tri lire un CV.",
+    keptAll: "tout",
+    answerLead: "La meme personne, ecrite pour que la machine sache la ranger.",
+    answerTitle: "Rien d'invente. Juste range autrement.",
+    answerBody: "Dix ans restent dix ans. L'intitule est un que le logiciel connait, le resultat est un chiffre au lieu d'un adjectif. Memes faits, autre sort.",
   },
 };
 
@@ -96,21 +104,7 @@ const METIERS = {
        "Assistant d'education", "Assistant administratif"],
 };
 
-const CHAMPS = [
-  { cle: "name", avant: "Kilian M.", trouve: true },
-  { cle: "job_title", avant: "Passionate hospitality professional", trouve: false },
-  { cle: "years_experience", avant: "a decade of experience", trouve: false },
-  { cle: "skills", avant: "hard-working, team player", trouve: false },
-  { cle: "achievements", avant: "improved the business", trouve: false },
-];
 
-const APRES = [
-  { cle: "name", apres: "Kilian M." },
-  { cle: "job_title", apres: "Bar Manager" },
-  { cle: "years_experience", apres: "10" },
-  { cle: "skills", apres: "GP control, stock, team of 12" },
-  { cle: "achievements", apres: "78% beverage GP, 200 covers/service" },
-];
 
 function useVu(ref, seuil = 0.35) {
   const [vu, setVu] = useState(false);
@@ -272,114 +266,56 @@ export default function Landing({ lang = "en" }) {
         </div>
       </div>
 
-      {/* ===== 2. LE MECANISME ===== */}
+      {/* ===== 2. LA REPONSE, AVEC LE MEME MECANISME =====
+
+          Cette section montrait un tableau d'extraction. Depuis que le heros
+          FAIT le balayage, ce tableau redisait ce qu'on venait de voir, en
+          moins bien - deux preuves du meme fait, dont l'une rangee dans une
+          grille.
+
+          Elle repond maintenant : la meme phrase, reecrite, et la meme ligne
+          de lecture qui la traverse. Cette fois rien ne meurt. La symetrie
+          fait tout le travail d'explication, et on compare sans avoir a lire
+          une comparaison. */}
       <section ref={refScan} className="nuvi-scroll-in" style={{
-        padding: "clamp(56px, 11vh, 120px) clamp(18px, 5vw, 40px)",
+        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
         borderBottom: "1px solid " + Hair,
-        maxWidth: 1080, margin: "0 auto",
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
       }}>
-        {eyebrow(t.s2kicker)}
+        {eyebrow(t.answerLead)}
+        <ScanHero lang={lang} mode="garde"
+          labels={{ kept: t.kept, keptSub: t.keptAll ? "" : t.keptSub, keptAll: t.keptAll }}/>
         <h2 style={{
           fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(26px, 4vw, 48px)", lineHeight: 1.12,
-          letterSpacing: "-0.025em", margin: "0 0 14px", maxWidth: 20 + "ch",
-        }}>{t.s2title}</h2>
+          fontSize: "clamp(21px, 2.9vw, 34px)", lineHeight: 1.18,
+          letterSpacing: "-0.025em", margin: "34px 0 12px", maxWidth: 24 + "ch",
+        }}>{t.answerTitle}</h2>
         <p style={{
           fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.6,
-          color: Muted, maxWidth: 58 + "ch", margin: "0 0 34px",
-        }}>{t.s2body}</p>
-
-        {/* Le tableau d'extraction. Chaque ligne s'allume l'une apres
-            l'autre : on voit le logiciel passer, et on voit ce qu'il laisse. */}
-        <div style={{
-          border: "1px solid " + Hair, borderRadius: 14, overflow: "hidden",
-          background: "var(--nuvi-paper, #fff)",
-        }}>
-          {CHAMPS.map((c, i) => (
-            <div key={c.cle} style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(96px, 24%) 1fr auto",
-              gap: "clamp(8px, 2vw, 18px)", alignItems: "center",
-              padding: "clamp(11px, 1.6vw, 15px) clamp(12px, 2.4vw, 20px)",
-              borderTop: i ? "1px solid " + Hair : "none",
-              opacity: vuScan ? 1 : 0,
-              transform: vuScan ? "none" : "translateY(6px)",
-              transition: `opacity 420ms ease-out ${i * 110}ms, transform 420ms ease-out ${i * 110}ms`,
-            }}>
-              <code style={{
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: "clamp(10.5px, 1.2vw, 12px)", color: Muted,
-                overflow: "hidden", textOverflow: "ellipsis",
-              }}>{c.cle}</code>
-              <span style={{
-                fontSize: "clamp(12.5px, 1.4vw, 15px)",
-                color: c.trouve ? Ink : Muted,
-                textDecoration: c.trouve ? "none" : "line-through",
-                textDecorationColor: Hair,
-                minWidth: 0, overflow: "hidden", textOverflow: "ellipsis",
-              }}>{c.avant}</span>
-              <span style={{
-                fontFamily: Sans, fontSize: 10, fontWeight: 700,
-                letterSpacing: "0.08em", textTransform: "uppercase",
-                whiteSpace: "nowrap",
-                color: c.trouve ? "var(--nuvi-green, #16a34a)" : "var(--nuvi-coral, #d97757)",
-              }}>{c.trouve
-                ? (lang === "en" ? "read" : "lu")
-                : (lang === "en" ? "dropped" : "ecarte")}</span>
-            </div>
-          ))}
-        </div>
+          color: Muted, maxWidth: 56 + "ch", margin: 0,
+        }}>{t.answerBody}</p>
       </section>
 
-      {/* ===== 3. CE QUI RESTE ===== */}
+      {/* ===== 3. POUR QUI =====
+          Le second tableau disait la meme chose que le premier. Il a laisse la
+          place a la seule information que la page n'avait pas encore donnee :
+          a qui Nuvi s'adresse. Les outils de CV ecrivent des modeles pour
+          ingenieurs et consultants ; le bandeau au-dessus nomme les autres. */}
       <section ref={refApres} className="nuvi-scroll-in" style={{
-        padding: "clamp(56px, 11vh, 120px) clamp(18px, 5vw, 40px)",
+        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
         borderBottom: "1px solid " + Hair,
-        maxWidth: 1080, margin: "0 auto",
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
       }}>
         {eyebrow(t.s3kicker)}
         <h2 style={{
           fontFamily: Serif, fontWeight: 400,
           fontSize: "clamp(26px, 4vw, 48px)", lineHeight: 1.12,
-          letterSpacing: "-0.025em", margin: "0 0 14px", maxWidth: 20 + "ch",
+          letterSpacing: "-0.025em", margin: "0 0 14px", maxWidth: 22 + "ch",
         }}>{t.s3title}</h2>
         <p style={{
           fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.6,
-          color: Muted, maxWidth: 58 + "ch", margin: "0 0 34px",
+          color: Muted, maxWidth: 58 + "ch", margin: 0,
         }}>{t.s3body}</p>
-
-        <div style={{
-          border: "1px solid " + Hair, borderRadius: 14, overflow: "hidden",
-          background: "var(--nuvi-paper, #fff)",
-        }}>
-          {APRES.map((c, i) => (
-            <div key={c.cle} style={{
-              display: "grid",
-              gridTemplateColumns: "minmax(96px, 24%) 1fr auto",
-              gap: "clamp(8px, 2vw, 18px)", alignItems: "center",
-              padding: "clamp(11px, 1.6vw, 15px) clamp(12px, 2.4vw, 20px)",
-              borderTop: i ? "1px solid " + Hair : "none",
-              opacity: vuApres ? 1 : 0,
-              transform: vuApres ? "none" : "translateY(6px)",
-              transition: `opacity 420ms ease-out ${i * 110}ms, transform 420ms ease-out ${i * 110}ms`,
-            }}>
-              <code style={{
-                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                fontSize: "clamp(10.5px, 1.2vw, 12px)", color: Muted,
-                overflow: "hidden", textOverflow: "ellipsis",
-              }}>{c.cle}</code>
-              <span style={{
-                fontSize: "clamp(12.5px, 1.4vw, 15px)", color: Ink, fontWeight: 500,
-                minWidth: 0, overflow: "hidden", textOverflow: "ellipsis",
-              }}>{c.apres}</span>
-              <span style={{
-                fontFamily: Sans, fontSize: 10, fontWeight: 700,
-                letterSpacing: "0.08em", textTransform: "uppercase",
-                whiteSpace: "nowrap", color: "var(--nuvi-green, #16a34a)",
-              }}>{lang === "en" ? "read" : "lu"}</span>
-            </div>
-          ))}
-        </div>
       </section>
 
       {/* ===== 4. LA DEMANDE ===== */}
