@@ -49,6 +49,30 @@ async function ouvrir(browser, ecran, chemin = "/") {
   return { ctx, page, erreurs };
 }
 
+/**
+ * Les cas de relais ne lisent qu'une chose : ou l'on a atterri. Les faire
+ * passer par `ouvrir` les obligeait a attendre que /app soit entierement
+ * charge, reseau au repos - 264 ko, pendant qu'une suite entiere se dispute
+ * la machine. Le test tombait alors sur un depassement de 30 s qui ne disait
+ * rien du relais lui-meme. On attend desormais l'atterrissage, pas la fin du
+ * chargement, et on rend la destination reelle meme quand elle ne vient pas.
+ */
+async function ouAtterrit(browser, ecran, chemin, attendu) {
+  const { nom, ...opts } = ecran;
+  const ctx = await browser.newContext(opts);
+  const page = await ctx.newPage();
+  await page.goto(BASE_URL + chemin, { waitUntil: "domcontentloaded" });
+  try {
+    await page.waitForFunction(
+      (vise) => location.pathname === vise, attendu, { timeout: 15000 });
+  } catch {
+    // Pas d'echec ici : la destination reellement atteinte est plus
+    // instructive qu'un message de depassement.
+  }
+  const ou = await page.evaluate(() => location.pathname);
+  return { ctx, ou };
+}
+
 export async function run() {
   const failures = [];
   const server = await startServer();
@@ -111,8 +135,7 @@ export async function run() {
       { nom: "code d'echange", chemin: "/?code=4%2F0AVGzR1Dexemple" },
     ];
     for (const r of RETOURS) {
-      const { ctx, page } = await ouvrir(browser, ECRANS[0], r.chemin);
-      const ou = await page.evaluate(() => location.pathname);
+      const { ctx, ou } = await ouAtterrit(browser, ECRANS[0], r.chemin, "/app");
       if (ou !== "/app") {
         failures.push(
           `${r.nom} : le retour de connexion reste sur "${ou}" au lieu d'etre `
@@ -125,8 +148,7 @@ export async function run() {
 
     // --- 5. L'application deja installee est relayee --------------------
     {
-      const { ctx, page } = await ouvrir(browser, ECRANS[0], "/?src=homescreen");
-      const ou = await page.evaluate(() => location.pathname);
+      const { ctx, ou } = await ouAtterrit(browser, ECRANS[0], "/?src=homescreen", "/app");
       if (ou !== "/app") {
         failures.push(
           `une application deja posee sur un ecran d'accueil ouvre "${ou}" au lieu `
@@ -139,8 +161,8 @@ export async function run() {
 
     // --- 6. Une adresse ordinaire n'est PAS relayee ---------------------
     {
-      const { ctx, page } = await ouvrir(browser, ECRANS[0], "/?utm_source=linkedin");
-      const ou = await page.evaluate(() => location.pathname);
+      const { ctx, ou } = await ouAtterrit(
+        browser, ECRANS[0], "/?utm_source=linkedin", "/app");
       if (ou !== "/") {
         failures.push(
           `une adresse ordinaire (?utm_source=...) est relayee vers "${ou}". `
