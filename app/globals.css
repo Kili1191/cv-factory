@@ -277,3 +277,92 @@ body.cvf-dark.nuvi-grain::after {
 @media print {
   .nuvi-grain::after { display: none !important; }
 }
+
+/* ============================================================
+ * LE DEFILEMENT QUI ANIME, SANS UNE LIGNE DE JAVASCRIPT
+ * ============================================================
+ *
+ * animation-timeline lie une animation a la position d'un element dans le
+ * defilement, nativement. C'est ce qui remplace aujourd'hui les
+ * bibliotheques de scroll : rien a telecharger, rien a executer avant le
+ * premier pixel, et le navigateur peut le faire tourner hors du fil
+ * principal - donc ca ne saccade pas quand la page travaille.
+ *
+ * Nuvi s'interdit toute dependance chargee a l'execution, et une suite le
+ * verifie. Une bibliotheque d'animation de quarante kilo-octets serait de
+ * toute facon exclue ici.
+ *
+ * LE SENS DU REPLI EST LA SEULE CHOSE QUI COMPTE
+ *
+ * Tous les navigateurs ne connaissent pas encore animation-timeline. La
+ * regle est donc : l'etat par defaut est VISIBLE, et l'animation ne
+ * s'ajoute que la ou elle est comprise. Ecrit dans l'autre sens - masquer
+ * par defaut, reveler par l'animation - un navigateur sans la
+ * fonctionnalite afficherait une page blanche. C'est l'erreur classique de
+ * ce motif, et elle ne se voit jamais sur la machine de celui qui l'ecrit.
+ */
+
+/* L'apparition : le bloc monte et se revele en entrant dans la vue. */
+@keyframes nuviEnScene {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Le tirage d'une ligne : sert au trait qui accompagne les sections. */
+@keyframes nuviTrait {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.nuvi-scroll-in { opacity: 1; }
+.nuvi-trait { transform-origin: left center; }
+
+@supports (animation-timeline: view()) {
+  .nuvi-scroll-in {
+    animation: nuviEnScene linear both;
+    animation-timeline: view();
+    /* L'animation se joue entre le moment ou le bloc entre par le bas et
+       celui ou il a parcouru 42% de la fenetre. Au-dela, il est pose : on
+       ne veut pas que du texte bouge encore pendant qu'on le lit. */
+    animation-range: entry 0% cover 42%;
+  }
+  .nuvi-trait {
+    animation: nuviTrait linear both;
+    animation-timeline: view();
+    animation-range: entry 10% cover 38%;
+  }
+}
+
+/* Le mouvement se refuse. Quelqu'un qui a demande moins d'animation voit
+   tout, immediatement, sans rien qui bouge. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-scroll-in, .nuvi-trait {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+ * LE BANDEAU DEFILANT
+ * ============================================================
+ *
+ * Deux copies identiques qui glissent : quand la premiere a entierement
+ * quitte l'ecran, la seconde est exactement a sa place de depart, et la
+ * boucle est invisible. Avec une seule copie, on verrait le vide revenir.
+ *
+ * aria-hidden sur la seconde : elle est un doublon visuel, et un lecteur
+ * d'ecran n'a aucune raison de lire deux fois la meme liste.
+ */
+@keyframes nuviBandeau {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.nuvi-bandeau {
+  display: flex;
+  width: max-content;
+  animation: nuviBandeau 38s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-bandeau { animation: none; }
+}

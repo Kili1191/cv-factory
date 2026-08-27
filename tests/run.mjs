@@ -26,6 +26,7 @@ const SUITES = [
   ["Nuvi ne decide pas a la place du candidat", "./nuvi-does-not-decide.mjs"],
   ["une IA saturee n'est pas une IA en panne", "./a-busy-ai-is-not-a-broken-one.mjs"],
   ["le parcours arrive vraiment a l'ecran", "./the-career-record-reaches-the-screen.mjs"],
+  ["la vitrine fait son travail", "./the-front-door-does-its-job.mjs"],
   ["le lien partage dit la verite", "./the-shared-link-tells-the-truth.mjs"],
   ["crash test avant mise en ligne", "./ready-to-launch.mjs"],
   ["toutes les largeurs d'ecran tiennent", "./every-screen-size-works.mjs"],

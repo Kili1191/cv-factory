@@ -73,6 +73,22 @@ const T = {
 // cherche. "trouve: false" n'est pas une mise en scene : c'est ce qui arrive
 // a un CV ecrit pour l'oeil humain, ou l'intitule est une formule et les
 // resultats sont des adjectifs.
+// LE BANDEAU : LES METIERS POUR QUI NUVI EXISTE
+//
+// Ce ne sont pas des mots pris au hasard pour faire du mouvement. Ce sont
+// les metiers que le produit sert vraiment, et ceux que les outils de CV
+// ignorent - on ecrit des modeles pour ingenieurs et consultants, pas pour
+// un aide-soignant ou un preparateur de commandes. Les nommer, c'est dire
+// a qui l'on parle avant meme la premiere phrase.
+const METIERS = {
+  en: ["Waiter", "Carer", "Delivery driver", "Sales assistant", "Warehouse operative",
+       "Receptionist", "Chef de partie", "Bar Manager", "Cleaner", "Security officer",
+       "Teaching assistant", "Admin assistant"],
+  fr: ["Serveur", "Aide-soignant", "Chauffeur-livreur", "Vendeuse", "Preparateur de commandes",
+       "Receptionniste", "Cuisinier", "Barman", "Agent d'entretien", "Agent de securite",
+       "Assistant d'education", "Assistant administratif"],
+};
+
 const CHAMPS = [
   { cle: "name", avant: "Kilian M.", trouve: true },
   { cle: "job_title", avant: "Passionate hospitality professional", trouve: false },
@@ -207,8 +223,41 @@ export default function Landing({ lang = "en" }) {
         {lien(t.cta, t.ctaSub, true)}
       </section>
 
+      {/* Le bandeau. Deux copies : quand la premiere quitte l'ecran, la
+          seconde est exactement a sa place de depart et la boucle ne se voit
+          pas. La seconde est aria-hidden - un lecteur d'ecran n'a pas a lire
+          deux fois la meme liste. */}
+      <div style={{
+        borderBottom: "1px solid " + Hair,
+        overflow: "hidden", padding: "18px 0",
+        maskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+        WebkitMaskImage: "linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent)",
+      }}>
+        <div className="nuvi-bandeau">
+          {[0, 1].map((copie) => (
+            <div key={copie} aria-hidden={copie === 1 ? "true" : undefined}
+              style={{ display: "flex", flexShrink: 0 }}>
+              {(METIERS[lang] || METIERS.en).map((m) => (
+                <span key={copie + m} style={{
+                  fontFamily: Serif, fontSize: "clamp(15px, 2vw, 22px)",
+                  color: Muted, whiteSpace: "nowrap",
+                  padding: "0 clamp(14px, 2.4vw, 28px)",
+                  display: "inline-flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 28px)",
+                }}>
+                  {m}
+                  <span aria-hidden="true" style={{
+                    width: 4, height: 4, borderRadius: "50%",
+                    background: "var(--nuvi-purple, #5b3df5)", opacity: 0.45,
+                  }}/>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* ===== 2. LE MECANISME ===== */}
-      <section ref={refScan} style={{
+      <section ref={refScan} className="nuvi-scroll-in" style={{
         padding: "clamp(56px, 11vh, 120px) clamp(18px, 5vw, 40px)",
         borderBottom: "1px solid " + Hair,
         maxWidth: 1080, margin: "0 auto",
@@ -267,7 +316,7 @@ export default function Landing({ lang = "en" }) {
       </section>
 
       {/* ===== 3. CE QUI RESTE ===== */}
-      <section ref={refApres} style={{
+      <section ref={refApres} className="nuvi-scroll-in" style={{
         padding: "clamp(56px, 11vh, 120px) clamp(18px, 5vw, 40px)",
         borderBottom: "1px solid " + Hair,
         maxWidth: 1080, margin: "0 auto",
