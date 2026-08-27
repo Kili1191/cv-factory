@@ -399,11 +399,10 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
         borderRadius:RadiusMd, padding:"11px 13px", marginBottom:14,
       }}>
         <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:3, fontFamily:Serif}}>
-          CV sur mesure pour une offre
+          {T.mt_tailored_t}
         </div>
         <div style={{fontSize:12, color:InkMuted, lineHeight:1.6}}>
-          Colle l'offre, Nuvi adapte ton CV existant. Tu gardes la main sur
-          ce qui y figure.
+          {T.mt_tailored_s}
         </div>
       </div>
 
@@ -413,12 +412,12 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           borderRadius:RadiusMd, padding:"9px 12px", marginBottom:10,
           fontSize:12, color:"#7f1d1d",
         }}>
-          Ton CV est vide, importe ou genere un CV d'abord.
+          {T.mt_empty_cv}
         </div>
       )}
-      <label style={LBL}>Offre d'emploi</label>
+      <label style={LBL}>{T.mt_offer_label}</label>
       <textarea value={offer} onChange={e=>setOffer(e.target.value)}
-        placeholder={"Colle l'offre d'emploi complete ici:\n- Intitule du poste\n- Missions\n- Profil recherche\n- Competences requises"}
+        placeholder={T.mt_offer_ph}
         rows={11}
         style={{...IN({resize:"vertical", marginBottom:14, fontSize:12, lineHeight:1.7})}}/>
       {ecart && (ecart.aReformuler.length > 0 || ecart.titre.etat !== "exact" || ecart.manquantes.length > 0) && (
@@ -587,11 +586,11 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             boxShadow: load||!apiKey||!offer.trim() ? "none" : "0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
-        Adapter mon CV a cette offre
+        {T.mt_cta}
       </button>
       {!apiKey && (
         <div style={{fontSize:11, color:InkMuted, textAlign:"center", marginTop:7}}>
-          Cle API requise dans Outils
+          {T.mt_need_key}
         </div>
       )}
     </div>

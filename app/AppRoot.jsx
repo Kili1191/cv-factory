@@ -3472,26 +3472,26 @@ export default function App() {
   // Le meme aiguillage sert au tutoriel et aux tests : piloter une
   // fonctionnalite par son nom evite de dependre de la position d'un bouton.
   const tutOpenModal = useCallback((modalKey) => {
-    if (modalKey === "open-coach") setShowCoach(true);
-    else if (modalKey === "open-match") setShowOffer(true);
+    if (modalKey === "open-coach") ouvrirSeul(setShowCoach);
+    else if (modalKey === "open-match") ouvrirSeul(setShowOffer);
     else if (modalKey === "open-pack") {
       setPackCtx({ offer: "Marketing Manager B2B", matchRes: null });
-      setShowPack(true);
+      ouvrirSeul(setShowPack);
     }
-    else if (modalKey === "open-score") setShowScore(true);
-    else if (modalKey === "open-truth") setShowTruth(true);
-    else if (modalKey === "open-gap") setShowGapRepair(true);
-    else if (modalKey === "open-positioning") setShowPos(true);
-    else if (modalKey === "open-interview") setShowInterview(true);
-    else if (modalKey === "open-multicv") setShowMultiCV(true);
-    else if (modalKey === "open-versions") setShowVersions(true);
-    else if (modalKey === "open-compare") setShowCompare(true);
-    else if (modalKey === "open-customize") setShowCustomize(true);
-    else if (modalKey === "open-translate") setShowTranslate(true);
-    else if (modalKey === "open-linkedin") setShowLinkedIn(true);
-    else if (modalKey === "open-audit") setShowAudit(true);
-    else if (modalKey === "open-tracker") setShowApplications(true);
-    else if (modalKey === "open-adjust") setShowAdjust(true);
+    else if (modalKey === "open-score") ouvrirSeul(setShowScore);
+    else if (modalKey === "open-truth") ouvrirSeul(setShowTruth);
+    else if (modalKey === "open-gap") ouvrirSeul(setShowGapRepair);
+    else if (modalKey === "open-positioning") ouvrirSeul(setShowPos);
+    else if (modalKey === "open-interview") ouvrirSeul(setShowInterview);
+    else if (modalKey === "open-multicv") ouvrirSeul(setShowMultiCV);
+    else if (modalKey === "open-versions") ouvrirSeul(setShowVersions);
+    else if (modalKey === "open-compare") ouvrirSeul(setShowCompare);
+    else if (modalKey === "open-customize") ouvrirSeul(setShowCustomize);
+    else if (modalKey === "open-translate") ouvrirSeul(setShowTranslate);
+    else if (modalKey === "open-linkedin") ouvrirSeul(setShowLinkedIn);
+    else if (modalKey === "open-audit") ouvrirSeul(setShowAudit);
+    else if (modalKey === "open-tracker") ouvrirSeul(setShowApplications);
+    else if (modalKey === "open-adjust") ouvrirSeul(setShowAdjust);
   }, []);
 
   const tutCloseModal = useCallback(() => {
@@ -3572,6 +3572,8 @@ export default function App() {
   const [gmailConnected, setGmailConnected] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
+
+
   const [cloud, setCloud] = useState({ status: "off", user: null });
   // Onglet sur lequel ouvrir CustomizeSheet ("colors" par defaut, "layout"
   // quand on arrive par l'entree Modeles de la barre laterale).
@@ -4768,6 +4770,47 @@ export default function App() {
   // conversation empathique sur la peur, ou continuer (dissuasif).
   // ============================================================
   const [showVerdict, setShowVerdict] = useState(false);
+
+  // UN PANNEAU A LA FOIS
+  //
+  // Place APRES le dernier etat de la liste, et pas avant l'aiguillage qui
+  // s'en sert : les setteurs sont des const, et les citer plus haut les
+  // touche dans leur zone morte temporelle. Le rendu serveur le refusait -
+  // "Cannot access before initialization" - et la page /app ne se
+  // construisait plus du tout.
+  //
+  // Chaque fonctionnalite avait son propre booleen d'ouverture, et rien ne
+  // fermait les autres. Ouvrir Match par-dessus le Coach par-dessus le Score
+  // les empilait : trois panneaux vivants, dont deux invisibles sous le
+  // troisieme, chacun gardant son etat et son travail en cours. En fermant
+  // celui du dessus on retombait sur le precedent, qu'on croyait ferme
+  // depuis longtemps - un effet de cascade dont on ne sortait qu'en fermant
+  // trois fois.
+  //
+  // Les setteurs de useState sont stables, donc cette liste se construit une
+  // fois. Les couches qui se posent LEGITIMEMENT par-dessus un panneau n'en
+  // font pas partie : le choix de format pendant un telechargement, le
+  // verdict apres un score, la connexion, l'installation et le tutoriel se
+  // superposent a dessein.
+  const panneauxExclusifs = useMemo(() => [
+    setShowAudit, setShowAdjust, setShowTranslate, setShowVersions,
+    setShowGapRepair, setShowInterview, setShowCoach, setShowLinkedIn,
+    setShowCompare, setShowApplications, setShowMultiCV, setShowSettings,
+    setShowActivity, setShowCustomize, setShowLive, setShowJobs,
+    setShowOffer, setShowPack, setShowPos, setShowScore, setShowTruth,
+    // Jamais ouvertes par cette fonction - seulement fermees. Le verdict
+    // et le choix de format se posent sur un panneau a dessein, mais
+    // survivaient a la navigation : on quittait le Score pour Match et le
+    // verdict restait au-dessus.
+    setShowVerdict, setShowFormatChoice,
+  ], []);
+
+  /** Ouvre un panneau en fermant tous les autres. */
+  const ouvrirSeul = useCallback((setter) => {
+    for (const fermer of panneauxExclusifs) if (fermer !== setter) fermer(false);
+    if (setter) setter(true);
+  }, [panneauxExclusifs]);
+
   const [verdictDismissed, setVerdictDismissed] = useState(false);
   // Tracking : edits et delta de score recent pour data Hoffman/Lau
   const [editsCount, setEditsCount] = useState(0);
@@ -4813,12 +4856,22 @@ export default function App() {
   useEffect(() => {
     if (!hydrated) return;
     if (!dashResult || typeof dashResult.score !== "number") return;
-    if (dashResult.score >= 85 && !verdictDismissed && !showVerdict) {
+    // LE VERDICT NE SURVIT PAS AU PANNEAU QUI LE JUSTIFIE
+    //
+    // La condition ne regardait pas si le Score etait encore ouvert. Comme
+    // elle se redeclenche des que `showVerdict` retombe a faux, toute
+    // fermeture qui ne passe pas par "j'ai vu" le faisait revenir 600 ms plus
+    // tard : on quittait le Score pour Match et le verdict se reposait
+    // au-dessus, mesure a l'ecran. C'etait aussi vrai pour l'utilisateur qui
+    // le fermait autrement que par son bouton.
+    //
+    // Un verdict parle d'un score : hors de son panneau, il n'a rien a dire.
+    if (showScore && dashResult.score >= 85 && !verdictDismissed && !showVerdict) {
       // Petit delai pour laisser l'animation du score se terminer
       const timer = setTimeout(() => setShowVerdict(true), 600);
       return () => clearTimeout(timer);
     }
-  }, [hydrated, dashResult, verdictDismissed, showVerdict]);
+  }, [hydrated, dashResult, verdictDismissed, showVerdict, showScore]);
 
   // Handlers du verdict
   const handleVerdictReady = useCallback(() => {
@@ -7872,24 +7925,24 @@ export default function App() {
             setShowCoach(false);
             // Petite tempo pour transition propre
             setTimeout(() => {
-              if (m === "audit")           setShowAudit(true);
-              else if (m === "score")      setShowScore(true);
-              else if (m === "offer")      setShowOffer(true);
-              else if (m === "match")      setShowOffer(true);
-              else if (m === "pack")       setShowPack(true);
+              if (m === "audit")           ouvrirSeul(setShowAudit);
+              else if (m === "score")      ouvrirSeul(setShowScore);
+              else if (m === "offer")      ouvrirSeul(setShowOffer);
+              else if (m === "match")      ouvrirSeul(setShowOffer);
+              else if (m === "pack")       ouvrirSeul(setShowPack);
               else if (m === "truth")      { runTruthCheck && runTruthCheck(); }
               else if (m === "pos")        { runPositioning && runPositioning(); }
-              else if (m === "gap")        setShowGapRepair(true);
-              else if (m === "translate")  setShowTranslate(true);
-              else if (m === "adjust")     setShowAdjust(true);
-              else if (m === "versions")   setShowVersions(true);
-              else if (m === "compare")    setShowCompare(true);
-              else if (m === "multicv")    setShowMultiCV(true);
-              else if (m === "tracking")   setShowApplications(true);
-              else if (m === "customize")  setShowCustomize(true);
-              else if (m === "interview")  setShowInterview(true);
-              else if (m === "linkedin")   setShowLinkedIn(true);
-              else if (m === "activity")   setShowActivity(true);
+              else if (m === "gap")        ouvrirSeul(setShowGapRepair);
+              else if (m === "translate")  ouvrirSeul(setShowTranslate);
+              else if (m === "adjust")     ouvrirSeul(setShowAdjust);
+              else if (m === "versions")   ouvrirSeul(setShowVersions);
+              else if (m === "compare")    ouvrirSeul(setShowCompare);
+              else if (m === "multicv")    ouvrirSeul(setShowMultiCV);
+              else if (m === "tracking")   ouvrirSeul(setShowApplications);
+              else if (m === "customize")  ouvrirSeul(setShowCustomize);
+              else if (m === "interview")  ouvrirSeul(setShowInterview);
+              else if (m === "linkedin")   ouvrirSeul(setShowLinkedIn);
+              else if (m === "activity")   ouvrirSeul(setShowActivity);
             }, 150);
           }}
         />
@@ -8357,17 +8410,17 @@ export default function App() {
                 // Rien a ouvrir, le main contient deja le CV preview
               } else if (key === "adjust") {
                 // Ouvre l'AdjustModal (chat-style avec Nuvi)
-                setShowAdjust(true);
+                ouvrirSeul(setShowAdjust);
               } else if (key === "jobs") {
-                setShowJobs(true);
+                ouvrirSeul(setShowJobs);
               } else if (key === "target") {
-                setShowOffer(true);
+                ouvrirSeul(setShowOffer);
               } else if (key === "pack") {
-                setShowPack(true);
+                ouvrirSeul(setShowPack);
               } else if (key === "live") {
-                setShowLive(true);
+                ouvrirSeul(setShowLive);
               } else if (key === "tracking") {
-                setShowApplications(true);
+                ouvrirSeul(setShowApplications);
               }
               // Les items avec sub-items (edit, audits, cvs, design)
               // ne font rien sur onSelect - ils ouvrent leur sub-menu via onSubSelect
@@ -8378,21 +8431,21 @@ export default function App() {
                 // edit_id, edit_exp, edit_edu, edit_sk
                 setModal(subKey);
               } else if (parentKey === "audits") {
-                if (subKey === "score")      setShowScore(true);
+                if (subKey === "score")      ouvrirSeul(setShowScore);
                 else if (subKey === "pos")   { runPositioning && runPositioning(); }
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
-                else if (subKey === "ats")   setShowAudit(true);
-                else if (subKey === "interview") setShowInterview(true);
+                else if (subKey === "ats")   ouvrirSeul(setShowAudit);
+                else if (subKey === "interview") ouvrirSeul(setShowInterview);
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
                   } else {
-                    setShowGapRepair(true);
+                    ouvrirSeul(setShowGapRepair);
                   }
                 }
               } else if (parentKey === "cvs") {
-                if (subKey === "list")           setShowMultiCV(true);
-                else if (subKey === "versions")  setShowVersions(true);
+                if (subKey === "list")           ouvrirSeul(setShowMultiCV);
+                else if (subKey === "versions")  ouvrirSeul(setShowVersions);
                 else if (subKey === "compare")   {
                   if (versions.length < 2) {
                     // [Fix] `lang` n'existe pas dans ce composant : la variable
@@ -8403,17 +8456,17 @@ export default function App() {
                       ? "Il faut au moins 2 versions pour comparer."
                       : "At least 2 versions needed to compare.");
                   } else {
-                    setShowCompare(true);
+                    ouvrirSeul(setShowCompare);
                   }
                 }
                 // [Fix] "Modeles" ouvrait la strategie multi-CV, qui parle de
                 // versions sauvegardees et n'a rien d'un choix de modele. Elle
                 // ouvre desormais la mise en page, la ou les modeles vivent.
-                else if (subKey === "templates") { setCustomizeTab("layout"); setShowCustomize(true); }
+                else if (subKey === "templates") { setCustomizeTab("layout"); ouvrirSeul(setShowCustomize); }
               } else if (parentKey === "design") {
-                if (subKey === "custom")    setShowCustomize(true);
-                else if (subKey === "translate") setShowTranslate(true);
-                else if (subKey === "linkedin")  setShowLinkedIn(true);
+                if (subKey === "custom")    ouvrirSeul(setShowCustomize);
+                else if (subKey === "translate") ouvrirSeul(setShowTranslate);
+                else if (subKey === "linkedin")  ouvrirSeul(setShowLinkedIn);
               }
             }}
             lang={locale}
@@ -9077,45 +9130,45 @@ export default function App() {
             setNavSection(key);
             // Wire chaque section a la modale existante (meme couverture que
             // la barre laterale : le tiroir "Plus" liste maintenant tout).
-            if (key === "jobs") setShowJobs(true);
-            else if (key === "target") setShowOffer(true);
-            else if (key === "live") setShowLive(true);
-            else if (key === "pack") setShowPack(true);
-            else if (key === "score") setShowScore(true);
-            else if (key === "cvs") setShowMultiCV(true);
-            else if (key === "design") { setCustomizeTab("colors"); setShowCustomize(true); }
-            else if (key === "tracking") setShowApplications(true);
-            else if (key === "adjust") setShowAdjust(true);
+            if (key === "jobs") ouvrirSeul(setShowJobs);
+            else if (key === "target") ouvrirSeul(setShowOffer);
+            else if (key === "live") ouvrirSeul(setShowLive);
+            else if (key === "pack") ouvrirSeul(setShowPack);
+            else if (key === "score") ouvrirSeul(setShowScore);
+            else if (key === "cvs") ouvrirSeul(setShowMultiCV);
+            else if (key === "design") { setCustomizeTab("colors"); ouvrirSeul(setShowCustomize); }
+            else if (key === "tracking") ouvrirSeul(setShowApplications);
+            else if (key === "adjust") ouvrirSeul(setShowAdjust);
             else if (key === "edit") setModal("id");
-            else if (key === "ats") setShowAudit(true);
-            else if (key === "interview") setShowInterview(true);
+            else if (key === "ats") ouvrirSeul(setShowAudit);
+            else if (key === "interview") ouvrirSeul(setShowInterview);
             else if (key === "truth") { runTruthCheck && runTruthCheck(); }
             else if (key === "pos") { runPositioning && runPositioning(); }
             else if (key === "gap") {
               if ((cv.experience || []).length < 2) {
                 notify(T.gr_no_gaps_title || "Aucun trou detecte");
               } else {
-                setShowGapRepair(true);
+                ouvrirSeul(setShowGapRepair);
               }
             }
-            else if (key === "versions") setShowVersions(true);
+            else if (key === "versions") ouvrirSeul(setShowVersions);
             else if (key === "compare") {
               if (versions.length < 2) {
                 notify(locale === "fr"
                   ? "Il faut au moins 2 versions pour comparer."
                   : "At least 2 versions needed to compare.");
               } else {
-                setShowCompare(true);
+                ouvrirSeul(setShowCompare);
               }
             }
-            else if (key === "translate") setShowTranslate(true);
-            else if (key === "linkedin") setShowLinkedIn(true);
-            else if (key === "activity") setShowActivity(true);
+            else if (key === "translate") ouvrirSeul(setShowTranslate);
+            else if (key === "linkedin") ouvrirSeul(setShowLinkedIn);
+            else if (key === "activity") ouvrirSeul(setShowActivity);
             // "home" = juste mettre la section active
           }}
           lang={locale}
           onCoachOpen={() => openCoach()}
-          onSettingsOpen={() => setShowSettings(true)}
+          onSettingsOpen={() => ouvrirSeul(setShowSettings)}
           onInstallOpen={() => setShowInstall(true)}
           onReset={() => doReset()}
           suggestedAction={suggestedAction}
