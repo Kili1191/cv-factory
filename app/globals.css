@@ -608,3 +608,55 @@ body.cvf-dark.nuvi-grain::after {
   .nuvi-cta { transition: none; }
   .nuvi-fleche::after { transition: none; }
 }
+
+/* ============================================================
+ * LA TETE DE LECTURE SUIT LE CURSEUR (ORDINATEUR SEULEMENT)
+ * ============================================================
+ *
+ * Le balayage joue tout seul a l arrivee. Ensuite, sur un ordinateur, le
+ * curseur prend la main : passer la souris sur la phrase la relit, et les
+ * mots meurent la ou l on passe. La destruction cesse d etre un film qu on
+ * regarde, elle devient quelque chose qu on fait.
+ *
+ * Il n y a rien a prevoir pour le tactile : le mode ne s active que si le
+ * pointeur est fin, donc jamais sur un doigt. Le defilement continue d y
+ * piloter le balayage comme avant.
+ *
+ * AUCUN JAVASCRIPT PAR MOT
+ *
+ * Un seul nombre change, --tete, la position de la tete de lecture entre 0
+ * et 1. Chaque mot connait deja la sienne, --part. La comparaison se fait en
+ * CSS : la difference, multipliee puis bornee, vaut 1 tant que le mot est
+ * sous la tete et 0 des qu elle l a franchi. Cent mots ne coutent donc pas
+ * cent calculs de plus a chaque mouvement de souris.
+ */
+.nuvi-tete-manuelle .nuvi-scan-ligne {
+  animation: none;
+  top: calc(var(--tete, 0) * 100%);
+  opacity: 1;
+  transition: top 90ms linear;
+}
+.nuvi-tete-manuelle .nuvi-mot-faible {
+  animation: none;
+  opacity: clamp(.17, (var(--part) - var(--tete, 0)) * 1000, 1);
+  transition: opacity 160ms ease-out;
+}
+.nuvi-tete-manuelle .nuvi-mot-faible > i {
+  animation: none;
+  transform: scaleX(clamp(0, (var(--tete, 0) - var(--part)) * 26, 1));
+  transition: transform 160ms ease-out;
+}
+
+/* Le mouvement se refuse : la tete manuelle ne s installe jamais, et le
+   document garde son etat final, qui est deja le bon. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-tete-manuelle .nuvi-scan-ligne { display: none; }
+  .nuvi-tete-manuelle .nuvi-mot-faible {
+    opacity: .17;
+    transition: none;
+  }
+  .nuvi-tete-manuelle .nuvi-mot-faible > i {
+    transform: scaleX(1);
+    transition: none;
+  }
+}

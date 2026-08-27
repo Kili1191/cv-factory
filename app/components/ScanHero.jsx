@@ -1,7 +1,7 @@
 "use client";
 
 import { lireCommeUneMachine } from "../../lib/lectureMachine";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 // Les regles d'animation vivent dans globals.css - voir la note sur
 // l'apostrophe plus bas, qui explique pourquoi elles ne peuvent PAS etre
@@ -98,8 +98,47 @@ export default function ScanHero({ lang = "en", labels, mode = "perte",
       : survivants.slice(0, 5).join(" ")
         + (survivants.length > 5 ? " +" + (survivants.length - 5) : "");
 
+  // LA TETE DE LECTURE PASSE AU CURSEUR
+  //
+  // Le balayage joue seul a l'arrivee, puis la souris peut le rejouer : on
+  // relit la phrase soi-meme, et les mots meurent la ou l'on passe. C'est la
+  // meme demonstration, mais causee par le visiteur.
+  //
+  // Reserve a l'ordinateur, et pas par choix esthetique : il n'y a pas de
+  // curseur a promener sur un ecran tactile. Le doigt garde le pilotage par
+  // defilement, qui lui convient.
+  const cadre = useRef(null);
+  useEffect(() => {
+    const el = cadre.current;
+    if (!el || typeof window === "undefined" || !window.matchMedia) return;
+    const fin = window.matchMedia("(pointer: fine)");
+    const calme = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (!fin.matches || calme.matches) return;
+
+    let dedans = false;
+    const bouge = (e) => {
+      const r = el.getBoundingClientRect();
+      if (!r.height) return;
+      const y = (e.clientY - r.top) / r.height;
+      el.style.setProperty("--tete", String(Math.max(0, Math.min(1, y))));
+      if (!dedans) { dedans = true; el.classList.add("nuvi-tete-manuelle"); }
+    };
+    // En sortant, on rend la phrase a son etat final - celui du document au
+    // repos - plutot que de la laisser figee a mi-lecture.
+    const sort = () => {
+      dedans = false;
+      el.style.setProperty("--tete", "1");
+    };
+    el.addEventListener("pointermove", bouge);
+    el.addEventListener("pointerleave", sort);
+    return () => {
+      el.removeEventListener("pointermove", bouge);
+      el.removeEventListener("pointerleave", sort);
+    };
+  }, []);
+
   return (
-    <div className={pilote ? "nuvi-scan-pilote" : undefined}
+    <div ref={cadre} className={pilote ? "nuvi-scan-pilote" : undefined}
       style={{ position: "relative", width: "100%" }}>
 
       <div style={{ position: "relative", overflow: "hidden", padding: "6px 0 10px" }}>
