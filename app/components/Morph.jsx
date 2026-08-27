@@ -50,12 +50,12 @@ function DefsGoutte() {
       style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}>
       <defs>
         <filter id="nuvi-goutte">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="flou"/>
+          <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="flou"/>
           {/* Le contraste sur l'alpha : tout ce qui est a demi opaque devient
               opaque ou disparait. C'est ce seuil qui recolle les lettres
               voisines en une seule masse. */}
           <feColorMatrix in="flou" mode="matrix"
-            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 21 -8" result="goutte"/>
+            values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 28 -12" result="goutte"/>
           <feBlend in="SourceGraphic" in2="goutte"/>
         </filter>
       </defs>
@@ -70,7 +70,13 @@ function Lettres({ texte, etat, sens }) {
       style={{
         // Le decalage suit la lecture : la masse se forme de gauche a droite
         // au lieu de gonfler d'un bloc.
-        "--pas": (sens === "sort" ? i * 16 : i * 16 + 150) + "ms",
+        //
+        // `--pas` porte la deformation, `--pasOp` la disparition. La lettre
+        // sortante reste opaque pendant tout son ecrasement et ne s efface
+        // qu une fois plate ; l entrante n apparait qu apres, quand la barre
+        // est deja formee. Le milieu est donc une masse, pas deux phrases.
+        "--pas": (sens === "sort" ? i * 13 : i * 13 + 430) + "ms",
+        "--pasOp": (sens === "sort" ? i * 13 + 300 : i * 13 + 430) + "ms",
       }}>{c}</span>
   ));
 }
@@ -95,10 +101,10 @@ export default function Morph({ paires, lang = "en", labels }) {
       minuteurs.forEach(clearTimeout);
       minuteurs = [];
       setPhase("avant");                 // on montre la formule molle
-      poser(() => setPhase("fond"), 950); // elle fond, l'autre nait
+      poser(() => setPhase("fond"), 1000); // elle fond, l'autre nait
       // Le filtre est retire des que la transformation finit : au repos, le
       // texte doit etre net. Un flou permanent sur du serif se voit.
-      poser(() => setPhase("repos"), 1750);
+      poser(() => setPhase("repos"), 2400);
     };
 
     const obs = new IntersectionObserver((entrees) => {
@@ -148,7 +154,7 @@ export default function Morph({ paires, lang = "en", labels }) {
                 // Marge de securite pour que le flou du filtre ne soit pas
                 // coupe par la boite : une goutte tronquee au ras du texte
                 // se voit immediatement.
-                padding: "0 10px", margin: "0 -10px",
+                padding: "6px 16px", margin: "-6px -16px",
               }}>
               {/* Le morphing decoupe ses phrases en lettres pour les
                   deformer une a une, et chaque lettre est masquee aux

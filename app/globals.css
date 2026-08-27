@@ -691,18 +691,26 @@ body.cvf-dark.nuvi-grain::after {
 .nuvi-morph-lettre {
   display: inline-block;
   white-space: pre;
+  /* DEUX RETARDS, PAS UN
+     Avec un seul, les deux textes s ecrasaient en meme temps et le milieu de
+     la transformation montrait deux phrases lisibles l une sur l autre. Ca se
+     lit comme une superposition, pas comme une metamorphose.
+     La forme et l opacite ont donc leur propre retard : la lettre reste
+     OPAQUE pendant qu elle s aplatit, et ne disparait qu une fois devenue une
+     barre. Le milieu n est plus deux textes, c est une masse illisible - et
+     c est de cette masse que sort le mot suivant. */
   transition:
-    transform 520ms cubic-bezier(.7, 0, .3, 1),
-    opacity 380ms ease,
-    font-variation-settings 520ms cubic-bezier(.7, 0, .3, 1);
-  transition-delay: var(--pas, 0ms);
+    transform 440ms cubic-bezier(.6, 0, .3, 1),
+    font-variation-settings 440ms cubic-bezier(.6, 0, .3, 1),
+    opacity 170ms linear;
+  transition-delay: var(--pas, 0ms), var(--pas, 0ms), var(--pasOp, 0ms);
 }
 
 /* L etat sortant : la lettre s ecrase vers la ligne de fusion en gonflant.
    Elle grossit avant de disparaitre, sinon elle s evapore au lieu de fondre. */
 .nuvi-morph-sort {
   opacity: 0;
-  transform: translateY(-.34em) scaleY(.24) scaleX(1.35);
+  transform: translateY(-.06em) scaleY(.05) scaleX(1.9);
   font-variation-settings: "wght" 900, "SOFT" 100;
 }
 
@@ -710,7 +718,7 @@ body.cvf-dark.nuvi-grain::after {
    puis reprend sa forme. */
 .nuvi-morph-entre {
   opacity: 0;
-  transform: translateY(.34em) scaleY(.24) scaleX(1.35);
+  transform: translateY(.06em) scaleY(.05) scaleX(1.9);
   font-variation-settings: "wght" 900, "SOFT" 100;
 }
 
