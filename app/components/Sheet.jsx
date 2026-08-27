@@ -17,7 +17,7 @@
 //   children : contenu scrollable
 //   showLogo : afficher le NuviLogo en haut a gauche (default: true)
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   Ink, Cream, CreamSoft, Paper, Coral,
@@ -37,6 +37,16 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
   // La primitive s'en charge maintenant pour toutes. Les modales qui doivent
   // rester ouvertes pendant un chargement gardent leur garde dans `onClose`,
   // donc rien ne se ferme au mauvais moment.
+  // Le plancher de hauteur ne vaut que sur ordinateur : sur telephone, une
+  // feuille qui colle au bas est exactement ce qu'il faut.
+  const [surOrdinateur, setSurOrdinateur] = useState(false);
+  useEffect(() => {
+    const voir = () => setSurOrdinateur(window.innerWidth >= 768);
+    voir();
+    window.addEventListener("resize", voir);
+    return () => window.removeEventListener("resize", voir);
+  }, []);
+
   useEffect(() => {
     if (typeof onClose !== "function") return undefined;
     const onKey = (e) => { if (e.key === "Escape") onClose(); };
@@ -65,6 +75,22 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
         background: CreamSoft,
         borderRadius: "32px 32px 0 0",
         maxHeight: "92vh",
+        // UN PLANCHER DE HAUTEUR SUR ORDINATEUR
+        //
+        // La hauteur suivait le contenu. Un panneau peu rempli - le suivi des
+        // candidatures avant la premiere - se reduisait a 441px colles au bas
+        // de l'ecran, et les 459px du dessus restaient vides. Mesure a
+        // 1440x900 : plus de la moitie de la hauteur perdue.
+        //
+        // C'est le defaut typique d'une feuille de telephone posee sur un
+        // ecran d'ordinateur. Sur un telephone, coller au bas est juste : le
+        // pouce est la. Sur un ordinateur, ca donne une fenetre qui a l'air
+        // tombee.
+        //
+        // Exprime en vh ET en pixels : sur un portable bas, une valeur fixe
+        // deborderait ; sur un grand ecran, une valeur relative seule ferait
+        // demesure. Le maxHeight au-dessus reste la borne haute.
+        minHeight: surOrdinateur ? "min(62vh, 560px)" : undefined,
         display: "flex", flexDirection: "column",
         boxShadow: "0 -20px 60px rgba(0,0,0,.2)",
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
