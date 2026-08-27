@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { destinationDuRetour, destinationDUneAppInstallee } from "../authReturn";
 import ScanHero from "./ScanHero";
+import { Magnetic } from "./motion";
 
 /**
  * LA VITRINE
@@ -150,8 +151,27 @@ export default function Landing({ lang = "en" }) {
   const Serif = "'Fraunces', 'DM Serif Display', Georgia, serif";
   const Sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
+  // LE BOUTON EST AIMANTE
+  //
+  // Le composant existait deja et servait dans l'application ; la vitrine ne
+  // l'utilisait pas. Il tire le bouton vers le curseur quand on l'approche,
+  // puis le laisse revenir.
+  //
+  // Ce n'est pas qu'un ornement : la cible devient plus facile a atteindre,
+  // puisqu'elle vient au-devant du geste. C'est la seule commande de la page
+  // qui compte, et elle merite d'etre celle qui repond le mieux.
+  //
+  // Deux elements, et c'est necessaire : l'aimant deplace un span exterieur,
+  // le bouton lui-meme se souleve au survol. Sur un seul element, les deux
+  // transform se remplaceraient l'un l'autre - l'aimantation ecraserait le
+  // soulevement, ou l'inverse, selon l'ordre.
+  //
+  // Le composant ignore les pointeurs tactiles et le mouvement refuse : sur
+  // telephone il ne se passe rien du tout, ce qui est correct - il n'y a pas
+  // de curseur a approcher.
   const lien = (etiquette, sousTitre, gros) => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
+      <Magnetic as="span" strength={0.22} radius={110} style={{ display: "inline-flex" }}>
       <a href="/app" className="nuvi-cta" style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         minHeight: gros ? 56 : 48, padding: gros ? "0 34px" : "0 26px",
@@ -161,6 +181,7 @@ export default function Landing({ lang = "en" }) {
         letterSpacing: "-0.01em",
         boxShadow: "0 8px 26px rgba(91,61,245,.26)",
       }}>{etiquette}</a>
+      </Magnetic>
       {sousTitre && (
         <span style={{ fontFamily: Sans, fontSize: 12.5, color: Muted }}>{sousTitre}</span>
       )}

@@ -566,3 +566,45 @@ body.cvf-dark.nuvi-grain::after {
   .nuvi-cta, .nuvi-fleche > span { transition: none; }
   .nuvi-cta:hover, .nuvi-cta:active { transform: none; }
 }
+
+/* ============================================================
+ * LE DEGRADE DU BOUTON GLISSE AU SURVOL
+ * ============================================================
+ *
+ * Le fond est peint deux fois plus large que le bouton, et le survol le
+ * fait glisser d un bord a l autre. Ca donne une matiere qui reagit, sans
+ * changer une seule couleur ni ajouter un element.
+ *
+ * background-position s anime sans recalculer la mise en page, comme
+ * transform et opacity. Animer le degrade lui-meme obligerait le navigateur
+ * a le repeindre a chaque image.
+ */
+.nuvi-cta {
+  background-size: 200% 100% !important;
+  background-position: 0% 50%;
+  transition:
+    transform 200ms cubic-bezier(.22, 1, .36, 1),
+    box-shadow 200ms cubic-bezier(.22, 1, .36, 1),
+    background-position 520ms cubic-bezier(.22, 1, .36, 1);
+}
+.nuvi-cta:hover { background-position: 100% 50%; }
+
+/* Le lien d en-tete : le trait se tire au survol au lieu d apparaitre.
+   Il part de la gauche, comme la lecture. */
+.nuvi-fleche { position: relative; }
+.nuvi-fleche::after {
+  content: "";
+  position: absolute;
+  left: 6px; right: 6px; bottom: 8px;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 260ms cubic-bezier(.22, 1, .36, 1);
+}
+.nuvi-fleche:hover::after { transform: scaleX(1); }
+
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-cta { transition: none; }
+  .nuvi-fleche::after { transition: none; }
+}
