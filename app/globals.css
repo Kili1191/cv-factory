@@ -366,3 +366,67 @@ body.cvf-dark.nuvi-grain::after {
 @media (prefers-reduced-motion: reduce) {
   .nuvi-bandeau { animation: none; }
 }
+
+/* ============================================================
+ * LE SCANNER DE LA VITRINE
+ * ============================================================
+ *
+ * POURQUOI CES REGLES SONT ICI ET PAS DANS LE COMPOSANT
+ *
+ * Elles etaient dans un <style> pose au milieu du JSX. Ca compilait, ca
+ * passait le linter, et la page se cassait a l'hydratation : React
+ * signalait "Text content did not match. Server / Client", puis jetait tout
+ * le HTML rendu par le serveur pour le refaire dans le navigateur.
+ *
+ * La cause tient a un seul caractere. Les commentaires de ce bloc
+ * contenaient des apostrophes - "d'ecran", "d'un mot". React les echappe en
+ * &#x27; quand il rend cote serveur, et ne les echappe pas cote client : le
+ * texte differe, l'hydratation echoue.
+ *
+ * Le cout n'est pas seulement un avertissement. Toute la page est reconstruite
+ * dans le navigateur, ce qui annule exactement ce qu'on venait de gagner en
+ * la faisant rendre par le serveur.
+ *
+ * Une feuille de style n'a pas ce probleme : elle n'est jamais rendue par
+ * React. C'est aussi plus rapide - la regle est mise en cache une fois au
+ * lieu d'etre reserialisee a chaque rendu.
+ */
+
+/* La ligne de lecture descend une fois, puis disparait : une boucle
+   infinie ferait de ce moment un economiseur d ecran. */
+@keyframes nuviScanDescend {
+  0%   { transform: translateY(-6%); opacity: 0; }
+  6%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateY(106%); opacity: 0; }
+}
+
+/* La mort d un mot : il palit au passage de la ligne. */
+@keyframes nuviMotMeurt {
+  from { opacity: 1; }
+  to   { opacity: .17; }
+}
+@keyframes nuviBarre {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+.nuvi-scan-ligne {
+  animation: nuviScanDescend 3.4s cubic-bezier(.5, 0, .5, 1) .35s both;
+}
+.nuvi-mot-faible {
+  animation: nuviMotMeurt 420ms ease-out both;
+  animation-delay: var(--retard);
+}
+.nuvi-mot-faible > i {
+  animation: nuviBarre 300ms ease-out both;
+  animation-delay: var(--retard);
+}
+
+/* Le mouvement se refuse : on montre directement le resultat, qui est deja
+   l etat par defaut du document. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-scan-ligne { display: none; }
+  .nuvi-mot-faible,
+  .nuvi-mot-faible > i { animation: none; }
+}

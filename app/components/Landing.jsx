@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { destinationDuRetour, destinationDUneAppInstallee } from "../authReturn";
+import ScanHero from "./ScanHero";
 
 /**
  * LA VITRINE
@@ -45,6 +46,9 @@ const T = {
     finalSub: "Paste a job ad. Get the CV that matches it.",
     finalCta: "Open Nuvi",
     foot: "Your CV stays in your browser.",
+    kept: "What the software kept",
+    keptSub: "out of twenty-two words.",
+    scanLead: "Watch a tracking system read a CV.",
   },
   fr: {
     kicker: "Le CV qui passe l'ATS",
@@ -64,6 +68,9 @@ const T = {
     finalSub: "Colle une annonce. Recupere le CV qui lui correspond.",
     finalCta: "Ouvrir Nuvi",
     foot: "Ton CV reste dans ton navigateur.",
+    kept: "Ce que le logiciel a retenu",
+    keptSub: "sur vingt-deux mots.",
+    scanLead: "Regarde un logiciel de tri lire un CV.",
   },
 };
 
@@ -195,20 +202,29 @@ export default function Landing({ lang = "en" }) {
 
       {/* ===== 1. CE QUE C'EST ===== */}
       <section style={{
-        minHeight: "min(88vh, 760px)",
+        minHeight: "min(92vh, 820px)",
         display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center", textAlign: "center",
-        padding: "clamp(48px, 9vh, 96px) clamp(18px, 5vw, 40px)",
+        alignItems: "flex-start", justifyContent: "center", textAlign: "left",
+        padding: "clamp(48px, 9vh, 96px) clamp(18px, 5vw, 56px)",
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
         borderBottom: "1px solid " + Hair,
       }}>
-        {eyebrow(t.kicker)}
+        {/* LA DEMONSTRATION A PRIS LA PLACE DE L'AFFIRMATION
+            Le heros disait "la plupart des CV sont ecartes avant qu'un humain
+            les lise". C'etait vrai, et ca ne faisait rien voir : on lisait un
+            argument. Ici la chose se produit sous les yeux - une ligne de
+            lecture traverse une phrase de CV, et ce que le logiciel ne sait
+            pas ranger meurt sur son passage.
+            Le titre vient APRES, comme legende de ce qu'on vient de voir. */}
+        {eyebrow(t.scanLead)}
+        <ScanHero lang={lang} labels={{ kept: t.kept, keptSub: t.keptSub }}/>
         <h1 style={{
           fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(32px, 6.4vw, 76px)",
-          lineHeight: 1.06, letterSpacing: "-0.03em",
-          margin: "0 0 22px", maxWidth: 15 + "ch",
+          fontSize: "clamp(21px, 2.9vw, 34px)",
+          lineHeight: 1.18, letterSpacing: "-0.025em",
+          margin: "38px 0 14px", maxWidth: 26 + "ch",
         }}>
-          {t.h1a}<br/>
+          {t.h1a}{" "}
           <em style={{
             fontStyle: "italic",
             background: "linear-gradient(135deg,#5b3df5,#b91c8c)",
@@ -217,8 +233,8 @@ export default function Landing({ lang = "en" }) {
           }}>{t.h1b}</em>
         </h1>
         <p style={{
-          fontSize: "clamp(14px, 1.7vw, 18px)", lineHeight: 1.55,
-          color: Muted, maxWidth: 54 + "ch", margin: "0 0 34px",
+          fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.55,
+          color: Muted, maxWidth: 52 + "ch", margin: "0 0 30px",
         }}>{t.sub}</p>
         {lien(t.cta, t.ctaSub, true)}
       </section>
