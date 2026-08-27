@@ -128,6 +128,37 @@ export async function run() {
       await ctx.close();
     }
 
+    // --- 3 bis. Les boutons sont alignes avec leur section --------------
+    //
+    // L'enveloppe aimantee est un bloc flex : elle ignore le text-align de la
+    // section qui la contient. Le dernier bouton est donc parti se coller au
+    // bord gauche de la page pendant que son titre restait centre, et rien ne
+    // l'a signale - ni le build, ni le lint, ni aucun test. Tant qu'on
+    // enveloppe des boutons, ce piege reviendra.
+    for (const ecran of ECRANS) {
+      const { ctx, page } = await ouvrir(browser, ecran);
+      const ecart = await page.evaluate(() => {
+        const liens = [...document.querySelectorAll('a[href="/app"]')];
+        const bouton = liens[liens.length - 1];
+        const section = bouton.closest("section");
+        if (!section) return null;
+        const style = getComputedStyle(section);
+        if (style.textAlign !== "center") return null;
+        const b = bouton.getBoundingClientRect();
+        const s = section.getBoundingClientRect();
+        return Math.abs((b.left + b.width / 2) - (s.left + s.width / 2));
+      });
+      if (ecart !== null && ecart > 12) {
+        failures.push(
+          `${ecran.nom} : le dernier bouton est decale de ${Math.round(ecart)}px `
+          + "du centre de sa section, alors que le titre au-dessus est centre. "
+          + "L'appel a l'action de fin de page se lit comme une erreur de mise "
+          + "en page."
+        );
+      }
+      await ctx.close();
+    }
+
     // --- 4. Le retour de connexion est relaye --------------------------
     const RETOURS = [
       { nom: "erreur en requete", chemin: "/?error=server_error&error_code=unexpected_failure&error_description=Unable+to+exchange+external+code" },

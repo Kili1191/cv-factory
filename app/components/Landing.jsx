@@ -186,8 +186,15 @@ export default function Landing({ lang = "en" }) {
   // Le composant ignore les pointeurs tactiles et le mouvement refuse : sur
   // telephone il ne se passe rien du tout, ce qui est correct - il n'y a pas
   // de curseur a approcher.
-  const lien = (etiquette, sousTitre, gros) => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 9 }}>
+  // `centre` n'est pas un detail de style : l'enveloppe aimantee est un bloc
+  // flex, et un bloc flex ignore le text-align de sa section. Cale en
+  // flex-start, le bouton de la derniere section partait se coller au bord
+  // gauche de la page pendant que son titre restait centre.
+  const lien = (etiquette, sousTitre, gros, centre) => (
+    <div style={{
+      display: "flex", flexDirection: "column", gap: 9,
+      alignItems: centre ? "center" : "flex-start",
+    }}>
       <Magnetic as="span" strength={0.22} radius={110} style={{ display: "inline-flex" }}>
       <a href="/app" className="nuvi-cta" style={{
         display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -381,7 +388,7 @@ export default function Landing({ lang = "en" }) {
           fontSize: "clamp(14px, 1.6vw, 17px)", lineHeight: 1.55,
           color: Muted, margin: "0 auto 32px", maxWidth: 44 + "ch",
         }}>{t.finalSub}</p>
-        {lien(t.finalCta, t.foot, true)}
+        {lien(t.finalCta, t.foot, true, true)}
       </section>
     </div>
   );
