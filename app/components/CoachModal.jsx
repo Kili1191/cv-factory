@@ -762,11 +762,55 @@ export default function CoachModal({
 
   const hasMessages = messages && messages.length > 0;
 
+  // LE FICHIER DEPOSE AU COACH
+  //
+  // Un PDF, un .docx ou un .txt sont lus DANS LE NAVIGATEUR : leur texte
+  // rejoint le message comme si la personne l'avait colle elle-meme. Rien ne
+  // part, et un CV de trois pages coute le prix de son texte au lieu de celui
+  // d'une image.
+  //
+  // Une image n'a pas de texte a extraire ici : c'est le seul cas ou le
+  // fichier lui-meme est envoye au modele. La puce le dit avant l'envoi.
+  const [piece, setPiece] = useState(null);
+  const [lecture, setLecture] = useState(false);
+  const [refus, setRefus] = useState("");
+  const fichierRef = useRef(null);
+
+  const choisirFichier = async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = "";                       // re-choisir le meme fichier
+    if (!f) return;
+    setRefus("");
+    setLecture(true);
+    try {
+      const { lireUnFichier } = await import("../../lib/lireUnFichier");
+      const lu = await lireUnFichier(f, {
+        pdf: lang === "fr" ? "PDF illisible" : "Could not read that PDF",
+        format: lang === "fr"
+          ? "Format non lu. PDF, DOCX, TXT ou image."
+          : "Format not read. PDF, DOCX, TXT or an image.",
+        tropGrosse: lang === "fr"
+          ? "Image trop lourde : 5 Mo maximum."
+          : "Image too large: 5 MB maximum.",
+      });
+      if (lu.genre === "refus") setRefus(lu.raison);
+      else setPiece(lu);
+    } catch (err) {
+      setRefus(String((err && err.message) || err));
+    }
+    setLecture(false);
+  };
+
   const submit = () => {
     const t = input.trim();
-    if (!t || loading) return;
-    onSend(t);
+    if (loading || lecture) return;
+    // Un fichier seul est un message : on n'exige pas d'ecrire une phrase
+    // par-dessus pour avoir le droit de l'envoyer.
+    if (!t && !piece) return;
+    onSend(t, piece || null);
     setInput("");
+    setPiece(null);
+    setRefus("");
   };
 
   const handleAction = (action) => {
@@ -1078,9 +1122,82 @@ export default function CoachModal({
           backdropFilter: "blur(16px) saturate(160%)",
           WebkitBackdropFilter: "blur(16px) saturate(160%)",
         }}>
+          {/* La piece jointe, annoncee AVANT l'envoi. On dit dans quel cas
+              elle quitte l'appareil, parce que c'est la question que se pose
+              quelqu'un a qui on demande son CV. */}
+          {(piece || refus || lecture) && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+              margin: "0 0 10px", padding: "8px 12px",
+              borderRadius: RadiusMd,
+              background: refus ? "rgba(217,119,87,.10)" : "rgba(91,61,245,.07)",
+              border: "0.5px solid " + (refus ? "rgba(217,119,87,.35)" : "rgba(91,61,245,.22)"),
+              fontFamily: Sans, fontSize: 12, color: Ink,
+            }}>
+              {lecture ? (
+                <span style={{ color: Gray600 }}>
+                  {lang === "fr" ? "Lecture du fichier..." : "Reading the file..."}
+                </span>
+              ) : refus ? (
+                <span style={{ color: Coral }}>{refus}</span>
+              ) : (
+                <>
+                  <strong style={{ fontWeight: 600 }}>{piece.nom || "fichier"}</strong>
+                  <span style={{ color: Gray600 }}>
+                    {piece.genre === "texte"
+                      ? (lang === "fr"
+                        ? "lu dans ton navigateur, rien n'a ete envoye"
+                        : "read in your browser, nothing was sent")
+                      : (lang === "fr"
+                        ? "image : elle sera envoyee a Nuvi pour etre lue"
+                        : "image: it will be sent to Nuvi to be read")}
+                  </span>
+                  <button type="button" onClick={() => { setPiece(null); setRefus(""); }}
+                    aria-label={lang === "fr" ? "Retirer le fichier" : "Remove file"}
+                    style={{
+                      ...B({
+                        marginLeft: "auto", minWidth: 44, minHeight: 32,
+                        padding: "0 10px", borderRadius: RadiusPill,
+                        background: "transparent", color: Gray600,
+                        border: "0.5px solid " + Hairline, fontSize: 12,
+                      }),
+                    }}>{lang === "fr" ? "Retirer" : "Remove"}</button>
+                </>
+              )}
+            </div>
+          )}
+
           <div style={{
             display: "flex", gap: 8, alignItems: "flex-end",
           }}>
+            {/* Deposer un fichier. Accepte aussi les images, parce qu'une
+                annonce se capture a l'ecran bien plus souvent qu'elle ne se
+                copie proprement. */}
+            <input ref={fichierRef} type="file" onChange={choisirFichier}
+              accept=".pdf,.docx,.txt,image/*"
+              style={{ display: "none" }}/>
+            <button type="button"
+              onClick={() => fichierRef.current && fichierRef.current.click()}
+              disabled={loading || lecture}
+              aria-label={lang === "fr" ? "Joindre un fichier" : "Attach a file"}
+              title={lang === "fr" ? "Joindre un CV, une annonce ou une capture"
+                : "Attach a CV, a job ad or a screenshot"}
+              style={{
+                ...B({
+                  width: 44, height: 44, borderRadius: "50%",
+                  background: "rgba(255,255,255,.55)",
+                  border: "0.5px solid rgba(255,255,255,.7)",
+                  color: Gray600, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  opacity: (loading || lecture) ? 0.5 : 1,
+                }),
+              }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"
+                strokeLinejoin="round" aria-hidden="true">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/>
+              </svg>
+            </button>
             <textarea
               ref={inputRef}
               value={input}
@@ -1119,18 +1236,18 @@ export default function CoachModal({
             />
             <button
               onClick={submit}
-              disabled={loading || !input.trim() || !apiKey}
+              disabled={loading || lecture || (!input.trim() && !piece) || !apiKey}
               aria-label={T.co_send}
               style={{
                 ...B({
                   width: 44, height: 44, borderRadius: "50%",
-                  background: (loading || !input.trim() || !apiKey)
+                  background: (loading || lecture || (!input.trim() && !piece) || !apiKey)
                     ? Gray200 : GradPurple,
-                  color: (loading || !input.trim() || !apiKey) ? Gray600 : "#fff",
+                  color: (loading || lecture || (!input.trim() && !piece) || !apiKey) ? Gray600 : "#fff",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   transition: "all 180ms ease-out",
-                  boxShadow: (loading || !input.trim() || !apiKey)
+                  boxShadow: (loading || lecture || (!input.trim() && !piece) || !apiKey)
                     ? "none"
                     : "0 2px 8px rgba(91, 61, 245, 0.3)",
                 })

@@ -5,6 +5,7 @@
 // [Nuvi rebrand] Couleurs alignees : terracotta (Coral #d97757) + violet/magenta gradient pour CTA primaires.
 
 import { useState, useRef } from "react";
+import { texteDuFichier } from "../../lib/lireUnFichier";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
   GradGold, GradPurple, Gray200, Gray400, Gray600, Ink, Paper, RadiusMd,
@@ -12,62 +13,16 @@ import {
 } from "./sharedTokens";
 
 
-// Extraction du texte d'un CV, sans dependance reseau.
+// LA LECTURE DES FICHIERS A DEMENAGE
 //
-// Le worker pdf.js est servi par notre propre domaine (copie dans public/ par
-// scripts/copy-pdf-worker.mjs). Si son chargement echoue malgre tout, on
-// repasse sur le thread principal : plus lent, mais l'import aboutit au lieu
-// de ne rien produire.
+// Elle vit maintenant dans lib/lireUnFichier.js, parce que le coach en a
+// besoin lui aussi. La recopier aurait donne deux lectures, et la seconde
+// n'aurait pas eu le garde-fou du worker pdf.js - qui n'est pas un detail
+// mais le resultat d'une panne reelle.
 async function extractCvText(file, T) {
-  const name = (file.name || "").toLowerCase();
-  const ext = name.includes(".") ? name.split(".").pop() : "";
-  const type = file.type || "";
-
-  if (ext === "txt" || type === "text/plain") {
-    return await file.text();
-  }
-
-  if (ext === "pdf" || type === "application/pdf") {
-    const pdfjsLib = await import("pdfjs-dist/build/pdf");
-    const buf = await file.arrayBuffer();
-
-    const readWith = async (opts) => {
-      const pdf = await pdfjsLib.getDocument({ data: buf.slice(0), ...opts }).promise;
-      let out = "";
-      for (let i = 1; i <= pdf.numPages; i += 1) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        out += content.items.map(it => it.str).join(" ") + "\n\n";
-      }
-      return out.trim();
-    };
-
-    // Le repli doit etre arme AVANT la premiere tentative : pdf.js memorise
-    // le resultat de sa mise en place de worker, donc un premier echec reste
-    // definitif pour toute la vie de la page. Cette entree pose
-    // window.pdfjsWorker, que pdf.js utilise directement si le chargement du
-    // script echoue - le code du worker vient alors du bundle, sans reseau.
-    try { await import("pdfjs-dist/build/pdf.worker.entry"); } catch (e) {}
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
-
-    try {
-      return await readWith({});
-    } catch (err) {
-      const e = new Error(T.ob_file_pdf_err);
-      e.cause = err;
-      throw e;
-    }
-  }
-
-  if (ext === "docx" || type.includes("wordprocessingml")) {
-    const mammoth = await import("mammoth/mammoth.browser");
-    const buf = await file.arrayBuffer();
-    const result = await mammoth.extractRawText({ arrayBuffer: buf });
-    return result.value;
-  }
-
-  // .doc ancien format, images de CV scannes, etc.
-  throw new Error(T.ob_file_format_err);
+  const texte = await texteDuFichier(file, { pdf: T.ob_file_pdf_err });
+  if (!String(texte || "").trim()) throw new Error(T.ob_file_format_err);
+  return texte;
 }
 
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
