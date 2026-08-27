@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { destinationDuRetour, destinationDUneAppInstallee } from "../authReturn";
 import ScanHero from "./ScanHero";
 import ScanEssai from "./ScanEssai";
+import Morph from "./Morph";
 import { Magnetic } from "./motion";
 
 /**
@@ -61,6 +62,8 @@ const T = {
     essaiReset: "Back to the example",
     essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
     answerLead: "The same person, written so the machine can file it.",
+    morphLead: "Watch the same facts re-file themselves",
+    morphNote: "Not one of these adds anything. The years are the same years, the work is the same work. Only the shape changed, and with it whether the software can put it anywhere.",
     answerTitle: "Nothing invented. Only re-filed.",
     answerBody: "Ten years is still ten years. The job title is one the software recognises, the result is a number instead of an adjective. Same facts, different fate.",
   },
@@ -95,6 +98,8 @@ const T = {
     essaiReset: "Revenir a l'exemple",
     essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
     answerLead: "La meme personne, ecrite pour que la machine sache la ranger.",
+    morphLead: "Regarde les memes faits se ranger autrement",
+    morphNote: "Aucun n'ajoute quoi que ce soit. Les annees sont les memes annees, le travail est le meme travail. Seule la forme a change, et avec elle le fait que le logiciel sache ou la mettre.",
     answerTitle: "Rien d'invente. Juste range autrement.",
     answerBody: "Dix ans restent dix ans. L'intitule est un que le logiciel connait, le resultat est un chiffre au lieu d'un adjectif. Memes faits, autre sort.",
   },
@@ -106,6 +111,25 @@ const T = {
 // cherche. "trouve: false" n'est pas une mise en scene : c'est ce qui arrive
 // a un CV ecrit pour l'oeil humain, ou l'intitule est une formule et les
 // resultats sont des adjectifs.
+// LES FAITS QUI SE RANGENT AUTREMENT
+//
+// Chaque paire est le MEME fait, ecrit deux fois. A gauche la formule qu'un
+// logiciel de tri ne sait pas ranger, a droite la forme qu'il range. Rien
+// n'est ajoute : "une decennie" et "10 ans" sont la meme duree, "a ameliore
+// les resultats" et "78% de marge" decrivent le meme travail. C'est la regle
+// du produit, et elle vaut aussi pour sa vitrine - une paire qui inventerait
+// une competence rendrait toute la page malhonnete.
+const PAIRES = [
+  { avant: { en: "a decade of experience", fr: "une decennie d'experience" },
+    apres: { en: "10 years", fr: "10 ans" } },
+  { avant: { en: "improved the business", fr: "a ameliore les resultats" },
+    apres: { en: "78% beverage GP", fr: "78% de marge boissons" } },
+  { avant: { en: "hospitality professional", fr: "professionnel de la restauration" },
+    apres: { en: "Bar Manager", fr: "Barman responsable" } },
+  { avant: { en: "led a large team", fr: "a encadre une grande equipe" },
+    apres: { en: "team of 12", fr: "equipe de 12" } },
+];
+
 // LE BANDEAU : LES METIERS POUR QUI NUVI EXISTE
 //
 // Ce ne sont pas des mots pris au hasard pour faire du mouvement. Ce sont
@@ -350,6 +374,26 @@ export default function Landing({ lang = "en" }) {
           fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.6,
           color: Muted, maxWidth: 56 + "ch", margin: 0,
         }}>{t.answerBody}</p>
+      </section>
+
+      {/* ===== 2 bis. LA TRANSFORMATION, SUR PLACE =====
+
+          Le heros montre une phrase mourir ; la section precedente montre sa
+          reecriture survivre. Entre les deux, le rapprochement restait a la
+          charge du visiteur : retenir la premiere en descendant vers la
+          seconde. Presque personne ne le fait.
+
+          Ici les deux formes occupent le meme endroit et l'une devient
+          l'autre. C'est la these du produit - rien d'invente, seulement range
+          autrement - rendue visible en une seconde, sur des faits qu'on a
+          deja lus plus haut. */}
+      <section className="nuvi-scroll-in" style={{
+        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
+        borderBottom: "1px solid " + Hair,
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
+      }}>
+        <Morph paires={PAIRES} lang={lang}
+          labels={{ lead: t.morphLead, note: t.morphNote }}/>
       </section>
 
       {/* ===== 3. POUR QUI =====
