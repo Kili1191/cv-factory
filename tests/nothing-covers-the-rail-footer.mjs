@@ -96,6 +96,57 @@ export async function run() {
       }
     }
 
+    // --- LA BARRE OUVERTE NE MANGE PAS LE NOM DU DOCUMENT -------------
+    //
+    // Se poser au-dessus a regle le vrai probleme - le CV ne se decale plus
+    // au survol. Mais la ligne d'en-tete commence bien plus a gauche que le
+    // document, et elle, se faisait avaler : sur une capture d'utilisateur,
+    // "Kilian Maisonnette" se lisait "ette". Le CV etait intact, le titre du
+    // document illisible, et rien ne le signalait.
+    {
+      const lire = () => page.evaluate(() => {
+        const cv = document.querySelector('[data-cvf="cv"]');
+        const rail = document.querySelector("aside");
+        // Le nom du document est le premier texte serif de la bande du haut.
+        const spans = [...document.querySelectorAll("span")];
+        // Hors de la barre : son propre logo "Nuvi" est serif lui aussi et
+        // se trouve tout en haut, donc il repondait a la place du nom du CV.
+        const nom = spans.find((x) => !x.closest("aside")
+          && /Fraunces|serif/i.test(getComputedStyle(x).fontFamily)
+          && x.getBoundingClientRect().top < 90
+          && x.getBoundingClientRect().width > 30);
+        return {
+          nom: nom ? Math.round(nom.getBoundingClientRect().left) : null,
+          rail: rail ? Math.round(rail.getBoundingClientRect().right) : null,
+          cv: cv ? Math.round(cv.getBoundingClientRect().left) : null,
+        };
+      });
+
+      const replie = await lire();
+      await page.hover("aside");
+      await page.waitForTimeout(700);
+      const ouvert = await lire();
+
+      if (ouvert.nom !== null && ouvert.rail !== null && ouvert.nom < ouvert.rail) {
+        failures.push(
+          "barre ouverte : le nom du document commence a " + ouvert.nom + "px, "
+          + "sous une barre qui va jusqu'a " + ouvert.rail + "px. Le titre du CV "
+          + "est donc ampute - on lit la fin d'un nom sans savoir quel document "
+          + "on edite."
+        );
+      }
+      // Et le document, lui, ne doit toujours pas bouger : c'est la raison
+      // d'etre du recouvrement, et le corriger d'un cote ne doit pas le
+      // casser de l'autre.
+      if (replie.cv !== null && replie.cv !== ouvert.cv) {
+        failures.push(
+          "le CV se decale de " + replie.cv + "px a " + ouvert.cv + "px quand la "
+          + "barre s'ouvre. C'est exactement ce que le recouvrement devait "
+          + "supprimer."
+        );
+      }
+    }
+
     await ctx.close();
     if (!failures.length) {
       console.log(`      bas de barre libre, repliee (${replie.largeur}px) comme ouverte (${deploye.largeur}px)`);

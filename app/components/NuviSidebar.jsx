@@ -349,10 +349,24 @@ export default function NuviSidebar({
       {/* L'espaceur. Il tient la place de la barre repliee et ne bouge
           jamais : c'est lui qui garantit que rien ne se decale au survol. */}
       <div aria-hidden="true" style={{ width: 56, flexShrink: 0 }}/>
+      {/* LA BARRE OUVERTE RECOUVRAIT LE NOM DU DOCUMENT
+          Se poser au-dessus a resolu le vrai probleme - le CV ne se decale
+          plus au survol - mais la ligne d'en-tete, elle, commence a 78px et
+          se faisait donc avaler : "Kilian Maisonnette" se lisait "ette".
+          On publie la largeur reelle de la barre ; l'en-tete s'ecarte de
+          juste ce qu'il faut, et le document ne bouge toujours pas. */}
       <aside
-        onMouseEnter={() => setExpanded(true)}
+        onMouseEnter={() => {
+          setExpanded(true);
+          if (typeof document !== "undefined") {
+            document.documentElement.style.setProperty("--nuvi-rail", "240px");
+          }
+        }}
         onMouseLeave={() => {
           setExpanded(false);
+          if (typeof document !== "undefined") {
+            document.documentElement.style.setProperty("--nuvi-rail", "56px");
+          }
         }}
         style={{
           // LA BARRE SE POSE PAR-DESSUS, ELLE NE POUSSE PLUS

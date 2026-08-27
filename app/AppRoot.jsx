@@ -8476,7 +8476,13 @@ export default function App() {
             alignItems:"center", gap:10, padding:"12px 22px 12px",
             borderBottom:"1px solid "+Gray200,
           }}>
-            <div style={{minWidth:0, display:"flex", alignItems:"baseline", gap:9}}>
+            {/* Recule quand la barre laterale s'ouvre par-dessus. Le CV, lui,
+                ne bouge pas : c'est toute la raison d'etre du recouvrement. */}
+            <div style={{
+              minWidth:0, display:"flex", alignItems:"baseline", gap:9,
+              paddingLeft:"calc(var(--nuvi-rail, 56px) - 56px)",
+              transition:"padding-left 180ms cubic-bezier(.22,1,.36,1)",
+            }}>
               <span style={{
                 fontFamily:Sans, fontSize:9.5, fontWeight:700,
                 letterSpacing:"0.12em", textTransform:"uppercase",
