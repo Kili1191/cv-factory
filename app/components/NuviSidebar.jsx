@@ -346,26 +346,63 @@ export default function NuviSidebar({
 
   return (
     <>
+      {/* L'espaceur. Il tient la place de la barre repliee et ne bouge
+          jamais : c'est lui qui garantit que rien ne se decale au survol. */}
+      <div aria-hidden="true" style={{ width: 56, flexShrink: 0 }}/>
       <aside
         onMouseEnter={() => setExpanded(true)}
         onMouseLeave={() => {
           setExpanded(false);
         }}
         style={{
+          // LA BARRE SE POSE PAR-DESSUS, ELLE NE POUSSE PLUS
+          //
+          // Elle etait dans le flux, en position relative, et sa largeur
+          // passait de 56 a 240 au survol. Tout ce qui suit se decalait donc
+          // de 92px : mesure a 1440x900, le CV sautait de x=213 a x=305 des
+          // que le curseur passait pres du bord gauche, et revenait en
+          // partant.
+          //
+          // Ce n'est pas un detail d'animation. On lit son CV, la souris
+          // derive vers la gauche, et le document bondit sous les yeux. Si
+          // l'on etait en train de viser un mot, on le rate.
+          //
+          // Elle est donc fixee et se pose AU-DESSUS du contenu quand elle
+          // s'ouvre ; un espaceur de 56px garde sa place dans le flux, qui ne
+          // bouge plus jamais. L'ombre n'apparait qu'ouverte : c'est ce qui
+          // dit qu'on est au-dessus de quelque chose, et non a cote.
+          position: "fixed",
+          top: 0,
+          left: 0,
           width: expanded ? 240 : 56,
           height: "100vh",
-          background: "var(--nuvi-glass-bg, " + Paper + ")",
+          boxShadow: expanded
+            ? "0 0 0 1px rgba(0,0,0,.04), 18px 0 46px rgba(26,24,22,.10)"
+            : "inset -1px 0 1px rgba(255,255,255,0.4)",
+          // OPAQUE UNE FOIS OUVERTE, ET C'EST LA CONSEQUENCE DU RESTE
+          //
+          // Le verre translucide convenait tant que la barre etait A COTE du
+          // contenu : il n'y avait rien derriere elle. Depuis qu'elle se pose
+          // AU-DESSUS, la ligne d'en-tete et le CV transparaissent derriere
+          // les libelles - constate a l'ecran, "Jane Doe" lisible a travers
+          // "Home" et "Coach".
+          //
+          // C'est exactement le defaut corrige sur l'ecran d'assistance
+          // d'entretien : un fond a 95% laisse passer assez d'un texte sombre
+          // pour qu'on le lise. Repliee elle garde son verre, puisqu'elle ne
+          // recouvre plus rien.
+          background: expanded
+            ? "var(--nuvi-paper, #fff)"
+            : "var(--nuvi-glass-bg, " + Paper + ")",
           WebkitBackdropFilter: "blur(24px) saturate(160%)",
           backdropFilter: "blur(24px) saturate(160%)",
           borderRight: "0.5px solid rgba(255,255,255,0.6)",
-          boxShadow: "inset -1px 0 1px rgba(255,255,255,0.4)",
           display: "flex",
           flexDirection: "column",
           transition: "width 220ms cubic-bezier(0.22, 1, 0.36, 1)",
           overflow: "visible",
           flexShrink: 0,
           zIndex: 50,
-          position: "relative",
         }}
       >
         <div style={{
