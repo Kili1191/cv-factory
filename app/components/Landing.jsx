@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { destinationDuRetour, destinationDUneAppInstallee } from "../authReturn";
 import ScanHero from "./ScanHero";
+import ScanEssai from "./ScanEssai";
 import { Magnetic } from "./motion";
 
 /**
@@ -33,7 +34,7 @@ const T = {
     kicker: "The CV that gets past the ATS",
     h1a: "Most CVs are rejected",
     h1b: "before a human reads them.",
-    sub: "Before a recruiter sees your CV, software reads it. It does not read like a person. Nuvi writes for both.",
+    sub: "Before a recruiter sees your CV, a tracking system - an ATS - reads it. It does not read like a person. Nuvi writes for both.",
     cta: "Open Nuvi",
     ctaSub: "No signup. Works in your browser.",
     scrollHint: "See how it reads",
@@ -48,9 +49,17 @@ const T = {
     finalCta: "Open Nuvi",
     foot: "Your CV stays in your browser.",
     kept: "What the software kept",
-    keptSub: "out of twenty-two words.",
+    dropped: "What it dropped",
+    word: "word",
+    words: "words",
+    droppedNone: "nothing",
     scanLead: "Watch a tracking system read a CV.",
     keptAll: "all of it",
+    keptNone: "nothing",
+    essaiLead: "Now put a line of your own CV through it",
+    essaiHolder: "Hard-working team player with excellent communication skills",
+    essaiReset: "Back to the example",
+    essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
     answerLead: "The same person, written so the machine can file it.",
     answerTitle: "Nothing invented. Only re-filed.",
     answerBody: "Ten years is still ten years. The job title is one the software recognises, the result is a number instead of an adjective. Same facts, different fate.",
@@ -59,7 +68,7 @@ const T = {
     kicker: "Le CV qui passe l'ATS",
     h1a: "La plupart des CV sont ecartes",
     h1b: "avant qu'un humain les lise.",
-    sub: "Avant qu'un recruteur voie ton CV, un logiciel le lit. Il ne lit pas comme une personne. Nuvi ecrit pour les deux.",
+    sub: "Avant qu'un recruteur voie ton CV, un logiciel de tri - un ATS - le lit. Il ne lit pas comme une personne. Nuvi ecrit pour les deux.",
     cta: "Ouvrir Nuvi",
     ctaSub: "Sans inscription. Tout se passe dans ton navigateur.",
     scrollHint: "Voir comment il lit",
@@ -74,9 +83,17 @@ const T = {
     finalCta: "Ouvrir Nuvi",
     foot: "Ton CV reste dans ton navigateur.",
     kept: "Ce que le logiciel a retenu",
-    keptSub: "sur vingt-deux mots.",
+    dropped: "Ce qu'il a ecarte",
+    word: "mot",
+    words: "mots",
+    droppedNone: "rien",
     scanLead: "Regarde un logiciel de tri lire un CV.",
     keptAll: "tout",
+    keptNone: "rien",
+    essaiLead: "Maintenant, passe une ligne de ton CV",
+    essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
+    essaiReset: "Revenir a l'exemple",
+    essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
     answerLead: "La meme personne, ecrite pour que la machine sache la ranger.",
     answerTitle: "Rien d'invente. Juste range autrement.",
     answerBody: "Dix ans restent dix ans. L'intitule est un que le logiciel connait, le resultat est un chiffre au lieu d'un adjectif. Memes faits, autre sort.",
@@ -233,7 +250,11 @@ export default function Landing({ lang = "en" }) {
             Le titre vient APRES, comme legende de ce qu'on vient de voir. */}
         <div className="nuvi-arrivee" style={{ "--pose": "0ms" }}>{eyebrow(t.scanLead)}</div>
         <div className="nuvi-arrivee" style={{ "--pose": "90ms", width: "100%" }}>
-          <ScanHero lang={lang} labels={{ kept: t.kept, keptSub: t.keptSub }}/>
+          <ScanEssai lang={lang}
+            labels={{ kept: t.kept, dropped: t.dropped, word: t.word, words: t.words,
+              droppedNone: t.droppedNone, keptNone: t.keptNone }}
+            textes={{ lead: t.essaiLead, placeholder: t.essaiHolder,
+              reset: t.essaiReset, prive: t.essaiPrive }}/>
         </div>
         <h1 className="nuvi-arrivee" style={{
           "--pose": "260ms",
@@ -311,7 +332,8 @@ export default function Landing({ lang = "en" }) {
       }}>
         {eyebrow(t.answerLead)}
         <ScanHero lang={lang} mode="garde" pilote
-          labels={{ kept: t.kept, keptSub: t.keptAll ? "" : t.keptSub, keptAll: t.keptAll }}/>
+          labels={{ kept: t.kept, dropped: t.dropped, word: t.word, words: t.words,
+            droppedNone: t.droppedNone, keptAll: t.keptAll }}/>
         <h2 style={{
           fontFamily: Serif, fontWeight: 400,
           fontSize: "clamp(21px, 2.9vw, 34px)", lineHeight: 1.18,

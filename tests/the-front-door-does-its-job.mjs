@@ -151,10 +151,67 @@ export async function run() {
       await ctx.close();
     }
 
+    // --- 7. La phrase du visiteur passe sous la meme ligne -------------
+    //
+    // C'est la seule chose de la page qui ne soit pas une affirmation. Si le
+    // champ n'existe plus, ou s'il n'a plus d'effet, il ne reste qu'une
+    // demonstration ecrite d'avance - c'est-a-dire une publicite.
+    for (const ecran of ECRANS) {
+      const { ctx, page, erreurs } = await ouvrir(browser, ecran);
+      const champ = page.locator('input[type="text"]').first();
+      if (!(await champ.count())) {
+        failures.push(
+          `${ecran.nom} : aucun champ pour faire lire sa propre phrase. La `
+          + "page redevient une demonstration ecrite d'avance, que le visiteur "
+          + "regarde sans jamais s'y reconnaitre."
+        );
+        await ctx.close();
+        continue;
+      }
+
+      const avant = await page.evaluate(() => document.body.innerText);
+      // Une phrase dont on connait le verdict : "Tesco" et "van" sont
+      // classables, "reliable" ne l'est pas.
+      await champ.fill("Very reliable driver, 40 deliveries a day for Tesco");
+      await page.waitForTimeout(1400);
+      const apres = await page.evaluate(() => document.body.innerText);
+
+      if (apres === avant) {
+        failures.push(
+          `${ecran.nom} : taper sa propre phrase ne change rien a l'ecran. Le `
+          + "champ promet une lecture et ne la fait pas."
+        );
+      }
+      // Ses mots doivent etre a l'ecran, et le verdict doit porter sur EUX.
+      for (const attendu of ["Tesco", "deliveries"]) {
+        if (!apres.includes(attendu)) {
+          failures.push(
+            `${ecran.nom} : "${attendu}" a ete tape et n'apparait pas dans la `
+            + "phrase analysee. Ce n'est pas la phrase du visiteur qui est lue."
+          );
+        }
+      }
+      if (!/\b40\b/.test(apres)) {
+        failures.push(
+          `${ecran.nom} : le chiffre "40" n'est pas retenu. Un logiciel de tri `
+          + "range les chiffres avant tout le reste, et c'est exactement ce que "
+          + "le produit demande aux candidats d'ecrire."
+        );
+      }
+      if (erreurs.length) {
+        failures.push(
+          `${ecran.nom} : erreur JS pendant la lecture de la phrase du `
+          + `visiteur - ${[...new Set(erreurs)].slice(0, 2).join(" | ")}`
+        );
+      }
+      await ctx.close();
+    }
+
     if (!failures.length) {
       console.log(
-        "      la vitrine explique et laisse entrer ; connexion, fragment et app "
-        + "installee sont relayes, une adresse ordinaire ne l'est pas"
+        "      la vitrine explique, laisse entrer et lit la phrase du visiteur ; "
+        + "connexion, fragment et app installee sont relayes, une adresse "
+        + "ordinaire ne l'est pas"
       );
     }
   } catch (err) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { lireCommeUneMachine } from "../../lib/lectureMachine";
 import React from "react";
 
 // Les regles d'animation vivent dans globals.css - voir la note sur
@@ -38,26 +39,20 @@ import React from "react";
  * refuse le mouvement, verrait une phrase a moitie morte et rien d'autre.
  */
 
-// La phrase, decoupee. `faible` marque ce qu'un logiciel de tri ne peut pas
-// ranger : une intention, un adjectif, une formule. Ce ne sont pas des mots
-// mal choisis - ce sont des mots que la machine n'a nulle part ou mettre.
+// LES DEUX PHRASES DE LA DEMONSTRATION
+//
+// Elles etaient decoupees mot a mot, avec l'etat de chaque mot ecrit a la
+// main. Ca marchait tant que la demonstration etait la seule. Depuis que le
+// visiteur peut faire passer SA phrase sous la meme ligne, deux regles
+// coexistaient : celle qu'on avait tapee, et celle du code. Elles pouvaient
+// diverger, et le jour ou elles divergent la page ment sur son propre
+// mecanisme. Il n'y a plus qu'une regle, dans lib/lectureMachine.js, et les
+// phrases d'exemple y passent comme les autres.
 const PHRASE = {
-  en: [
-    [{ m: "Passionate" , f: 1 }, { m: "and", f: 1 }, { m: "hard-working", f: 1 },
-     { m: "hospitality", f: 0 }, { m: "professional", f: 1 }],
-    [{ m: "with", f: 1 }, { m: "a", f: 1 }, { m: "decade", f: 1 }, { m: "of", f: 1 },
-     { m: "experience", f: 1 }, { m: "who", f: 1 }, { m: "improved", f: 1 }],
-    [{ m: "the", f: 1 }, { m: "business", f: 1 }, { m: "and", f: 1 },
-     { m: "loves", f: 1 }, { m: "a", f: 1 }, { m: "challenge.", f: 1 }],
-  ],
-  fr: [
-    [{ m: "Professionnel", f: 1 }, { m: "passionne", f: 1 }, { m: "de", f: 1 },
-     { m: "la", f: 1 }, { m: "restauration", f: 0 }],
-    [{ m: "avec", f: 1 }, { m: "dix", f: 1 }, { m: "ans", f: 1 },
-     { m: "d'experience,", f: 1 }, { m: "qui", f: 1 }, { m: "a", f: 1 }],
-    [{ m: "ameliore", f: 1 }, { m: "les", f: 1 }, { m: "resultats", f: 1 },
-     { m: "et", f: 1 }, { m: "aime", f: 1 }, { m: "les", f: 1 }, { m: "defis.", f: 1 }],
-  ],
+  en: "Passionate and hard-working hospitality professional with a decade of "
+    + "experience who improved the business and loves a challenge.",
+  fr: "Professionnel passionne de la restauration avec dix ans d'experience, "
+    + "qui a ameliore les resultats et aime les defis.",
 };
 
 // LA MEME PHRASE, REECRITE
@@ -67,35 +62,41 @@ const PHRASE = {
 // change la forme : un intitule que la machine connait, un nombre au lieu
 // d'une periphrase, un resultat chiffre au lieu d'un adjectif.
 //
-// Aucun mot n'est marque faible : ils survivent tous au passage de la ligne.
-// C'est la reponse a ce que le heros vient de montrer, avec le meme
-// mecanisme, ce qui rend la comparaison immediate.
+// Qu'elle survive entierement n'est pas decrete : on la donne au meme juge,
+// et il ne trouve rien a jeter.
 const REECRIT = {
-  en: [
-    [{ m: "Bar", f: 0 }, { m: "Manager", f: 0 }, { m: "with", f: 0 }, { m: "10", f: 0 },
-     { m: "years", f: 0 }, { m: "in", f: 0 }, { m: "hospitality.", f: 0 }],
-    [{ m: "78%", f: 0 }, { m: "beverage", f: 0 }, { m: "GP,", f: 0 },
-     { m: "200", f: 0 }, { m: "covers", f: 0 }, { m: "a", f: 0 }, { m: "service,", f: 0 }],
-    [{ m: "team", f: 0 }, { m: "of", f: 0 }, { m: "12.", f: 0 }],
-  ],
-  fr: [
-    [{ m: "Barman", f: 0 }, { m: "responsable,", f: 0 }, { m: "10", f: 0 },
-     { m: "ans", f: 0 }, { m: "en", f: 0 }, { m: "restauration.", f: 0 }],
-    [{ m: "78%", f: 0 }, { m: "de", f: 0 }, { m: "marge", f: 0 }, { m: "boissons,", f: 0 },
-     { m: "200", f: 0 }, { m: "couverts", f: 0 }, { m: "par", f: 0 }, { m: "service,", f: 0 }],
-    [{ m: "equipe", f: 0 }, { m: "de", f: 0 }, { m: "12.", f: 0 }],
-  ],
+  en: "Bar Manager with 10 years in hospitality. 78% beverage GP, "
+    + "200 covers a service, team of 12.",
+  fr: "Barman responsable, 10 ans en restauration. 78% de marge boissons, "
+    + "200 couverts par service, equipe de 12.",
 };
 
-// Ce que le logiciel a effectivement retenu. Un seul mot sur toute la
-// phrase : c'est le chiffre le plus honnete de la page.
-const RETENU = { en: "hospitality", fr: "restauration" };
-
-export default function ScanHero({ lang = "en", labels, mode = "perte", pilote = false }) {
+export default function ScanHero({ lang = "en", labels, mode = "perte",
+  pilote = false, texte = "" }) {
   const garde = mode === "garde";
-  const source = garde ? REECRIT : PHRASE;
-  const lignes = source[lang] || source.en;
-  const total = lignes.reduce((n, l) => n + l.length, 0);
+  // `texte` non vide : c'est la phrase du visiteur, et elle passe devant.
+  const brut = texte.trim()
+    || (garde ? REECRIT : PHRASE)[lang]
+    || (garde ? REECRIT : PHRASE).en;
+  const lu = lireCommeUneMachine(brut);
+  const lignes = lu.lignes;
+  const total = Math.max(lu.total, 1);
+  // Ne compte QUE les vraies pertes. Le liant ("and", "de") n'a jamais ete
+  // candidat a etre retenu : le compter gonflerait le chiffre, et toute la
+  // credibilite de la page tient a ce qu'aucun chiffre ne soit gonfle.
+  const ecartes = lu.ecartes;
+
+  // CE QUI RESTE, DIT EN TOUTES LETTRES
+  // Une phrase entierement classee n'a pas besoin qu'on enumere ses mots :
+  // "tout" se lit plus vite et dit la meme chose. Une phrase qui ne laisse
+  // rien doit le dire aussi, sinon la case reste vide et se lit comme un bug.
+  const survivants = lu.retenus;
+  const resume = !survivants.length
+    ? (labels.keptNone || labels.droppedNone)
+    : (ecartes === 0 && labels.keptAll)
+      ? labels.keptAll
+      : survivants.slice(0, 5).join(" ")
+        + (survivants.length > 5 ? " +" + (survivants.length - 5) : "");
 
   return (
     <div className={pilote ? "nuvi-scan-pilote" : undefined}
@@ -129,7 +130,8 @@ export default function ScanHero({ lang = "en", labels, mode = "perte", pilote =
                   // l'atteint, pas avant.
                   const part = (avant + mi) / total;
                   const retard = 0.5 + part * 2.7;
-                  if (!mot.f) {
+                  // RETENU : la machine sait ou le mettre. Il reste debout.
+                  if (mot.f === 0) {
                     return (
                       <span key={mi} style={{
                         color: "var(--nuvi-purple, #5b3df5)", fontWeight: 500,
@@ -137,6 +139,20 @@ export default function ScanHero({ lang = "en", labels, mode = "perte", pilote =
                       }}>{mot.m}</span>
                     );
                   }
+                  // LIANT : la grammaire s'efface, mais on ne la RAYE pas.
+                  // Une barre sur "and" ferait passer pour une perte ce qui
+                  // n'a jamais rien pese, et le visiteur compterait faux.
+                  if (mot.f === 2) {
+                    return (
+                      <span key={mi} className="nuvi-mot-faible" style={{
+                        display: "inline-block", marginRight: "0.26em",
+                        opacity: 0.17,
+                        "--retard": retard + "s", "--part": part,
+                      }}>{mot.m}</span>
+                    );
+                  }
+                  // ECARTE : un mot que le candidat a choisi, et que la
+                  // machine n'a nulle part ou ranger. C'est la perte.
                   return (
                     <span key={mi} className="nuvi-mot-faible"
                       style={{
@@ -162,26 +178,48 @@ export default function ScanHero({ lang = "en", labels, mode = "perte", pilote =
         </p>
       </div>
 
-      {/* Le verdict. Un mot sur toute la phrase : c'est le chiffre le plus
-          honnete de la page, et il n'a besoin d'aucun commentaire. */}
+      {/* LE VERDICT A DEUX FACES
+          La ligne montre des mots mourir ; sans legende, un visiteur voit un
+          effet. Nommer et compter les deux cotes transforme l'effet en fait :
+          un mot retenu, dix-sept ecartes, sur la phrase qu'il vient de lire. */}
       <div style={{
-        display: "flex", alignItems: "baseline", flexWrap: "wrap",
-        gap: "8px 14px", marginTop: 22,
+        display: "flex", flexWrap: "wrap", gap: "14px 34px", marginTop: 22,
         fontFamily: "'Inter', sans-serif",
       }}>
-        <span style={{
-          fontSize: 10.5, fontWeight: 700, letterSpacing: "0.16em",
-          textTransform: "uppercase", color: "var(--nuvi-ink-muted, #5a5a62)",
-        }}>{labels.kept}</span>
-        <span style={{
-          fontFamily: "'Fraunces', Georgia, serif",
-          fontSize: "clamp(19px, 2.6vw, 30px)", fontWeight: 500,
-          color: garde ? "var(--nuvi-green, #16a34a)" : "var(--nuvi-purple, #5b3df5)",
-        }}>{garde ? labels.keptAll : (RETENU[lang] || RETENU.en)}</span>
-        <span style={{
-          fontSize: "clamp(12px, 1.4vw, 14px)",
-          color: "var(--nuvi-ink-muted, #5a5a62)",
-        }}>{labels.keptSub}</span>
+        {[
+          { titre: labels.kept,
+            valeur: resume,
+            // Vert quand rien n'est perdu, violet sinon : la couleur
+            // porte le verdict avant qu'on ait lu le chiffre.
+            teinte: ecartes === 0 ? "var(--nuvi-green, #16a34a)" : "var(--nuvi-purple, #5b3df5)",
+            barre: false },
+          { titre: labels.dropped,
+            // "1 words" sur une demonstration qui se veut soignee suffit a faire
+            // douter du reste.
+            valeur: ecartes
+              ? ecartes + " " + (ecartes === 1 ? (labels.word || labels.words) : labels.words)
+              : labels.droppedNone,
+            teinte: "var(--nuvi-ink-muted, #5a5a62)",
+            // Barre seulement s'il y a vraiment eu une perte : rayer "rien"
+            // donnerait a la reponse l'air d'un echec alors qu'elle est la
+            // demonstration inverse.
+            barre: ecartes > 0 },
+        ].map((face) => (
+          <div key={face.titre} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{
+              fontSize: 10.5, fontWeight: 700, letterSpacing: "0.16em",
+              textTransform: "uppercase", color: "var(--nuvi-ink-muted, #5a5a62)",
+            }}>{face.titre}</span>
+            <span style={{
+              fontFamily: "'Fraunces', Georgia, serif",
+              fontSize: "clamp(19px, 2.6vw, 30px)", fontWeight: 500,
+              color: face.teinte,
+              textDecoration: face.barre ? "line-through" : "none",
+              textDecorationThickness: "1px",
+              opacity: face.barre ? 0.75 : 1,
+            }}>{face.valeur}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
