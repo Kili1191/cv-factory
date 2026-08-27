@@ -748,3 +748,58 @@ body.cvf-dark.nuvi-grain::after {
   .nuvi-morph-entre,
   .nuvi-morph-pose { opacity: 1; transform: none; }
 }
+
+/* ============================================================
+ * DEUX COLONNES : LA PAGE OCCUPE ENFIN SA LARGEUR
+ * ============================================================
+ *
+ * Mesure faite sur les captures de la vitrine : le contenu tenait dans les
+ * 45% gauche de l ecran, et le reste restait creme. Trois sections sur
+ * quatre. Sur un portable ca ne se lit pas comme de la sobriete, ca se lit
+ * comme une page inachevee.
+ *
+ * Le titre prend la colonne large, le texte la colonne etroite. Sous 900px
+ * - le meme point de rupture que le reste du produit - tout revient en une
+ * seule colonne, parce que deux colonnes sur un telephone donnent deux
+ * colonnes trop etroites, pas une composition.
+ *
+ * Le leger retrait du second bloc sur grand ecran aligne sa premiere ligne
+ * sur la DEUXIEME du titre. Aligner les deux premieres lignes parait juste
+ * en theorie et se voit de travers : un titre de 80px et un texte de 16px
+ * n ont pas la meme hauteur d oeil.
+ */
+.nuvi-duo {
+  display: grid;
+  /* minmax(0, 1fr) et non 1fr : "1fr" vaut "minmax(auto, 1fr)", et ce auto
+     refuse de descendre sous la largeur du contenu. Un document large dans
+     la colonne la forcait donc a 580px dans un telephone de 390, et le titre
+     de la section, qui remplit la meme colonne, sortait de l ecran - coupe
+     net a "in a". La colonne peut maintenant retrecir ; c est au document,
+     et a lui seul, d etre rogne par le bord. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px clamp(32px, 6vw, 92px);
+  align-items: start;
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .nuvi-duo { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); }
+  .nuvi-duo > :last-child { padding-top: .5em; }
+
+  /* Quand la seconde colonne porte un DOCUMENT et non un paragraphe, le
+     rapport s inverse : c est lui l objet de la section, le texte n est que
+     sa legende. */
+  .nuvi-duo-doc { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+  .nuvi-duo-doc > :last-child { padding-top: 0; }
+}
+
+/* LES GRANDS TITRES NE DOIVENT PAS POUSSER LA PAGE DE COTE
+   A 80px, un mot compose long deborde d un telephone avant d avoir fini.
+   La cesure et la coupure de secours sont donc posees sur les titres eux
+   memes, pas sur la page : une barre de defilement horizontale sur une
+   vitrine est un defaut visible de tout le monde. */
+.nuvi-titre-geant {
+  overflow-wrap: break-word;
+  hyphens: auto;
+  text-wrap: balance;
+}

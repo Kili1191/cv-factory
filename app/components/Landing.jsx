@@ -5,6 +5,7 @@ import { destinationDuRetour, destinationDUneAppInstallee } from "../authReturn"
 import ScanHero from "./ScanHero";
 import ScanEssai from "./ScanEssai";
 import Morph from "./Morph";
+import LandingCV from "./LandingCV";
 import { Magnetic } from "./motion";
 
 /**
@@ -62,6 +63,9 @@ const T = {
     essaiReset: "Back to the example",
     essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
     answerLead: "The same person, written so the machine can file it.",
+    cvLead: "This is what comes out",
+    cvTitle: "A whole CV, aimed at one job ad, in a file you can send.",
+    cvBody: "Not one sentence - every section. Paste the ad you are going for, and Nuvi writes the CV for that ad, then hands you the file.",
     morphLead: "Watch the same facts re-file themselves",
     morphNote: "Not one of these adds anything. The years are the same years, the work is the same work. Only the shape changed, and with it whether the software can put it anywhere.",
     answerTitle: "Nothing invented. Only re-filed.",
@@ -98,6 +102,9 @@ const T = {
     essaiReset: "Revenir a l'exemple",
     essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
     answerLead: "La meme personne, ecrite pour que la machine sache la ranger.",
+    cvLead: "Voila ce qui en sort",
+    cvTitle: "Un CV entier, vise sur une annonce, dans un fichier que tu peux envoyer.",
+    cvBody: "Pas une phrase - toutes les sections. Colle l'annonce que tu vises, Nuvi ecrit le CV pour elle, et te rend le fichier.",
     morphLead: "Regarde les memes faits se ranger autrement",
     morphNote: "Aucun n'ajoute quoi que ce soit. Les annees sont les memes annees, le travail est le meme travail. Seule la forme a change, et avec elle le fait que le logiciel sache ou la mettre.",
     answerTitle: "Rien d'invente. Juste range autrement.",
@@ -287,28 +294,34 @@ export default function Landing({ lang = "en" }) {
             textes={{ lead: t.essaiLead, placeholder: t.essaiHolder,
               reset: t.essaiReset, prive: t.essaiPrive }}/>
         </div>
-        <h1 className="nuvi-arrivee" style={{
-          "--pose": "260ms",
-          fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(21px, 2.9vw, 34px)",
-          lineHeight: 1.18, letterSpacing: "-0.025em",
-          margin: "38px 0 14px", maxWidth: 26 + "ch",
-        }}>
-          {t.h1a}{" "}
-          <em style={{
-            fontStyle: "italic",
-            background: "linear-gradient(135deg,#5b3df5,#b91c8c)",
-            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-            backgroundClip: "text", paddingRight: "0.12em",
-          }}>{t.h1b}</em>
-        </h1>
-        <p className="nuvi-arrivee" style={{
-          "--pose": "340ms",
-          fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.55,
-          color: Muted, maxWidth: 52 + "ch", margin: "0 0 30px",
-        }}>{t.sub}</p>
-        <div className="nuvi-arrivee" style={{ "--pose": "420ms" }}>
-          {lien(t.cta, t.ctaSub, true)}
+        {/* LE TITRE ET SA SUITE, COTE A COTE
+            Empiles, ils tenaient sur 26 puis 52 caracteres et laissaient plus
+            de la moitie de l'ecran vide sous le balayage. Le titre passe a
+            gauche, en grand ; la phrase et l'appel a l'action tiennent la
+            colonne de droite. La bande sous le balayage est enfin occupee. */}
+        <div className="nuvi-duo nuvi-arrivee"
+          style={{ "--pose": "260ms", marginTop: 44 }}>
+          <h1 className="nuvi-titre-geant" style={{
+            fontFamily: Serif, fontWeight: 400,
+            fontSize: "clamp(26px, 5.2vw, 66px)",
+            lineHeight: 1.04, letterSpacing: "-0.035em",
+            margin: 0,
+          }}>
+            {t.h1a}{" "}
+            <em style={{
+              fontStyle: "italic",
+              background: "linear-gradient(135deg,#5b3df5,#b91c8c)",
+              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+              backgroundClip: "text", paddingRight: "0.12em",
+            }}>{t.h1b}</em>
+          </h1>
+          <div>
+            <p style={{
+              fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.6,
+              color: Muted, maxWidth: 40 + "ch", margin: "0 0 26px",
+            }}>{t.sub}</p>
+            {lien(t.cta, t.ctaSub, true)}
+          </div>
         </div>
       </section>
 
@@ -365,15 +378,17 @@ export default function Landing({ lang = "en" }) {
         <ScanHero lang={lang} mode="garde" pilote
           labels={{ kept: t.kept, dropped: t.dropped, word: t.word, words: t.words,
             droppedNone: t.droppedNone, keptAll: t.keptAll }}/>
-        <h2 style={{
-          fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(21px, 2.9vw, 34px)", lineHeight: 1.18,
-          letterSpacing: "-0.025em", margin: "34px 0 12px", maxWidth: 24 + "ch",
-        }}>{t.answerTitle}</h2>
-        <p style={{
-          fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.6,
-          color: Muted, maxWidth: 56 + "ch", margin: 0,
-        }}>{t.answerBody}</p>
+        <div className="nuvi-duo" style={{ marginTop: 40 }}>
+          <h2 className="nuvi-titre-geant" style={{
+            fontFamily: Serif, fontWeight: 400,
+            fontSize: "clamp(26px, 5vw, 62px)", lineHeight: 1.06,
+            letterSpacing: "-0.032em", margin: 0,
+          }}>{t.answerTitle}</h2>
+          <p style={{
+            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            color: Muted, maxWidth: 42 + "ch", margin: 0,
+          }}>{t.answerBody}</p>
+        </div>
       </section>
 
       {/* ===== 2 bis. LA TRANSFORMATION, SUR PLACE =====
@@ -396,6 +411,50 @@ export default function Landing({ lang = "en" }) {
           labels={{ lead: t.morphLead, note: t.morphNote }}/>
       </section>
 
+      {/* ===== 2 ter. LE DOCUMENT, ENFIN A L'ECRAN =====
+
+          La page parlait de CV pendant six sections sans jamais en montrer
+          un : on arrivait au bouton sans avoir vu ce qu'on allait obtenir.
+
+          Cette section ne rejoue PAS le morphing. Lui montre ce qui change
+          dans une phrase ; celle-ci montre ce que la page n'avait jamais
+          dit - l'etendue et la sortie. Un CV entier, vise sur une annonce
+          precise, et un fichier a envoyer. Si elle redisait "formule molle
+          contre fait range", elle serait le morphing avec un cadre autour,
+          et il faudrait la retirer. */}
+      <section className="nuvi-scroll-in" style={{
+        padding: "clamp(56px, 12vh, 130px) 0 clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
+        borderBottom: "1px solid " + Hair,
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
+        overflow: "hidden",
+      }}>
+        {/* Pas de grille en style en ligne : elle l'emporterait sur la
+            classe, et la requete de media qui passe a deux colonnes ne
+            gagnerait jamais. Le document restait donc sous le texte, avec la
+            moitie droite de l'ecran vide - exactement le defaut qu'on
+            corrigeait. */}
+        <div className="nuvi-duo nuvi-duo-doc" style={{ alignItems: "center" }}>
+          <div>
+            {eyebrow(t.cvLead)}
+            <h2 className="nuvi-titre-geant" style={{
+              fontFamily: Serif, fontWeight: 400,
+              fontSize: "clamp(26px, 4.6vw, 58px)", lineHeight: 1.05,
+              letterSpacing: "-0.032em", margin: "0 0 16px",
+            }}>{t.cvTitle}</h2>
+            <p style={{
+              fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+              color: Muted, maxWidth: 40 + "ch", margin: 0,
+            }}>{t.cvBody}</p>
+          </div>
+          {/* Le document deborde volontairement du cadre : coupe par le bord,
+              il se lit comme un objet pose sur la page et non comme une
+              vignette centree dans une boite. */}
+          <div style={{ justifySelf: "start", marginRight: "-14vw" }}>
+            <LandingCV lang={lang}/>
+          </div>
+        </div>
+      </section>
+
       {/* ===== 3. POUR QUI =====
           Le second tableau disait la meme chose que le premier. Il a laisse la
           place a la seule information que la page n'avait pas encore donnee :
@@ -407,15 +466,20 @@ export default function Landing({ lang = "en" }) {
         maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
       }}>
         {eyebrow(t.s3kicker)}
-        <h2 style={{
-          fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(26px, 4vw, 48px)", lineHeight: 1.12,
-          letterSpacing: "-0.025em", margin: "0 0 14px", maxWidth: 22 + "ch",
-        }}>{t.s3title}</h2>
-        <p style={{
-          fontSize: "clamp(13.5px, 1.5vw, 16px)", lineHeight: 1.6,
-          color: Muted, maxWidth: 58 + "ch", margin: 0,
-        }}>{t.s3body}</p>
+        {/* Le titre tenait sur 22 caracteres a 48px et laissait 58% de
+            l'ecran vide. Il prend la colonne large, le texte la colonne
+            etroite : la page occupe enfin sa largeur. */}
+        <div className="nuvi-duo">
+          <h2 className="nuvi-titre-geant" style={{
+            fontFamily: Serif, fontWeight: 400,
+            fontSize: "clamp(30px, 6.6vw, 84px)", lineHeight: 1.03,
+            letterSpacing: "-0.035em", margin: 0,
+          }}>{t.s3title}</h2>
+          <p style={{
+            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            color: Muted, maxWidth: 42 + "ch", margin: 0,
+          }}>{t.s3body}</p>
+        </div>
       </section>
 
       {/* ===== 4. LA DEMANDE ===== */}
@@ -423,10 +487,10 @@ export default function Landing({ lang = "en" }) {
         padding: "clamp(64px, 13vh, 140px) clamp(18px, 5vw, 40px)",
         textAlign: "center",
       }}>
-        <h2 style={{
+        <h2 className="nuvi-titre-geant" style={{
           fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(30px, 5.2vw, 60px)", lineHeight: 1.08,
-          letterSpacing: "-0.03em", margin: "0 0 14px",
+          fontSize: "clamp(38px, 9vw, 116px)", lineHeight: 1.0,
+          letterSpacing: "-0.04em", margin: "0 0 18px",
         }}>{t.finalTitle}</h2>
         <p style={{
           fontSize: "clamp(14px, 1.6vw, 17px)", lineHeight: 1.55,
