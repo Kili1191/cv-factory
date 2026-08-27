@@ -31,7 +31,7 @@
 //      Google et les lecteurs d'ecran ; du francais annonce comme anglais est
 //      lu a voix haute avec le mauvais accent.
 
-import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL } from "./lib/harness.mjs";
 
 // Des mots qui n'existent que dans une seule des deux langues, et qui sont
 // affiches sur l'ecran d'arrivee.
@@ -49,7 +49,7 @@ const ASK = '[data-nuvi-lang-ask="1"]';
 async function ouvrir(browser, { locale, choixDeja } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 }, locale });
   const page = await ctx.newPage();
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(APP_URL, { waitUntil: "domcontentloaded" });
   if (choixDeja) {
     await page.evaluate((lc) => localStorage.setItem("cvf_c", JSON.stringify(lc)), choixDeja);
     const pose = await page.evaluate(() => localStorage.getItem("cvf_c"));

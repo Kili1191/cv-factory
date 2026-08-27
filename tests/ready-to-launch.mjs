@@ -36,7 +36,7 @@
 // seule question : est-ce que ca tient debout partout. Vert ici ne veut pas
 // dire "beau", ca veut dire "rien ne casse".
 
-import { startServer, stopServer, launchBrowser, BASE_URL, SAMPLE_CV } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL, SAMPLE_CV } from "./lib/harness.mjs";
 
 const APPAREILS = [
   { nom: "ordinateur", viewport: { width: 1400, height: 900 }, mob: false },
@@ -121,7 +121,7 @@ async function preparer(browser, appareil, situation) {
     erreurs.push("console: " + t);
   });
 
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+  await page.goto(APP_URL, { waitUntil: "domcontentloaded" });
   await page.evaluate((s) => {
     for (const [k, v] of Object.entries(s)) localStorage.setItem(k, JSON.stringify(v));
   }, situation.stockage);

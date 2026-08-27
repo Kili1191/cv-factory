@@ -23,9 +23,7 @@
 
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import {
-  startServer, stopServer, launchBrowser, exportCvPdf, extractPdfLines, SAMPLE_CV,
-} from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, exportCvPdf, extractPdfLines, SAMPLE_CV } from "./lib/harness.mjs";
 import { parseResume } from "../lib/atsParser.js";
 import { compareToTruth } from "../lib/atsFidelity.js";
 import { readFileSync } from "node:fs";

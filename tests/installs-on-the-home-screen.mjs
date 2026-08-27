@@ -17,7 +17,7 @@
 // ou il n'y a plus de barre de navigateur pour proteger le bas - la barre de
 // navigation de Nuvi passe sous l'indicateur d'accueil.
 
-import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL } from "./lib/harness.mjs";
 import { detectPlatform } from "../lib/installTarget.js";
 
 export async function run() {
@@ -50,7 +50,7 @@ export async function run() {
   try {
     const ctx = await browser.newContext();
     const page = await ctx.newPage();
-    await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
+    await page.goto(APP_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
 
     const head = await page.evaluate(() => {
       const meta = (sel, attr = "content") => {

@@ -27,7 +27,7 @@
 // sorti par le defilement est normalement recouvert par le mobilier fixe :
 // c'est le comportement attendu d'une barre fixe, pas un defaut.
 
-import { startServer, stopServer, launchBrowser, seedApp, BASE_URL } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, seedApp, BASE_URL, APP_URL } from "./lib/harness.mjs";
 
 const PHONE = {
   viewport: { width: 390, height: 844 },
@@ -49,7 +49,7 @@ async function blockedControls(browser, state) {
   page.on("pageerror", e => errors.push(e.message.split("\n")[0].slice(0, 90)));
 
   if (state.seed) await seedApp(page);
-  else await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
+  else await page.goto(APP_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
 
   // Le temps que le mobilier fixe se place : la barre de suggestion mesure sa
   // propre hauteur puis la publie, et le compagnon s'y accroche.

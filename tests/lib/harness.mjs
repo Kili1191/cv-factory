@@ -13,6 +13,13 @@ import { existsSync } from "node:fs";
 
 const PORT = Number(process.env.TEST_PORT || 4311);
 export const BASE_URL = `http://127.0.0.1:${PORT}`;
+// L'APPLICATION N'EST PLUS A LA RACINE
+//
+// "/" est devenu une vitrine ; l'outil vit sur /app. Les suites qui pilotent
+// l'application doivent donc viser APP_URL. BASE_URL reste la racine, pour
+// les rares controles qui portent sur la vitrine elle-meme (les balises de
+// partage, le relais de connexion).
+export const APP_URL = `${BASE_URL}/app`;
 
 // En CI, playwright installe son propre Chromium et trouve tout seul.
 // En local, l'image fournit un binaire a un emplacement fixe.
@@ -159,7 +166,7 @@ export const SAMPLE_CV = {
 // dire dans quelle langue il l'attend ; il ne doit pas dependre d'un reglage
 // que le produit a le droit de changer.
 export async function seedApp(page, cv = SAMPLE_CV, { layout, locale = "fr" } = {}) {
-  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  await page.goto(APP_URL, { waitUntil: "networkidle" });
   await page.evaluate(({ data, layout, locale }) => {
     localStorage.setItem("cvf_d", JSON.stringify(data));
     localStorage.setItem("cvf_k", JSON.stringify("sk-test-not-used"));

@@ -8,7 +8,7 @@
 import { writeFileSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { startServer, stopServer, launchBrowser, BASE_URL, answerLanguageIfAsked } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL, answerLanguageIfAsked } from "./lib/harness.mjs";
 
 function buildPdf(lines) {
   const objs = [
@@ -38,7 +38,7 @@ async function importOnce(browser, { blockWorker }) {
   page.on("dialog", async d => { alerted = true; await d.dismiss(); });
   if (blockWorker) await page.route("**/pdf.worker.min.js", r => r.abort());
 
-  await page.goto(BASE_URL, { waitUntil: "networkidle" });
+  await page.goto(APP_URL, { waitUntil: "networkidle" });
   await page.evaluate(() => localStorage.clear());
   await page.reload({ waitUntil: "networkidle" });
   await page.waitForTimeout(2600);

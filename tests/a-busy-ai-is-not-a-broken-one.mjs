@@ -33,7 +33,7 @@
 //   6. Chaque nouvelle tentative previent l'application.
 
 import { createServer } from "node:http";
-import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL } from "./lib/harness.mjs";
 
 // Le faux serveur d'API. Chaque scenario lui donne la suite de reponses a
 // servir, et il note ce qu'il a recu.
@@ -104,7 +104,7 @@ export async function run() {
   try {
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
     const page = await ctx.newPage();
-    await page.goto(BASE_URL, { waitUntil: "domcontentloaded" });
+    await page.goto(APP_URL, { waitUntil: "domcontentloaded" });
     await page.waitForTimeout(2500);
 
     const expose = await page.evaluate(() => typeof window.__nuviAiCall === "function");

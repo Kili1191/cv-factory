@@ -29,7 +29,7 @@
 // attrape tout element qui a herite de la transparence sans le fond qui va
 // avec. Elle vaut pour l'accueil comme pour tout ce qui sera ajoute apres.
 
-import { startServer, stopServer, launchBrowser, BASE_URL, seedApp } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, BASE_URL, APP_URL, seedApp } from "./lib/harness.mjs";
 
 // Les deux ecrans qui comptent : celui que voit un visiteur, et celui que
 // voit quelqu'un qui a deja un CV.
@@ -47,7 +47,7 @@ async function inspect(browser, view) {
   page.on("pageerror", e => errors.push(e.message.split("\n")[0].slice(0, 100)));
 
   if (seed) await seedApp(page);
-  else await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
+  else await page.goto(APP_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
 
   // Le temps que les apparitions au defilement se jouent. Sans cette
   // attente, on accuserait une animation en cours d'etre un texte perdu.
@@ -94,7 +94,7 @@ async function inspect(browser, view) {
 async function accentIsPainted(browser) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 } });
   const page = await ctx.newPage();
-  await page.goto(BASE_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
+  await page.goto(APP_URL, { waitUntil: "domcontentloaded", timeout: 45000 });
 
   await page.waitForTimeout(3600);
   const r = await page.evaluate(() => {
