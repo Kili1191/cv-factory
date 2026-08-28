@@ -26,7 +26,7 @@ async function extractCvText(file, T) {
 }
 
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
-  raw, setRaw, imping, onImport, setTab, setAiMode }) {
+  raw, setRaw, imping, onImport, setTab, setAiMode, lireImageCv }) {
 
   const fileInputRef = useRef(null);
   const [fileBusy, setFileBusy] = useState("");   // nom du fichier en lecture
@@ -297,11 +297,16 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           type="file"
           id="cv-file-upload"
           ref={fileInputRef}
+          // Les images comptent : beaucoup de gens n'ont pas leur CV en
+          // fichier, ils en ont une photo. Sur telephone, "image/*" ouvre
+          // aussi l'appareil photo - on peut donc photographier un CV
+          // imprime et repartir avec.
           accept={[
             ".pdf", ".docx", ".txt",
             "application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "text/plain",
+            "image/*",
           ].join(",")}
           style={{
             // display:none empeche l'ouverture du selecteur sur certains
@@ -315,11 +320,33 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             setFileErr("");
             setFileBusy(file.name);
             try {
-              const text = await extractCvText(file, T);
-              if (!text || !text.trim()) {
-                setFileErr(T.ob_file_empty_err);
+              // Le lecteur commun distingue ce qui se lit sur place (PDF,
+              // DOCX, TXT) de ce qui doit etre regarde (une image). Le texte
+              // ne sort jamais du navigateur ; une photo, elle, n'a pas de
+              // texte a extraire ici, et c'est le seul cas ou le fichier
+              // lui-meme part au modele.
+              const { lireUnFichier } = await import("../../lib/lireUnFichier");
+              const lu = await lireUnFichier(file, {
+                pdf: T.ob_file_pdf_err,
+                format: T.ob_file_format_err,
+                tropGrosse: T.ob_img_too_big,
+              });
+              let text = "";
+              if (lu.genre === "refus") {
+                setFileErr(lu.raison);
+              } else if (lu.genre === "image") {
+                if (typeof lireImageCv !== "function") {
+                  setFileErr(T.ob_file_format_err);
+                } else {
+                  setFileBusy(T.ob_img_reading);
+                  text = await lireImageCv(lu);
+                }
               } else {
-                setRaw(text);
+                text = lu.texte;
+              }
+              if (lu.genre !== "refus") {
+                if (!text || !text.trim()) setFileErr(T.ob_file_empty_err);
+                else setRaw(text);
               }
             } catch (err) {
               // alert() disparait tout seul sur certains mobiles : l'erreur

@@ -6946,6 +6946,43 @@ export default function App() {
     notify(T.tr_restored);
   }, [T, pushH, setCVFn, notify]);
   
+  // LIRE UN CV PRIS EN PHOTO
+  //
+  // L'ecran d'accueil n'acceptait que PDF, DOCX et TXT. Or beaucoup de gens
+  // n'ont pas leur CV en fichier : ils l'ont sur un vieux telephone, dans un
+  // courriel, imprime dans un classeur. La photo est le seul exemplaire
+  // qu'ils possedent, et leur demander de retaper trois pages a la main est
+  // exactement la friction que ce produit existe pour supprimer.
+  //
+  // Une image n'a pas de texte a extraire dans le navigateur : c'est le seul
+  // cas ou le fichier lui-meme part au modele, qui le relit. Le texte obtenu
+  // rejoint ensuite le meme chemin que n'importe quel CV colle.
+  const lireImageCv = useCallback(async (piece) => {
+    if (!piece || piece.genre !== "image") return "";
+    const consigne = (locale === "en"
+      ? "Read this CV image and transcribe ALL its text, in reading order. "
+      : "Lis cette image de CV et retranscris TOUT son texte, dans l'ordre de lecture. ")
+      + (locale === "en"
+        ? "Keep every date, employer, job title, bullet and figure exactly as written. "
+          + "Invent nothing, correct nothing, add nothing. If a passage is unreadable, "
+          + "write [unreadable] rather than guessing. Plain text only, no commentary."
+        : "Garde chaque date, employeur, intitule, puce et chiffre tels quels. "
+          + "N'invente rien, ne corrige rien, n'ajoute rien. Si un passage est illisible, "
+          + "ecris [illisible] plutot que de deviner. Texte brut uniquement, sans commentaire.");
+    const txt = await aiCall(consigne, {
+      task_name: "read_cv_image",
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image",
+            source: { type: "base64", media_type: piece.media, data: piece.base64 } },
+          { type: "text", text: consigne },
+        ],
+      }],
+    });
+    return String(txt || "").trim();
+  }, [locale]);
+
   const onImport = useCallback(async () => {
     if (!obRaw.trim()) { notify(T.np2); return; }
     if (!apiKey) { notify(T.nk); return; }
@@ -8293,7 +8330,8 @@ export default function App() {
     <OnboardScreen T={T} locale={locale} setLocale={setLc}
       apiKey={apiKey} mode={obMode} setMode={setObMode}
       raw={obRaw} setRaw={setObRaw} imping={obImp}
-      onImport={onImport} setTab={setTab} setAiMode={setAiMode}/>
+      onImport={onImport} setTab={setTab} setAiMode={setAiMode}
+      lireImageCv={lireImageCv}/>
     </Suspense>
   );
 
