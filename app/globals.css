@@ -916,3 +916,82 @@ html {
      des coins arrondis. */
   -webkit-tap-highlight-color: rgba(91, 61, 245, .12);
 }
+
+/* ============================================================
+ * MOUVEMENT REDUIT : PLUS CALME, PAS MORT
+ * ============================================================
+ *
+ * Quatorze blocs plus haut coupent l animation quand le systeme demande
+ * moins de mouvement. Le reglage est respecte - et le resultat est une page
+ * entierement figee : mesure au navigateur, 41 animations actives tombent a
+ * ZERO. Quelqu un qui a Reduire les animations sur son telephone, ou dont le
+ * mode economie d energie l a active tout seul, ne voit RIEN de ce que le
+ * produit raconte. Il ne voit pas une page calme, il voit une page cassee.
+ *
+ * La recommandation dit "variante reduite OU desactivation". J avais pris la
+ * branche paresseuse. Une variante reduite existe, et elle est simple :
+ *
+ * Ce qui gene, c est le DEPLACEMENT - les grandes surfaces qui bougent, ce
+ * qui suit le defilement, ce qui grossit, ce qui tourne. Ce qui ne gene pas,
+ * c est un fondu, une couleur qui change, une barre qui se trace.
+ *
+ * On garde donc la demonstration en ne touchant qu a l opacite et a la
+ * couleur, sans un seul deplacement. Le mot faible s eteint toujours, la
+ * barre le raye toujours, les faits apparaissent toujours - simplement,
+ * plus rien ne voyage a travers l ecran.
+ *
+ * Ces regles viennent APRES les blocs qui coupent tout, donc elles gagnent.
+ */
+@media (prefers-reduced-motion: reduce) {
+
+  /* Le mot que la machine ne sait pas ranger s eteint sur place. */
+  .nuvi-mot-faible {
+    animation: nuviMotMeurt 900ms ease-out both !important;
+    animation-delay: var(--retard, 0ms) !important;
+    transform: none !important;
+  }
+  /* La barre se trace, sans que rien ne se deplace. */
+  .nuvi-mot-faible > i {
+    animation: nuviBarre 700ms ease-out both !important;
+    animation-delay: var(--retard, 0ms) !important;
+  }
+
+  /* Les sections apparaissent en fondu, sans monter. */
+  .nuvi-scroll-in {
+    animation: nuviFonduSeul 700ms ease-out both !important;
+  }
+
+  /* Le morphing : les deux etats se croisent, aucun ecrasement, aucun flou,
+     aucune deformation de la fonte. */
+  .nuvi-morph-lettre {
+    animation: none !important;
+    transition: opacity 500ms ease !important;
+    transform: none !important;
+    font-variation-settings: "wght" 500, "SOFT" 40 !important;
+  }
+  .nuvi-morph-sort  { opacity: 0 !important; }
+  .nuvi-morph-entre { opacity: 0 !important; }
+  .nuvi-morph-pose  { opacity: 1 !important; }
+  /* Le filtre goutte reste coupe : c est lui qui deforme. */
+  .nuvi-morph-goutte { filter: none !important; }
+
+  /* La feuille et les panneaux arrivent en fondu, sans glisser. */
+  .nuvi-feuille, .nuvi-panneau {
+    animation: nuviFonduSeul 260ms ease-out both !important;
+  }
+
+  /* La ligne de lecture ne traverse plus l ecran : elle reste ou elle est
+     et s efface. C est le seul element dont le deplacement etait le sujet,
+     et c est precisement celui qui gene. */
+  .nuvi-scan-ligne {
+    display: block !important;
+    animation: nuviFonduSeul 600ms ease-out both !important;
+    top: 0 !important;
+    opacity: .5 !important;
+  }
+}
+
+@keyframes nuviFonduSeul {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}

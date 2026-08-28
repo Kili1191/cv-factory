@@ -90,8 +90,15 @@ export default function Morph({ paires, lang = "en", labels }) {
   useEffect(() => {
     const el = cadre.current;
     if (!el || typeof window === "undefined") return;
-    if (window.matchMedia
-      && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // On NE SORT PLUS ici. Sortir laissait les faits sur leur version
+    // faible et la section n'avait plus aucun sens : la these du produit
+    // disparaissait pour qui a demande moins de mouvement.
+    //
+    // La transformation joue donc quand meme, et la feuille de style la
+    // reduit a un fondu - sans ecrasement, sans flou, sans deformation de
+    // la fonte. On laisse simplement plus de temps pour lire.
+    const calme = window.matchMedia
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (typeof IntersectionObserver !== "function") return;
 
     let minuteurs = [];
@@ -101,10 +108,10 @@ export default function Morph({ paires, lang = "en", labels }) {
       minuteurs.forEach(clearTimeout);
       minuteurs = [];
       setPhase("avant");                 // on montre la formule molle
-      poser(() => setPhase("fond"), 1000); // elle fond, l'autre nait
+      poser(() => setPhase("fond"), calme ? 1500 : 1000); // elle fond, l'autre nait
       // Le filtre est retire des que la transformation finit : au repos, le
       // texte doit etre net. Un flou permanent sur du serif se voit.
-      poser(() => setPhase("repos"), 2400);
+      poser(() => setPhase("repos"), calme ? 3200 : 2400);
     };
 
     const obs = new IntersectionObserver((entrees) => {
