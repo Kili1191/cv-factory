@@ -6,6 +6,7 @@ import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
+import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
@@ -7038,13 +7039,52 @@ export default function App() {
     return String(txt || "").trim();
   }, [locale]);
 
-  const onImport = useCallback(async () => {
-    if (!obRaw.trim()) { notify(T.np2); return; }
+  // `texteDirect` : le texte a lire, quand l'appelant l'a deja sous la main.
+  // Sans lui, poser le texte puis appeler dans la foulee ne marche pas - la
+  // fonction est figee sur la valeur qu'avait `obRaw` au rendu precedent, et
+  // elle sort aussitot en disant qu'il n'y a rien a lire. Le test de
+  // l'import s'est fait prendre exactement comme ca.
+  const onImport = useCallback(async (texteDirect) => {
+    const brut = (typeof texteDirect === "string" && texteDirect.trim())
+      ? texteDirect : obRaw;
+    if (!brut.trim()) { notify(T.np2); return; }
+
+    // LA LECTURE LOCALE PASSE EN PREMIER
+    //
+    // Importer coutait un appel et plusieurs secondes A CHAQUE FOIS, y
+    // compris pour un CV parfaitement ordinaire. C'est le tout premier geste
+    // du produit : quelqu'un colle son CV et attend devant un ecran vide.
+    //
+    // lib/lireUnCv.js le lit sur place et rend sa confiance. Au-dessus du
+    // seuil, on s'arrete la : affichage immediat, rien a payer, et rien qui
+    // sorte du navigateur. En dessous, le modele prend le relais - c'est son
+    // travail, les CV qu'aucune regle ne sait ranger.
+    //
+    // La confiance ne se decrete pas : elle compte ce qui a ete retrouve
+    // (nom, contact, postes NOMMES, puces, competences). Un CV dont les
+    // postes n'ont ni intitule ni employeur ne passe pas, meme si le reste
+    // est parfait - c'est precisement ce qu'on ne veut pas rater.
+    const lu = lireUnCv(brut);
+    if (lu.confiance >= CONFIANCE_SUFFISANTE) {
+      const local = normCV({ ...lu.cv, custom: cv && cv.custom });
+      pushH(local);
+      // Le meme setteur que la voie modele : la lecture locale n'est pas un
+      // chemin a part, c'est la meme arrivee par une porte moins chere.
+      setCVFn(() => local);
+      setObRaw("");
+      setObMode(null);
+      setTab("ai");
+      notify(locale === "en"
+        ? "CV read on your device - nothing was sent."
+        : "CV lu sur ton appareil - rien n'a ete envoye.");
+      return;
+    }
+
     if (!apiKey) { notify(T.nk); return; }
     setObImp(true);
 
     // [Fix 2026-05-19] Log structure pour debug du bug "boucle import"
-    console.log("[onImport] start, obRaw length:", obRaw.length);
+    console.log("[onImport] start, obRaw length:", brut.length);
 
     const p = "Expert parsing CV. JSON valide strict sans markdown.\n"
       + 'STRUCTURE:{"name":"","title":"","email":"","phone":"",'
@@ -7107,7 +7147,7 @@ export default function App() {
         console.warn("[onImport] CV totalement vide -> fallback texte brut en summary");
         cvToApply = {
           ...normalizedCV,
-          summary: obRaw.trim().slice(0, 2000),  // limite a 2k chars
+          summary: brut.trim().slice(0, 2000),  // limite a 2k chars
         };
         notify("CV importe partiellement. Complete les sections vides.");
       }
@@ -7172,6 +7212,21 @@ export default function App() {
       setObImp(false);
     }
   }, [obRaw, apiKey, T, setCVFn, notify, obMode, setTab, setAiMode, setShowOffer]);
+
+  // Coller un CV et lancer l'import, comme le ferait une personne. Sert a
+  // prouver de l'exterieur qu'un CV ordinaire n'appelle pas le modele.
+  //
+  // Pose APRES onImport : le citer plus haut, c'est le toucher dans sa zone
+  // morte temporelle, et tout le composant tombe - meme piege que la liste
+  // des panneaux plus haut.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.__nuviCollerImport = (texte) => {
+      setObMode("import");
+      setObRaw(String(texte || ""));
+      onImport(String(texte || ""));
+    };
+  }, [onImport]);
 
   const loadTpl = useCallback(tpl => {
     try {
