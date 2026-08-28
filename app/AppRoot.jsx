@@ -272,36 +272,95 @@ const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf
 // Voir ligne 5476 pour leur utilisation : const T = locale==="en" ? EN_T : FR_T;
 
 
+// LES POLICES D'UN THEME DOIVENT ETRE CHARGEES POUR EXISTER
+//
+// Les themes ne portaient qu'un nom de famille CSS. Or seul un objet
+// "custom" declenchait ensureFontLoaded : choisir le theme Modern demandait
+// Montserrat que personne ne telechargeait, et Creative demandait Space
+// Grotesk de meme. Les deux retombaient sur la sans-serif du systeme - donc
+// sur exactement la meme typographie, alors que le choix promettait deux
+// caracteres differents. Chaque theme porte maintenant l'adresse de ses
+// polices, et un effet les charge quand il devient actif.
+const G = "https://fonts.googleapis.com/css2?family=";
+const HREF = {
+  fraunces: G + "Fraunces:ital,opsz,wght@0,9..144,300..700;1,9..144,300..700&display=swap",
+  playfair: G + "Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap",
+  cormorant: G + "Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  dmserif:  G + "DM+Serif+Display:ital@0;1&display=swap",
+  space:    G + "Space+Grotesk:wght@400;500;600;700&display=swap",
+  montserrat: G + "Montserrat:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  inter:    G + "Inter:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  lato:     G + "Lato:ital,wght@0,400;0,700;1,400;1,700&display=swap",
+  opensans: G + "Open+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  dmsans:   G + "DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  sourcesans: G + "Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  plex:     G + "IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+  work:     G + "Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&display=swap",
+};
+
+// SIX THEMES, ET AUCUN QUI DATE
+//
+// Les cinq d'origine etaient des reglages de generateur de CV des annees
+// 2010 : rouge corail sature sur bleu marine, orange sur noir, dore sur
+// marine, le tout en Montserrat et Open Sans. On les reconnait au premier
+// coup d'oeil, et pas en bien. Ils sont RETIRES plutot que gardes a cote des
+// nouveaux : personne n'a encore de CV enregistre, donc rien ne justifiait
+// de continuer a proposer un document demode.
+//
+// Ce que fait la mise en page de document en 2026 est surtout un retrait :
+// un fond neutre chaud au lieu du blanc pur, UN accent desature au lieu de
+// couleur partout, un filet plutot qu'un bandeau plein, et une serif de
+// titrage contre une grotesque neutre pour le texte.
+//
+// Chaque theme porte l'adresse de ses polices. Sans elle, choisir un theme
+// changeait un nom de famille CSS que rien ne telechargeait : Modern
+// demandait Montserrat, Creative demandait Space Grotesk, et les deux
+// s'affichaient dans la meme sans-serif du systeme.
 const THEMES = {
-  executive:{
-    name:"Executive", 
-    pr:"#1a1a2e", ac:"#c9a96e", bg:"#f8f6f1",
-    sb:"#1a1a2e", st:"#f8f6f1",
-    hf:"'Playfair Display',serif", bf:"'Lato',sans-serif"
+  // Aucun accent colore. La hierarchie tient au corps, a l'espace et a un
+  // filet. C'est le choix le plus difficile a rater sur un document qu'un
+  // inconnu juge en six secondes, et c'est pour ca qu'il est par defaut.
+  ink:{
+    name:"Ink",
+    pr:"#14140f", ac:"#14140f", bg:"#faf8f3",
+    sb:"#14140f", st:"#faf8f3",
+    hf:"'Fraunces',Georgia,serif", bf:"'Inter',sans-serif",
+    hfHref:HREF.fraunces, bfHref:HREF.inter,
   },
-  modern:{
-    name:"Modern", 
-    pr:"#0f3460", ac:"#e94560", bg:"#fff",
-    sb:"#0f3460", st:"#fff",
-    hf:"'Montserrat',sans-serif", bf:"'Open Sans',sans-serif"
+  clay:{
+    name:"Clay",
+    pr:"#2b2018", ac:"#b0603c", bg:"#f7f2ea",
+    sb:"#2b2018", st:"#f7f2ea",
+    hf:"'Fraunces',Georgia,serif", bf:"'DM Sans',sans-serif",
+    hfHref:HREF.fraunces, bfHref:HREF.dmsans,
   },
-  creative:{
-    name:"Creative", 
-    pr:"#1e1e1e", ac:"#ff6b35", bg:"#fafafa",
-    sb:"#1e1e1e", st:"#fafafa",
-    hf:"'Space Grotesk',sans-serif", bf:"'Lato',sans-serif"
+  moss:{
+    name:"Moss",
+    pr:"#1c2b22", ac:"#4a6b52", bg:"#f5f5f0",
+    sb:"#1c2b22", st:"#f5f5f0",
+    hf:"'Cormorant Garamond',Georgia,serif", bf:"'Source Sans 3',sans-serif",
+    hfHref:HREF.cormorant, bfHref:HREF.sourcesans,
   },
-  minimal:{
-    name:"Minimal", 
-    pr:"#222", ac:"#888", bg:"#fff",
-    sb:"#f0f0f0", st:"#222",
-    hf:"Georgia,serif", bf:"'Lato',sans-serif"
+  slate:{
+    name:"Slate",
+    pr:"#1b2430", ac:"#41607d", bg:"#f7f8f9",
+    sb:"#1b2430", st:"#f7f8f9",
+    hf:"'IBM Plex Sans',sans-serif", bf:"'IBM Plex Sans',sans-serif",
+    hfHref:HREF.plex, bfHref:HREF.plex,
   },
-  luxury:{
-    name:"Luxury", 
-    pr:"#2c1810", ac:"#a67c52", bg:"#fdf8f3",
-    sb:"#2c1810", st:"#fdf8f3",
-    hf:"Georgia,serif", bf:"'Lato',sans-serif"
+  oxide:{
+    name:"Oxide",
+    pr:"#241a16", ac:"#8f4a2e", bg:"#faf7f4",
+    sb:"#241a16", st:"#faf7f4",
+    hf:"'DM Serif Display',Georgia,serif", bf:"'Work Sans',sans-serif",
+    hfHref:HREF.dmserif, bfHref:HREF.work,
+  },
+  bone:{
+    name:"Bone",
+    pr:"#26241f", ac:"#8a8478", bg:"#fbfaf7",
+    sb:"#eae6dd", st:"#26241f",
+    hf:"'Cormorant Garamond',Georgia,serif", bf:"'Work Sans',sans-serif",
+    hfHref:HREF.cormorant, bfHref:HREF.work,
   },
 };
 
@@ -612,7 +671,7 @@ function EditableTitle({ cv, setCVFn, labelKey, locale, style, defaultUppercase 
   return (
     <span
       onDoubleClick={() => setEditing(true)}
-      title="Double-clic pour modifier"
+      title={locale === "en" ? "Double-click to edit" : "Double-clic pour modifier"}
       style={{
         ...style,
         cursor: "text",
@@ -627,7 +686,7 @@ function EditableTitle({ cv, setCVFn, labelKey, locale, style, defaultUppercase 
 const TEMPLATES = [
   {
     id:"finance", label:"Finance CFO", 
-    theme:"executive", layout:"sidebar",
+    theme:"ink", layout:"sidebar",
     cv:{
       name:"Sophie Marchand",
       title:"CFO - Directrice Financiere",
@@ -665,7 +724,7 @@ const TEMPLATES = [
 
   {
     id:"sales", label:"Trade Finance", 
-    theme:"creative", layout:"sidebar",
+    theme:"clay", layout:"sidebar",
     cv:{
       name:"Kilian Maisonnette",
       title:"Senior Trade Finance Consultant",
@@ -3324,7 +3383,7 @@ export default function App() {
   const [hydrated, setHydrated] = useState(false);
 
   const [cv, setCV_]       = useState(EMPTY);
-  const [thN, setThN_]     = useState("executive");
+  const [thN, setThN_]     = useState("ink");
   const [layout, setLy_]   = useState("sidebar");
   const [apiKey, setAK_]   = useState("server-managed");
   // L'ANGLAIS PAR DEFAUT, LE FRANCAIS EN UN CLIC
@@ -3628,8 +3687,8 @@ export default function App() {
         education:      Array.isArray(savedCV.education)      ? savedCV.education      : EMPTY.education,
       });
     }
-    const savedTh = lsG(SK.TH, "executive");
-    if (savedTh !== "executive") setThN_(savedTh);
+    const savedTh = lsG(SK.TH, "ink");
+    if (savedTh !== "ink") setThN_(savedTh);
     const savedLy = lsG(SK.LY, "sidebar");
     if (savedLy !== "sidebar") setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
@@ -3878,12 +3937,22 @@ export default function App() {
   }, []);
 
   const T = locale==="en" ? EN_T : FR_T;
-  const theme = THEMES[thN] || THEMES.executive;
+  // Un theme enregistre qui n'existe plus retombe sur le defaut, pas sur
+  // undefined - qui viderait toutes les couleurs du document.
+  const theme = THEMES[thN] || THEMES.ink;
 
   // v17 : custom theme effectif (theme < global custom < version custom).
   // Le custom par-version est stocke directement dans cv.custom.
   const versionCustom = (cv && cv.custom && typeof cv.custom === "object") ? cv.custom : null;
   const effTheme = mergeTheme(theme, cvCustom, versionCustom);
+
+  // Le theme actif telecharge ses propres polices. Sans cet effet, un theme
+  // qui demande Montserrat s'affiche dans la sans-serif du systeme : le
+  // choix existe dans l'interface et ne change rien a l'ecran.
+  useEffect(() => {
+    if (theme && theme.hfHref) ensureFontLoaded(theme.hfHref);
+    if (theme && theme.bfHref) ensureFontLoaded(theme.bfHref);
+  }, [theme]);
 
   // Charge dynamiquement les Google Fonts custom des qu'elles changent.
   useEffect(() => {
@@ -7024,7 +7093,7 @@ export default function App() {
       if (currentEmpty && tpl.cv) {
         setCVFn(() => normCV(tpl.cv));
       }
-      setTh(tpl.theme || "executive");
+      setTh(tpl.theme || "ink");
       setLy(tpl.layout || "sidebar");
       notify(currentEmpty ? "Template charge!" : (locale === "en"
         ? "Layout applied (your data is kept)"

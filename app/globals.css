@@ -803,3 +803,66 @@ body.cvf-dark.nuvi-grain::after {
   hyphens: auto;
   text-wrap: balance;
 }
+
+/* ============================================================
+ * L ENTREE DES PANNEAUX
+ * ============================================================
+ *
+ * Les panneaux apparaissaient d un coup, en pleine taille. Sur un seul, ca
+ * passe. Depuis qu ouvrir une fonctionnalite ferme la precedente, c est un
+ * remplacement sec : l ancien disparait, le nouveau est deja la, et l oeil
+ * n a rien pour relier les deux. On ne sait pas si on a ouvert quelque chose
+ * ou si la page a saute.
+ *
+ * Un panneau glisse donc depuis son bord. Ce n est pas une decoration : le
+ * sens du glissement dit d ou vient la chose et ou elle retournera.
+ *
+ * Seuls transform et opacity sont animes - les deux proprietes que le
+ * compositeur traite sans repasser par la mise en page, donc sans faire
+ * ramer un telephone d entree de gamme.
+ */
+@keyframes nuviPanneauEntre {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes nuviPanneauMonte {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.nuvi-panneau {
+  animation: nuviPanneauEntre 260ms cubic-bezier(.22, 1, .36, 1) both;
+}
+
+/* Sur telephone les panneaux occupent tout l ecran et montent depuis le bas :
+   c est le geste que le systeme utilise deja pour la meme chose. */
+@media (max-width: 899px) {
+  .nuvi-panneau {
+    animation-name: nuviPanneauMonte;
+  }
+}
+
+/* Le mouvement se refuse : le panneau est simplement la. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-panneau { animation: none; }
+}
+
+/* LA FEUILLE MONTE DEPUIS LE BAS
+   Sheet.jsx porte quatorze panneaux. Son voile s estompait deja a
+   l ouverture, mais la feuille elle-meme arrivait d un coup, en pleine
+   hauteur : le fond s adoucissait pendant que le contenu claquait. Elle
+   monte maintenant depuis le bord ou elle est ancree - le meme geste que le
+   systeme utilise pour la meme chose - et elle sort par ou elle est entree.
+
+   Seuls transform et opacity : le compositeur les traite sans repasser par
+   la mise en page. */
+@keyframes nuviFeuilleMonte {
+  from { opacity: 0; transform: translateY(26px); }
+  to   { opacity: 1; transform: none; }
+}
+.nuvi-feuille {
+  animation: nuviFeuilleMonte 300ms cubic-bezier(.22, 1, .36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-feuille { animation: none; }
+}

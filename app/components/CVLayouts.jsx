@@ -220,7 +220,7 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
   return (
     <span
       onDoubleClick={() => setEditing(true)}
-      title="Double-clic pour modifier"
+      title={locale === "en" ? "Double-click to edit" : "Double-clic pour modifier"}
       style={{
         cursor: "text",
         userSelect: "none",
@@ -240,9 +240,21 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 
   // [Lisibilite 2026-05-20] Accent garanti lisible sur le fond cream (t.bg).
   // Utilise pour les titres de la colonne main (PROFIL, EXPERIENCE) et le
-  // sous-titre du nom. La sidebar (fond dark) garde t.ac brut car le coral
-  // y ressort bien.
+  // sous-titre du nom.
   const acOnBg = readableAccentOn(t.ac, t.bg);
+
+  // LA BANDE LATERALE A SON PROPRE FOND, DONC SON PROPRE ACCENT
+  //
+  // Elle gardait t.ac brut, "car le coral y ressort bien" - vrai du coral,
+  // faux en general. Un theme dont l'accent vaut la couleur de la bande
+  // peint ses libelles en noir sur noir : monogramme, CONTACT, COMPETENCES,
+  // LANGUES et les filets disparaissaient purement et simplement. Vu a
+  // l'ecran sur le theme Ink, ou l'accent EST la couleur de la bande.
+  //
+  // Ce n'est pas propre a nos themes : accent et fond de bande se reglent
+  // separement dans la personnalisation, donc n'importe qui pouvait
+  // fabriquer la meme disparition sans comprendre pourquoi.
+  const acOnSb = readableAccentOn(t.ac, t.sb);
 
   // SS (sidebar section header) - retourne null si section vide (UX 2026-05-20)
   // [Premium A4 fill 2026-05-20 v2] Calibre pour rentrer dans 297mm
@@ -251,8 +263,8 @@ export function CVSidebar({ cv, set, t, T, locale }) {
     return (
       <div style={{
         fontSize:8, fontWeight:700, letterSpacing:3, textTransform:"uppercase",
-        color: t.ac, margin:"14px 0 7px",
-        borderBottom:"1px solid "+t.ac+"44", paddingBottom:3,
+        color: acOnSb, margin:"14px 0 7px",
+        borderBottom:"1px solid "+acOnSb+"44", paddingBottom:3,
       }}>
         <EditableTitle cv={cv} set={set} labelKey={labelKey}
           locale={locale} fallback={fallback}/>
@@ -303,7 +315,12 @@ export function CVSidebar({ cv, set, t, T, locale }) {
         <CVPhoto
           cv={cv}
           set={set}
-          t={t}
+          // Le monogramme se peint dans l'accent, et il vit dans la bande :
+          // avec l'accent brut, un theme dont l'accent vaut la couleur de la
+          // bande le rendait invisible - le cercle et les initiales
+          // disparaissaient sans laisser de trace, seulement un vide en haut
+          // de colonne. On lui passe l'accent corrige pour CE fond.
+          t={{ ...t, ac: acOnSb }}
           variant="round"
           size={110}
           T={T}
@@ -354,7 +371,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
                 arr.splice(i, 1);
                 return { ...prev, extraContacts: arr };
               })}
-              title="Supprimer cette ligne"
+              title={T.ui_del_line}
               style={{
                 background:"transparent", border:"none", cursor:"pointer",
                 color: t.st, opacity:0.5, fontSize:11, lineHeight:1,

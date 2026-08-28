@@ -71,7 +71,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
       }} onClick={onClose} />
 
       {/* Sheet container */}
-      <div style={{
+      <div className="nuvi-feuille" style={{
         position: "relative",
         background: CreamSoft,
         borderRadius: "32px 32px 0 0",

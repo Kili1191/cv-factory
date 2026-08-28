@@ -367,7 +367,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
               display:"flex", alignItems:"center", justifyContent:"center", gap:8,
             })
           }}>
-            <span>Generer la candidature complete</span>
+            <span>{T.mt_gen_pack}</span>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
@@ -428,7 +428,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           <div style={{
             fontSize:9, fontWeight:700, color:InkMuted, marginBottom:9,
             letterSpacing:"0.06em", textTransform:"uppercase",
-          }}>Lu dans l'offre, sans appeler l'IA</div>
+          }}>{T.mt_read_local}</div>
 
           {/* L'INTITULE D'ABORD : c'est le signal individuel le plus lourd
               chez Workday et iCIMS, et un ecart de seniorite s'y voit. */}
@@ -545,7 +545,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
                   <div style={{
                     fontSize:9, fontWeight:700, color:InkMuted, marginBottom:6,
                     letterSpacing:"0.06em", textTransform:"uppercase",
-                  }}>Ce que Nuvi ajoute a ta portee</div>
+                  }}>{T.mt_reach_adds}</div>
                   {apport.listeExperiences.map((e, i) => (
                     <div key={i} style={{
                       fontSize:11.5, color:Ink, lineHeight:1.45,

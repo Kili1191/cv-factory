@@ -1349,7 +1349,7 @@ export default function InterviewModal({
   const current = total > 0 ? questions[Math.max(0, Math.min(total - 1, idx))] : null;
 
   return (
-    <div style={{
+    <div className="nuvi-panneau" style={{
       position:"fixed", inset:0, zIndex:99999,
       display:"flex", flexDirection:"column", justifyContent:"flex-end",
       fontFamily:Sans,

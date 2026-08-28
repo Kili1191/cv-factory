@@ -93,7 +93,7 @@ function DeleteBtn({ onClick, label }) {
 }
 
 // Bouton "x" inline (suppression item liste : skills, certifs, langues, bullets)
-function XBtn({ onClick, ariaLabel = "supprimer" }) {
+function XBtn({ onClick, ariaLabel = "delete" }) {
   const [hovered, setHovered] = useState(false);
   return (
     <button onClick={onClick}
@@ -524,7 +524,7 @@ export function SheetSk({ cv, set, onClose, T }) {
           display: "flex", gap: 8, marginBottom: 8, alignItems: "center",
         }}>
           <SimpleInput value={s} onChange={e => us(i, e.target.value)} />
-          <XBtn onClick={() => ds(i)} ariaLabel="supprimer competence" />
+          <XBtn onClick={() => ds(i)} ariaLabel={T.ui_del_skill} />
         </div>
       ))}
       <AddBtn onClick={as} label={T.sh_addsk} />
@@ -541,7 +541,7 @@ export function SheetSk({ cv, set, onClose, T }) {
           <SimpleInput value={l.level}
             placeholder={T.sh_lph2}
             onChange={e => ul(i, "level", e.target.value)} />
-          <XBtn onClick={() => dl(i)} ariaLabel="supprimer langue" />
+          <XBtn onClick={() => dl(i)} ariaLabel={T.ui_del_lang} />
         </div>
       ))}
       <AddBtn onClick={al} label={T.sh_addlg} />
