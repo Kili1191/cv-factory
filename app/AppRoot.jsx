@@ -6,6 +6,7 @@ import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
+import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { secteurProbable, SECTEURS } from "../lib/metier";
@@ -6646,57 +6647,34 @@ export default function App() {
   // v17 chantier 9 : CV Compare.
   // Compare 2 versions du CV (selectionnees par leur id dans la liste 'versions')
   // et demande a l'IA de produire un resume + diffs + verdict + winner.
-  const runCompare = useCallback(async () => {
-    if (!apiKey) { notify(T.nk); return; }
+  // COMPARER DEUX VERSIONS NE SE DEVINE PAS
+  //
+  // La comparaison partait au modele avec les deux CV mis a plat, et on lui
+  // demandait de "lister les changements concrets, maximum 8, en ignorant
+  // les details mineurs". Trois choses clochaient.
+  //
+  // Un diff n'est pas une opinion : comparer deux objets champ par champ est
+  // mecanique et exact. Confie a un modele, il pouvait oublier un
+  // changement, en inventer un, ou en fusionner deux - or quelqu'un qui
+  // compare deux versions de SON CV veut savoir ce qui a change, pas ce
+  // qu'un lecteur a cru voir changer. Mesure sur un avant/apres reel : onze
+  // changements, la ou le plafond de huit en aurait tu trois.
+  //
+  // "Ignore les details mineurs" lui faisait en plus choisir ce qui compte.
+  // Une puce chiffree remplacee par une formule molle est un detail pour un
+  // resumeur et une catastrophe pour un candidat.
+  //
+  // Et "qui est meilleur" se mesure aussi : les deux CV passent par le meme
+  // juge que le tableau de bord, et on annonce l'ecart avec l'axe qui le
+  // fait - "B obtient 83/100 contre 32, surtout sur les puces". L'utilisateur
+  // peut verifier axe par axe au lieu de croire sur parole.
+  const runCompare = useCallback(() => {
     if (!comparePickA || !comparePickB || comparePickA === comparePickB) return;
-
     const va = (versions || []).find(v => v.id === comparePickA);
     const vb = (versions || []).find(v => v.id === comparePickB);
     if (!va || !vb) return;
-
-    setCompareLoading(true);
-    setCompareResult(null);
-    try {
-      const fmt = (cv) => {
-        const expT = (cv.experience || []).slice(0, 6).map(e =>
-          (e.title||"") + " chez " + (e.company||"")
-          + " (" + (e.period||"") + "): "
-          + (e.bullets||[]).filter(b=>b).join("; ")
-        ).join(" | ");
-        return "Titre: " + (cv.title||"")
-          + " | Accroche: " + (cv.summary||"").slice(0,300)
-          + " | Exp: " + expT
-          + " | Skills: " + (cv.skills||[]).filter(s=>s).slice(0,15).join(", ");
-      };
-
-      const langLine = locale === "en"
-        ? "Reply in English. " : "Reply in French. ";
-
-      const p = "Tu es expert en CV. Compare ces 2 versions et identifie ce qui les distingue."
-        + "\n\nVERSION A (\"" + (va.name || "A") + "\"):\n" + fmt(va.cv)
-        + "\n\nVERSION B (\"" + (vb.name || "B") + "\"):\n" + fmt(vb.cv)
-        + "\n\nMISSION:"
-        + "\n1. Resume general des differences (1-2 phrases)."
-        + "\n2. Liste les changements concrets (champ + type=changed/added/removed + ancien/nouveau si applicable)."
-        + "\n3. Verdict d'expert : qui est meilleur et pourquoi (1-2 phrases incisives)."
-        + "\n4. Winner : 'A', 'B', ou 'tie' selon ton analyse."
-        + "\n\nREGLES:"
-        + "\n- Sois honnete et tranchant."
-        + "\n- Liste max 8 changements importants (skip les details mineurs)."
-        + "\n- Ignore les espaces, ponctuation, ordre identique."
-        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"summary":"...","diffs":[{"field":"summary","type":"changed","old":"...","new":"..."}],'
-        + '"verdict":"...","winner":"A"|"B"|"tie"}';
-
-      const txt = await aiCall(p);
-      const parsed = parseJSON(txt);
-      setCompareResult(parsed);
-    } catch (err) {
-      notify(T.ea + (err && err.message ? ": " + err.message : ""));
-    }
-    setCompareLoading(false);
-  }, [apiKey, comparePickA, comparePickB, versions, locale, notify, T]);
+    setCompareResult(comparerCv(va.cv, vb.cv, locale === "en" ? "en" : "fr"));
+  }, [comparePickA, comparePickB, versions, locale]);
 
   // v17 chantier 10 : Applications Tracker. CRUD local en localStorage.
   const addApplication = useCallback((app) => {
