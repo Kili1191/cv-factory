@@ -74,8 +74,24 @@ async function ouvrir(browser, url) {
   // toujours un chargement complet. On le reproduit en passant par
   // about:blank - meme origine conservee pour le stockage local.
   await page.goto("about:blank");
-  await page.goto(BASE_URL + url, { waitUntil: "networkidle" });
-  await page.waitForTimeout(2600);
+  // ATTENDRE CE QU'ON TESTE, PAS LA FIN DU RESEAU
+  //
+  // "networkidle" exigeait que /app soit entierement charge - 264 ko - alors
+  // qu'une suite entiere se dispute la machine. Le test tombait sur un
+  // depassement de 30 s qui ne disait rien du message d'erreur, et faisait
+  // passer une suite verte pour rouge.
+  //
+  // Ce qu'on veut savoir, c'est si l'echec s'affiche. On attend donc le
+  // panneau lui-meme ; s'il ne vient pas, l'assertion suivante le dira avec
+  // ses mots plutot qu'avec un message de reseau.
+  await page.goto(BASE_URL + url, { waitUntil: "domcontentloaded" });
+  try {
+    await page.waitForSelector('[data-nuvi-signin-failed="1"]', { timeout: 20000 });
+  } catch {
+    // Pas d'echec ici : le cas "aucune erreur a afficher" est legitime, et
+    // les verifications qui suivent savent le dire.
+  }
+  await page.waitForTimeout(900);
   return { ctx, page, erreurs };
 }
 
