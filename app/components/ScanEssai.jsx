@@ -78,11 +78,17 @@ export default function ScanEssai({ lang, labels, textes }) {
             value={saisi}
             maxLength={MAX}
             onChange={(e) => setSaisi(e.target.value)}
+            autoComplete="off"
+            enterKeyHint="done"
             placeholder={textes.placeholder}
             style={{
               width: "100%", boxSizing: "border-box",
               minHeight: 48, padding: "12px 14px",
-              fontFamily: "'Inter', sans-serif", fontSize: 15,
+              // 16px minimum : en dessous, Safari sur iPhone zoome la page
+              // au moment ou l'on touche le champ, et ne dezoome jamais. Ce
+              // champ est le coeur de la vitrine ; le toucher ne doit pas
+              // casser la page de celui qui essaie.
+              fontFamily: "'Inter', sans-serif", fontSize: 16,
               color: "var(--nuvi-ink, #0a0a0a)",
               background: "var(--nuvi-paper, #fff)",
               border: "1px solid var(--nuvi-hair, #e6e2d8)",

@@ -1405,10 +1405,20 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [offre, setOffre] = useState("");
 
   // v17 helpers : inputs paper-on-cream + eyebrow editorial
+  // SEIZE PIXELS, ET CE N'EST PAS UN CHOIX ESTHETIQUE
+  //
+  // Safari sur iPhone zoome la page des qu'on touche un champ dont le texte
+  // fait moins de 16px - et il ne dezoome jamais tout seul. On tape son
+  // metier, la page saute en avant, et il faut pincer pour revoir le reste.
+  // Ces champs etaient a 13px : le premier geste de quelqu'un qui essaie
+  // Nuvi depuis son telephone cassait sa mise en page.
+  //
+  // C'est la regle la plus rentable de toutes celles qu'on peut appliquer a
+  // une interface : un nombre, et une classe entiere de gene disparait.
   const inV17 = (extra={}) => ({
     width:"100%", padding:"12px 14px", minHeight:44, borderRadius:RadiusSm,
     border:"0.5px solid "+Gray200, background:Paper,
-    fontSize:13, color:Ink, fontFamily:Sans,
+    fontSize:16, color:Ink, fontFamily:Sans,
     boxSizing:"border-box", outline:"none",
     transition:"border-color 200ms ease-out",
     ...extra,
@@ -1517,8 +1527,13 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
         </div>
       )}
 
-      <label style={{...eyV17, marginTop:0}}>{T.ai_job}</label>
-      <input value={job} onChange={e=>setJob(e.target.value)}
+      <label htmlFor="nuvi-metier-vise" style={{...eyV17, marginTop:0}}>{T.ai_job}</label>
+      <input id="nuvi-metier-vise" value={job} onChange={e=>setJob(e.target.value)}
+        // organization-title : le navigateur sait deja proposer un intitule
+        // de poste, et pour quelqu'un qui remplit ca sur un telephone en
+        // pause, une suggestion vaut dix caracteres tapes.
+        autoComplete="organization-title"
+        enterKeyHint="go"
         placeholder={T.ai_jph} style={inV17()}/>
 
       {/* TOUT LE RESTE ATTEND SOUS UN REPLI
