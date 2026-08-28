@@ -140,6 +140,10 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="stylesheet" href={FONT_HREF} />
+        {/* La couleur de la barre du navigateur sur telephone. Sans elle,
+            Android et iOS peignent leur propre gris au-dessus d'une page
+            creme : une bande qui ne va avec rien, juste sous l'heure. */}
+        <meta name="theme-color" content="#faf8f3" />
         {/* Version servie, lisible sans ouvrir l'app : curl -s thenuvi.com | grep app-build */}
         <meta name="app-build" content={process.env.NEXT_PUBLIC_BUILD_ID || "unknown"} />
       </head>

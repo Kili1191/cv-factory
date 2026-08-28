@@ -866,3 +866,53 @@ body.cvf-dark.nuvi-grain::after {
 @media (prefers-reduced-motion: reduce) {
   .nuvi-feuille { animation: none; }
 }
+
+/* ============================================================
+ * LE FOCUS SE VOIT, PARTOUT
+ * ============================================================
+ *
+ * Vingt-six endroits du produit posent outline:none, et une seule regle
+ * rendait le focus visible - celle des appels a l action de la vitrine.
+ * Partout ailleurs, quelqu un qui navigue au clavier ne savait plus ou il
+ * etait : le contour par defaut du navigateur etait retire et rien ne le
+ * remplacait.
+ *
+ * Ca ne concerne pas qu une minorite. C est aussi le lecteur d ecran, la
+ * personne qui ne peut pas tenir une souris, et celle qui remplit un
+ * formulaire a la tabulation parce que c est plus rapide.
+ *
+ * :focus-visible et non :focus - le navigateur ne montre l anneau que
+ * lorsque la navigation est au clavier, jamais sur un simple clic. On garde
+ * donc l apparence au clic ET la lisibilite au clavier, sans choisir.
+ */
+:where(button, a[href], input, textarea, select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--nuvi-purple, #5b3df5);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Sur un fond sombre, le violet ne ressort pas : on passe au clair. */
+:where(aside, [data-nuvi-sombre]) :where(button, a[href], [tabindex]):focus-visible {
+  outline-color: var(--nuvi-cream, #faf8f3);
+}
+
+/* ============================================================
+ * TROIS CENTS MILLISECONDES RENDUES A CHAQUE TOUCHER
+ * ============================================================
+ *
+ * Sans touch-action, un navigateur mobile attend environ 300 ms apres
+ * chaque tap pour voir si un second tap arrive - un double-tap qui zoomerait.
+ * Ce delai s ajoute a TOUT : chaque bouton, chaque onglet, chaque champ.
+ *
+ * C est la difference entre une application qui repond et une qui traine, et
+ * elle ne coute qu une ligne. `manipulation` garde le defilement et le
+ * pincement pour zoomer - on ne retire que le double-tap, que personne
+ * n utilise ici.
+ */
+html {
+  touch-action: manipulation;
+  /* Le halo gris que pose Android sur chaque element touche : on le rend
+     discret plutot que de le laisser au gris systeme, qui deborde souvent
+     des coins arrondis. */
+  -webkit-tap-highlight-color: rgba(91, 61, 245, .12);
+}
