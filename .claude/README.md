@@ -77,3 +77,19 @@ clair). Provenance, mise a jour et cout en contexte :
 
 Ces langages se choisissent un par projet ou par page. Les invoquer tous en
 meme temps n'aurait pas de sens : ils se contredisent, c'est le but.
+
+## 5. Bibliotheque DESIGN.md
+
+`skills/design-md-library/` regroupe deux sources de plus, toutes deux MIT :
+
+- 35 fichiers `DESIGN.md` de marques reelles, ranges par famille esthetique,
+  avec les recettes, prompts et etudes de cas qui les accompagnent, depuis
+  [rohitg00/awesome-claude-design](https://github.com/rohitg00/awesome-claude-design) ;
+- le catalogue de 68 `DESIGN.md` supplementaires recense par
+  [VoltAgent/awesome-claude-design](https://github.com/VoltAgent/awesome-claude-design).
+  Ce depot est un index : les fichiers restent heberges sur getdesign.md et se
+  telechargent a la demande.
+
+La difference avec les 67 langages du point 4 tient en une phrase : ceux-la
+decrivent un style, ceux-ci decrivent une marque qui a pousse un style jusqu'au
+bout. Voir `skills/design-md-library/SOURCE.md` pour les commits exacts.
