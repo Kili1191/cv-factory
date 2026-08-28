@@ -104,6 +104,11 @@ export default function LanguageAsk({ onChoose }) {
         zIndex: 10000,
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 20,
+        // La police du produit des la couche exterieure. Le sous-titre et
+        // tout ce qui n'est pas explicitement stylé en heritent ; sans elle
+        // ils tombaient sur Times New Roman - mesure au navigateur - sur le
+        // tout premier ecran que voit quelqu'un.
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         background: "rgba(26, 24, 22, 0.44)",
         backdropFilter: "blur(6px)",
         WebkitBackdropFilter: "blur(6px)",
@@ -119,6 +124,10 @@ export default function LanguageAsk({ onChoose }) {
         boxShadow: "0 24px 60px rgba(26,24,22,0.22)",
         padding: 26,
         textAlign: "center",
+        // La police du produit, posee sur le conteneur. Les options disent
+        // "inherit" ; sans ca elles heritaient du defaut du navigateur, un
+        // serif systeme etranger a Nuvi - sur le tout premier ecran vu.
+        fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
         transform: entre ? "translateY(0) scale(1)" : "translateY(10px) scale(0.98)",
         transition: "transform 320ms cubic-bezier(0.16, 1, 0.3, 1)",
       }}>

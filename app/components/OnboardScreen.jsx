@@ -168,7 +168,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
                   boxShadow:ShadowSm,
                   border:"0.5px solid "+Gray200,
                   textAlign:"left",
-                  transition:"all 200ms ease-out",
+                  // Jamais "all" : il anime aussi les proprietes de mise en page,
+            // que le compositeur ne sait pas traiter seul.
+            transition:"background 180ms ease-out, box-shadow 180ms ease-out, transform 140ms ease-out",
                   width:"100%",
                 })
               }}>
@@ -201,25 +203,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             ))}
           </div>
 
-          {/* Locale pills */}
-          <div style={{
-            display:"flex", justifyContent:"center", gap:8,
-            padding:"32px 0 8px",
-          }}>
-            {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
-              <button key={lc} onClick={()=>setLocale(lc)} style={{
-                ...B({
-                  padding:"6px 14px", minHeight:44, boxSizing:"border-box",
-                  display:"inline-flex", alignItems:"center", justifyContent:"center",
-                  borderRadius:RadiusPill,
-                  fontSize:12, fontWeight:500,
-                  color:locale===lc ? Cream : Gray600,
-                  background:locale===lc ? Ink : Paper,
-                  border:"0.5px solid "+(locale===lc ? Ink : Gray200),
-                })
-              }}>{label}</button>
-            ))}
-          </div>
+          {/* Le meme choix etait ici AUSSI, juste sous la question qui vient
+              de le poser. Il vit dans les reglages ; il n'a rien a faire sur
+              le chemin de quelqu'un qui commence son CV. */}
         </div>
       </div>
     );
@@ -277,13 +263,18 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         {/* Hero editorial */}
         <h2 style={{
           fontFamily:Serif, fontWeight:400,
-          fontSize:32, lineHeight:1.1,
-          letterSpacing:"-0.02em", color:Ink,
-          textAlign:"center", margin:"0 0 10px",
+          // La meme echelle que la vitrine. Un titre a 32px fixes sur un
+          // ecran de 1440 donne un formulaire administratif ; la vitrine
+          // monte a 66px. Deux surfaces du meme produit, une seule voix.
+          fontSize:"clamp(30px, 4.4vw, 52px)", lineHeight:1.06,
+          letterSpacing:"-0.03em", color:Ink,
+          textAlign:"center", margin:"0 0 12px",
+          // Evite les lignes veuves sur un titre court.
+          textWrap:"balance",
         }}>{mode==="import-adapt" ? T.ob_import_first : T.ob_import_title}</h2>
         <p style={{
-          fontSize:13, color:Gray600, lineHeight:1.6,
-          textAlign:"center", margin:"0 0 24px",
+          fontSize:"clamp(14px, 1.5vw, 16px)", color:Gray600, lineHeight:1.6,
+          textAlign:"center", margin:"0 auto 28px", maxWidth:"52ch",
         }}>
           {mode==="import-adapt" ? T.ob_import_sub_adapt : T.ob_import_sub_boost}
           {" "}{T.ob_import_format}
@@ -481,22 +472,28 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           }}>{T.ob_no_key}</div>
         )}
 
-        {/* Submit button [Nuvi] : gradient violet/magenta (CTA primaire) */}
-        <button onClick={onImport} disabled={imping||!raw.trim()||!apiKey} style={{
+        {/* LE BOUTON N'EXIGE PLUS DE CLE
+            Depuis que la lecture locale range un CV ordinaire sans appeler
+            personne, l'import marche sans cle d'API. Le bouton restait gris
+            et mort pour qui n'en avait pas : la fonctionnalite existait et
+            son seul point d'entree etait eteint.
+
+            La condition etait par ailleurs recopiee trois fois - etat, fond,
+            couleur. Nommee une fois, elle ne peut plus diverger. */}
+        <button onClick={onImport} disabled={imping||!raw.trim()}
+          className={(imping||!raw.trim()) ? undefined : "nuvi-cta"} style={{
           ...B({
             padding:"15px 22px",
             borderRadius:RadiusPill,
-            background:imping||!raw.trim()||!apiKey
-              ? Gray200
-              : GradPurple,
-            color:imping||!raw.trim()||!apiKey ? Gray600 : "#fff",
+            background: (imping||!raw.trim()) ? Gray200 : GradPurple,
+            color: (imping||!raw.trim()) ? Gray600 : "#fff",
             fontWeight:600, fontSize:14,
             fontFamily:Sans,
             marginTop:14,
             transition:"all 200ms ease-out",
             display:"inline-flex",
             alignItems:"center", justifyContent:"center", gap:8,
-            boxShadow: imping||!raw.trim()||!apiKey
+            boxShadow: (imping||!raw.trim())
               ? "none"
               : "0 4px 16px rgba(91, 61, 245, 0.25)",
           })
@@ -523,25 +520,17 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           }}>{T.ob_continue}</button>
         )}
 
-        {/* Locale pills */}
-        <div style={{
-          display:"flex", justifyContent:"center", gap:8,
-          padding:"24px 0 8px",
-        }}>
-          {[["fr","FR"],["en","EN"]].map(([lc,label]) => (
-            <button key={lc} onClick={()=>setLocale(lc)} style={{
-              ...B({
-                padding:"6px 14px", minHeight:44, boxSizing:"border-box",
-                display:"inline-flex", alignItems:"center", justifyContent:"center",
-                borderRadius:RadiusPill,
-                fontSize:12, fontWeight:500,
-                color:locale===lc ? Cream : Gray600,
-                background:locale===lc ? Ink : Paper,
-                border:"0.5px solid "+(locale===lc ? Ink : Gray200),
-              })
-            }}>{label}</button>
-          ))}
-        </div>
+        {/* ON NE REDEMANDE PAS CE QU'ON VIENT DE DEMANDER
+
+            La langue est demandee au tout premier ecran, dans une fenetre qui
+            barre la route tant qu'on n'a pas repondu. Reafficher le meme
+            choix en bas de l'ecran suivant donnait l'impression que la
+            reponse n'avait pas ete prise - on se demande si on doit
+            recommencer.
+
+            Le choix reste evidemment modifiable : il vit dans les reglages,
+            la ou l'on va quand on veut changer quelque chose, et non sur le
+            chemin de quelqu'un qui essaie d'importer son CV. */}
       </div>
     </div>
   );

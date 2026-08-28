@@ -189,7 +189,7 @@ const FR_T = {
   ob_import_sub_boost:"Nuvi va lire ton CV et le restructurer automatiquement.",
   ob_import_format:"Accepte : PDF, Word, texte - ou une photo de ton CV.",
   ob_pick_file:"Cliquer pour selectionner mon CV",
-  ob_pick_file_hint:"PDF, Word (.docx) ou texte (.txt)",
+  ob_pick_file_hint:"PDF, Word, texte - ou une photo",
   ob_or_paste:"ou copier-coller le contenu",
   ob_file_reading:"Lecture de",
   ob_file_empty_err:"Aucun texte n'a pu etre lu dans ce fichier. S'il s'agit d'un CV scanne (une image), le texte n'est pas extractible.",
