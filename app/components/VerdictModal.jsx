@@ -395,16 +395,32 @@ export default function VerdictModal({
                 borderRadius: 999,
                 background: "transparent",
                 border: "none",
-                color: "#9b9b9b",
+                // LA SORTIE NE SE CACHE PAS
+                //
+                // Cette commande etait en #9b9b9b sur fond clair : environ
+                // 2,6 pour 1, tres en dessous du minimum lisible, et a 12px.
+                // Vu a l'ecran, elle disparaissait presque, pendant que les
+                // deux options qui poussent a continuer s'affichaient en
+                // pleine couleur.
+                //
+                // Et le survol la rendait lisible - donc elle apparaissait sur
+                // un ordinateur et restait invisible au doigt, c'est-a-dire
+                // pour la plupart des gens qui utilisent ce produit.
+                //
+                // Un choix qu'on rend difficile a voir n'est pas un choix.
+                // Elle reste secondaire par sa taille et son soulignement, pas
+                // par son illisibilite : meme gris que le reste du texte
+                // discret de l'application, environ 7 pour 1.
+                color: "#5a5a62",
                 fontFamily: "Inter, sans-serif",
-                fontWeight: 400, fontSize: 12,
+                fontWeight: 400, fontSize: 13,
                 cursor: "pointer",
                 textDecoration: "underline",
                 textUnderlineOffset: 3,
                 transition: "color 200ms ease-out",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.color = "#5a5a62"}
-              onMouseLeave={(e) => e.currentTarget.style.color = "#9b9b9b"}
+              onMouseEnter={(e) => e.currentTarget.style.color = "#1a1a1e"}
+              onMouseLeave={(e) => e.currentTarget.style.color = "#5a5a62"}
             >
               {t.btn_continue}
             </button>
