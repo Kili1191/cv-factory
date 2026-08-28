@@ -31,7 +31,15 @@ import { join } from "node:path";
 // exactement l'endroit ou un vrai oubli finit par se cacher.
 const CADRATIN = String.fromCharCode(0x2014);
 const DEMI = String.fromCharCode(0x2013);
-const IGNORE = new Set([".git", "node_modules", ".next", "out", "dist"]);
+// POURQUOI .claude EST EXCLU
+//
+// Ce dossier ne contient aucun texte produit : ce sont des fichiers
+// d'instructions destines aux agents, recopies tels quels depuis leurs depots
+// d'origine. Rien de ce qui s'y trouve n'atteint un ecran ni un PDF. Les
+// reecrire ferait rougir la prochaine mise a jour amont sans rien proteger.
+// La regle garde donc sa portee la ou elle compte : tout ce qui peut finir
+// imprime sur un CV.
+const IGNORE = new Set([".git", "node_modules", ".next", "out", "dist", ".claude"]);
 const EXT = [".jsx", ".js", ".mjs", ".css", ".md", ".json", ".html"];
 
 function fichiers(dir, out = []) {

@@ -9,7 +9,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { browserOptions } from "./chromium.mjs";
 
 const PORT = Number(process.env.TEST_PORT || 4311);
 export const BASE_URL = `http://127.0.0.1:${PORT}`;
@@ -20,20 +20,6 @@ export const BASE_URL = `http://127.0.0.1:${PORT}`;
 // les rares controles qui portent sur la vitrine elle-meme (les balises de
 // partage, le relais de connexion).
 export const APP_URL = `${BASE_URL}/app`;
-
-// En CI, playwright installe son propre Chromium et trouve tout seul.
-// En local, l'image fournit un binaire a un emplacement fixe.
-function browserOptions() {
-  const explicit = process.env.PLAYWRIGHT_CHROMIUM_PATH;
-  const candidates = [
-    explicit,
-    "/opt/pw-browsers/chromium-1194/chrome-linux/chrome",
-  ].filter(Boolean);
-  for (const p of candidates) {
-    if (existsSync(p)) return { executablePath: p };
-  }
-  return {};
-}
 
 async function portAnswers() {
   try {
