@@ -52,6 +52,20 @@ export async function run() {
         if (r.width < 320 || r.height < 320) continue;
         if (el.closest("aside") || el.querySelector("nav")) continue;
         if (vus.some((o) => o.contains(el) || el.contains(o))) continue;
+        // LE VERDICT EST UNE COUCHE VOULUE, PAS UN PANNEAU EMPILE
+        //
+        // Il se pose SUR le score quand la note depasse 85, et c'est son
+        // travail. Le compter comme un second panneau faisait echouer ce
+        // test selon que la note du CV d'essai passait ou non le seuil -
+        // vert ici, rouge sur l'integration continue, pour un comportement
+        // correct dans les deux cas.
+        //
+        // Ce qui etait un vrai defaut, c'est qu'il SURVIVAIT au panneau qui
+        // le justifie : on quittait le Score pour Match et il restait
+        // au-dessus. La suite du parcours le verifie - s'il fuyait hors du
+        // Score, il serait compte sur l'etape suivante.
+        const titre = (el.innerText || "").trim();
+        if (/^VERDICT NUVI/i.test(titre)) continue;
         vus.push(el);
       }
       return vus.map((el) => (el.innerText || "").trim().split("\n")

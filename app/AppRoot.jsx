@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
 import { diagnostiquer } from "../lib/diagnostic";
+import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 
 // === LAZY MODALS ===
@@ -1376,6 +1377,29 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [tone, setTone] = useState("p");
   const [lang, setLang] = useState("en");
   const [parc, setParc] = useState("");
+  // SEPT CHAMPS AVANT LA PREMIERE LIGNE DE VALEUR
+  //
+  // L'ecran demandait intitule, secteur, annees, ton, langue, parcours et
+  // annonce avant de produire quoi que ce soit. Pour quelqu'un qui remplit
+  // ca sur un telephone pendant sa pause, c'est six decisions de trop - et
+  // c'est exactement la friction que ce produit existe pour supprimer.
+  //
+  // Un seul champ reste visible. Le secteur se DEVINE a partir de
+  // l'intitule, sur place et sans appel, et reste corrigeable. Le reste
+  // attend sous un repli, avec des valeurs par defaut qui tiennent.
+  const [detailsOuverts, setDetailsOuverts] = useState(false);
+  const [secTouche, setSecTouche] = useState(false);
+
+  useEffect(() => {
+    // On ne devine plus des que la personne a choisi elle-meme : lui
+    // reprendre son choix parce qu'elle a corrige une faute de frappe dans
+    // l'intitule serait pire que de ne rien deviner.
+    if (secTouche) return;
+    const cle = secteurProbable(job);
+    if (!cle) return;
+    const i = SECTEURS.indexOf(cle);
+    if (i >= 0 && i !== sec) setSec(i);
+  }, [job, secTouche, sec]);
   const [offre, setOffre] = useState("");
 
   // v17 helpers : inputs paper-on-cream + eyebrow editorial
@@ -1495,36 +1519,67 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
       <input value={job} onChange={e=>setJob(e.target.value)}
         placeholder={T.ai_jph} style={inV17()}/>
 
+      {/* TOUT LE RESTE ATTEND SOUS UN REPLI
+          Ces six champs ont des valeurs par defaut qui tiennent, et le
+          secteur se devine deja depuis l'intitule. Les montrer tous a
+          l'ouverture donnait un formulaire de sept champs sur un ecran de
+          telephone : la personne fait defiler avant d'avoir compris ce que
+          la page lui promet. Qui veut les regler les ouvre. */}
+      <button type="button" onClick={() => setDetailsOuverts(v => !v)}
+        aria-expanded={detailsOuverts}
+        style={{
+          ...B({
+            width:"100%", marginTop:16, padding:"11px 14px",
+            borderRadius:RadiusMd, background:"transparent",
+            border:"1px solid "+Gray200, color:Gray600,
+            fontFamily:Sans, fontSize:12.5, fontWeight:600, cursor:"pointer",
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            minHeight:44,
+          }),
+        }}>
+        <span>{detailsOuverts ? T.ai_less : T.ai_more}</span>
+        <span aria-hidden="true" style={{
+          display:"inline-block",
+          transform: detailsOuverts ? "rotate(180deg)" : "none",
+          transition:"transform 180ms ease",
+        }}>&#9662;</span>
+      </button>
+
+      {detailsOuverts && (
+        <div className="nuvi-panneau">
       <label style={eyV17}>{T.ai_sec}</label>
-      <select value={sec} onChange={e=>setSec(Number(e.target.value))}
-        style={inV17()}>
-        {T.ai_secs.map((s,i) => <option key={i} value={i}>{s}</option>)}
-      </select>
+        <select value={sec} onChange={e=>setSec(Number(e.target.value))}
+          style={inV17()}>
+          {T.ai_secs.map((s,i) => <option key={i} value={i}>{s}</option>)}
+        </select>
 
-      <label style={eyV17}>{T.ai_yrs}</label>
-      <input value={yrs} onChange={e=>setYrs(e.target.value)}
-        placeholder="12" style={inV17()}/>
+        <label style={eyV17}>{T.ai_yrs}</label>
+        <input value={yrs} onChange={e=>setYrs(e.target.value)}
+          placeholder="12" style={inV17()}/>
 
-      <label style={eyV17}>{T.ai_tone}</label>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6}}>
-        <Pill v="p" cur={tone} set={setTone} l={T.ai_tp}/>
-        <Pill v="c" cur={tone} set={setTone} l={T.ai_tc}/>
-        <Pill v="k" cur={tone} set={setTone} l={T.ai_tk}/>
-      </div>
+        <label style={eyV17}>{T.ai_tone}</label>
+        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6}}>
+          <Pill v="p" cur={tone} set={setTone} l={T.ai_tp}/>
+          <Pill v="c" cur={tone} set={setTone} l={T.ai_tc}/>
+          <Pill v="k" cur={tone} set={setTone} l={T.ai_tk}/>
+        </div>
 
-      <label style={eyV17}>{T.ai_lang}</label>
-      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:6}}>
-        <Pill v="fr" cur={lang} set={setLang} l="Francais"/>
-        <Pill v="en" cur={lang} set={setLang} l="English"/>
-      </div>
+        <label style={eyV17}>{T.ai_lang}</label>
+        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:6}}>
+          <Pill v="fr" cur={lang} set={setLang} l="Francais"/>
+          <Pill v="en" cur={lang} set={setLang} l="English"/>
+        </div>
 
-      <label style={eyV17}>{T.ai_parc}</label>
-      <textarea value={parc} onChange={e=>setParc(e.target.value)}
-        rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+        <label style={eyV17}>{T.ai_parc}</label>
+        <textarea value={parc} onChange={e=>setParc(e.target.value)}
+          rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
 
-      <label style={eyV17}>{T.ai_off}</label>
-      <textarea value={offre} onChange={e=>setOffre(e.target.value)}
-        rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+        <label style={eyV17}>{T.ai_off}</label>
+        <textarea value={offre} onChange={e=>setOffre(e.target.value)}
+          rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+
+        </div>
+      )}
 
       <button onClick={go} disabled={loading||!apiKey} style={{
         ...B({

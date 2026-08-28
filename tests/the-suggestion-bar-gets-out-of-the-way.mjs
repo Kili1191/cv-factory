@@ -82,15 +82,38 @@ export async function run() {
     // On declenche un vrai evenement de defilement sur un bloc interieur, pas
     // sur la page : c'est le cas courant, et c'est celui que la barre ne
     // voyait pas avant qu'on ecoute en phase de capture.
+    // CE QU'ON TESTE, C'EST LA REACTION DE LA BARRE
+    //
+    // Ce test cherchait le premier bloc debordant de la page. Ca marchait
+    // tant que l'ecran de generation etait long : ses sept champs
+    // depassaient l'ecran. Depuis qu'un seul champ reste visible et que le
+    // reste attend sous un repli, plus rien ne deborde a l'arrivee - et le
+    // test tombait sur document.scrollingElement, qui ne defile pas non
+    // plus. Aucun evenement, donc une barre qui "reste a 100%" pour une
+    // raison qui n'a rien a voir avec elle.
+    //
+    // On defile pour de vrai quand un bloc deborde. Sinon on emet
+    // l'evenement lui-meme : la barre ecoute en phase de CAPTURE sur le
+    // document, donc c'est exactement le signal qu'elle recoit d'un bloc
+    // interieur. On ne teste pas si la page deborde - ca depend du contenu
+    // du jour - mais si la barre s'ecarte quand ca defile.
     const scrolled = await page.evaluate(() => {
       const inner = [...document.querySelectorAll("*")].find(el => {
         const s = getComputedStyle(el);
         return (s.overflowY === "auto" || s.overflowY === "scroll")
           && el.scrollHeight - el.clientHeight > 40;
       });
-      const target = inner || document.scrollingElement;
-      target.scrollTop = Math.min(120, target.scrollHeight - target.clientHeight);
-      return Boolean(inner);
+      if (inner) {
+        inner.scrollTop = Math.min(120, inner.scrollHeight - inner.clientHeight);
+        return true;
+      }
+      const doc = document.scrollingElement;
+      if (doc && doc.scrollHeight - doc.clientHeight > 40) {
+        doc.scrollTop = Math.min(120, doc.scrollHeight - doc.clientHeight);
+        return true;
+      }
+      document.dispatchEvent(new Event("scroll", { bubbles: true }));
+      return false;
     });
     await page.waitForTimeout(180);
 
