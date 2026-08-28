@@ -1,7 +1,7 @@
 # awesome-design-skills : provenance
 
-Les 67 dossiers de langage visuel presents ici (`agentic`, `bento`,
-`brutalism`, `glassmorphism`, `minimal`, `retro`, `vintage`, ...) viennent de
+Les dossiers de langage visuel presents ici, `clean`, `editorial`, `minimal`,
+`professional` et `refined`, viennent de
 [bergside/awesome-design-skills](https://github.com/bergside/awesome-design-skills),
 commit `f631a09b4fcc0166f2e2c1a8c81906ef680c57e8`.
 
@@ -22,10 +22,19 @@ Un langage a la fois, avec l'outil du depot amont :
 npx typeui.sh pull <slug>
 ```
 
-## Cout et elagage
+## Pourquoi cinq et pas soixante-sept
 
-Ces 67 competences ajoutent environ 2 200 jetons a chaque session : seul leur
-nom et leur description restent charges en permanence, le corps du fichier
-n'est lu qu'a l'invocation. Si un jour le projet se fixe sur un langage
-visuel, supprimer les dossiers inutilises est sans effet de bord : ce sont des
-fichiers de texte independants les uns des autres.
+Le depot amont en propose 67. Les 62 autres ont ete retires : ils ajoutaient
+environ 2 200 jetons a chaque session pour un produit dont la direction
+visuelle est deja fixee, et dont les contraintes sont tenues par les tests,
+rien ne recouvre une commande sur telephone, toutes les largeurs d'ecran
+tiennent, les mots en italique sont de vrais italiques. `brutalism` et
+`pacman` n'allaient jamais servir ici.
+
+Les cinq gardes sont ceux dont le registre correspond au produit : sobre,
+lisible, credible. En reprendre un autre est sans effet de bord, ce sont des
+fichiers de texte independants :
+
+```bash
+npx typeui.sh pull <slug>
+```

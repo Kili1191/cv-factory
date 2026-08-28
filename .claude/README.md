@@ -41,42 +41,36 @@ playwright-cli install --skills
 action → snapshot). Il consomme nettement moins de contexte qu'un serveur MCP
 équivalent, puisque les instantanés sont écrits dans des fichiers.
 
-Le dossier de travail `.playwright/` est ignoré par git : il contient la
-configuration locale du navigateur, propre à chaque machine. Sur un poste où
-Chromium est déjà fourni par l'environnement plutôt que téléchargé par
-Playwright, `playwright-cli install --skills` échoue à la dernière étape (le
-téléchargement du navigateur) alors que les compétences sont bien écrites ; il
-suffit alors de désigner le binaire existant :
+Le dossier de travail `.playwright/` est ignoré par git : il contient un chemin
+absolu, vrai sur cette machine et faux sur la suivante. Il se régénère :
 
-```json
-// .playwright/cli.config.json
-{
-  "browser": {
-    "browserName": "chromium",
-    "launchOptions": {
-      "executablePath": "/chemin/vers/chrome",
-      "chromiumSandbox": false
-    }
-  }
-}
+```bash
+node scripts/playwright-cli-config.mjs
 ```
+
+Ce script lit `tests/lib/chromium.mjs`, le même résolveur que le harnais de
+test, pour qu'il n'y ait qu'un seul endroit à corriger le jour où l'image
+change. Sur un environnement qui fournit déjà Chromium,
+`playwright-cli install --skills` échoue à sa dernière étape, le téléchargement
+du navigateur, alors que les compétences sont bien écrites. Le script règle
+exactement ce cas.
 
 Les tests end-to-end du dépôt (`tests/run.mjs`) continuent d'utiliser la
 dépendance `playwright` déclarée dans `package.json` ; `@playwright/cli` est un
 outil d'exploration pour l'agent, pas un remplaçant.
 
-## 4. Les 67 langages visuels d'awesome-design-skills
+## 4. Cinq langages visuels d'awesome-design-skills
 
 Recopies depuis
 [bergside/awesome-design-skills](https://github.com/bergside/awesome-design-skills)
-dans `skills/`, un dossier par langage : `bento`, `brutalism`, `editorial`,
-`glassmorphism`, `minimal`, `retro`, `terracotta`, et soixante autres. Chacun
-porte son `SKILL.md` (regles pour l'agent) et son `DESIGN.md` (l'intention en
-clair). Provenance, mise a jour et cout en contexte :
-`skills/AWESOME-DESIGN-SKILLS.md`.
+dans `skills/` : `clean`, `editorial`, `minimal`, `professional`, `refined`.
+Chacun porte son `SKILL.md` (regles pour l'agent) et son `DESIGN.md`
+(l'intention en clair).
 
-Ces langages se choisissent un par projet ou par page. Les invoquer tous en
-meme temps n'aurait pas de sens : ils se contredisent, c'est le but.
+Le depot amont en propose 67. Les autres ont ete retires : ils se contredisent
+volontairement, et pour un produit dont le registre est deja fixe la plupart
+n'allaient jamais servir. Voir `skills/AWESOME-DESIGN-SKILLS.md` pour la
+provenance et la commande qui en reprend un.
 
 ## 5. Bibliotheque DESIGN.md
 
@@ -93,3 +87,23 @@ meme temps n'aurait pas de sens : ils se contredisent, c'est le but.
 La difference avec les 67 langages du point 4 tient en une phrase : ceux-la
 decrivent un style, ceux-ci decrivent une marque qui a pousse un style jusqu'au
 bout. Voir `skills/design-md-library/SOURCE.md` pour les commits exacts.
+
+## 6. Deux compétences React de Vercel
+
+`react-best-practices` et `composition-patterns`, recopiées depuis le même
+dépôt que les recommandations d'interface. Elles s'appliquent directement :
+Next.js 14, React 18, cent seize fichiers source.
+
+Une réserve, notée aussi dans `skills/composition-patterns/SOURCE.md` : ce
+fichier décrit également les API de React 19. Tout ce qui touche `use()`, les
+Actions ou `useOptimistic` ne s'applique pas tant que la version n'a pas bougé.
+
+## 7. Le hook de démarrage de session
+
+`hooks/session-start.sh` installe, dans une session distante uniquement, ce que
+`.github/workflows/ci.yml` installe en intégration continue : les dépendances
+npm, poppler, MuPDF, tesseract, le jar Apache Tika, et le build Next. Sans lui,
+un conteneur neuf ne peut pas exécuter `npm test`, et la seule façon de
+vérifier une modification est d'ouvrir une proposition de fusion.
+
+Il ne fait rien en local, où la machine a déjà tout.
