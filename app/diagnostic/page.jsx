@@ -94,6 +94,9 @@ export default function Diagnostic() {
   const [origin, setOrigin] = useState("");
   const [reach, setReach] = useState({ state: "wait" });
   const [table, setTable] = useState({ state: "wait" });
+  // Le fournisseur Google : le seul point qui manquait, et exactement
+  // celui qui est casse aujourd'hui.
+  const [google, setGoogle] = useState({ state: "wait" });
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
 
@@ -102,6 +105,7 @@ export default function Diagnostic() {
       const blocked = { state: "blocked", detail: "en attente des points 1 et 2" };
       setReach(blocked);
       setTable(blocked);
+      setGoogle(blocked);
       return;
     }
     let alive = true;
@@ -129,6 +133,44 @@ export default function Diagnostic() {
           return;
         }
         setReach({ state: "ok", detail: "le projet repond et accepte la cle" });
+
+        // LA REPONSE CONTENAIT DEJA CE QU'ON CHERCHAIT
+        //
+        // Cette requete servait seulement a savoir si le projet repond, et
+        // son contenu partait a la poubelle. Or /auth/v1/settings dit
+        // exactement quels fournisseurs sont actifs - et c'est le seul point
+        // que cette page ne verifiait pas, alors que c'est precisement celui
+        // qui empeche de se connecter.
+        //
+        // Prudence : on n'affirme "absent" que si la reponse est lisible et
+        // dit clairement non. Une forme inattendue rend "non verifiable", pas
+        // "casse" - un faux diagnostic enverrait chercher la panne au mauvais
+        // endroit, ce qui coute plus cher que pas de diagnostic du tout.
+        let reglages = null;
+        try { reglages = await r.json(); } catch { /* corps illisible */ }
+        const ext = reglages && reglages.external;
+        if (!ext || typeof ext !== "object") {
+          setGoogle({
+            state: "wait",
+            detail: "le projet n'a pas annonce ses fournisseurs",
+            fix: "Verifie a la main : Supabase > Authentication > Sign In / Providers.",
+          });
+        } else if (ext.google) {
+          setGoogle({
+            state: "ok",
+            detail: "Google est actif sur le projet",
+            fix: "",
+          });
+        } else {
+          setGoogle({
+            state: "ko",
+            detail: "Google n'est pas actif sur ce projet",
+            fix: "Supabase > Authentication > Sign In / Providers > Google : "
+               + "active-le, puis colle le Client ID et le Client Secret pris "
+               + "dans Google Cloud Console. Sans ca, le bouton de connexion "
+               + "renvoie sur le site sans avoir cree de compte.",
+          });
+        }
       })
       .catch(() => alive && setReach({
         state: "ko",
@@ -231,9 +273,17 @@ export default function Diagnostic() {
             detail={table.detail}
             fix={table.fix}
           />
+          {/* Le fournisseur, avant la consequence : c'est lui qui casse la
+              connexion quand tout le reste est vert. */}
+          <Verdict
+            state={google.state === "wait" ? "wait" : google.state}
+            title="5. Google est branche sur le projet"
+            detail={google.detail}
+            fix={google.fix}
+          />
           <Verdict
             state={configured ? "ok" : "ko"}
-            title="5. L'application propose les comptes"
+            title="6. L'application propose les comptes"
             detail={configured
               ? "le bouton de connexion s'affiche dans les reglages"
               : "l'application fonctionne, mais sans comptes"}
