@@ -33,7 +33,12 @@ echo "--> moteurs d'extraction PDF et OCR"
 # declarent non executes au lieu de rougir, ce qui est pire qu'un echec : on
 # croit avoir verifie.
 if ! command -v pdftotext >/dev/null 2>&1; then
-  apt-get update -qq
+  # L'image porte des depots tiers, deadsnakes et ondrej/php, que le proxy de
+  # sortie refuse. apt les signale et continue sur l'archive principale, mais
+  # il lui arrive de rendre un code non nul pour ces avertissements seuls : avec
+  # set -e, la session entiere echouerait a cause de depots dont on n'a aucun
+  # besoin. On ignore donc le code de update, et c'est install qui tranche.
+  apt-get update -qq || true
   apt-get install -y -qq poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra
 fi
 
