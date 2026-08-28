@@ -64,3 +64,16 @@ suffit alors de désigner le binaire existant :
 Les tests end-to-end du dépôt (`tests/run.mjs`) continuent d'utiliser la
 dépendance `playwright` déclarée dans `package.json` ; `@playwright/cli` est un
 outil d'exploration pour l'agent, pas un remplaçant.
+
+## 4. Les 67 langages visuels d'awesome-design-skills
+
+Recopies depuis
+[bergside/awesome-design-skills](https://github.com/bergside/awesome-design-skills)
+dans `skills/`, un dossier par langage : `bento`, `brutalism`, `editorial`,
+`glassmorphism`, `minimal`, `retro`, `terracotta`, et soixante autres. Chacun
+porte son `SKILL.md` (regles pour l'agent) et son `DESIGN.md` (l'intention en
+clair). Provenance, mise a jour et cout en contexte :
+`skills/AWESOME-DESIGN-SKILLS.md`.
+
+Ces langages se choisissent un par projet ou par page. Les invoquer tous en
+meme temps n'aurait pas de sens : ils se contredisent, c'est le but.
