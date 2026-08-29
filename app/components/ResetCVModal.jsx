@@ -23,6 +23,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import { Trans } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -176,7 +177,7 @@ export default function ResetCVModal({
           zIndex: 701,
           fontFamily: "'Inter', -apple-system, sans-serif",
           opacity: closing ? 0 : 1,
-          transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
           animation: !closing ? "nuviResetModalIn 280ms cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
           overflow: "hidden",
         }}
@@ -202,7 +203,7 @@ export default function ResetCVModal({
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              transition: "all 150ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = CreamSoft;
@@ -294,7 +295,7 @@ export default function ResetCVModal({
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  transition: "all 180ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   boxShadow: "0 4px 14px rgba(91, 61, 245, 0.25)",
                 }}
                 onMouseEnter={(e) => {
@@ -357,7 +358,7 @@ export default function ResetCVModal({
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  transition: "all 150ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = "rgba(91, 61, 245, 0.10)";
@@ -427,7 +428,7 @@ export default function ResetCVModal({
                   display: "flex",
                   alignItems: "center",
                   gap: 12,
-                  transition: "all 150ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.background = CoralSoft;
@@ -507,7 +508,7 @@ export default function ResetCVModal({
                     fontSize: 13,
                     fontWeight: 600,
                     fontFamily: "inherit",
-                    transition: "all 150ms ease",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "#993C1D";
@@ -531,7 +532,7 @@ export default function ResetCVModal({
                     fontSize: 13,
                     fontWeight: 500,
                     fontFamily: "inherit",
-                    transition: "all 150ms ease",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = "rgba(217, 119, 87, 0.10)";

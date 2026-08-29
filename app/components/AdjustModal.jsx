@@ -8,6 +8,7 @@ import { applyJsonPatch } from "../../lib/applyJsonPatch";
 import { buildScopeGuard, isScopeUnlocked } from "../../lib/coachScope";
 import { logActivity, ACT } from "../../lib/activityLog";
 
+import { Trans } from "./tokens";
 /**
  * AdjustModal v2 (2026-05-20) - Refonte LiquidGlassModal + actions structurees
  *
@@ -504,7 +505,7 @@ export default function AdjustModal({
               cursor: (loading || !chatInput.trim() || !apiKey) ? "not-allowed" : "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
-              transition: "all 150ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow: (loading || !chatInput.trim() || !apiKey)
                 ? "none" : "0 2px 8px rgba(91, 61, 245, 0.3)",
             }}
@@ -537,7 +538,7 @@ export default function AdjustModal({
         fontWeight: 500,
         fontFamily: "'Inter', sans-serif",
         boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
-        transition: "all 150ms ease",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
       }}
       onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.75)"; }}
       onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255, 255, 255, 0.5)"; }}

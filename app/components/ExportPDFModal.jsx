@@ -20,6 +20,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import { Trans } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -151,7 +152,7 @@ export default function ExportPDFModal({
           zIndex: 951,
           fontFamily: "'Inter', -apple-system, sans-serif",
           opacity: closing ? 0 : 1,
-          transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
           overflow: "hidden",
         }}
       >
@@ -263,7 +264,7 @@ export default function ExportPDFModal({
               display: "flex",
               alignItems: "center",
               gap: 12,
-              transition: "all 180ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow: "0 4px 14px rgba(91, 61, 245, 0.25)",
               position: "relative",
             }}
@@ -338,7 +339,7 @@ export default function ExportPDFModal({
               display: "flex",
               alignItems: "center",
               gap: 12,
-              transition: "all 150ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.background = "rgba(91, 61, 245, 0.10)";

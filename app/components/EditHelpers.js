@@ -16,6 +16,7 @@
 //   - Inputs : padding plus genereux, font-size 13, border-radius 10
 
 import { useState, useCallback } from "react";
+import { Trans } from "./tokens";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper,
   Coral, Purple, Magenta, Hairline,
@@ -200,7 +201,7 @@ export function SaveBtn({ onClose, T }) {
             ? "0 6px 20px rgba(91, 61, 245, 0.35)"
             : "0 2px 8px rgba(91, 61, 245, 0.20)",
           transform: hovered ? "translateY(-1px)" : "translateY(0)",
-          transition: "all 180ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           cursor: "pointer",
         })
       }}>

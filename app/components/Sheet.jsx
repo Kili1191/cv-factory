@@ -25,7 +25,7 @@ import {
   Hairline, InkMuted,
   Gray200, Gray600,
   Serif, Sans, RadiusPill, B,
-  KEYFRAMES_V17,
+  KEYFRAMES_V17, Trans
 } from "./tokens";
 
 // NuviLogo importe en dynamic (ssr:false) pour eviter mismatch hydratation
@@ -152,7 +152,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
               border: "0.5px solid " + Hairline,
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
-              transition: "all 150ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"

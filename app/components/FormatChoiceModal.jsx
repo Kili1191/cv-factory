@@ -1,6 +1,7 @@
 "use client";
 import React, { useState } from "react";
 
+import { Trans } from "./tokens";
 /**
  * FormatChoiceModal - Liquid Glass dialog asking user for PDF format.
  * Triggered before downloading the CV. Memorizes choice if "Toujours utiliser".
@@ -159,7 +160,7 @@ export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale =
                     padding: "14px 16px",
                     textAlign: "left",
                     cursor: "pointer",
-                    transition: "all 200ms ease-out",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     display: "flex",
                     alignItems: "center",
                     gap: 14,
@@ -174,7 +175,7 @@ export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale =
                     background: active ? "#5b3df5" : "transparent",
                     boxShadow: active ? "inset 0 0 0 3px white" : "none",
                     flexShrink: 0,
-                    transition: "all 200ms ease-out",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   }}/>
                   {/* Content */}
                   <div style={{ flex: 1, minWidth: 0 }}>

@@ -28,6 +28,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 
+import { Trans } from "./tokens";
 const FRAME_DIMENSIONS = {
   "1:1":   { width: 280, height: 280, isRound: false },
   "3:4":   { width: 240, height: 320, isRound: false },
@@ -522,7 +523,7 @@ export default function PhotoCropEditor({
               boxShadow: (!originalSrc || loading)
                 ? "none"
                 : "0 4px 14px rgba(91, 61, 245, 0.4)",
-              transition: "all 180ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             }}
           >
             {loading ? tx.loading : tx.save}
@@ -709,7 +710,7 @@ export default function PhotoCropEditor({
                       flexDirection: "column",
                       alignItems: "center",
                       gap: 4,
-                      transition: "all 150ms ease",
+                      transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     }}
                   >
                     {opt.icon}

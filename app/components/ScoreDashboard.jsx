@@ -202,8 +202,9 @@ function DeuxLectures({ lectures, locale }) {
       : "Ton CV convainc qui le lit. Le probleme est en amont : le logiciel en perd une partie avant que quiconque le voie.";
   }
 
-  const carte = (titre, note, palier, dessous, teinte) => (
-    <div style={{
+  const carte = (titre, note, palier, dessous, teinte, rang = 0) => (
+    <div className="nuvi-entree" style={{
+      "--nuvi-rang": rang,
       flex: "1 1 220px", minWidth: 0, boxSizing: "border-box",
       padding: "18px 18px 16px",
       background: Paper, borderRadius: RadiusMd,
@@ -241,13 +242,14 @@ function DeuxLectures({ lectures, locale }) {
     <div style={{ marginBottom: 16 }}>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
         {carte(en ? "Read by the software" : "Lu par le logiciel",
-          machine.note, machine.palier, dessousMachine, Purple)}
+          machine.note, machine.palier, dessousMachine, Purple, 0)}
         {carte(en ? "Read by a person" : "Lu par une personne",
-          humain.note, humain.palier, dessousHumain, Coral)}
+          humain.note, humain.palier, dessousHumain, Coral, 1)}
       </div>
 
       {phrase && (
-        <div style={{
+        <div className="nuvi-entree" style={{
+          "--nuvi-rang": 2,
           marginTop: 10, padding: "12px 14px",
           background: CreamSoft, borderRadius: RadiusMd,
           border: "0.5px solid " + Gray200,
@@ -259,7 +261,8 @@ function DeuxLectures({ lectures, locale }) {
           Le corriger fait passer tous les autres, donc c'est la seule chose
           a dire en premier. */}
       {machine.premierObstacle && (
-        <div style={{
+        <div className="nuvi-entree" style={{
+          "--nuvi-rang": 3,
           marginTop: 10, padding: "12px 14px",
           background: CoralSoft, borderRadius: RadiusMd,
           fontSize: 13, lineHeight: 1.55, color: Ink,

@@ -1454,7 +1454,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
         color:cur===v ? Cream : Ink,
         fontWeight:cur===v ? 600 : 500, fontSize:12,
         fontFamily:Sans,
-        transition:"all 180ms ease-out",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
       })
     }}>{l}</button>
   );
@@ -1621,7 +1621,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           fontWeight:600, fontSize:14, fontFamily:Sans,
           marginTop:22,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         {loading ? T.ai_gen : T.ai_btn}
@@ -1898,7 +1898,7 @@ function BottomNav({ active, onPhase, T }) {
               padding:"6px 14px", borderRadius:RadiusMd,
               background:"transparent",
               flex:1, maxWidth:108,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <span style={{
@@ -2014,7 +2014,7 @@ function ColorSwatch({ color, name, active, onClick, size=44 }) {
         border:active ? "2px solid "+Ink : "0.5px solid "+Gray200,
         boxShadow:active ? "0 0 0 2px "+Cream+", 0 0 0 3px "+Ink : ShadowSm,
         cursor:"pointer", padding:0, flexShrink:0,
-        transition:"all 180ms ease-out",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
       })
     }}/>
   );
@@ -2076,7 +2076,7 @@ function WCAGBadge({ ratio, level, T }) {
           stroke="var(--nuvi-ink)"
           strokeWidth="2"
           strokeLinecap="round"
-          style={{transition:"all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)"}}
+          style={{transition:"transform, opacity, box-shadow, background 600ms cubic-bezier(0.34, 1.56, 0.64, 1)"}}
         />
         {/* Pivot central */}
         <circle cx="32" cy="32" r="3" fill="var(--nuvi-ink)"/>
@@ -2253,7 +2253,7 @@ function FontCard({ font, active, onClick, sample, isBody }) {
         padding:"14px 16px",
         textAlign:"left",
         boxShadow:active ? "none" : ShadowSm,
-        transition:"all 180ms ease-out",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         width:"100%",
         cursor:"pointer",
         display:"flex", alignItems:"center", gap:14,
@@ -2432,7 +2432,7 @@ function FontUrlInput({ T, onApply }) {
             color:loading || !url.trim() ? Gray600 : "#fff",
             border:"none",
             fontSize:13, fontWeight:600, fontFamily:Sans,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           {loading ? T.cust_font_url_loading : T.cust_font_url_apply}
@@ -2470,7 +2470,7 @@ function FontUrlInput({ T, onApply }) {
                 color:"#fff",
                 border:"none",
                 fontSize:12, fontWeight:600, fontFamily:Sans,
-                transition:"all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               })
             }}>{T.cust_font_url_to_header}</button>
             <button onClick={()=>apply("body")} style={{
@@ -2480,7 +2480,7 @@ function FontUrlInput({ T, onApply }) {
                 color:"#fff",
                 border:"none",
                 fontSize:12, fontWeight:600, fontFamily:Sans,
-                transition:"all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               })
             }}>{T.cust_font_url_to_body}</button>
           </div>
@@ -2923,7 +2923,7 @@ function SuggestionCombo({ T, combo, onAdopt }) {
             border:"none",
             fontSize:12, fontWeight:600, fontFamily:Sans,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           {T.cust_suggest_adopt}
@@ -2983,7 +2983,7 @@ function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopt
           fontFamily:Sans, fontWeight:600, fontSize:14,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom:18,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         {loading ? T.cust_suggest_loading : T.cust_suggest_btn}
@@ -3080,7 +3080,11 @@ function ChoixDeGabarit({ layout, setLy, locale }) {
               onClick={() => setLy(k)}
               aria-pressed={active}
               title={meta.desc}
+              className="nuvi-entree"
               style={{
+                // Le rang donne l'ordre d'apparition : les six vignettes se
+                // posent l'une apres l'autre au lieu de surgir en bloc.
+                "--nuvi-rang": LAYOUTS.indexOf(k),
                 // Dans une grille, un bouton se retracte a la largeur de son
                 // contenu : sans width, les vignettes se decalent les unes
                 // des autres selon la longueur de leur nom.
@@ -3144,7 +3148,7 @@ function LayoutTab({ T, layout, setLy, locale }) {
                   textAlign: "left",
                   cursor: "pointer",
                   overflow: "hidden",
-                  transition: "all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   position: "relative",
                 })
               }}
@@ -3476,7 +3480,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
     color:active ? "#fff" : "var(--nuvi-ink)",
     border:"0.5px solid "+(active ? "transparent" : "var(--nuvi-hairline)"),
     fontFamily:Sans, fontWeight:active ? 600 : 500, fontSize:12,
-    transition:"all 180ms ease-out",
+    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
     cursor:"pointer",
   });
 
@@ -3570,7 +3574,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
             border:"0.5px solid "+Coral,
             fontSize:13, fontWeight:500, fontFamily:Sans,
             marginTop:24,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>{T.cust_reset}</button>
       )}
@@ -7535,7 +7539,7 @@ export default function App() {
                   fontWeight:a ? 600 : 500, fontSize:13,
                   fontFamily:Sans,
                   textAlign:"center",
-                  transition:"all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>{label}</button>
             );
@@ -7608,7 +7612,7 @@ export default function App() {
     display:"flex", alignItems:"center", gap:12,
     textAlign:"left", fontFamily:Sans, fontSize:14,
     fontWeight:500, marginBottom:8,
-    transition:"all 200ms ease-out",
+    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
   };
   const finRowChevron = (
     <span style={{
@@ -7635,7 +7639,7 @@ export default function App() {
     background:active ? Ink : Paper,
     border:"0.5px solid "+(active ? Ink : Gray200),
     fontFamily:Sans,
-    transition:"all 180ms ease-out",
+    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
   });
 
   const FinalizeContent = (
@@ -7816,7 +7820,7 @@ export default function App() {
           fontFamily:Sans, fontWeight:600, fontSize:14,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom:14,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           position:"relative",
         })
       }}>
@@ -7855,7 +7859,7 @@ export default function App() {
                 background:active ? CreamSoft : Paper,
                 textAlign:"left",
                 boxShadow:active ? "none" : ShadowSm,
-                transition:"all 180ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               })
             }}>
               <div style={{
@@ -7932,7 +7936,7 @@ export default function App() {
           fontFamily:Sans, fontWeight:600, fontSize:14,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -7952,7 +7956,7 @@ export default function App() {
             border:"0.5px solid "+Gray200,
             fontSize:13, fontWeight:500, fontFamily:Sans,
             boxShadow:ShadowSm,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>{T.tr_restore}</button>
       )}
@@ -7968,7 +7972,7 @@ export default function App() {
           fontSize:13, fontWeight:600, fontFamily:Sans,
           display:"flex", alignItems:"center", gap:12,
           marginBottom:10, textAlign:"left",
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         <div style={{
@@ -7997,7 +8001,7 @@ export default function App() {
           fontFamily:Sans, fontWeight:600, fontSize:14,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -8028,7 +8032,7 @@ export default function App() {
           fontSize:13, fontWeight:600, fontFamily:Sans,
           display:"flex", alignItems:"center", gap:12,
           marginBottom:10, textAlign:"left",
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           opacity: cvIsEmpty ? 0.6 : 1,
         })
       }}>
@@ -8059,7 +8063,7 @@ export default function App() {
           fontSize:13, fontWeight:500, fontFamily:Sans,
           boxShadow:!hist.length ? "none" : ShadowSm,
           marginBottom:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>{T.fin_undo_btn} ({hist.length})</button>
       <button onClick={doReset} style={{
@@ -8068,7 +8072,7 @@ export default function App() {
           background:CoralSoft, color:Coral,
           border:"0.5px solid "+Coral,
           fontSize:13, fontWeight:500, fontFamily:Sans,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>{T.t_rst}</button>
 
@@ -8119,7 +8123,7 @@ export default function App() {
             fontSize:13, fontWeight:500, fontFamily:Sans,
             textAlign:"left", marginBottom:7,
             boxShadow:ShadowSm,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>{l}</button>
       ))}
@@ -8752,7 +8756,7 @@ export default function App() {
         borderBottom:a?"2px solid "+Ink:"2px solid transparent",
         textAlign:"center", fontFamily:Sans,
         background:"transparent",
-        transition:"all 200ms ease-out",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
       })
     });
     return (
@@ -9409,7 +9413,7 @@ export default function App() {
                   fontWeight:600,
                   fontFamily:Sans,
                   boxShadow:"0 4px 12px rgba(91, 61, 245, 0.25)",
-                  transition:"all 200ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none"

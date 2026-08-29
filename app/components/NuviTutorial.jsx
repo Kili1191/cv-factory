@@ -382,7 +382,7 @@ export default function NuviTutorial({
             zIndex: 9001, borderRadius: 14,
             boxShadow: "0 0 0 9999px rgba(10, 10, 10, 0.4)",
             pointerEvents: "none",
-            transition: "all 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            transition: "transform, opacity, box-shadow, background 600ms cubic-bezier(0.34, 1.56, 0.64, 1)",
             animation: "nvTutHighlight 1.8s ease-in-out infinite",
           }}
         />

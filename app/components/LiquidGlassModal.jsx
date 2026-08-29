@@ -11,6 +11,7 @@ import { useEffect, useState } from "react";
 import LiquidGlassPanel from "./LiquidGlassPanel";
 import { estTelephone } from "../../lib/breakpoint.js";
 
+import { Trans } from "./tokens";
 const Ink       = "var(--nuvi-ink)";
 const InkMuted  = "var(--nuvi-ink-muted)";
 const Coral     = "var(--nuvi-coral)";
@@ -262,7 +263,7 @@ function ModalContent({
                 backdropFilter: CARD_BLUR,
                 WebkitBackdropFilter: CARD_BLUR,
                 boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08)",
-                transition: "all 150ms ease",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2"
@@ -393,7 +394,7 @@ export function GlassButton({
         fontFamily: Sans,
         cursor: disabled ? "not-allowed" : "pointer",
         opacity: disabled ? 0.5 : 1,
-        transition: "all 150ms ease",
+        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         width: fullWidth ? "100%" : "auto",
         ...style,
       }}>

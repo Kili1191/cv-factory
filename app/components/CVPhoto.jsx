@@ -22,6 +22,7 @@ import dynamic from "next/dynamic";
 import { createPortal } from "react-dom";
 import { estTelephone } from "../../lib/breakpoint.js";
 
+import { Trans } from "./tokens";
 const PhotoCropEditor = dynamic(() => import("./PhotoCropEditor"), { ssr: false });
 
 function getInitials(name) {
@@ -223,7 +224,7 @@ export default function CVPhoto({
             fontFamily: fontFamily,
             fontWeight: 700,
             position: "relative",
-            transition: "all 200ms ease",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.boxShadow = "0 0 0 3px " + accentColor + "33";

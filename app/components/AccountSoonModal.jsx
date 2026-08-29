@@ -13,6 +13,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import { Trans } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -172,7 +173,7 @@ export default function AccountSoonModal({
           zIndex: 801,
           fontFamily: "'Inter', -apple-system, sans-serif",
           opacity: closing ? 0 : 1,
-          transition: "all 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
           animation: !closing ? "nuviAccountIn 280ms cubic-bezier(0.22, 1, 0.36, 1)" : undefined,
           overflow: "hidden",
         }}
@@ -362,7 +363,7 @@ export default function AccountSoonModal({
                     fontSize: 13,
                     fontWeight: 600,
                     fontFamily: "inherit",
-                    transition: "all 180ms ease",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     boxShadow: email.trim() ? "0 4px 14px rgba(91, 61, 245, 0.25)" : "none",
                     flexShrink: 0,
                   }}

@@ -12,7 +12,7 @@ import {
   Ink, InkMuted, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
   Gray100, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans
 } from "./tokens";
 import Sheet from "./Sheet";
 import {
@@ -165,7 +165,7 @@ export default function ActivityModal({ locale = "en", onClose, notify }) {
                     border: "0.5px solid " + (on ? "transparent" : Hairline),
                     background: on ? (c === "all" ? Ink : st.fg) : Paper,
                     color: on ? "#fff" : InkMuted,
-                    transition: "all 160ms ease-out",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   })
                 }}>
                   {c === "all"

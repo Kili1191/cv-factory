@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 
+import { Trans } from "./tokens";
 /**
  * VerdictModal - Fullscreen Liquid Glass moment of truth.
  * Triggered when CV score crosses 85+. Tells user "STOP editing, send now".
@@ -375,7 +376,7 @@ export default function VerdictModal({
                 fontWeight: 500, fontSize: 14,
                 cursor: "pointer",
                 backdropFilter: "blur(10px)",
-                transition: "all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.9)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.7)"}

@@ -1120,3 +1120,49 @@ html {
     align-items: baseline;
   }
 }
+
+/* ============================================================
+ * L'ENTREE EN SEQUENCE
+ * ============================================================
+ *
+ * Les panneaux glissaient deja depuis le bas, d'un bloc. Leur contenu, lui,
+ * etait simplement la : six cartes, huit axes, une liste entiere posee d'un
+ * coup. L'oeil n'a alors aucun ordre de lecture, et un panneau dense se lit
+ * comme un mur.
+ *
+ * Un decalage de quelques dizaines de millisecondes suffit a donner cet
+ * ordre. Ce n'est pas une decoration : il dit par ou commencer.
+ *
+ * LE DECALAGE EST PLAFONNE, ET C'EST LE POINT DELICAT
+ *
+ * A 45ms par element, une liste de trente elements ferait attendre 1.35s
+ * avant que le dernier apparaisse. Personne n'attend une liste. Le rang est
+ * donc borne a huit : au-dela, tout arrive ensemble. Une sequence doit se
+ * sentir, jamais se subir.
+ *
+ * Le mouvement se refuse plus haut dans ce fichier, globalement, pour tout ce
+ * qui est ajoute ici comme pour le reste.
+ */
+@keyframes nuviEntree {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nuvi-entree {
+  animation: nuviEntree 240ms cubic-bezier(.22, 1, .36, 1) both;
+  /* --nuvi-rang porte la position dans la liste, posee par le composant.
+     Sans elle, l'element entre immediatement : un seul element n'a pas de
+     sequence, et c'est le cas le plus courant. */
+  animation-delay: calc(min(var(--nuvi-rang, 0), 8) * 45ms);
+}
+
+/* Une entree qui vient du cote, pour ce qui se lit en ligne plutot qu'en
+   colonne : une barre d'onglets, une rangee de pastilles. */
+@keyframes nuviEntreeCote {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.nuvi-entree-cote {
+  animation: nuviEntreeCote 240ms cubic-bezier(.22, 1, .36, 1) both;
+  animation-delay: calc(min(var(--nuvi-rang, 0), 8) * 40ms);
+}

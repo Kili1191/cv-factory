@@ -73,7 +73,7 @@ function DeleteBtn({ onClick, label }) {
           color: hovered ? "#dc2626" : InkMuted,
           fontFamily: Sans,
           letterSpacing: "0.01em",
-          transition: "all 150ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           display: "inline-flex",
           alignItems: "center",
           gap: 5,
@@ -110,7 +110,7 @@ function XBtn({ onClick, ariaLabel = "delete" }) {
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          transition: "all 150ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
       <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -148,7 +148,7 @@ function AddBtn({ onClick, label, fullWidth = false }) {
           alignItems: "center",
           justifyContent: "center",
           gap: 7,
-          transition: "all 150ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -249,7 +249,7 @@ export function SheetId({ cv, set, onClose, onTransformSummary, T }) {
                   opacity: summaryEmpty ? 0.6 : 1,
                   cursor: summaryEmpty ? "not-allowed" : "pointer",
                   boxShadow: summaryEmpty ? "none" : "0 2px 8px rgba(91, 61, 245, 0.25)",
-                  transition: "all 180ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -347,7 +347,7 @@ export function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
             color: Ink,
             background: Paper,
             outline: "none",
-            transition: "all 150ms ease",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           }} />
         {onTransformBullet && (
           <TransformBtn
@@ -505,7 +505,7 @@ export function SheetSk({ cv, set, onClose, T }) {
           background: Paper,
           outline: "none",
           boxSizing: "border-box",
-          transition: "all 150ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         }} />
     );
   };

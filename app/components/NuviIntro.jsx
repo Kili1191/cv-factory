@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import NuviCompanion from "./NuviCompanion";
 
+import { Trans } from "./tokens";
 /**
  * NuviIntro : Présentation initiale du compagnon Nuvi.
  * Version béton : streaming basé sur step uniquement (pas de currentLine en deps).
@@ -233,7 +234,7 @@ export default function NuviIntro({
           fontFamily: "'Inter', sans-serif",
           fontWeight: 500,
           cursor: "pointer",
-          transition: "all 200ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           zIndex: 10,
         }}
       >
@@ -359,7 +360,7 @@ export default function NuviIntro({
                   height: 6,
                   borderRadius: 999,
                   background: i <= step ? Cream : "rgba(255,255,255,0.3)",
-                  transition: "all 300ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
                 }} />
               ))}
             </div>
@@ -378,7 +379,7 @@ export default function NuviIntro({
                 cursor: "pointer",
                 letterSpacing: 0.3,
                 boxShadow: "0 8px 24px rgba(91, 61, 245, 0.4), 0 2px 8px rgba(91, 61, 245, 0.3)",
-                transition: "all 200ms ease",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 minWidth: mob ? 160 : 200,
               }}
             >

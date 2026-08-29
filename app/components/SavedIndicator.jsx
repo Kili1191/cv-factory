@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from "react";
 
+import { Trans } from "./tokens";
 export default function SavedIndicator({
   lastSavedAt = null,
   lang = "en",
@@ -93,7 +94,7 @@ export default function SavedIndicator({
       fontFamily: "'Inter', -apple-system, sans-serif",
       fontWeight: 500,
       letterSpacing: "0.01em",
-      transition: "all 200ms ease",
+      transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
     }}>
       <span style={{
         width: 6,

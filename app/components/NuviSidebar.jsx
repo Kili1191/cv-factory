@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
+import { Trans } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
 const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
@@ -254,7 +255,7 @@ export default function NuviSidebar({
     cursor: "pointer",
     background: isActive ? accentColor + "15" : "transparent",
     color: isActive ? accentColor : InkMuted,
-    transition: "all 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
     fontFamily: "'Inter', -apple-system, sans-serif",
     fontSize: 13,
     fontWeight: isActive ? 600 : 500,

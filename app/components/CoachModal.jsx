@@ -417,7 +417,7 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
           boxShadow: hovered
             ? "0 4px 14px rgba(217, 119, 87, 0.18)"
             : "0 2px 8px rgba(0, 0, 0, 0.06)",
-          transition: "all 150ms ease",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
       {qr.icon && (
@@ -970,7 +970,7 @@ export default function CoachModal({
                   backdropFilter: "blur(18px) saturate(170%)",
                   WebkitBackdropFilter: "blur(18px) saturate(170%)",
                   boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-                  transition: "all 150ms ease",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -994,7 +994,7 @@ export default function CoachModal({
               backdropFilter: "blur(18px) saturate(170%)",
               WebkitBackdropFilter: "blur(18px) saturate(170%)",
               boxShadow: "0 2px 8px rgba(0, 0, 0, 0.12)",
-              transition: "all 150ms ease",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
