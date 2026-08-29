@@ -148,19 +148,24 @@ export default function RootLayout({ children }) {
         <meta name="app-build" content={process.env.NEXT_PUBLIC_BUILD_ID || "unknown"} />
       </head>
       <body className="nuvi-grain" style={{ margin: 0, padding: 0 }}>
-        {/*
-          L'application n'avait aucun titre de niveau 1 ni aucun point de
-          repere : les titres etaient des <div> stylises. Un lecteur d'ecran
-          n'avait donc aucun plan du document, et les moteurs de recherche
-          aucune accroche. Le titre est masque visuellement (il ferait doublon
-          avec le logo) mais reste expose aux technologies d'assistance.
-        */}
-        {/* Le seul titre que voient les robots d'indexation. Il vit dans le
-            layout, donc cote serveur : il ne peut pas connaitre la langue
-            choisie par le visiteur. Il suit donc la langue par defaut du
-            document, l'anglais. */}
-        <h1 className="sr-only">Nuvi · CV and resume editor</h1>
-        <main>{children}</main>
+        {/* LE LIEN D'EVITEMENT
+            Au clavier, atteindre le contenu demandait de traverser la
+            manchette a chaque page. Ce lien ne se voit qu'une fois focalise,
+            et c'est la premiere chose que rencontre la touche Tab. */}
+        <a href="#contenu" className="nuvi-evitement">
+          Skip to content
+        </a>
+
+        {/* IL Y AVAIT DEUX TITRES DE NIVEAU 1 SUR CHAQUE PAGE
+            Ce layout en posait un, masque visuellement, a l'epoque ou
+            l'application n'en avait aucun : ses titres etaient des <div>
+            stylises, et un lecteur d'ecran n'avait aucun plan du document.
+            Depuis, les trois pages ont le leur - la vitrine, l'editeur et la
+            page de mise en service. Celui d'ici faisait donc doublon partout,
+            et deux h1 sur une page privent justement ce plan de sa racine
+            unique. Mesure : la vitrine en exposait deux.
+            Chaque page nomme desormais sa propre page. */}
+        <main id="contenu">{children}</main>
       </body>
     </html>
   );

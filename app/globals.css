@@ -1213,3 +1213,32 @@ html {
 .nuvi-sheet-corps > *:nth-child(6) { animation-delay: 225ms; }
 .nuvi-sheet-corps > *:nth-child(7) { animation-delay: 270ms; }
 .nuvi-sheet-corps > *:nth-child(n+8) { animation-delay: 315ms; }
+
+/* LE LIEN D'EVITEMENT
+ *
+ * Au clavier, atteindre le contenu demandait de traverser toute la manchette,
+ * a chaque page. Ce lien est le premier element focalisable du document : il
+ * reste hors de l'ecran tant qu'on ne l'atteint pas, et se pose en haut a
+ * gauche des qu'il recoit le focus.
+ *
+ * Il n'est pas cache avec display:none ni visibility:hidden : les deux le
+ * retireraient de l'ordre de tabulation, c'est-a-dire exactement ce qu'on
+ * veut eviter. Il est deplace hors du cadre.
+ */
+.nuvi-evitement {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  padding: 12px 18px;
+  background: var(--nuvi-ink);
+  color: var(--nuvi-cream);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom-right-radius: 10px;
+}
+.nuvi-evitement:focus {
+  left: 0;
+}
