@@ -60,6 +60,26 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
 
   const sc = (s) => { if (s >= 80) return Green; if (s >= 65) return Purple; if (s >= 50) return Coral; return "#dc2626"; };
 
+  // L'ONGLET RAPIDE PARLAIT FRANCAIS A TOUT LE MONDE
+  // Le bouton, le detail et le verdict etaient ecrits en dur. Quelqu'un qui
+  // avait choisi l'anglais au premier ecran lisait "Analyser mon CV
+  // maintenant" au milieu d'une interface anglaise.
+  const en = locale === "en";
+  const T2 = {
+    analyser: en ? "Analyse my CV now" : "Analyser mon CV maintenant",
+    recalculer: en ? "Run it again" : "Recalculer",
+    detail: en ? "Detail" : "Detail",
+    verdict: (n) => en
+      ? (n >= 80 ? "Excellent CV"
+        : n >= 65 ? "Good CV, room to improve"
+        : n >= 50 ? "Decent CV, several weak points"
+        : "Several structural gaps")
+      : (n >= 80 ? "Excellent CV"
+        : n >= 65 ? "Bon CV, ameliorations possibles"
+        : n >= 50 ? "CV correct, plusieurs faiblesses"
+        : "Plusieurs manques structurels"),
+  };
+
   return (
     <div style={{fontFamily:Sans}}>
       {/* Tabs pills - active = gradient violet→magenta */}
@@ -119,7 +139,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
               boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
             })
           }}>
-            {quickRes ? "Recalculer" : "Analyser mon CV maintenant"}
+            {quickRes ? T2.recalculer : T2.analyser}
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
@@ -153,12 +173,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
                   <div style={{
                     fontFamily: Serif, fontSize: 14, fontWeight: 400,
                     color: Ink, letterSpacing: "-0.01em",
-                  }}>{
-                    quickRes.score >= 80 ? "Excellent CV"
-                    : quickRes.score >= 65 ? "Bon CV, ameliorations possibles"
-                    : quickRes.score >= 50 ? "CV correct, plusieurs faiblesses"
-                    : "Plusieurs manques structurels"
-                  }</div>
+                  }}>{T2.verdict(quickRes.score)}</div>
                 </div>
               </div>
 
@@ -168,7 +183,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
                 letterSpacing: "0.1em", textTransform: "uppercase",
                 color: Coral, marginBottom: 10,
                 fontFamily: Sans,
-              }}>Detail</div>
+              }}>{T2.detail}</div>
               <div style={{
                 background: Paper,
                 borderRadius: RadiusMd,

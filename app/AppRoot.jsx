@@ -408,34 +408,44 @@ function metaGabarit(locale) {
 
 // Presets curees pour la couleur d'accent (le dore par defaut).
 const ACCENT_PRESETS = [
-  { id:"gold",     name:"Or classique",   color:"#c9a96e" },
-  { id:"bordeaux", name:"Bordeaux",       color:"#7a1f2b" },
-  { id:"forest",   name:"Vert foret",     color:"#2d5a3d" },
-  { id:"navy",     name:"Bleu marine",    color:"#1e3a5f" },
-  { id:"plum",     name:"Aubergine",      color:"#4a1d3f" },
-  { id:"charcoal", name:"Charbon",        color:"#3a3a3a" },
-  { id:"rust",     name:"Rouille",        color:"#a64b2a" },
-  { id:"teal",     name:"Bleu petrole",   color:"#1f4d4a" },
+  { id:"gold",     name:"Or classique",   nameEn:"Classic gold",  color:"#c9a96e" },
+  { id:"bordeaux", name:"Bordeaux",       nameEn:"Burgundy",      color:"#7a1f2b" },
+  { id:"forest",   name:"Vert foret",     nameEn:"Forest green",  color:"#2d5a3d" },
+  { id:"navy",     name:"Bleu marine",    nameEn:"Navy",          color:"#1e3a5f" },
+  { id:"plum",     name:"Aubergine",      nameEn:"Plum",          color:"#4a1d3f" },
+  { id:"charcoal", name:"Charbon",        nameEn:"Charcoal",      color:"#3a3a3a" },
+  { id:"rust",     name:"Rouille",        nameEn:"Rust",          color:"#a64b2a" },
+  { id:"teal",     name:"Bleu petrole",   nameEn:"Teal",          color:"#1f4d4a" },
 ];
 
 // Presets pour le bandeau lateral (sidebar du CV, fond noir par defaut).
 const SIDEBAR_PRESETS = [
-  { id:"ink",      name:"Noir profond",   color:"#0a0a0a" },
-  { id:"midnight", name:"Bleu nuit",      color:"#0f1d3a" },
-  { id:"charcoal", name:"Charbon",        color:"#26262b" },
-  { id:"forest",   name:"Vert sapin",     color:"#1a3329" },
-  { id:"darkwine", name:"Bordeaux fonce", color:"#3a0e15" },
-  { id:"cream",    name:"Creme inverse",  color:"#f5f1e8" },
+  { id:"ink",      name:"Noir profond",   nameEn:"Deep black",    color:"#0a0a0a" },
+  { id:"midnight", name:"Bleu nuit",      nameEn:"Midnight blue", color:"#0f1d3a" },
+  { id:"charcoal", name:"Charbon",        nameEn:"Charcoal",      color:"#26262b" },
+  { id:"forest",   name:"Vert sapin",     nameEn:"Pine green",    color:"#1a3329" },
+  { id:"darkwine", name:"Bordeaux fonce", nameEn:"Dark burgundy", color:"#3a0e15" },
+  { id:"cream",    name:"Creme inverse",  nameEn:"Inverted cream",color:"#f5f1e8" },
 ];
 
 // Presets pour le fond du CV (paper).
 const PAPER_PRESETS = [
-  { id:"cream",    name:"Creme classique", color:"#f8f6f1" },
-  { id:"white",    name:"Blanc pur",       color:"#ffffff" },
-  { id:"cream2",   name:"Creme chaud",     color:"#faf3e7" },
-  { id:"pearl",    name:"Gris perle",      color:"#f0eee9" },
-  { id:"ivory",    name:"Ivoire",          color:"#fdfbf3" },
+  { id:"cream",    name:"Creme classique", nameEn:"Classic cream", color:"#f8f6f1" },
+  { id:"white",    name:"Blanc pur",       nameEn:"Pure white",    color:"#ffffff" },
+  { id:"cream2",   name:"Creme chaud",     nameEn:"Warm cream",    color:"#faf3e7" },
+  { id:"pearl",    name:"Gris perle",      nameEn:"Pearl grey",    color:"#f0eee9" },
+  { id:"ivory",    name:"Ivoire",          nameEn:"Ivory",         color:"#fdfbf3" },
 ];
+
+// LE NOM AFFICHE, DANS LA LANGUE DE LA PERSONNE
+//
+// Les pastilles de couleur s'appelaient "Or classique" et "Bleu petrole" sur
+// un ecran entierement anglais. L'`id` ne bouge pas : il sert aux recherches
+// et au catalogue envoye a l'IA, et le traduire casserait les deux.
+function nomPreset(p, locale) {
+  if (!p) return "";
+  return (locale === "en" && p.nameEn) ? p.nameEn : p.name;
+}
 
 // Bibliotheque cur\u00e9e de polices titres (display / heading).
 // Chaque entree : { name, family (CSS), googleHref (sans https:), vibe, target }
@@ -2041,15 +2051,17 @@ function WCAGBadge({ ratio, level, T }) {
   const angle = -90 + (normalizedRatio * 180); // -90 a +90
   
   // Texte selon ratio
+  // La jauge annoncait "Tres lisible" et "A revoir" sur un ecran entierement
+  // anglais. T porte deja la langue jusqu'ici, il n'y avait qu'a s'en servir.
   let label, color;
   if (ratio >= 4.5) {
-    label = "Tres lisible";
+    label = T && T.wcag_good ? T.wcag_good : "Tres lisible";
     color = "#16a34a";
   } else if (ratio >= 3) {
-    label = "Moyen";
+    label = T && T.wcag_mid ? T.wcag_mid : "Moyen";
     color = "#d97757";
   } else {
-    label = "A revoir";
+    label = T && T.wcag_poor ? T.wcag_poor : "A revoir";
     color = "#dc2626";
   }
   
@@ -2099,7 +2111,7 @@ function WCAGBadge({ ratio, level, T }) {
 // `contrastWith2` (optionnel) : 2e couleur de reference. Si fournie, le badge
 // affiche le PIRE des deux contrastes (ex: accent visible sur sidebar ET cream).
 function ColorPickerBlock({
-  T, label, value, onChange, presets,
+  T, label, value, onChange, presets, locale,
   contrastWith, contrastWith2, contrastLabel, columns=4,
 }) {
   const ratio1 = contrastWith && value ? contrastRatio(value, contrastWith) : 0;
@@ -2145,7 +2157,7 @@ function ColorPickerBlock({
           }}>
             <ColorSwatch
               color={p.color}
-              name={p.name}
+              name={nomPreset(p, locale)}
               active={value && value.toLowerCase() === p.color.toLowerCase()}
               onClick={()=>onChange(p.color)}
             />
@@ -2154,7 +2166,7 @@ function ColorPickerBlock({
               textAlign:"center", lineHeight:1.3,
               fontFamily:Sans, fontWeight:500,
               maxWidth:72,
-            }}>{p.name}</span>
+            }}>{nomPreset(p, locale)}</span>
           </div>
         ))}
       </div>
@@ -2192,7 +2204,7 @@ function ColorPickerBlock({
 }
 
 // Tab Couleurs complet : 3 ColorPickerBlock (accent, sidebar, paper).
-function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
+function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom, locale }) {
 
   // La valeur effective courante (apres merge) pour pre-selectionner
   // le bon swatch / pre-remplir le picker.
@@ -2214,6 +2226,7 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
         value={(editing && editing.ac) || eff.ac}
         onChange={setAccent}
         presets={ACCENT_PRESETS}
+        locale={locale}
         contrastWith={eff.sb}
         contrastWith2={eff.bg}
         columns={4}
@@ -2225,6 +2238,7 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
         value={(editing && editing.sb) || eff.sb}
         onChange={setSidebar}
         presets={SIDEBAR_PRESETS}
+        locale={locale}
         contrastWith={eff.st}
         columns={3}
       />
@@ -2235,6 +2249,7 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom }) {
         value={(editing && editing.bg) || eff.bg}
         onChange={setPaper}
         presets={PAPER_PRESETS}
+        locale={locale}
         contrastWith={Ink}
         columns={5}
       />
@@ -3508,7 +3523,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
         <ColorsTab
           T={T} scope={scope} theme={theme}
           cvCustom={cvCustom} versionCustom={versionCustom}
-          writeCustom={writeCustom}
+          writeCustom={writeCustom} locale={locale}
         />
       )}
       {tab === "fonts" && (
