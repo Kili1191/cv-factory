@@ -32,6 +32,7 @@ const SUITES = [
   ["crash test avant mise en ligne", "./ready-to-launch.mjs"],
   ["toutes les largeurs d'ecran tiennent", "./every-screen-size-works.mjs"],
   ["les mots en italique sont de vrais italiques", "./the-italics-are-real.mjs"],
+  ["aucun monogramme n'est invisible", "./no-monogram-is-invisible.mjs"],
   ["rien ne recouvre une commande sur telephone", "./nothing-covers-a-control-on-mobile.mjs"],
   ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],
   ["la barre de suggestion s'ecarte et sait partir", "./the-suggestion-bar-gets-out-of-the-way.mjs"],

@@ -30,51 +30,10 @@
 import { useState, useRef, useEffect } from "react";
 import { E, MK } from "./EditHelpers";
 import CVPhoto from "./CVPhoto";
-
-// ============================================================
-// [Lisibilite 2026-05-20] Helpers contraste : garantissent que la
-// couleur d'accent reste lisible sur le fond cream de la colonne main.
-// Si l'accent est trop clair (ex: Or beige sur cream), on l'assombrit
-// automatiquement pour que les titres PROFIL/EXPERIENCE restent visibles.
-// ============================================================
-function hexToRgb(hex) {
-  if (!hex) return { r: 0, g: 0, b: 0 };
-  let h = String(hex).replace("#", "");
-  if (h.length === 3) h = h.split("").map(c => c + c).join("");
-  const n = parseInt(h, 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-}
-function relLuminance({ r, g, b }) {
-  const f = v => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-  };
-  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
-}
-function contrastRatioCv(hex1, hex2) {
-  const l1 = relLuminance(hexToRgb(hex1));
-  const l2 = relLuminance(hexToRgb(hex2));
-  const lighter = Math.max(l1, l2), darker = Math.min(l1, l2);
-  return (lighter + 0.05) / (darker + 0.05);
-}
-function darkenHex(hex, factor) {
-  const { r, g, b } = hexToRgb(hex);
-  const d = c => Math.max(0, Math.round(c * (1 - factor)));
-  const toHex = c => c.toString(16).padStart(2, "0");
-  return "#" + toHex(d(r)) + toHex(d(g)) + toHex(d(b));
-}
-// Retourne une version de `accent` garantie lisible (ratio >= 4.0) sur `bg`.
-// Si l'accent passe deja, on le garde. Sinon on l'assombrit progressivement.
-function readableAccentOn(accent, bg) {
-  if (!accent || !bg) return accent || "#0a0a0a";
-  let c = accent;
-  let tries = 0;
-  while (contrastRatioCv(c, bg) < 4.0 && tries < 10) {
-    c = darkenHex(c, 0.18);
-    tries++;
-  }
-  return c;
-}
+// Garantit qu'une couleur d'accent reste lisible sur le fond qu'on lui donne.
+// Le calcul vit dans lib/ parce qu'il ne touche rien de React, et parce qu'il
+// a deja rendu un monogramme noir sur noir : il se teste directement.
+import { readableAccentOn } from "../../lib/contrasteCv.js";
 
 // ============================================================
 // EditableTitle : titre de section editable au double-clic
