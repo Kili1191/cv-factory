@@ -168,7 +168,126 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
   );
 }
 
-export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, onCta }) {
+
+// LES DEUX LECTURES D'UN CV
+//
+// Un CV est lu deux fois, par deux lecteurs qui ne cherchent pas la meme
+// chose. D'abord un logiciel, qui ne juge rien et essaie de RANGER le
+// document en champs : s'il n'y arrive pas, la personne n'existe pas dans la
+// base, et aucune qualite du texte ne la rattrape. Ensuite un humain, qui ne
+// range rien et cherche une raison d'appeler.
+//
+// Les deux se contredisent souvent, et c'est pour ca qu'on en montre deux.
+// Sur un CV bien structure mais ecrit en formules, la machine met 97 et
+// l'humain 36. Une note unique aurait affiche 66 et cache le seul
+// renseignement utile : lequel des deux lecteurs vous perd.
+//
+// L'ecart est donc affiche comme une information, pas comme une anomalie.
+function DeuxLectures({ lectures, locale }) {
+  if (!lectures) return null;
+  const en = locale === "en";
+  const { machine, humain, ecart } = lectures;
+
+  // La phrase de l'ecart. Elle ne se declenche que quand il est net : en
+  // dessous, les deux lectures disent la meme chose et commenter le bruit
+  // apprendrait a ne plus lire cette ligne.
+  const SEUIL_ECART = 15;
+  let phrase = null;
+  if (ecart >= SEUIL_ECART) {
+    phrase = en
+      ? "The software files your CV without trouble. A person reads it and finds little to hold on to: that gap is where you lose interviews, not in the format."
+      : "Le logiciel range ton CV sans peine. Une personne le lit et n'y trouve pas grand-chose a quoi se raccrocher : c'est la que se perdent les entretiens, pas dans le format.";
+  } else if (ecart <= -SEUIL_ECART) {
+    phrase = en
+      ? "Your CV convinces whoever reads it. The problem is upstream: the software loses part of it before anyone sees it."
+      : "Ton CV convainc qui le lit. Le probleme est en amont : le logiciel en perd une partie avant que quiconque le voie.";
+  }
+
+  const carte = (titre, note, palier, dessous, teinte) => (
+    <div style={{
+      flex: "1 1 220px", minWidth: 0, boxSizing: "border-box",
+      padding: "18px 18px 16px",
+      background: Paper, borderRadius: RadiusMd,
+      border: "0.5px solid " + Gray200, boxShadow: ShadowSm,
+    }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
+        textTransform: "uppercase", color: teinte, marginBottom: 10,
+      }}>{titre}</div>
+      <div style={{
+        fontFamily: Serif, fontWeight: 300, fontSize: 46, lineHeight: 1,
+        letterSpacing: "-0.04em", color: Ink, marginBottom: 6,
+      }}><CountUp to={note}/></div>
+      <div style={{
+        fontFamily: Serif, fontStyle: "italic", fontSize: 15,
+        color: Ink, marginBottom: 8, lineHeight: 1.35,
+      }}>{palier}</div>
+      <div style={{ fontSize: 12, color: Gray600, lineHeight: 1.5 }}>{dessous}</div>
+    </div>
+  );
+
+  const dessousMachine = en
+    ? machine.passent + " of " + machine.total + " tracking systems read it in full"
+    : machine.passent + " logiciels de tri sur " + machine.total + " le lisent en entier";
+
+  // Ce qui coute le plus de points a la lecture humaine, dit avec la mesure
+  // qui le justifie. "3 puces sur 11 portent un chiffre" se corrige ; "soigne
+  // tes puces" ne se verifie pas.
+  const premier = (humain.aTravailler || [])[0];
+  const dessousHumain = premier
+    ? premier.reco
+    : (en ? "Nothing left to fix by measurement." : "Plus rien a corriger a la mesure.");
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+        {carte(en ? "Read by the software" : "Lu par le logiciel",
+          machine.note, machine.palier, dessousMachine, Purple)}
+        {carte(en ? "Read by a person" : "Lu par une personne",
+          humain.note, humain.palier, dessousHumain, Coral)}
+      </div>
+
+      {phrase && (
+        <div style={{
+          marginTop: 10, padding: "12px 14px",
+          background: CreamSoft, borderRadius: RadiusMd,
+          border: "0.5px solid " + Gray200,
+          fontSize: 13, lineHeight: 1.55, color: Ink,
+        }}>{phrase}</div>
+      )}
+
+      {/* Le premier obstacle : le profil le plus severe qui recale le CV.
+          Le corriger fait passer tous les autres, donc c'est la seule chose
+          a dire en premier. */}
+      {machine.premierObstacle && (
+        <div style={{
+          marginTop: 10, padding: "12px 14px",
+          background: CoralSoft, borderRadius: RadiusMd,
+          fontSize: 13, lineHeight: 1.55, color: Ink,
+        }}>
+          <strong>{machine.premierObstacle.nom}</strong>
+          {" "}
+          {en ? "loses your CV" : "perd ton CV"}
+          {" : "}
+          {machine.premierObstacle.bloquants.map((b) => b.fait).join(" ; ")}
+        </div>
+      )}
+
+      {/* D'ou vient la note. Une note tiree d'un texte reconstitue et une note
+          tiree d'un vrai PDF ne valent pas la meme chose, et le dire coute une
+          ligne. */}
+      <div style={{ marginTop: 8, fontSize: 11, color: Gray600, lineHeight: 1.5 }}>
+        {machine.source === "pdf"
+          ? (en ? "Measured on your exported PDF, re-read field by field."
+                : "Mesure sur ton PDF exporte, relu champ par champ.")
+          : (en ? "Estimated before export. Downloading re-checks it against three real parsers."
+                : "Estime avant export. Telecharger le verifie avec trois vrais analyseurs.")}
+      </div>
+    </div>
+  );
+}
+
+export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, onCta, locale }) {
   const [expandedId, setExpandedId] = useState(null);
   const [isWide, setIsWide] = useState(false);
 
@@ -262,8 +381,23 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
       {/* Resultat : verdict global + priorite + grille 8 axes */}
       {!loading && result && (
         <>
-          {/* Verdict global card */}
-          {(result.verdict_global || typeof result.global_score === "number") && (
+          {/* Les deux lectures, avant le verdict global : elles disent lequel
+              des deux lecteurs perd le CV, ce que la note unique ne dit pas. */}
+          <DeuxLectures lectures={result.lectures} locale={locale}/>
+
+          {/* LE VERDICT GLOBAL S'EFFACE DEVANT LES DEUX LECTURES
+              Il moyenne les deux notes, et cette moyenne se contredit avec
+              elles a l'ecran : mesure sur un CV bien range mais sans preuve,
+              les deux cartes affichaient 96 et 45, et la carte globale, juste
+              en dessous, annoncait 56 avec la phrase "fragile devant les
+              logiciels de tri" alors que les six analyseurs le lisent en
+              entier. Deux affirmations contraires cote a cote, et rien pour
+              departager : la personne croit celle qui l'inquiete.
+
+              La moyenne est justement ce que les deux lectures remplacent. On
+              la garde dans l'objet, d'autres endroits s'en servent, mais on ne
+              l'affiche plus quand les deux lectures sont la. */}
+          {!result.lectures && (result.verdict_global || typeof result.global_score === "number") && (
             <div style={{
               padding:"22px 22px",
               background: Ink, color: Cream,

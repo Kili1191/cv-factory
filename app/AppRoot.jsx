@@ -9,6 +9,7 @@ import ScoreDashboard from "./components/ScoreDashboard";
 import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
+import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 
@@ -5659,6 +5660,20 @@ export default function App() {
     // Le meme nombre porte trois noms selon les lecteurs de cet objet.
     r.score = r.global_score;
     r.total = r.global_score;
+    // LES DEUX LECTURES
+    //
+    // Une note unique moyennait deux choses qui n'ont rien a voir : la
+    // capacite d'un logiciel a RANGER le document, et la raison qu'un humain
+    // y trouve d'appeler. Elles se contredisent souvent. Mesure sur un CV bien
+    // structure mais ecrit en formules : machine 97, humain 36. Une seule note
+    // aurait affiche 66 et cache le seul renseignement utile, lequel des deux
+    // lecteurs vous perd.
+    //
+    // La mise en page compte : c'est elle qui decide de l'ordre de lecture.
+    r.lectures = deuxLectures(cv, {
+      layout,
+      langue: locale === "en" ? "en" : "fr",
+    });
     setDashResult(r);
     // Expose le rapport pour la verification, comme aiCall plus haut :
     // un test doit pouvoir prouver qu'aucun appel n'a eu lieu ET que
@@ -5669,7 +5684,7 @@ export default function App() {
       else if (r.total < 50) nuviTrigger("audit-low", { score: r.total });
       else nuviTrigger("feature-completed");
     }
-  }, [cv, cvIsEmpty, locale, notify, T]);
+  }, [cv, cvIsEmpty, locale, notify, T, layout]);
 
   // v17 chantier 4 : dispatcher des CTAs des cards de score vers le bon outil.
   // Chaque axe a un CTA different (ex "Editer le titre" -> ouvre SheetId).
@@ -8096,7 +8111,7 @@ export default function App() {
           <Suspense fallback={null}>
           <ScorePanel
             cv={cv} apiKey={apiKey} notify={notify}
-            layout={layout} T={T}
+            layout={layout} T={T} locale={locale}
             dashLoading={dashLoading}
             dashResult={dashResult}
             onRunDashboard={runScoreDashboard}

@@ -19,7 +19,7 @@ function scoreBg(s) {
   return CoralSoft;
 }
 
-function ScorePanel({ cv, apiKey, notify, layout, T,
+function ScorePanel({ cv, apiKey, notify, layout, T, locale,
   dashLoading, dashResult, onRunDashboard, onCtaAxis }) {
   const [mode, setMode] = useState("dashboard");
   const [quickRes, setQuickRes] = useState(null);
@@ -99,6 +99,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T,
           result={dashResult}
           onRun={onRunDashboard}
           onCta={onCtaAxis}
+          locale={locale}
         />
       )}
 
