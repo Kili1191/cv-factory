@@ -1143,13 +1143,35 @@ html {
  * Le mouvement se refuse plus haut dans ce fichier, globalement, pour tout ce
  * qui est ajoute ici comme pour le reste.
  */
+/* L'ARRIVEE SE TERMINE SUR "none", PAS SUR translateY(0)
+   Les deux se ressemblent et ne font pas la meme chose. Une transformation,
+   meme nulle, cree un bloc conteneur : un enfant en position fixed s'y
+   accroche au lieu de s'accrocher a la fenetre. Comme l'animation est en
+   fill-mode "both", cet etat final reste applique pour toujours. Un menu ou
+   une barre flottante a l'interieur d'un panneau se retrouverait ancre au
+   mauvais element, definitivement. "none" retire la transformation. */
 @keyframes nuviEntree {
   from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
+/* LE MODE DE REMPLISSAGE EST "backwards", ET C'EST TOUT LE SUJET
+ *
+ * En "both", l'etat final de l'animation reste applique pour toujours. On a
+ * d'abord essaye de terminer sur "transform: none" pour eviter qu'une
+ * transformation residuelle ne cree un bloc conteneur. Mesure dans le
+ * navigateur : ca ne marche pas. Interpoler vers le mot-cle "none" produit
+ * une matrice, pas le mot-cle, et getComputedStyle rend
+ * matrix(1, 0, 0, 1, 0, 0) - une transformation identite, qui cree un bloc
+ * conteneur exactement comme les autres. Un enfant en position fixed a
+ * l'interieur d'un panneau s'y serait ancre definitivement.
+ *
+ * "backwards" applique l'image de depart AVANT le demarrage, ce qui evite le
+ * clignotement pendant le delai, puis rend l'element a ses propres styles des
+ * que l'animation finit. Plus aucune transformation ne subsiste.
+ */
 .nuvi-entree {
-  animation: nuviEntree 240ms cubic-bezier(.22, 1, .36, 1) both;
+  animation: nuviEntree 240ms cubic-bezier(.22, 1, .36, 1) backwards;
   /* --nuvi-rang porte la position dans la liste, posee par le composant.
      Sans elle, l'element entre immediatement : un seul element n'a pas de
      sequence, et c'est le cas le plus courant. */
@@ -1160,9 +1182,34 @@ html {
    colonne : une barre d'onglets, une rangee de pastilles. */
 @keyframes nuviEntreeCote {
   from { opacity: 0; transform: translateX(-6px); }
-  to   { opacity: 1; transform: translateX(0); }
+  to   { opacity: 1; transform: none; }
 }
 .nuvi-entree-cote {
-  animation: nuviEntreeCote 240ms cubic-bezier(.22, 1, .36, 1) both;
+  animation: nuviEntreeCote 240ms cubic-bezier(.22, 1, .36, 1) backwards;
   animation-delay: calc(min(var(--nuvi-rang, 0), 8) * 40ms);
 }
+
+
+/* TOUS LES PANNEAUX, SANS TOUCHER A CHACUN
+ *
+ * Quinze panneaux affichaient leur contenu d'un bloc. Les modifier un par un
+ * aurait voulu dire quinze fichiers edites a la main, quinze occasions de se
+ * tromper, et un seizieme panneau ecrit demain qui n'aurait rien.
+ *
+ * Le corps defilant est commun a tous : la sequence se pose donc la, une
+ * fois. Les enfants directs entrent l'un apres l'autre, et un panneau ajoute
+ * plus tard en herite sans rien demander.
+ *
+ * Le rang s'arrete a huit, comme ailleurs : au-dela tout arrive ensemble.
+ */
+.nuvi-sheet-corps > * {
+  animation: nuviEntree 240ms cubic-bezier(.22, 1, .36, 1) backwards;
+}
+.nuvi-sheet-corps > *:nth-child(1) { animation-delay: 0ms; }
+.nuvi-sheet-corps > *:nth-child(2) { animation-delay: 45ms; }
+.nuvi-sheet-corps > *:nth-child(3) { animation-delay: 90ms; }
+.nuvi-sheet-corps > *:nth-child(4) { animation-delay: 135ms; }
+.nuvi-sheet-corps > *:nth-child(5) { animation-delay: 180ms; }
+.nuvi-sheet-corps > *:nth-child(6) { animation-delay: 225ms; }
+.nuvi-sheet-corps > *:nth-child(7) { animation-delay: 270ms; }
+.nuvi-sheet-corps > *:nth-child(n+8) { animation-delay: 315ms; }

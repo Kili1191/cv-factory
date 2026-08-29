@@ -164,8 +164,10 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
           </button>
         </div>
 
-        {/* Body scrollable */}
-        <div style={{
+        {/* Body scrollable.
+            La classe porte la sequence d'entree du contenu : elle vaut pour
+            les quinze panneaux d'un coup, et pour ceux qu'on ecrira apres. */}
+        <div className="nuvi-sheet-corps" style={{
           overflowY: "auto",
           padding: "18px 24px 48px",
           flex: 1,
