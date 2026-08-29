@@ -45,6 +45,21 @@ const T = {
     s2body: "A tracking system does not read your CV. It extracts fields. What it cannot place, it drops - and what it drops was never in front of a human.",
     s3kicker: "Who this is for",
     s3title: "The jobs nobody writes templates for.",
+    // L'ARC, DE LA CANDIDATURE AU POSTE
+    // Chaque ligne correspond a une fonctionnalite que la suite de tests
+    // prouve : l'adaptation a une annonce, le suivi des candidatures, la
+    // lecture des reponses dans Gmail, l'assistant d'entretien. Rien ici
+    // n'est promis sans exister.
+    s34kicker: "All the way",
+    s34title: "The CV is where it starts, not where it ends.",
+    s34body: "Most tools hand you a file and wish you luck. The hard part comes after: keeping track of who you wrote to, knowing what a reply really means, and finding the words in the room. Nuvi stays for that.",
+    s34rows: [
+      ["Write it for one ad", "Not a template. Your own words, aimed at the job you are going for."],
+      ["Send it, keep the thread", "Every application in one place, next to the ad you answered."],
+      ["Read the replies", "Nuvi reads your inbox and moves each application to where it actually stands."],
+      ["Walk in ready", "The questions you will get, and live cues while you are in the room."],
+    ],
+    s34foot: "One account, one CV, the whole way through.",
     s35kicker: "How we check",
     s35title: "We do not guess. We export, and we read it back.",
     s35body: "Every CV tool that sells you an \u201cATS score\u201d only has your PDF, so it guesses what you meant. Nuvi holds your CV as data before it builds the file. So it exports the PDF, re-reads it with real parsers, and compares field by field. Either the employer is found, or it is not.",
@@ -94,6 +109,16 @@ const T = {
     s2body: "Un logiciel de tri ne lit pas ton CV. Il en extrait des champs. Ce qu'il n'arrive pas a ranger, il l'ecarte - et ce qu'il ecarte n'est jamais passe devant un humain.",
     s3kicker: "Pour qui",
     s3title: "Les metiers pour qui personne n'ecrit de modele.",
+    s34kicker: "Jusqu'au bout",
+    s34title: "Le CV est le debut, pas la fin.",
+    s34body: "La plupart des outils te rendent un fichier et te souhaitent bonne chance. Le difficile vient apres : savoir a qui tu as ecrit, ce qu'une reponse veut vraiment dire, et trouver les mots le jour de l'entretien. Nuvi reste pour ca.",
+    s34rows: [
+      ["Ecris-le pour une annonce", "Pas un modele. Tes mots a toi, vises sur le poste que tu veux."],
+      ["Envoie, garde le fil", "Toutes tes candidatures au meme endroit, a cote de l'annonce a laquelle tu as repondu."],
+      ["Lis les reponses", "Nuvi lit ta boite mail et remet chaque candidature la ou elle en est vraiment."],
+      ["Entre prepare", "Les questions qu'on va te poser, et des reperes en direct pendant l'entretien."],
+    ],
+    s34foot: "Un compte, un CV, du debut a la fin.",
     s35kicker: "Comment on verifie",
     s35title: "On ne devine pas. On exporte, et on relit.",
     s35body: "Tous les outils qui te vendent un \u00ab score ATS \u00bb n'ont que ton PDF : ils devinent ce que tu voulais dire. Nuvi detient ton CV sous forme de donnees avant de fabriquer le fichier. Il exporte donc le PDF, le relit avec de vrais analyseurs, et compare champ par champ. Soit l'employeur est retrouve, soit il ne l'est pas.",
@@ -216,6 +241,9 @@ export default function Landing({ lang = "en" }) {
   const Ink = "var(--nuvi-ink, #0a0a0a)";
   const Muted = "var(--nuvi-ink-muted, #5a5a62)";
   const Hair = "var(--nuvi-hairline, #e8e3d6)";
+  // Le chiffre des quatre temps. Terracotta, la couleur que la vitrine
+  // reserve deja aux surtitres : elle marque l'ordre sans crier.
+  const Accent = "var(--nuvi-coral, #d97757)";
   const Serif = "'Fraunces', 'DM Serif Display', Georgia, serif";
   const Sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
@@ -502,7 +530,73 @@ export default function Landing({ lang = "en" }) {
         </div>
       </section>
 
-      {/* ===== 3bis. COMMENT ON VERIFIE =====
+      {/* ===== 3bis. L'ARC, DE LA CANDIDATURE AU POSTE =====
+          La page vendait un reecriveur de CV. Or Nuvi suit les candidatures,
+          lit les reponses des recruteurs dans Gmail, prepare l'entretien et
+          tient pendant. Rien de tout cela n'etait dit : un visiteur repartait
+          en croyant a un formateur de fichier, et ne revenait pas.
+
+          "Le compagnon jusqu'au poste" est une promesse plus forte que "le CV
+          qui passe l'ATS", et c'est celle qui donne une raison de revenir. La
+          premiere reste en haut de page : elle accroche. Celle-ci explique
+          pourquoi rester.
+
+          Chaque ligne correspond a une fonctionnalite que la suite de tests
+          prouve. Une page qui promet ce qui n'existe pas se paie au premier
+          essai. */}
+      <section className="nuvi-scroll-in" style={{
+        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
+        borderBottom: "1px solid " + Hair,
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
+      }}>
+        {eyebrow(t.s34kicker)}
+        <div className="nuvi-duo">
+          <h2 className="nuvi-titre-geant" style={{
+            fontFamily: Serif, fontWeight: 400, color: Ink,
+            fontSize: "var(--t-title)", lineHeight: 1.04,
+            letterSpacing: "-0.035em", margin: 0,
+          }}>{t.s34title}</h2>
+          <p style={{
+            fontSize: "var(--t-body)", lineHeight: 1.62,
+            color: Muted, maxWidth: 46 + "ch", margin: 0,
+          }}>{t.s34body}</p>
+        </div>
+
+        {/* Les quatre temps, dans l'ordre ou ils arrivent. La meme forme que
+            la liste de verification plus bas : un fait par ligne, alignes,
+            donc comparables. */}
+        <div style={{ marginTop: "clamp(28px, 5vh, 54px)" }}>
+          {t.s34rows.map(([quoi, comment], i) => (
+            <div key={quoi} className="nuvi-verif-ligne nuvi-entree" style={{
+              "--nuvi-rang": i,
+              borderTop: "1px solid " + Hair,
+              paddingTop: 16, paddingBottom: 16,
+            }}>
+              <div style={{
+                fontFamily: Sans, fontSize: "var(--t-body)",
+                fontWeight: 600, color: Ink, letterSpacing: "-0.01em",
+                display: "flex", alignItems: "baseline", gap: 10,
+              }}>
+                <span aria-hidden="true" style={{
+                  fontFamily: Serif, fontSize: "var(--t-micro)",
+                  color: Accent, fontWeight: 400, flexShrink: 0,
+                }}>{i + 1}</span>
+                {quoi}
+              </div>
+              <div style={{
+                fontSize: "var(--t-body)", lineHeight: 1.55, color: Muted,
+              }}>{comment}</div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{
+          marginTop: 26, fontSize: "var(--t-micro)",
+          lineHeight: 1.6, color: Muted, maxWidth: 62 + "ch",
+        }}>{t.s34foot}</p>
+      </section>
+
+      {/* ===== 3ter. COMMENT ON VERIFIE =====
           La page montrait le probleme et le public, jamais la methode. Or
           c'est la seule chose que les concurrents ne peuvent pas copier en
           changeant leur texte : ils n'ont que le PDF de la personne, et
