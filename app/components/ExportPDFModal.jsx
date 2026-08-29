@@ -20,7 +20,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Purple, Magenta, PurpleSoft } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -34,15 +34,6 @@ export default function ExportPDFModal({
   lang = "en",
   mob = false,
 }) {
-  const Cream = "var(--nuvi-cream)";
-  const CreamSoft = "var(--nuvi-cream-soft)";
-  const Paper = "var(--nuvi-paper)";
-  const Ink = "var(--nuvi-ink)";
-  const InkMuted = "var(--nuvi-ink-muted)";
-  const Hairline = "var(--nuvi-hairline)";
-  const Purple = "var(--nuvi-purple)";
-  const Magenta = "var(--nuvi-magenta)";
-  const PurpleSoft = "var(--nuvi-purple-soft)";
 
   const [shouldRender, setShouldRender] = useState(open);
   const [closing, setClosing] = useState(false);

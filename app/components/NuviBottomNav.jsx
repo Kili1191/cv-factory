@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useInstallState } from "./InstallAppSheet";
 
+// Les jetons viennent du systeme, ils ne sont plus redeclares ici.
+import { Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral } from "./tokens";
 /**
  * NuviBottomNav - Bottom navigation mobile (5 icônes)
  *
@@ -111,13 +113,6 @@ export default function NuviBottomNav({
   }, []);
 
   // Couleurs Nuvi (CSS variables - support dark mode)
-  const Cream = "var(--nuvi-cream)";
-  const CreamSoft = "var(--nuvi-cream-soft)";
-  const Paper = "var(--nuvi-paper)";
-  const Ink = "var(--nuvi-ink)";
-  const InkMuted = "var(--nuvi-ink-muted)";
-  const Hairline = "var(--nuvi-hairline)";
-  const Coral = "var(--nuvi-coral)";
 
   // Labels
   const labels = {

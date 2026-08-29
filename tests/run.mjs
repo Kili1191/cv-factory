@@ -9,6 +9,7 @@
 const SUITES = [
   ["aucune dependance CDN a l'execution", "./no-runtime-cdn.mjs"],
   ["ni cadratin ni demi-cadratin", "./no-em-dash.mjs"],
+  ["le systeme de design ne derive pas", "./the-design-system-does-not-drift.mjs"],
   ["la requete envoyee a l'IA est bien formee", "./the-ai-request-is-well-formed.mjs"],
   ["les comptes ne perdent jamais le CV", "./accounts-never-lose-the-cv.mjs"],
   ["la page de mise en service nomme ce qui manque", "./the-setup-page-names-what-is-missing.mjs"],

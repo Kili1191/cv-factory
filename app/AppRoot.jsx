@@ -8960,12 +8960,12 @@ export default function App() {
               transition:"padding-left 180ms cubic-bezier(.22,1,.36,1)",
             }}>
               <span style={{
-                fontFamily:Sans, fontSize:9.5, fontWeight:700,
+                fontFamily:Sans, fontSize:Text.micro, fontWeight:700,
                 letterSpacing:"0.12em", textTransform:"uppercase",
                 color:Gray400, flexShrink:0,
               }}>{locale === "en" ? "Editing" : "En cours"}</span>
               <span style={{
-                fontFamily:Serif, fontSize:15, fontWeight:600,
+                fontFamily:Serif, fontSize:Text.lead, fontWeight:600,
                 color:Ink, letterSpacing:"-0.01em",
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
               }}>
@@ -8973,7 +8973,7 @@ export default function App() {
               </span>
               {cv.title && (
                 <span style={{
-                  fontFamily:Sans, fontSize:12, color:Gray600,
+                  fontFamily:Sans, fontSize:Text.small, color:Gray600,
                   overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                 }}>{cv.title}</span>
               )}
@@ -9001,15 +9001,20 @@ export default function App() {
               <button
                 onClick={handleDownloadClick}
                 aria-label="Telecharger CV"
+                // L'ACTION PRINCIPALE RECOPIAIT LE SYSTEME AU LIEU DE S'EN SERVIR
+                // Le degrade etait reecrit a la main, la police en clair, le
+                // rayon en 999 : trois valeurs qui existent deja sous un nom.
+                // C'est le bouton le plus visible du produit, et c'etait le
+                // plus sur de deriver le jour ou la marque bouge.
                 style={{
-                  display:"flex", alignItems:"center", gap:9,
+                  display:"flex", alignItems:"center", gap:Space.sm,
                   padding:"10px 20px", minHeight:44, boxSizing:"border-box",
-                  background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
-                  color:"#fff", border:"none", borderRadius:999, cursor:"pointer",
-                  fontFamily:"'Inter', sans-serif", fontSize:13, fontWeight:600,
+                  background:GradPurple,
+                  color:"#fff", border:"none", borderRadius:RadiusPill, cursor:"pointer",
+                  fontFamily:Sans, fontSize:Text.body, fontWeight:600,
                   letterSpacing:0.2,
                   boxShadow:"0 6px 18px rgba(91,61,245,.28), 0 1px 4px rgba(91,61,245,.2)",
-                  transition:"transform 220ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease",
+                  transition:Trans(["transform","box-shadow"], "base"),
                   userSelect:"none",
                 }}
                 onMouseEnter={(e) => {
@@ -9034,7 +9039,8 @@ export default function App() {
             </div>
           </div>
           <div ref={attachDeskZone} style={{
-            flex:1, overflow:"auto", padding:"14px 22px 22px",
+            flex:1, overflow:"auto",
+            padding: Space.lg + "px " + Space.xl + "px " + Space.xl + "px",
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
             {/* La boite exterieure reserve la taille APRES agrandissement :

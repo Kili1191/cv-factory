@@ -4,6 +4,10 @@ import React, { useState, useEffect, useRef } from "react";
 import NuviCompanion from "./NuviCompanion";
 import { Reveal, WordReveal, Magnetic, Aurora, ScrollProgress, useReducedMotion } from "./motion";
 
+// Violet etait un second nom pour Purple, sur la meme variable CSS :
+// deux noms pour une seule chose, donc deux endroits a changer le jour
+// ou la marque bouge, et un des deux oublie.
+import { Cream, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple } from "./tokens";
 /**
  * NuviHome v5 : Demarrage "avant / apres" (Direction D, verdict panel 2026-05-21)
  *
@@ -347,14 +351,6 @@ export default function NuviHome({
   const T = TEXT[lang] || TEXT.fr;
   const examples = EXAMPLES[lang] || EXAMPLES.fr;
 
-  const Cream = "var(--nuvi-cream)";
-  const Paper = "var(--nuvi-paper)";
-  const Ink = "var(--nuvi-ink)";
-  const InkMuted = "var(--nuvi-ink-muted)";
-  const Hairline = "var(--nuvi-hairline)";
-  const Coral = "var(--nuvi-coral)";
-  const Violet = "var(--nuvi-purple)";
-  const Magenta = "var(--nuvi-magenta)";
 
   // exampleIdx : quel exemple afficher (alterne a chaque rejouer)
   const [exampleIdx, setExampleIdx] = useState(0);
@@ -552,7 +548,7 @@ export default function NuviHome({
             <em style={{
               fontStyle: "italic",
               color: Magenta,
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
+              background: "linear-gradient(135deg, " + Purple + " 0%, " + Magenta + " 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -628,7 +624,7 @@ export default function NuviHome({
                 fontFamily: "'Inter', sans-serif",
                 animation: "nuviFadeIn 400ms ease",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = Violet; }}
+              onMouseEnter={(e) => { e.currentTarget.style.color = Purple; }}
               onMouseLeave={(e) => { e.currentTarget.style.color = InkMuted; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -652,7 +648,7 @@ export default function NuviHome({
             onClick={onGenerate}
             style={{
               flex: 1,
-              background: "linear-gradient(135deg, " + Violet + " 0%, " + Magenta + " 100%)",
+              background: "linear-gradient(135deg, " + Purple + " 0%, " + Magenta + " 100%)",
               color: "#fff", border: "none", borderRadius: 12,
               padding: "13px 18px", minHeight: 44, boxSizing: "border-box",
               fontSize: 14, fontWeight: 500,

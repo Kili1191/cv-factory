@@ -23,7 +23,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, CoralSoft, Purple, Magenta, PurpleSoft } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -38,17 +38,6 @@ export default function ResetCVModal({
   mob = false,
 }) {
   // Couleurs Nuvi v3 (CSS variables - support dark mode)
-  const Cream = "var(--nuvi-cream)";
-  const CreamSoft = "var(--nuvi-cream-soft)";
-  const Paper = "var(--nuvi-paper)";
-  const Ink = "var(--nuvi-ink)";
-  const InkMuted = "var(--nuvi-ink-muted)";
-  const Hairline = "var(--nuvi-hairline)";
-  const Coral = "var(--nuvi-coral)";
-  const CoralSoft = "var(--nuvi-coral-soft)";
-  const Purple = "var(--nuvi-purple)";
-  const Magenta = "var(--nuvi-magenta)";
-  const PurpleSoft = "var(--nuvi-purple-soft)";
 
   // 2-step confirmation pour l'action destructive
   const [confirmDestroy, setConfirmDestroy] = useState(false);

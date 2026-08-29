@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
 const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
@@ -45,26 +45,17 @@ export default function NuviSidebar({
     }
   }, []);
 
-  const Cream = "var(--nuvi-cream)";
-  const CreamSoft = "var(--nuvi-cream-soft)";
-  const Paper = "var(--nuvi-paper)";
-  const Ink = "var(--nuvi-ink)";
-  const InkMuted = "var(--nuvi-ink-muted)";
-  const Hairline = "var(--nuvi-hairline)";
-  const Coral = "var(--nuvi-coral)";
-  const Violet = "var(--nuvi-purple)";
-  const Magenta = "var(--nuvi-magenta)";
 
   const itemColors = {
     home: Coral,
-    coach: Violet,
+    coach: Purple,
     edit: Coral,
-    adjust: Violet,
+    adjust: Purple,
     jobs: Coral,
     target: Coral,
-    pack: Violet,
+    pack: Purple,
     live: Magenta,
-    audits: Violet,
+    audits: Purple,
     cvs: Coral,
     design: Coral,
     tracking: Coral,
@@ -576,7 +567,7 @@ export default function NuviSidebar({
           parentSection={
             topItems.find(i => i.key === hoveredItem) ? "top" : "middle"
           }
-          colors={{ Paper, Ink, InkMuted, Hairline, Violet, Coral }}
+          colors={{ Paper, Ink, InkMuted, Hairline, Purple, Coral }}
         />
       )}
     </>
@@ -596,7 +587,7 @@ function FloatingPanel({
   parentSection,
   colors,
 }) {
-  const { Paper, Ink, InkMuted, Hairline, Violet, Coral } = colors;
+  const { Paper, Ink, InkMuted, Hairline, Purple, Coral } = colors;
 
   const ITEM_HEIGHT = 44;
   const TOP_PADDING = 16;
@@ -662,7 +653,7 @@ function FloatingPanel({
 
       {subItems.map((sub, idx) => {
         const isStarred = idx < 2;
-        const iconColor = sub.isAI ? Violet : Ink;
+        const iconColor = sub.isAI ? Purple : Ink;
 
         return (
           <button
@@ -710,8 +701,8 @@ function FloatingPanel({
                 fontSize: 9,
                 fontWeight: 700,
                 letterSpacing: "0.05em",
-                color: Violet,
-                background: Violet + "12",
+                color: Purple,
+                background: Purple + "12",
                 padding: "2px 6px",
                 borderRadius: 4,
               }}>NUVI</span>
