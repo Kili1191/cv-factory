@@ -84,7 +84,18 @@ export function E({ value, onChange, multi=false, style={} }) {
       }}
       onMouseEnter={e=>e.currentTarget.style.borderBottomColor = Gold + "aa"}
       onMouseLeave={e=>e.currentTarget.style.borderBottomColor = "transparent"}>
-      {value || <span style={{opacity:.3, fontStyle:"italic"}}>...</span>}
+      {/* LE POINTILLE EST UN OUTIL, PAS DU CONTENU
+          Un champ vide affiche "..." pour se signaler comme cliquable. C'est
+          juste dans l'editeur, et faux partout ailleurs : ces trois points
+          partaient dans le PDF telecharge, ou ils ne veulent plus rien dire.
+          Un recruteur y lit une information manquante, ou une negligence.
+          La classe cvf-no-print est celle que l'export masque deja pour les
+          boutons d'edition ; le pointille en releve exactement de la meme
+          facon, et la poser ici couvre tous les gabarits d'un coup. */}
+      {value || (
+        <span className="cvf-no-print"
+          style={{opacity:.3, fontStyle:"italic"}}>...</span>
+      )}
     </span>
   );
 }

@@ -1323,6 +1323,8 @@ export function CVCompact({ cv, set, t, T, locale }) {
 // - Contact info en ligne avec bullet separators (parse OK)
 // - Tirets remplaces par bullets dans certifications
 // - Couleurs : que du noir/gris fonce (#000 et #333)
+const CHAMPS_CONTACT = ["email", "phone", "location", "linkedin"];
+
 export function CVAts({ cv, set, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
@@ -1342,10 +1344,6 @@ export function CVAts({ cv, set, T, locale }) {
     );
   };
 
-  // Helper pour join contact info avec bullet separator (• standard)
-  const contactItems = ["email", "phone", "location", "linkedin"]
-    .map(f => ({ field: f, value: cv[f] }))
-    .filter(item => item.value);
 
   return (
     <div style={{
@@ -1378,14 +1376,28 @@ export function CVAts({ cv, set, T, locale }) {
           display: "flex", gap: 0, flexWrap: "wrap",
           alignItems: "center",
         }}>
-          {["email", "phone", "location", "linkedin"].map((f, idx) => (
-            <span key={f} style={{ display: "inline-flex", alignItems: "center" }}>
-              <E value={cv[f]} onChange={u(f)} style={{ fontSize: 10.5 }}/>
-              {idx < 3 && cv[f] && (
-                <span style={{ margin: "0 8px", color: "#666" }}>•</span>
-              )}
-            </span>
-          ))}
+          {/* LE SEPARATEUR SUIT CE QUI EST VISIBLE, PAS LE RANG DU CHAMP
+              La condition etait "idx < 3 && cv[f]" : elle posait un point
+              apres tout champ rempli qui n'est pas le dernier de la liste,
+              sans regarder si quelque chose suivait vraiment. Un LinkedIn
+              vide laissait donc "London SW11 -" suivi de rien, et le point
+              partait dans le PDF. On regarde desormais s'il reste un champ
+              rempli apres celui-ci.
+
+              contactItems faisait deja ce filtrage juste au-dessus, mais
+              n'etait utilise nulle part : le rendu repartait de la liste
+              brute. */}
+          {CHAMPS_CONTACT.map((f, idx) => {
+            const suit = CHAMPS_CONTACT.slice(idx + 1).some(g => cv[g]);
+            return (
+              <span key={f} style={{ display: "inline-flex", alignItems: "center" }}>
+                <E value={cv[f]} onChange={u(f)} style={{ fontSize: 10.5 }}/>
+                {cv[f] && suit && (
+                  <span style={{ margin: "0 8px", color: "#666" }}>•</span>
+                )}
+              </span>
+            );
+          })}
         </div>
       </div>
 

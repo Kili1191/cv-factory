@@ -37,6 +37,7 @@ const SUITES = [
   ["rien ne recouvre le bas de la barre laterale", "./nothing-covers-the-rail-footer.mjs"],
   ["la barre de suggestion s'ecarte et sait partir", "./the-suggestion-bar-gets-out-of-the-way.mjs"],
   ["le PDF exporte est lisible par un ATS", "./export-pdf-is-machine-readable.mjs"],
+  ["un champ vide ne laisse aucune trace", "./an-empty-field-leaves-no-trace.mjs"],
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],

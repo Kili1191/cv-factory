@@ -5199,14 +5199,47 @@ export default function App() {
       IT: "Italie", AE: "Emirats Arabes Unis", CA: "Canada", AUTO: "auto-detecte"
     })[auditCountry] || auditCountry;
     
+    // LE CHIFFRE SE COMPTE, L'AVIS S'ECRIT
+    //
+    // Le score venait du modele : le prompt lui demandait de rendre
+    // "score_global":75 dans son JSON, et rien ne comptait quoi que ce soit.
+    // Le meme CV, soumis deux fois, ne rendait donc pas la meme note. Un
+    // nombre qui bouge sans que rien n'ait change n'est pas une mesure,
+    // c'est un tirage, et c'est le nombre que la personne retient.
+    //
+    // Le tableau de bord avait deja recu cette correction, avec le meme
+    // raisonnement ecrit vingt lignes plus haut dans ce fichier. L'audit,
+    // lui, etait reste sur l'ancien systeme.
+    //
+    // Le diagnostic compte huit axes ponderes et rend, pour chacun, la mesure
+    // qui le justifie : combien de puces portent un chiffre, combien de
+    // champs qu'un logiciel de tri cherche sont absents. Deux passages sur le
+    // meme CV rendent exactement le meme rapport.
+    //
+    // Le modele garde ce qu'il fait bien et que rien ne compte : l'avis en
+    // prose. On lui donne les mesures pour que son texte s'accorde avec le
+    // chiffre au lieu de le contredire, et on lui interdit de rendre une note.
+    const mesure = diagnostiquer(cv, locale === "en" ? "en" : "fr");
+    const faits = (mesure.scores || []).map(
+      (x) => x.id + "=" + Math.round(x.note) + "/100"
+    ).join(", ");
+
+    const langueReponse = locale === "en"
+      ? "Reponds INTEGRALEMENT en anglais : la personne a choisi l'anglais."
+      : "Reponds integralement en francais.";
+
     const p = "Tu es un recruteur senior expert du marche " + countryName + " avec 20 ans d'experience. "
       + "Audite ce CV du point de vue d'un recruteur qui le recevrait pour un poste senior. "
       + "Sois HONNETE, DIRECT, sans complaisance. Aucune diplomatie. "
       + "Tiens compte des codes specifiques du marche " + countryName + " (longueur, format, mots-cles, soft skills attendus).\n\n"
+      + langueReponse + "\n\n"
       + "CV:\n" + cvT + "\n\n"
+      + "MESURES DEJA CALCULEES sur ce CV (note sur 100 par axe) : " + faits + ".\n"
+      + "Note globale mesuree : " + mesure.global_score + "/100. "
+      + "N'invente PAS de note : elle est deja calculee et ne t'appartient pas. "
+      + "Ton texte doit s'accorder avec ces mesures.\n\n"
       + "Reponds UNIQUEMENT en JSON valide strict, sans markdown:\n"
       + '{'
-      + '"score_global":75,'
       + '"verdict_longueur":"trop long",'
       + '"longueur_recommandation":"Reduire de 30% - vise 1 page max pour ce profil sur le marche FR",'
       + '"forces":["force concrete 1","force 2","force 3"],'
@@ -5228,16 +5261,32 @@ export default function App() {
           return parseJSON(txt);
         }
       );
-      setAuditResult(r);
+      // Le chiffre affiche est le chiffre compte, quoi qu'ait rendu le
+      // modele. Sans cette ligne, une note inventee reste dans l'objet et
+      // c'est elle que le tableau affiche.
+      const resultat = {
+        ...r,
+        score_global: mesure.global_score,
+        global_score: mesure.global_score,
+        score: mesure.global_score,
+        total: mesure.global_score,
+        // Les mesures voyagent avec le rapport : une note doit pouvoir se
+        // verifier, sinon elle se croit ou ne se croit pas.
+        mesures: mesure.scores,
+        faits: mesure.faits,
+      };
+      setAuditResult(resultat);
+      if (typeof window !== "undefined") window.__nuviDernierAudit = resultat;
       logActivity(ACT.AUDIT_RUN,
         locale==="en" ? "ATS audit run" : "Audit ATS lance",
-        { country: auditCountry, score: (r && typeof r.score === "number") ? r.score : undefined });
+        { country: auditCountry, score: mesure.global_score });
       // Nuvi reaction selon score
       // v7 : trigger wizard pour audit ATS
       if (typeof nuviTrigger === 'function') nuviTrigger('audit-ats-done');
-      if (typeof nuviTrigger === 'function' && r) {
-        if (r.score >= 80) nuviTrigger('audit-excellent', { score: r.score });
-        else if (r.score < 50) nuviTrigger('audit-low', { score: r.score });
+      if (typeof nuviTrigger === 'function') {
+        const n = mesure.global_score;
+        if (n >= 80) nuviTrigger('audit-excellent', { score: n });
+        else if (n < 50) nuviTrigger('audit-low', { score: n });
         else nuviTrigger('feature-completed');
       }
     } catch (err) {
