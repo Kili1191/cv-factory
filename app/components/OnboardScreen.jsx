@@ -220,11 +220,11 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
       fontFamily:Sans,
     }}>
       <div style={{
-        maxWidth:520, margin:"0 auto",
         padding:"24px 24px 40px",
         minHeight:"100%",
-        display:"flex", flexDirection:"column",
-      }}>
+        width:"100%", boxSizing:"border-box",
+      }} className="nuvi-import">
+        <div className="nuvi-import-gauche">
         {/* Bouton retour */}
         <button onClick={()=>setMode(null)} style={{
           ...B({
@@ -280,6 +280,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           {" "}{T.ob_import_format}
         </p>
 
+        </div>
+
+        <div className="nuvi-import-droite">
         {/* Champ fichier masque.
             accept : iOS filtre tres mal sur les seules extensions et grise
             alors des fichiers parfaitement valides dans l'app Fichiers. On
@@ -355,7 +358,12 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
           style={{
             ...B({
-              padding:"26px 18px",
+              // Elle prend toute sa colonne. En grille, un bouton se reduit
+              // a son contenu : la zone de depot tombait a 176px sous une
+              // zone de texte de 445px - la chose la plus invitante de
+              // l'ecran etait devenue la plus petite.
+              width:"100%", boxSizing:"border-box",
+              padding:"clamp(28px, 5vh, 48px) 18px",
               borderRadius:RadiusMd,
               background:Paper,
               border:"1.5px dashed "+accent,
@@ -365,7 +373,8 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
               alignItems:"center", gap:10,
               fontFamily:Sans,
               boxShadow:ShadowSm,
-              transition:"all 200ms ease-out",
+              // Jamais "all" : il anime aussi la mise en page.
+              transition:"border-color 200ms ease-out, background 200ms ease-out, box-shadow 200ms ease-out",
             })
           }}
         >
@@ -519,6 +528,8 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             })
           }}>{T.ob_continue}</button>
         )}
+
+        </div>
 
         {/* ON NE REDEMANDE PAS CE QU'ON VIENT DE DEMANDER
 

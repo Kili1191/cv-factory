@@ -995,3 +995,50 @@ html {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+
+/* ============================================================
+ * L ECRAN D IMPORT : UNE COMPOSITION, PAS UNE COLONNE
+ * ============================================================
+ *
+ * Il tenait dans 520px au milieu d un ecran de 1440 : une bande etroite,
+ * deux grands vides de chaque cote, et tout empile dans l ordre ou le code
+ * a ete ecrit. C est exactement le defaut corrige sur la vitrine - trois
+ * sections sur quatre occupaient moins de la moitie de la largeur.
+ *
+ * Sur grand ecran, la page se lit maintenant en deux temps : a gauche ce
+ * qu on va faire et pourquoi, a droite ce sur quoi on agit. Le titre peut
+ * respirer a sa vraie taille, la zone de depot devient un objet et non une
+ * boite de formulaire, et l oeil sait ou commencer.
+ *
+ * Sous 900px, tout se remet en une colonne : sur un telephone, deux
+ * colonnes ne sont pas une composition, ce sont deux colonnes trop
+ * etroites.
+ */
+.nuvi-import {
+  max-width: 560px;
+  margin: 0 auto;
+}
+.nuvi-import-gauche > :last-child { margin-bottom: 0; }
+
+@media (min-width: 900px) {
+  .nuvi-import {
+    max-width: 1040px;
+    display: grid;
+    /* Le texte porte, l action recoit : le rapport suit ce poids. */
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    gap: clamp(40px, 5vw, 88px);
+    align-items: start;
+    padding-top: clamp(24px, 6vh, 72px);
+  }
+  /* Le fil d etapes et le titre s alignent a gauche : centres, ils
+     flottaient au milieu d une colonne qui n existe plus. */
+  .nuvi-import-gauche,
+  .nuvi-import-gauche h2,
+  .nuvi-import-gauche p,
+  .nuvi-import-gauche > div { text-align: left !important; }
+  .nuvi-import-gauche p { margin-left: 0 !important; margin-right: 0 !important; }
+  .nuvi-import-gauche > div:first-of-type { justify-content: flex-start !important; }
+  /* La colonne de droite reste collee en haut, elle ne se centre pas :
+     sinon la zone de depot glisse selon la longueur du texte de gauche. */
+  .nuvi-import-droite { position: sticky; top: clamp(24px, 6vh, 72px); }
+}
