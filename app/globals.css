@@ -1042,3 +1042,34 @@ html {
      sinon la zone de depot glisse selon la longueur du texte de gauche. */
   .nuvi-import-droite { position: sticky; top: clamp(24px, 6vh, 72px); }
 }
+
+/* ============================================================
+ * L ECRAN DE CHOIX : LE PREMIER APRES LA QUESTION DE LA LANGUE
+ * ============================================================
+ *
+ * 480px au milieu d un ecran de 1440, titre a 42px fixes, et les deux
+ * cartes empilees l une sur l autre dans une colonne etroite. C est le
+ * premier ecran ou l on decide quelque chose, et il ressemble a un
+ * formulaire d inscription.
+ *
+ * Sur grand ecran : le titre respire a sa vraie taille, et les deux
+ * chemins - "j ai deja un CV" et "j en cree un" - se posent COTE A COTE.
+ * Deux choix cote a cote se comparent ; empiles, le second se decouvre
+ * apres avoir deja lu le premier comme la reponse par defaut.
+ */
+.nuvi-choix { max-width: 520px; margin: 0 auto; }
+
+@media (min-width: 900px) {
+  .nuvi-choix {
+    max-width: 940px;
+    padding-top: clamp(28px, 7vh, 84px);
+  }
+  /* Les deux chemins, cote a cote et de meme hauteur. */
+  .nuvi-choix-cartes {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: stretch;
+  }
+  .nuvi-choix-cartes > button { height: 100%; }
+}

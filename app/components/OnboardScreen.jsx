@@ -100,10 +100,10 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         overflowY:"auto",
         fontFamily:Sans,
       }}>
-        <div style={{
-          maxWidth:480, margin:"0 auto",
+        <div className="nuvi-choix" style={{
           padding:"28px 24px 40px",
           minHeight:"100%",
+          width:"100%", boxSizing:"border-box",
           display:"flex", flexDirection:"column",
         }}>
           {/* Brand Nuvi (etait "CV Factory") */}
@@ -125,8 +125,8 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           {/* Hero editorial */}
           <h1 style={{
             fontFamily:Serif, fontWeight:300,
-            fontSize:42, lineHeight:1.05,
-            letterSpacing:"-0.025em",
+            fontSize:"clamp(32px, 4.6vw, 58px)", lineHeight:1.03,
+            letterSpacing:"-0.03em", textWrap:"balance",
             color:Ink, margin:"0 0 18px",
           }}>
             {T.hero_h1_a}
@@ -154,8 +154,9 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             color:Coral, marginBottom:12,
           }}>{T.ob_choose}</div>
 
-          {/* Cartes CTA */}
-          <div style={{
+          {/* Cartes CTA - cote a cote sur grand ecran : deux choix cote a
+              cote se comparent, empiles le second se decouvre apres. */}
+          <div className="nuvi-choix-cartes" style={{
             display:"flex", flexDirection:"column", gap:12,
           }}>
             {cards.map(c => (
