@@ -1242,3 +1242,33 @@ html {
 .nuvi-evitement:focus {
   left: 0;
 }
+
+/* ============================================================
+ * L'ECHELLE TYPOGRAPHIQUE DE LA VITRINE
+ * ============================================================
+ *
+ * La vitrine definissait ONZE tailles pour seize usages. Quatre d'entre
+ * elles faisaient le meme travail de texte courant, a un pixel pres, et
+ * quatre autres celui de titre de section : 58, 62, 66 et 68px sur
+ * ordinateur.
+ *
+ * Un pixel d'ecart ne se percoit pas comme une intention. Il se percoit
+ * comme une hesitation, et c'est ce qui separe une page construite d'une
+ * page dessinee : le lecteur ne saura pas nommer ce qui cloche, il verra
+ * seulement que la hierarchie n'est pas nette.
+ *
+ * Six pas, un role chacun. Les valeurs ne sont pas inventees : chaque pas
+ * reprend celle des definitions existantes qui servait deja le plus, sauf le
+ * pas de titre qui prend le milieu des quatre qu'il remplace.
+ *
+ * Elles vivent ici et non dans le composant : une echelle qui s'ecrit a
+ * quinze endroits redevient onze tailles au premier ajout.
+ */
+:root {
+  --t-micro: clamp(13px, 1.4vw, 16px);   /* la petite ligne, les mentions */
+  --t-body: clamp(14px, 1.6vw, 18px);    /* le texte courant */
+  --t-lead: clamp(15px, 2vw, 22px);      /* une phrase qui porte */
+  --t-title: clamp(26px, 4.8vw, 60px);   /* les titres de section */
+  --t-display: clamp(30px, 6.6vw, 84px); /* le titre le plus large */
+  --t-hero: clamp(38px, 9vw, 116px);     /* le titre de la page, une fois */
+}

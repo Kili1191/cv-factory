@@ -323,7 +323,7 @@ export default function Landing({ lang = "en" }) {
           style={{ "--pose": "260ms", marginTop: 44 }}>
           <h1 className="nuvi-titre-geant" style={{
             fontFamily: Serif, fontWeight: 400,
-            fontSize: "clamp(26px, 5.2vw, 66px)",
+            fontSize: "var(--t-title)",
             lineHeight: 1.04, letterSpacing: "-0.035em",
             margin: 0,
           }}>
@@ -337,7 +337,7 @@ export default function Landing({ lang = "en" }) {
           </h1>
           <div>
             <p style={{
-              fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.6,
+              fontSize: "var(--t-body)", lineHeight: 1.6,
               color: Muted, maxWidth: 40 + "ch", margin: "0 0 26px",
             }}>{t.sub}</p>
             {lien(t.cta, t.ctaSub, true)}
@@ -361,7 +361,7 @@ export default function Landing({ lang = "en" }) {
               style={{ display: "flex", flexShrink: 0 }}>
               {(METIERS[lang] || METIERS.en).map((m) => (
                 <span key={copie + m} style={{
-                  fontFamily: Serif, fontSize: "clamp(15px, 2vw, 22px)",
+                  fontFamily: Serif, fontSize: "var(--t-lead)",
                   color: Muted, whiteSpace: "nowrap",
                   padding: "0 clamp(14px, 2.4vw, 28px)",
                   display: "inline-flex", alignItems: "center", gap: "clamp(14px, 2.4vw, 28px)",
@@ -401,11 +401,11 @@ export default function Landing({ lang = "en" }) {
         <div className="nuvi-duo" style={{ marginTop: 40 }}>
           <h2 className="nuvi-titre-geant" style={{
             fontFamily: Serif, fontWeight: 400,
-            fontSize: "clamp(26px, 5vw, 62px)", lineHeight: 1.06,
+            fontSize: "var(--t-title)", lineHeight: 1.06,
             letterSpacing: "-0.032em", margin: 0,
           }}>{t.answerTitle}</h2>
           <p style={{
-            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 42 + "ch", margin: 0,
           }}>{t.answerBody}</p>
         </div>
@@ -458,11 +458,11 @@ export default function Landing({ lang = "en" }) {
             {eyebrow(t.cvLead)}
             <h2 className="nuvi-titre-geant" style={{
               fontFamily: Serif, fontWeight: 400,
-              fontSize: "clamp(26px, 4.6vw, 58px)", lineHeight: 1.05,
+              fontSize: "var(--t-title)", lineHeight: 1.05,
               letterSpacing: "-0.032em", margin: "0 0 16px",
             }}>{t.cvTitle}</h2>
             <p style={{
-              fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+              fontSize: "var(--t-body)", lineHeight: 1.62,
               color: Muted, maxWidth: 40 + "ch", margin: 0,
             }}>{t.cvBody}</p>
           </div>
@@ -492,11 +492,11 @@ export default function Landing({ lang = "en" }) {
         <div className="nuvi-duo">
           <h2 className="nuvi-titre-geant" style={{
             fontFamily: Serif, fontWeight: 400,
-            fontSize: "clamp(30px, 6.6vw, 84px)", lineHeight: 1.03,
+            fontSize: "var(--t-display)", lineHeight: 1.03,
             letterSpacing: "-0.035em", margin: 0,
           }}>{t.s3title}</h2>
           <p style={{
-            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 42 + "ch", margin: 0,
           }}>{t.s3body}</p>
         </div>
@@ -525,11 +525,11 @@ export default function Landing({ lang = "en" }) {
         <div className="nuvi-duo">
           <h2 className="nuvi-titre-geant" style={{
             fontFamily: Serif, fontWeight: 400, color: Ink,
-            fontSize: "clamp(28px, 5.4vw, 68px)", lineHeight: 1.04,
+            fontSize: "var(--t-title)", lineHeight: 1.04,
             letterSpacing: "-0.035em", margin: 0,
           }}>{t.s35title}</h2>
           <p style={{
-            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 46 + "ch", margin: 0,
           }}>{t.s35body}</p>
         </div>
@@ -544,11 +544,11 @@ export default function Landing({ lang = "en" }) {
               paddingTop: 16, paddingBottom: 16,
             }}>
               <div style={{
-                fontFamily: Sans, fontSize: "clamp(14px, 1.5vw, 17px)",
+                fontFamily: Sans, fontSize: "var(--t-body)",
                 fontWeight: 600, color: Ink, letterSpacing: "-0.01em",
               }}>{quoi}</div>
               <div style={{
-                fontSize: "clamp(13px, 1.4vw, 16px)", lineHeight: 1.55,
+                fontSize: "var(--t-micro)", lineHeight: 1.55,
                 color: Muted,
               }}>{comment}</div>
             </div>
@@ -556,7 +556,7 @@ export default function Landing({ lang = "en" }) {
         </div>
 
         <p style={{
-          marginTop: 26, fontSize: "clamp(13px, 1.4vw, 16px)",
+          marginTop: 26, fontSize: "var(--t-micro)",
           lineHeight: 1.6, color: Muted, maxWidth: 62 + "ch",
         }}>{t.s35foot}</p>
       </section>
@@ -568,11 +568,11 @@ export default function Landing({ lang = "en" }) {
       }}>
         <h2 className="nuvi-titre-geant" style={{
           fontFamily: Serif, fontWeight: 400,
-          fontSize: "clamp(38px, 9vw, 116px)", lineHeight: 1.0,
+          fontSize: "var(--t-hero)", lineHeight: 1.0,
           letterSpacing: "-0.04em", margin: "0 0 18px",
         }}>{t.finalTitle}</h2>
         <p style={{
-          fontSize: "clamp(14px, 1.6vw, 17px)", lineHeight: 1.55,
+          fontSize: "var(--t-body)", lineHeight: 1.55,
           color: Muted, margin: "0 auto 32px", maxWidth: 44 + "ch",
         }}>{t.finalSub}</p>
         {lien(t.finalCta, t.foot, true, true)}

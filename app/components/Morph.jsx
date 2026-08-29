@@ -200,7 +200,7 @@ export default function Morph({ paires, lang = "en", labels }) {
       {labels && labels.note ? (
         <p style={{
           margin: "20px 0 0", maxWidth: 46 + "ch",
-          fontFamily: "'Inter', sans-serif", fontSize: "clamp(13px, 1.5vw, 15px)",
+          fontFamily: "'Inter', sans-serif", fontSize: "var(--t-micro)",
           lineHeight: 1.55, color: "var(--nuvi-ink-muted, #5a5a62)",
         }}>{labels.note}</p>
       ) : null}
