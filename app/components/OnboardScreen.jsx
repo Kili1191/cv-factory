@@ -9,8 +9,7 @@ import { texteDuFichier } from "../../lib/lireUnFichier";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
   GradGold, GradPurple, Gray200, Gray400, Gray600, Ink, Paper, RadiusMd,
-  RadiusPill, RadiusSm, Sans, Serif, ShadowSm, B,
-} from "./sharedTokens";
+  RadiusPill, RadiusSm, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
 
 
 // LA LECTURE DES FICHIERS A DEMENAGE
@@ -510,7 +509,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             fontWeight:600, fontSize:14,
             fontFamily:Sans,
             marginTop:14,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             display:"inline-flex",
             alignItems:"center", justifyContent:"center", gap:8,
             boxShadow: (imping||!raw.trim())

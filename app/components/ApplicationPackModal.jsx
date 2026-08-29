@@ -10,8 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : zone de texte copiable.
@@ -36,7 +35,7 @@ function Section({ T, title, content, onCopy, small }) {
             fontSize:11, fontWeight:500,
             fontFamily:Sans,
             display:"inline-flex", alignItems:"center", gap:4,
-            transition:"all 180ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -220,7 +219,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                     ? "2.5px solid "+Purple
                     : "2.5px solid transparent",
                   whiteSpace:"nowrap", flexShrink:0,
-                  transition:"all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   marginBottom:"-0.5px",
                 })
               }}>{l}</button>

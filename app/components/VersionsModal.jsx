@@ -10,8 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
-} from "./tokens";
+  GradPurple, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function VersionsModal({ T, versions, onSave, onLoad, onDelete, onClose }) {
@@ -48,7 +47,7 @@ export default function VersionsModal({ T, versions, onSave, onLoad, onDelete, o
           border:"none",
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom:18,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
         })
       }}>

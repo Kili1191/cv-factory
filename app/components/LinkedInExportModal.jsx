@@ -9,8 +9,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : zone copiable.
@@ -43,7 +42,7 @@ function CopySection({ T, title, hint, content, onCopy }) {
             fontSize:11, fontWeight:500,
             fontFamily:Sans,
             display:"inline-flex", alignItems:"center", gap:4,
-            transition:"all 180ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -146,7 +145,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
             fontFamily:Sans, fontWeight:600, fontSize:14,
             border:"none",
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             boxShadow: apiKey ? "0 4px 16px rgba(91, 61, 245, 0.25)" : "none",
           })
         }}>
@@ -197,7 +196,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
                 border:"none",
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
                 marginBottom:18,
-                transition:"all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
               })
             }}>

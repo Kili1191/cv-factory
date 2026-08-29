@@ -10,8 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
-} from "./tokens";
+  GradPurple, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBackup, onRun, onClose }) {
@@ -93,7 +92,7 @@ export default function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBac
                   border:"1.5px solid "+(dir === k ? Purple : Hairline),
                   fontFamily:Sans, fontWeight: dir === k ? 600 : 500,
                   fontSize:13,
-                  transition:"all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   boxShadow: dir === k ? "none" : ShadowSm,
                 })
               }}>{l}</button>
@@ -123,7 +122,7 @@ export default function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBac
               fontFamily:Sans, fontWeight:600, fontSize:14,
               border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
             })
           }}>

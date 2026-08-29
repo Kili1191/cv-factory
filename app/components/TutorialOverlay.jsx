@@ -21,8 +21,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusLg, RadiusPill, ShadowSm, ShadowMd,
-  GradGold, GradPurple, B,
-} from "./tokens";
+  GradGold, GradPurple, B, Trans } from "./tokens";
 
 // Construit la liste des steps a partir de T.
 function buildSteps(T) {
@@ -174,7 +173,7 @@ export default function TutorialOverlay({ T, onClose, onSkip }) {
                   : (i < step
                       ? (isDark ? "rgba(201,169,110,.5)" : "rgba(160,120,64,.4)")
                       : (isDark ? "rgba(245,241,232,.18)" : Gray200)),
-                transition:"all 220ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
               }}/>
             ))}
           </div>
@@ -208,7 +207,7 @@ export default function TutorialOverlay({ T, onClose, onSkip }) {
                   color: isDark ? Ink : Cream,
                   fontFamily:Sans, fontWeight:600, fontSize:13,
                   display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
-                  transition:"all 200ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
                 {T.tu_next}
@@ -226,7 +225,7 @@ export default function TutorialOverlay({ T, onClose, onSkip }) {
                   color: Ink,
                   fontFamily:Sans, fontWeight:600, fontSize:13,
                   display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
-                  transition:"all 200ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
                 {T.tu_done}

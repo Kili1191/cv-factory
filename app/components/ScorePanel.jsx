@@ -7,8 +7,7 @@ import ScoreDashboard from "./ScoreDashboard";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Hairline, InkMuted, Magenta,
   Gray100, Gray200, Gray400, Gray600, Green, Ink, Paper, Purple, PurpleSoft,
-  RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B,
-} from "./sharedTokens";
+  RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
 
 
 // Helper local : couleur de fond selon le score
@@ -93,7 +92,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
             color: mode==="dashboard" ? "#fff" : Ink,
             border:"0.5px solid "+(mode==="dashboard" ? "transparent" : Hairline),
             fontFamily:Sans, fontWeight:mode==="dashboard"?600:500, fontSize:12,
-            transition:"all 180ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>{T.sd_tab_dashboard}</button>
         <button onClick={()=>setMode("quick")} style={{
@@ -105,7 +104,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
             color: mode==="quick" ? "#fff" : Ink,
             border:"0.5px solid "+(mode==="quick" ? "transparent" : Hairline),
             fontFamily:Sans, fontWeight:mode==="quick"?600:500, fontSize:12,
-            transition:"all 180ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>{T.sd_tab_quick}</button>
       </div>
@@ -134,7 +133,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
               fontFamily:Sans, fontWeight:600, fontSize:14,
               marginBottom: 18,
               border:"none",
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
               boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
             })

@@ -22,8 +22,7 @@ import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft, Magenta,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
-} from "./tokens";
+  GradPurple, B, Trans } from "./tokens";
 import { CountUp } from "./motion";
 
 // 8 axes : id stable, label/sub viennent de T (i18n).
@@ -73,7 +72,7 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
           padding: "16px 16px 14px",
           boxShadow: expanded ? "0 8px 24px rgba(10,10,10,.08)" : ShadowSm,
           fontFamily: Sans,
-          transition: "all 180ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           display: "block",
         })
       }}>
@@ -331,7 +330,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
           fontFamily: Sans, fontWeight: 600, fontSize: 14,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
           marginBottom: 20,
-          transition: "all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
         {loading ? T.sd_running : (result ? T.sd_run : T.sd_run)}

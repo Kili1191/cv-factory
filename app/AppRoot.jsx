@@ -89,49 +89,30 @@ import { isCloudConfigured } from "../lib/supabaseClient.js";
 // La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
 // le navigateur la decouvre avant l'hydratation. Ne pas la re-injecter ici.
 
-// Palette
-const Ink       = "#0a0a0a";   // noir profond, surface principale
-const InkSoft   = "#1a1a1f";   // noir bleute pour gradient
-const Cream     = "#faf8f3";   // [Nuvi] creme align, fond editorial
-const CreamSoft = "#f6f2e8";   // [Nuvi] creme soft pour fond app
-const Paper     = "#ffffff";   // cards
-const Gold      = "#c9a96e";   // gold luxe (RESERVE au CV preview pour elegance)
-const GoldDeep  = "#a07840";   // gold profond (RESERVE au CV preview)
-const Purple    = "#5b3df5";   // [Nuvi] violet pour Coach, IA, generation
-const PurpleSoft= "#ede9fe";
-const Magenta   = "#b91c8c";   // [Nuvi] magenta pour gradients CTA primaires
-const Coral     = "#d97757";   // [Nuvi] terracotta doux (etait #ff5a36 trop vif)
-const CoralSoft = "#fce7dd";   // [Nuvi] terracotta tres clair (cohérent)
-const Green     = "#16a34a";
-const GreenSoft = "#dcfce7";
-const Gray50    = "#fafaf9";
-const Gray100   = "#f5f4f0";
-const Gray200   = "#e7e5dc";
-const Gray400   = "#a8a59a";
-const Gray600   = "#57534e";
-const Gray900   = "#292524";
-
-// Fonts
-const Serif = "'Fraunces', 'Playfair Display', Georgia, serif";
-const Sans  = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-
-// Backwards compat (existing code uses these names)
-const Dark = Ink;
-
-// Radius / shadow tokens
-const RadiusSm   = 10;
-const RadiusMd   = 16;
-const RadiusLg   = 22;
-const RadiusPill = 999;
-const ShadowSm   = "0 1px 2px rgba(10,10,10,.04), 0 0 0 0.5px rgba(10,10,10,.06)";
-const ShadowMd   = "0 4px 14px rgba(10,10,10,.06), 0 0 0 0.5px rgba(10,10,10,.06)";
-const ShadowLg   = "0 14px 40px rgba(10,10,10,.10), 0 0 0 0.5px rgba(10,10,10,.06)";
-
-// Gradients réservés aux moments forts
-const GradDark   = "linear-gradient(135deg, #0a0a0a 0%, #1a1a1f 50%, #c9a96e 100%)";
-const GradGold   = "linear-gradient(135deg, #c9a96e 0%, #a07840 100%)";  // RESERVE au CV
-const GradPurple = "linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)";  // [Nuvi] CTA primaire
-const GradCoral  = "linear-gradient(135deg, #d97757 0%, #c25c3d 100%)";  // [Nuvi] terracotta soft
+// LA PALETTE VIENT DES JETONS, ELLE N'EST PLUS RECOPIEE ICI
+//
+// Ce fichier portait sa propre copie complete de la palette, en hexadecimal.
+// C'etait la TROISIEME : tokens.js et sharedTokens.js avaient les deux
+// autres, et ces deux-la avaient deja derive l'une de l'autre.
+//
+// La copie d'ici avait une consequence en plus. Le produit a un theme sombre
+// entier dans globals.css, construit sur des variables CSS, et tokens.js les
+// expose. AppRoot, lui, ecrivait les couleurs en dur : le coeur de
+// l'application n'aurait pas suivi le theme, meme le jour ou on l'activerait.
+//
+// Le remplacement a ete verifie avant d'etre fait : les 19 couleurs
+// comparables sont identiques au caractere pres a celles du theme clair. En
+// clair, ce changement ne se voit pas ; il rend seulement le sombre atteignable.
+import {
+  Ink, InkSoft, Cream, CreamSoft, Paper, Gold, GoldDeep,
+  Purple, PurpleSoft, Magenta, Coral, CoralSoft, Green, GreenSoft,
+  Gray50, Gray100, Gray200, Gray400, Gray600, Gray900,
+  Serif, Sans, Dark,
+  RadiusSm, RadiusMd, RadiusLg, RadiusPill,
+  ShadowSm, ShadowMd, ShadowLg,
+  GradDark, GradGold, GradPurple, GradCoral,
+  Space, Text, Dur, Ease, Trans,
+} from "./components/tokens";
 
 // Keyframes globales injectees une fois par branche (mobile/desktop/spinner).
 // cvfSpin existe deja en v16. cvfFadeIn et cvfSlideUp servent l'IOSSheet v17.
@@ -1754,7 +1735,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       {impOpen && (
         <div style={{
           background:PurpleSoft,
-          border:"1px solid "+Purple+"44",
+          border:"1px solid rgba(91, 61, 245, .27)",   // Purple a 27%, ecrit en clair : "var(--nuvi-purple)44" ne serait pas une couleur
           borderRadius:"0 0 9px 9px",
           padding:"12px 13px 14px", marginBottom:14,
         }}>

@@ -10,8 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur score.
@@ -130,7 +129,7 @@ export default function MultiCVStrategyModal({
               fontFamily:Sans, fontWeight:600, fontSize:14,
               border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow: canRun ? "0 4px 16px rgba(91, 61, 245, 0.25)" : "none",
             })
           }}>
@@ -238,7 +237,7 @@ export default function MultiCVStrategyModal({
                 border:"none",
                 display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
                 marginBottom:18,
-                transition:"all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
               })
             }}>

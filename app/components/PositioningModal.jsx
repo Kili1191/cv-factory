@@ -10,8 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function PositioningModal({ T, result, loading, onAdopt, onClose }) {
@@ -173,7 +172,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
               fontFamily:Sans, fontWeight:600, fontSize:13,
               border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow:"0 2px 8px rgba(91, 61, 245, 0.2)",
             })
           }}>

@@ -8,8 +8,7 @@ import {
   Coral, CoralSoft, Cream, CreamSoft, Hairline, Ink, InkMuted,
   Gray100, Gray200, Gray400, Gray600,
   Green, GreenSoft, Magenta, Paper, Purple, PurpleSoft,
-  RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B,
-} from "./sharedTokens";
+  RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
 
 function TargetHub({ T, cvIsEmpty, offerResult, locale,
   onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack, onOpenInterview, onOpenMultiCV }) {
@@ -154,7 +153,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             fontSize:14, fontWeight:600,
             fontFamily:Sans, border:"none",
             position:"relative",
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             boxShadow:"0 4px 12px rgba(0,0,0,0.15)",
           })
         }}>
@@ -177,7 +176,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             border:"0.5px solid "+Hairline,
             boxShadow:ShadowSm,
             fontFamily:Sans, color:Ink,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             display:"block", cursor:"pointer",
           })
         }}>
@@ -259,7 +258,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               background:Paper, borderRadius:RadiusMd,
               padding:"18px 16px",
               border:"0.5px solid "+Hairline,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               minHeight:130,
               display:"flex", flexDirection:"column",
               justifyContent:"space-between",
@@ -301,7 +300,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             border:"none",
             textAlign:"left", fontFamily:Sans,
             position:"relative", overflow:"hidden",
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
@@ -350,7 +349,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
             textAlign:"left", fontFamily:Sans,
             position:"relative", overflow:"hidden",
             boxShadow:ShadowSm,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           <div style={{

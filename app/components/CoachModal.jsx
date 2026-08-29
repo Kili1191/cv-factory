@@ -28,8 +28,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft, Magenta,
   Hairline, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
-} from "./tokens";
+  GradPurple, B, Trans } from "./tokens";
 
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
@@ -384,7 +383,7 @@ function QuickReplyButton({ qr, onAction, primary = false }) {
               ? "0 4px 14px rgba(91, 61, 245, 0.35)"
               : "0 2px 8px rgba(91, 61, 245, 0.25)",
             transform: hovered ? "translateY(-1px)" : "translateY(0)",
-            transition: "all 180ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
         {qr.icon && Icons[qr.icon]}
@@ -660,7 +659,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
                 background: GradPurple, color: "#fff",
                 fontSize: 11, fontWeight: 600, fontFamily: Sans,
                 display: "inline-flex", alignItems: "center", gap: 5,
-                transition: "all 180ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 boxShadow: "0 2px 8px rgba(91, 61, 245, 0.25)",
               })
             }}>
@@ -1246,7 +1245,7 @@ export default function CoachModal({
                   color: (loading || lecture || (!input.trim() && !piece) || !apiKey) ? Gray600 : "#fff",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
-                  transition: "all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   boxShadow: (loading || lecture || (!input.trim() && !piece) || !apiKey)
                     ? "none"
                     : "0 2px 8px rgba(91, 61, 245, 0.3)",
@@ -1284,7 +1283,7 @@ export function CoachFAB({ T, onOpen, hidden }) {
           display: "flex", alignItems: "center", justifyContent: "center",
           boxShadow: "0 8px 24px rgba(91,61,245,.45)",
           zIndex: 9999,
-          transition: "all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           animation: "cvfFabIn 350ms cubic-bezier(.34,1.56,.64,1)",
         })
       }}>

@@ -63,6 +63,13 @@ export const RadiusLg   = 22;
 export const RadiusPill = 999;
 export const ShadowSm   = "0 1px 2px rgba(10,10,10,.04), 0 0 0 0.5px rgba(10,10,10,.06)";
 export const ShadowMd   = "0 4px 12px rgba(10,10,10,.08), 0 0 0 0.5px rgba(10,10,10,.06)";
+// ShadowLg n'existait que dans sharedTokens.js : les 26 fichiers qui
+// importaient celui-ci n'avaient aucune ombre haute a leur disposition, et
+// s'en fabriquaient une a la main quand il leur en fallait une.
+export const ShadowLg   = "0 14px 40px rgba(10,10,10,.10), 0 0 0 0.5px rgba(10,10,10,.06)";
+// Peu utilise, mais importe par des composants qui passaient par l'autre
+// fichier : il doit exister ici pour que celui-la puisse disparaitre.
+export const InkSoft    = "#1a1a1f";
 
 // ===== Gradients reserves aux moments forts =====
 // Utilisent les valeurs RAW pour eviter les bugs (les gradients sont des strings).
@@ -111,3 +118,92 @@ export const SH = (x={}) => ({
 export const NO_DASH =
   "INTERDICTION ABSOLUE d'utiliser des tirets cadratins (em dash) ou demi-cadratins (en dash). "
 + "Utilise des virgules, des deux-points, des points, ou retire-les. Aucune exception.";
+
+
+// ============================================================
+// CE QUI MANQUAIT AU SYSTEME, ET QUI PRODUISAIT LA DERIVE
+// ============================================================
+//
+// Les couleurs, les rayons et les ombres etaient nommes. Les ESPACES, les
+// TAILLES DE TEXTE et le MOUVEMENT ne l'etaient pas : ils s'ecrivaient a la
+// main, au cas par cas, dans 266 blocs de style en ligne du seul AppRoot.
+// C'est la que la coherence se perd, parce que personne ne peut retenir si
+// l'ecran d'a cote respirait a 14 ou a 16.
+//
+// Ces trois echelles ne sont pas inventees : elles sont relevees sur ce qui
+// existe deja dans le produit, arrondies aux valeurs qui reviennent le plus.
+// Le but n'est pas de changer l'apparence, c'est de lui donner un nom.
+
+// L'ESPACE
+// Une seule progression, pour que deux ecrans voisins respirent pareil.
+export const Space = {
+  xs: 4,
+  sm: 8,
+  md: 12,
+  lg: 16,
+  xl: 24,
+  xxl: 32,
+  xxxl: 48,
+};
+
+// LE TEXTE
+// Les tailles reellement employees, nommees par role plutot que par nombre :
+// on choisit un role, pas un pixel, et deux libelles de meme role finissent
+// enfin a la meme taille.
+export const Text = {
+  micro: 10,    // les libelles en capitales, au-dessus des champs
+  small: 12,    // les mentions secondaires
+  body: 13,     // le texte courant de l'interface
+  lead: 15,     // une phrase qui porte
+  title: 18,    // un titre de panneau
+  display: 24,  // un titre d'ecran
+};
+
+// LE MOUVEMENT
+//
+// Il n'etait nomme nulle part, et 130 endroits ecrivaient "transition: all".
+// "all" anime TOUT ce qui change, y compris ce que personne n'a voulu animer :
+// une largeur qui se recalcule, une couleur heritee, une ombre. C'est la
+// premiere cause de saccade, et c'est invisible a la relecture parce que la
+// ligne a l'air anodine.
+//
+// Les durees sont courtes volontairement. Une interface ou l'on travaille
+// n'est pas une vitrine : le mouvement doit dire ce qui a change, puis
+// disparaitre. Au-dela de 300ms on attend le logiciel.
+//
+// Les valeurs ne sont pas choisies dans le vide : le produit s'etait deja
+// stabilise sur 180ms et 200ms, ecrits a la main partout. L'echelle epouse
+// donc ce qui existe, pour que nommer le mouvement ne le change pas.
+export const Dur = {
+  instant: 120,  // un survol, un enfoncement
+  fast: 180,     // un changement d'etat sur place, la valeur la plus courante
+  base: 240,     // l'arrivee d'un element
+  slow: 380,     // un panneau entier
+};
+
+// Une seule courbe pour tout ce qui entre, une pour tout ce qui bouge sur
+// place. Melanger les courbes se voit sans qu'on sache dire pourquoi.
+export const Ease = {
+  // Sort vite, s'installe doucement : c'est la sensation d'un objet pose.
+  out: "cubic-bezier(.22, 1, .36, 1)",
+  inOut: "cubic-bezier(.65, 0, .35, 1)",
+};
+
+// TRANSITION NOMMEE
+//
+// A utiliser a la place de "all". On dit QUELLES proprietes bougent, ce qui
+// evite d'animer par accident une largeur ou une hauteur recalculee.
+//
+//   transition: Trans("background")                    -> duree fast
+//   transition: Trans(["transform", "opacity"], "base") -> duree base
+//
+// Le nom compte : "T" etait pris. Dans tout ce depot, T est l'objet des
+// traductions, passe en prop a presque chaque composant. Un import nomme T
+// aurait ete masque par la prop a l'interieur de chaque fonction, et
+// l'appel serait parti sur l'objet i18n. Le build passe, la page casse au
+// premier survol.
+export const Trans = (props, duree = "fast") => {
+  const liste = Array.isArray(props) ? props : [props];
+  const ms = Dur[duree] || Dur.fast;
+  return liste.map((p) => p + " " + ms + "ms " + Ease.out).join(", ");
+};

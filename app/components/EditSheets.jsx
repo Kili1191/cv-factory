@@ -24,8 +24,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper,
   Coral, CoralSoft, Purple, Magenta, Hairline,
   Gold,
-  Sans, B,
-} from "./tokens";
+  Sans, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 import { FR, SaveBtn, MK } from "./EditHelpers";
 
@@ -183,7 +182,7 @@ function TransformBtn({ onClick, title }) {
           alignItems: "center",
           justifyContent: "center",
           flexShrink: 0,
-          transition: "all 180ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
         })
       }}>
       {/* Icone "magic wand / sparkle" */}

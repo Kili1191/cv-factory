@@ -10,8 +10,7 @@ import {
   Coral, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B,
-} from "./tokens";
+  GradPurple, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : une ligne de raccourci.
@@ -146,7 +145,7 @@ export default function SettingsPanel({
               color: locale === "fr" ? "#fff" : Ink,
               border: "0.5px solid "+(locale === "fr" ? "transparent" : Hairline),
               fontSize:13, fontWeight:500, fontFamily:Sans,
-              transition:"all 180ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>Francais</button>
           <button onClick={()=>setLocale("en")} style={{
@@ -158,7 +157,7 @@ export default function SettingsPanel({
               color: locale === "en" ? "#fff" : Ink,
               border: "0.5px solid "+(locale === "en" ? "transparent" : Hairline),
               fontSize:13, fontWeight:500, fontFamily:Sans,
-              transition:"all 180ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>English</button>
         </div>
@@ -176,7 +175,7 @@ export default function SettingsPanel({
             borderRadius:RadiusMd,
             boxShadow:ShadowSm,
             textAlign:"left", fontFamily:Sans,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           {/* Icon */}
@@ -186,7 +185,7 @@ export default function SettingsPanel({
             background: darkMode ? Ink : CreamSoft,
             color: darkMode ? "#fff" : Coral,
             flexShrink:0,
-            transition:"all 220ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2"
@@ -216,14 +215,14 @@ export default function SettingsPanel({
               : Hairline,
             position:"relative",
             flexShrink:0,
-            transition:"all 220ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
           }}>
             <div style={{
               position:"absolute",
               top:2, left: darkMode ? 20 : 2,
               width:20, height:20, borderRadius:"50%",
               background:"#fff",
-              transition:"all 220ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
               boxShadow:"0 2px 4px rgba(0,0,0,.15)",
             }}/>
           </div>
@@ -243,7 +242,7 @@ export default function SettingsPanel({
               borderRadius:RadiusMd,
               boxShadow:ShadowSm,
               textAlign:"left", fontFamily:Sans,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <div style={{
@@ -284,7 +283,7 @@ export default function SettingsPanel({
             borderRadius:RadiusMd,
             boxShadow:ShadowSm,
             textAlign:"left", fontFamily:Sans,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           <div style={{
@@ -329,7 +328,7 @@ export default function SettingsPanel({
               background:Paper, border:"0.5px solid "+Hairline,
               borderRadius:RadiusMd, boxShadow:ShadowSm,
               textAlign:"left", fontFamily:Sans,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <div style={{
@@ -373,7 +372,7 @@ export default function SettingsPanel({
               background:Paper, border:"0.5px solid "+Hairline,
               borderRadius:RadiusMd, boxShadow:ShadowSm,
               textAlign:"left", fontFamily:Sans,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             <div style={{

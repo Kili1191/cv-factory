@@ -24,8 +24,7 @@ import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple,
   Coral, Green, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradDark, KEYFRAMES_V17, B,
-} from "./tokens";
+  GradDark, KEYFRAMES_V17, B, Trans } from "./tokens";
 
 export default function BulletTransformer({ kind = "bullet", original, levels, loading, onAdopt, onClose, T }) {
 
@@ -207,7 +206,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
               borderRadius:RadiusMd,
               padding:"14px 16px", marginBottom:10,
               boxShadow:ShadowSm,
-              transition:"all 180ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             }}>
               <div style={{
                 display:"flex", alignItems:"center",

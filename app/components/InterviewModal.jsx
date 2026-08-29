@@ -10,8 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400,
   Hairline, InkMuted,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  KEYFRAMES_V17, B,
-} from "./tokens";
+  KEYFRAMES_V17, B, Trans } from "./tokens";
 
 // Couleur d'accent par categorie de question.
 function categoryAccent(cat) {
@@ -247,7 +246,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
             border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           })
         }}>
           {T.iv_qta_run}
@@ -295,7 +294,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                 fontSize:11, fontWeight:600,
                 fontFamily:Sans, letterSpacing:"0.02em",
                 display:"inline-flex", alignItems:"center", gap:6,
-                transition:"all 200ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               })
             }}>
               {copiedAll ? (
@@ -385,7 +384,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                             fontFamily:Sans, letterSpacing:"0.04em",
                             textTransform:"uppercase",
                             display:"inline-flex", alignItems:"center", gap:5,
-                            transition:"all 200ms ease-out",
+                            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                           })
                         }}>
                           {isCopied ? T.iv_qta_copied : T.iv_qta_copy_one}
@@ -506,7 +505,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
     border:"0.5px solid "+(tone === val ? Ink : Hairline),
     fontFamily:Sans, fontWeight: tone === val ? 600 : 500,
     fontSize:11, letterSpacing:"0.02em",
-    transition:"all 180ms ease-out", cursor:"pointer",
+    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"), cursor:"pointer",
   });
 
   return (
@@ -571,7 +570,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
               border:"none",
               fontFamily:Sans, fontWeight:600, fontSize:13,
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             })
           }}>
             {T.iv_em_run}
@@ -749,7 +748,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
             border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             marginTop:6,
           })
         }}>
@@ -1020,7 +1019,7 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
             border:"none",
             fontFamily:Sans, fontWeight:600, fontSize:13,
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             marginTop:6,
           })
         }}>
@@ -1263,7 +1262,7 @@ function PackPdfCard({ T, loading, hasMainResult, onRun }) {
           border:"none",
           fontFamily:Sans, fontWeight:600, fontSize:13,
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           marginTop:6,
         })
       }}>
@@ -1486,7 +1485,7 @@ export default function InterviewModal({
                   border:"0.5px solid "+(tab === k ? Ink : Hairline),
                   fontFamily:Sans, fontWeight: tab === k ? 600 : 500,
                   fontSize:12,
-                  transition:"all 180ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                   cursor:"pointer",
                 })
               }}>{label}</button>
@@ -1714,7 +1713,7 @@ export default function InterviewModal({
                   border:"none",
                   fontFamily:Sans, fontWeight:600, fontSize:14,
                   display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-                  transition:"all 200ms ease-out",
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
                 {T.iv_run}
@@ -1828,7 +1827,7 @@ export default function InterviewModal({
                         background: i === idx ? Ink : (i < idx ? Purple : Hairline),
                         borderRadius:RadiusPill,
                         cursor:"pointer", padding:0,
-                        transition:"all 200ms ease-out",
+                        transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                       })
                     }}
                   />
@@ -1853,7 +1852,7 @@ export default function InterviewModal({
                       border:"0.5px solid "+(idx === 0 ? Hairline : Ink),
                       fontFamily:Sans, fontWeight:600, fontSize:13,
                       display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
-                      transition:"all 200ms ease-out",
+                      transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     })
                   }}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -1874,7 +1873,7 @@ export default function InterviewModal({
                       border:"none",
                       fontFamily:Sans, fontWeight:600, fontSize:13,
                       display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
-                      transition:"all 200ms ease-out",
+                      transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     })
                   }}>
                   {T.iv_next}

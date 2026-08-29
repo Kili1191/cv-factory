@@ -10,8 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  KEYFRAMES_V17, B,
-} from "./tokens";
+  KEYFRAMES_V17, B, Trans } from "./tokens";
 
 // Format a parsed date for display.
 function fmt(d, T) {
@@ -113,7 +112,7 @@ function StrategyCard({
           fontFamily:Sans, fontWeight:600, fontSize:12,
           border:"none",
           display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-          transition:"all 200ms ease-out",
+          transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
           boxShadow: btnDisabled ? "none" : "0 2px 8px rgba(91, 61, 245, 0.2)",
         })
       }}>

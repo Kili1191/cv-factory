@@ -9,8 +9,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 import GmailScanPanel from "./GmailScanPanel";
 
@@ -591,7 +590,7 @@ export default function ApplicationsTrackerModal({
             border:"none",
             display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
             marginBottom:16,
-            transition:"all 200ms ease-out",
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
             boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
@@ -636,7 +635,7 @@ export default function ApplicationsTrackerModal({
                 border: "0.5px solid "+(filter === k ? "transparent" : Hairline),
                 fontSize:11, fontWeight:500, fontFamily:Sans,
                 whiteSpace:"nowrap", flexShrink:0,
-                transition:"all 180ms ease-out",
+                transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               })
             }}>{l}</button>
           ))}

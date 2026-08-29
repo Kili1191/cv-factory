@@ -14,8 +14,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleurs verdict.
@@ -182,7 +181,7 @@ export default function AuditModal({
               fontFamily:Sans, fontWeight:600, fontSize:14,
               border:"none",
               display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8,
-              transition:"all 200ms ease-out",
+              transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
               boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
             })
           }}>
@@ -364,7 +363,7 @@ export default function AuditModal({
                       fontSize:12, lineHeight:1.55, color:Ink,
                       display:"flex", gap:10, alignItems:"flex-start",
                       fontFamily:Sans,
-                      transition:"all 180ms ease-out",
+                      transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     })
                   }}>
                   <span style={{color:Purple, fontWeight:600, flexShrink:0}}>{i+1}.</span>
@@ -418,7 +417,7 @@ export default function AuditModal({
                     border:"none",
                     cursor: kwLoading ? "wait" : "pointer",
                     display:"inline-flex", alignItems:"center", justifyContent:"center", gap:6,
-                    transition:"all 200ms ease-out",
+                    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     boxShadow: kwLoading ? "none" : "0 4px 16px rgba(91, 61, 245, 0.25)",
                   })
                 }}>
