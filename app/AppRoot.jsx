@@ -370,14 +370,36 @@ const THEMES = {
 const LAYOUTS = ["sidebar","classic","timeline","swiss","compact","ats"];
 
 // Metadata pour chaque layout (label affiche + description courte)
+// LES GABARITS, DECRITS POUR CEUX QUI VONT S EN SERVIR
+//
+// Les descriptions disaient "Conseil, Direction", "Design, Tech", "Junior".
+// Nuvi est ecrit pour les services, les tournees et les plannings : personne
+// dans ce public ne se reconnait dans ces mots, et le seul effet d'une
+// etiquette qui ne vous vise pas est de vous faire croire que l'outil non
+// plus. Elles disent maintenant a quoi sert la forme, pas quel cadre la
+// porte. Et elles existent dans les deux langues, parce que ce choix se pose
+// desormais des le debut, a quelqu'un qui vient de choisir sa langue.
 const LAYOUT_META = {
-  sidebar:  { label: "Sidebar Pro",  desc: "Premium - Conseil, Direction" },
-  classic:  { label: "Classic",      desc: "Polyvalent - Tous secteurs" },
-  timeline: { label: "Timeline",     desc: "Visuel - Career progression" },
-  swiss:    { label: "Swiss",        desc: "Minimaliste - Design, Tech" },
-  compact:  { label: "Compact",      desc: "Dense - Junior, 1 page" },
-  ats:      { label: "ATS-Safe",     desc: "Robot-friendly - Candidatures online" },
+  fr: {
+    sidebar:  { label: "Colonne",   desc: "Une bande a gauche pour le contact et les competences" },
+    classic:  { label: "Classique", desc: "Une seule colonne, simple et lisible partout" },
+    timeline: { label: "Parcours",  desc: "Met en avant l'ordre des postes" },
+    swiss:    { label: "Epure",     desc: "Beaucoup de blanc, tres peu de decor" },
+    compact:  { label: "Compact",   desc: "Tout tient sur une page" },
+    ats:      { label: "Anti-robot",desc: "La forme la plus surement lue par les logiciels de tri" },
+  },
+  en: {
+    sidebar:  { label: "Column",    desc: "A band on the left for contact and skills" },
+    classic:  { label: "Classic",   desc: "One column, plain and readable anywhere" },
+    timeline: { label: "Track",     desc: "Puts the order of your jobs up front" },
+    swiss:    { label: "Clean",     desc: "Lots of white space, almost no decoration" },
+    compact:  { label: "Compact",   desc: "Everything fits on one page" },
+    ats:      { label: "Robot-safe",desc: "The shape tracking software reads most reliably" },
+  },
 };
+function metaGabarit(locale) {
+  return LAYOUT_META[locale === "en" ? "en" : "fr"];
+}
 
 // ============================================================
 // v17 Custom : librairies cur\u00e9es (couleurs + polices) + merge theme
@@ -3019,7 +3041,80 @@ function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopt
 // LayoutTab : selection visuelle du layout CV dans Apparence.
 // Affiche les 6 layouts avec aper-cu miniature + label + description.
 // ============================================================
-function LayoutTab({ T, layout, setLy }) {
+// LE CHOIX DE LA FORME, POSE AVANT LA GENERATION
+//
+// La mise en page etait decidee pour la personne : "sidebar" en dur, et le
+// selecteur enterre dans un panneau de reglages qu'il faut savoir ouvrir.
+// Quelqu'un recevait donc un CV a deux colonnes avec une bande noire sans
+// l'avoir demande, et sans savoir qu'il y avait autre chose.
+//
+// Ce n'est pas une question de conformite : les six gabarits passent les
+// trois moteurs d'extraction avec un plancher de fidelite, la colonne
+// comprise. C'est une question de qui decide. La forme d'un CV est un choix
+// personnel, et il se pose ici, sur l'ecran d'import, pendant que la
+// personne a deja son document en main.
+//
+// Six vignettes plutot qu'une liste de noms : "Colonne" et "Epure" ne
+// veulent rien dire tant qu'on ne les a pas vues. Le choix reste modifiable
+// a tout moment dans Apparence, donc il n'engage a rien.
+function ChoixDeGabarit({ layout, setLy, locale }) {
+  const META = metaGabarit(locale);
+  return (
+    <div style={{ marginTop: 22 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
+        textTransform: "uppercase", color: Coral, marginBottom: 10,
+        fontFamily: Sans,
+      }}>
+        {locale === "en" ? "Choose your shape" : "Choisis ta mise en page"}
+      </div>
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(112px, 1fr))",
+        gap: 10,
+      }}>
+        {LAYOUTS.map(k => {
+          const meta = META[k] || { label: k, desc: "" };
+          const active = layout === k;
+          return (
+            <button
+              key={k}
+              type="button"
+              onClick={() => setLy(k)}
+              aria-pressed={active}
+              title={meta.desc}
+              style={{
+                // Dans une grille, un bouton se retracte a la largeur de son
+                // contenu : sans width, les vignettes se decalent les unes
+                // des autres selon la longueur de leur nom.
+                width: "100%",
+                padding: 0,
+                borderRadius: RadiusMd,
+                background: active ? CreamSoft : Paper,
+                border: active ? "2px solid " + Purple : "0.5px solid " + Gray200,
+                boxShadow: active ? "0 4px 14px rgba(91, 61, 245, 0.18)" : ShadowSm,
+                cursor: "pointer",
+                overflow: "hidden",
+                textAlign: "left",
+                boxSizing: "border-box",
+              }}
+            >
+              <LayoutPreview kind={k} active={active} locale={locale} />
+              <div style={{
+                padding: "7px 9px 8px",
+                fontSize: 12, fontWeight: 600, fontFamily: Sans,
+                color: active ? Purple : Ink,
+              }}>{meta.label}</div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LayoutTab({ T, layout, setLy, locale }) {
+  const META = metaGabarit(locale);
   return (
     <div style={{ paddingBottom: 24 }}>
       <div style={{
@@ -3027,7 +3122,7 @@ function LayoutTab({ T, layout, setLy }) {
         letterSpacing: "0.12em", textTransform: "uppercase",
         color: Coral, marginBottom: 14,
       }}>
-        Choisis ton layout
+        {locale === "en" ? "Choose your shape" : "Choisis ta mise en page"}
       </div>
 
       <div style={{
@@ -3036,7 +3131,7 @@ function LayoutTab({ T, layout, setLy }) {
         gap: 14,
       }}>
         {LAYOUTS.map(k => {
-          const meta = LAYOUT_META[k] || { label: k, desc: "" };
+          const meta = META[k] || { label: k, desc: "" };
           const active = layout === k;
           return (
             <button
@@ -3058,7 +3153,7 @@ function LayoutTab({ T, layout, setLy }) {
               }}
             >
               {/* Aper-cu miniature du layout */}
-              <LayoutPreview kind={k} active={active} />
+              <LayoutPreview kind={k} active={active} locale={locale} />
 
               {/* Label + desc */}
               <div style={{ padding: "10px 12px" }}>
@@ -3204,7 +3299,7 @@ class LayoutPreviewErrorBoundary extends Component {
   }
 }
 
-function LayoutPreview({ kind, active }) {
+function LayoutPreview({ kind, active, locale = "fr" }) {
   // [Fix 2026-05-20] Hydrated guard : ne render le composant CV lourd
   // qu'apres hydration cote client. Evite hydration mismatch (#418/#423).
   const [hydrated, setHydrated] = useState(false);
@@ -3232,12 +3327,16 @@ function LayoutPreview({ kind, active }) {
     );
   }
 
-  // T minimal pour les labels (CV-related strings only)
-  const T = {
-    cv_p: "Profil", cv_el: "Experience", cv_ed: "Formation",
-    cv_s: "Competences", cv_l: "Langues", cv_c: "Certifications",
-    cv_ct: "Contact",
-  };
+  // T minimal pour les libelles de l'apercu. Ils etaient figes en francais :
+  // quelqu'un qui choisit sa mise en page en anglais lisait "Formation" et
+  // "Competences" dans la vignette du document qu'il est en train de choisir.
+  const T = (locale === "en")
+    ? { cv_p: "Profile", cv_el: "Experience", cv_ed: "Education",
+        cv_s: "Skills", cv_l: "Languages", cv_c: "Certifications",
+        cv_ct: "Contact" }
+    : { cv_p: "Profil", cv_el: "Experience", cv_ed: "Formation",
+        cv_s: "Competences", cv_l: "Langues", cv_c: "Certifications",
+        cv_ct: "Contact" };
 
   const scale = 0.18;
   const realWidth = 1080;
@@ -3272,7 +3371,7 @@ function LayoutPreview({ kind, active }) {
             set={() => {}}
             t={DEMO_THEME}
             T={T}
-            locale="fr"
+            locale={locale}
           />
         </div>
       </div>
@@ -3419,7 +3518,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
         />
       )}
       {tab === "layout" && (
-        <LayoutTab T={T} layout={layout} setLy={setLy}/>
+        <LayoutTab T={T} layout={layout} setLy={setLy} locale={locale}/>
       )}
       {tab === "suggest" && (
         <SuggestTab
@@ -8434,7 +8533,8 @@ export default function App() {
       apiKey={apiKey} mode={obMode} setMode={setObMode}
       raw={obRaw} setRaw={setObRaw} imping={obImp}
       onImport={onImport} setTab={setTab} setAiMode={setAiMode}
-      lireImageCv={lireImageCv}/>
+      lireImageCv={lireImageCv}
+      choixGabarit={<ChoixDeGabarit layout={layout} setLy={setLy} locale={locale}/>}/>
     </Suspense>
   );
 

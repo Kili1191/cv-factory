@@ -26,7 +26,8 @@ async function extractCvText(file, T) {
 }
 
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
-  raw, setRaw, imping, onImport, setTab, setAiMode, lireImageCv }) {
+  raw, setRaw, imping, onImport, setTab, setAiMode, lireImageCv,
+  choixGabarit }) {
 
   const fileInputRef = useRef(null);
   const [fileBusy, setFileBusy] = useState("");   // nom du fichier en lecture
@@ -490,6 +491,15 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 
             La condition etait par ailleurs recopiee trois fois - etat, fond,
             couleur. Nommee une fois, elle ne peut plus diverger. */}
+        {/* LA FORME DU CV SE CHOISIT ICI, PAS DANS UN PANNEAU DE REGLAGES
+            Elle etait decidee d'avance et le selecteur vivait derriere un
+            onglet qu'il faut savoir ouvrir : les gens repartaient avec une
+            mise en page qu'ils n'avaient pas choisie, sans savoir qu'il y
+            en avait cinq autres. Le choix se pose juste avant le bouton,
+            pendant que la personne a son document sous les yeux, et il
+            reste modifiable ensuite dans Apparence. */}
+        {choixGabarit}
+
         <button onClick={onImport} disabled={imping||!raw.trim()}
           className={(imping||!raw.trim()) ? undefined : "nuvi-cta"} style={{
           ...B({
