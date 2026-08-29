@@ -41,6 +41,7 @@ const SUITES = [
   ["les moteurs d'extraction des ATS lisent le CV", "./ats-parsers-read-the-cv.mjs"],
   ["le verdict des logiciels de tri ne bouge pas", "./the-ats-verdict-never-moves.mjs"],
   ["les deux lectures peuvent diverger", "./two-readings-can-disagree.mjs"],
+  ["la simulation ne contredit pas les analyseurs", "./the-simulation-agrees-with-the-parsers.mjs"],
   ["la couche invisible correspond a la page", "./the-invisible-layer-matches-the-page.mjs"],
   ["l'import lit un PDF, worker coupe compris", "./import-reads-a-pdf.mjs"],
   ["le pack candidature produit une lettre", "./application-pack-produces-a-letter.mjs"],
