@@ -70,7 +70,17 @@ const PROMPTS = [
   { nom: "l'integration des mots-cles", repere: "bourrage de mots-cles" },
   { nom: "la lettre de motivation", repere: "CV CANDIDAT:" },
   { nom: "les questions d'entretien", repere: "methode STAR" },
-  { nom: "le debrief d'entretien", repere: "Sois HONNETE" },
+  // LE REPERE DOIT DESIGNER UN SEUL PROMPT
+  //
+  // Celui du debrief etait "Sois HONNETE", que DEUX prompts contiennent :
+  // l'audit du CV, plus haut dans le fichier, et le debrief. indexOf rendant
+  // la premiere occurrence, ce test croyait verifier le debrief et verifiait
+  // l'audit depuis toujours. Le debrief, lui, n'etait couvert par rien.
+  //
+  // Les deux ont desormais leur entree, avec un repere qui n'existe qu'a un
+  // seul endroit du fichier.
+  { nom: "l'audit du CV", repere: "Aucune diplomatie" },
+  { nom: "le debrief d'entretien", repere: "VERDICT PROBABLE" },
 ];
 
 // Un prompt est un long enchainement de "+". On regarde donc autour du

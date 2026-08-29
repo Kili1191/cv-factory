@@ -5247,6 +5247,18 @@ export default function App() {
     const p = "Tu es un recruteur senior expert du marche " + countryName + " avec 20 ans d'experience. "
       + "Audite ce CV du point de vue d'un recruteur qui le recevrait pour un poste senior. "
       + "Sois HONNETE, DIRECT, sans complaisance. Aucune diplomatie. "
+      // LA REGLE VAUT AUSSI QUAND NUVI JUGE, PAS SEULEMENT QUAND IL ECRIT
+      //
+      // L'audit dit au candidat quoi changer sur son CV. C'est donc
+      // exactement l'endroit ou un modele se met a faire la morale sur ce
+      // qu'il y a lu, ou refuse de commenter, ou suggere d'ajouter un
+      // diplome que la personne n'a pas. La regle y a sa place autant que
+      // dans les prompts qui ecrivent.
+      //
+      // Elle manquait, et le test l'a dit : son repere "Sois HONNETE" tombe
+      // sur CE prompt, le premier du fichier a porter ces mots, et non sur
+      // le debrief d'entretien qu'il croyait viser.
+      + QUI_DECIDE + "\n"
       + "Tiens compte des codes specifiques du marche " + countryName + " (longueur, format, mots-cles, soft skills attendus).\n\n"
       + langueReponse + "\n\n"
       + "CV:\n" + cvT + "\n\n"
