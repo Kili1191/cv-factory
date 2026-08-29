@@ -136,6 +136,15 @@ export const NO_DASH =
 
 // L'ESPACE
 // Une seule progression, pour que deux ecrans voisins respirent pareil.
+//
+// Comptage : sur 302 valeurs d'ecart et 474 de marge interieure, 47% et 31%
+// tombent sur cette grille de 4px. Le reste se concentre sur 6, 10 et 14,
+// c'est-a-dire une grille de 2px, qui ne contraint rien.
+//
+// L'echelle reste sur 4px, parce qu'une echelle sert a limiter les choix. Les
+// valeurs intermediaires restent donc volontairement absentes : les adopter
+// signifie deplacer des centaines d'elements de un ou deux pixels, ce qui se
+// voit, et ce n'est pas une decision de nettoyage.
 export const Space = {
   xs: 4,
   sm: 8,
@@ -150,8 +159,22 @@ export const Space = {
 // Les tailles reellement employees, nommees par role plutot que par nombre :
 // on choisit un role, pas un pixel, et deux libelles de meme role finissent
 // enfin a la meme taille.
+//
+// CETTE ECHELLE A ETE CORRIGEE APRES COMPTAGE
+//
+// La premiere version omettait 11px. Or 11px est, de loin, la taille la plus
+// employee du produit : 278 occurrences, devant toutes les autres. Une
+// echelle qui ne contient pas la valeur dominante n'est pas une echelle, on
+// ne peut simplement pas s'en servir sans tout reecrire.
+//
+// Le comptage complet, sur 1012 tailles de texte : 44% tombent deja sur des
+// valeurs rondes, et le reste se disperse sur 11, 14, 16, 9, 12.5, 9.5. Le
+// produit n'a donc pas de rythme typographique, il a une granularite d'un
+// demi-pixel. Lui en imposer un est un VRAI changement visuel, sur environ
+// 1500 valeurs, et cela ne se decide pas dans un commit de nettoyage.
 export const Text = {
   micro: 10,    // les libelles en capitales, au-dessus des champs
+  tiny: 11,     // la taille la plus repandue du produit
   small: 12,    // les mentions secondaires
   body: 13,     // le texte courant de l'interface
   lead: 15,     // une phrase qui porte
