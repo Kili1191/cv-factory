@@ -3321,6 +3321,34 @@ function LayoutPreview({ kind, active, locale = "fr" }) {
   const [hydrated, setHydrated] = useState(false);
   useEffect(() => { setHydrated(true); }, []);
 
+  // LA VIGNETTE SE MET A LA TAILLE DE SA CARTE
+  //
+  // L'echelle valait 0.18 en dur, quelle que soit la carte qui l'accueille.
+  // Une page A4 large de 1080 devenait donc 194px, toujours. Dans le panneau
+  // de reglages les cartes font plus de 220px et ca passait ; sur l'ecran
+  // d'import d'un telephone, trois colonnes dans 390px donnent des cartes de
+  // 110px, et la vignette debordait de 42px de chaque cote.
+  //
+  // Resultat vu sur thenuvi.com : cinq apercus sur six coupes en plein milieu
+  // d'un mot, "Alex Martin" reduit a "Martin". Or ces vignettes existent pour
+  // une seule raison, choisir une forme qu'un nom ne decrit pas. Coupees, il
+  // ne reste que le nom.
+  //
+  // On mesure donc la carte au lieu de parier sur sa largeur.
+  const boite = useRef(null);
+  const [largeur, setLargeur] = useState(0);
+  useEffect(() => {
+    const el = boite.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+    const ro = new ResizeObserver((entries) => {
+      const w = entries[0] && entries[0].contentRect.width;
+      if (w) setLargeur(w);
+    });
+    ro.observe(el);
+    setLargeur(el.clientWidth);
+    return () => ro.disconnect();
+  }, [hydrated]);
+
   const Comp =
     kind === "sidebar"  ? CVSidebar  :
     kind === "classic"  ? CVClassic  :
@@ -3354,17 +3382,25 @@ function LayoutPreview({ kind, active, locale = "fr" }) {
         cv_s: "Competences", cv_l: "Langues", cv_c: "Certifications",
         cv_ct: "Contact" };
 
-  const scale = 0.18;
   const realWidth = 1080;
   const realHeight = 1400;
-  const previewW = realWidth * scale;
-  const previewH = realHeight * scale;
+  // Avant la premiere mesure on garde l'ancienne echelle : la vignette ne
+  // clignote pas, elle se recale au premier rendu.
+  const scale = largeur > 0 ? largeur / realWidth : 0.18;
+  // ON NE MONTRE QUE LE HAUT DE LA PAGE
+  //
+  // Une A4 entiere laissait la moitie basse vide dans chaque carte, parce que
+  // le CV de demonstration ne remplit pas la page. La carte etait haute, et
+  // surtout ce qui distingue les six formes - la bande, les colonnes, la
+  // place du titre - se joue en haut. On coupe donc au deux tiers.
+  const PART_VISIBLE = 0.66;
+  const previewH = realHeight * scale * PART_VISIBLE;
 
   return (
     <LayoutPreviewErrorBoundary>
-      <div style={{
+      <div ref={boite} style={{
         width: "100%",
-        height: previewH,
+        height: previewH || 120,
         overflow: "hidden",
         position: "relative",
         background: "#f8f8f8",
@@ -3377,8 +3413,9 @@ function LayoutPreview({ kind, active, locale = "fr" }) {
           transformOrigin: "top left",
           position: "absolute",
           top: 0,
-          left: "50%",
-          marginLeft: -previewW / 2,
+          // La vignette fait exactement la largeur de la carte : plus rien a
+          // recentrer, et donc plus rien a couper sur les bords.
+          left: 0,
           pointerEvents: "none",
           userSelect: "none",
         }}>
