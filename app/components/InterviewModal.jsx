@@ -1494,7 +1494,7 @@ export default function InterviewModal({
         </div>
 
         {/* Body scrollable */}
-        <div style={{
+        <div className="nuvi-sheet-corps" style={{
           overflowY:"auto",
           padding:"18px 24px 24px",
           flex:1,

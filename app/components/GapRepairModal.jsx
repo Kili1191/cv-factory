@@ -235,7 +235,7 @@ export default function GapRepairModal({
           </button>
         </div>
 
-        <div style={{
+        <div className="nuvi-sheet-corps" style={{
           overflowY:"auto",
           padding:"18px 24px 36px",
           flex:1,
