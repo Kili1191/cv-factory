@@ -252,7 +252,7 @@ export default function Landing({ lang = "en" }) {
   );
 
   return (
-    <div style={{ fontFamily: Sans, color: Ink, overflowX: "hidden" }}>
+    <div className="nuvi-page" style={{ fontFamily: Sans, color: Ink }}>
       {/* Manchette, la meme que dans l'application : les deux surfaces
           doivent se lire comme un seul produit. */}
       <header style={{

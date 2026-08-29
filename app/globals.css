@@ -1073,3 +1073,33 @@ html {
   }
   .nuvi-choix-cartes > button { height: 100%; }
 }
+
+/* ============================================================
+ * COUPER LA PAGE SANS TUER LES ANIMATIONS
+ * ============================================================
+ *
+ * Le titre "Les metiers pour qui personne n'ecrit de modele" s'affichait
+ * gris sur une page ou tout le reste etait noir. La couleur n'y etait pour
+ * rien : mesuree, elle valait rgb(10,10,10), soit du noir. C'est la section
+ * entiere qui etait a 0.52 d'opacite, et qui y restait quel que soit le
+ * defilement.
+ *
+ * La cause tient a une ligne. Le document de la section "voila ce qui en
+ * sort" deborde volontairement par la droite, il fallait donc couper la
+ * page : la vitrine portait overflow-x: hidden. Mais la specification dit
+ * que si un axe vaut hidden et l'autre visible, l'autre est ramene a auto.
+ * Ce conteneur devenait donc defilant en hauteur. Or animation-timeline:
+ * view() se mesure contre le conteneur de defilement le plus proche, et
+ * celui-la ne defile jamais. Les quatre sections lisaient leur progression
+ * sur une regle immobile et restaient figees a mi-chemin, d'autant plus
+ * pales qu'elles etaient basses : 1, 1, 0.86, 0.52.
+ *
+ * overflow-x: clip coupe sans creer de conteneur de defilement. La
+ * declaration hidden reste au-dessus comme repli : un navigateur qui ignore
+ * clip la garde, et celui-la ne connait pas non plus view() - il recoit
+ * donc opacity: 1 par la regle de base, sans animation et sans degat.
+ */
+.nuvi-page {
+  overflow-x: hidden;
+  overflow-x: clip;
+}
