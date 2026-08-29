@@ -101,6 +101,17 @@ function ausculter(page, tactile, TOUCHE_MIN) {
         }
       }
       // Deborde du bord droit : inatteignable, quelle que soit la largeur.
+      //
+      // Le lien d'evitement fait exception, et c'est sa definition meme : il
+      // doit etre le premier arret de tabulation et ne se montrer qu'une fois
+      // focalise. On ne peut pas le cacher avec display:none ni
+      // visibility:hidden, les deux le retireraient de l'ordre de tabulation,
+      // c'est-a-dire de ce qu'il sert a offrir. Il est donc pose hors du cadre.
+      //
+      // L'exemption n'est pas un silence : crash-test-avant-mise-en-ligne
+      // verifie qu'une fois focalise il revient dans l'ecran, et que sa cible
+      // fait bien 44px. La regle generale reste entiere pour tout le reste.
+      if (el.getAttribute("data-evitement")) continue;
       if (r.left > vp.w + 1 || r.right < -1) {
         deborde.push({ t: t || el.tagName.toLowerCase(), x: Math.round(r.left) });
       }
