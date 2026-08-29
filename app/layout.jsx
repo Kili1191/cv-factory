@@ -152,7 +152,7 @@ export default function RootLayout({ children }) {
             Au clavier, atteindre le contenu demandait de traverser la
             manchette a chaque page. Ce lien ne se voit qu'une fois focalise,
             et c'est la premiere chose que rencontre la touche Tab. */}
-        <a href="#contenu" className="nuvi-evitement">
+        <a href="#contenu" className="nuvi-evitement" data-evitement="1">
           Skip to content
         </a>
 

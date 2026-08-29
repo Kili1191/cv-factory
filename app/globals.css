@@ -321,10 +321,29 @@ body.cvf-dark.nuvi-grain::after {
   .nuvi-scroll-in {
     animation: nuviEnScene linear both;
     animation-timeline: view();
-    /* L'animation se joue entre le moment ou le bloc entre par le bas et
-       celui ou il a parcouru 42% de la fenetre. Au-dela, il est pose : on
-       ne veut pas que du texte bouge encore pendant qu'on le lit. */
-    animation-range: entry 0% cover 42%;
+    /* LA PLAGE S'ARRETE A 30%, ET CE CHIFFRE A ETE MESURE
+     *
+     * Elle valait 42%. Le titre gris signale au debut de cette session avait
+     * deux causes, pas une : un conteneur de defilement immobile, corrige
+     * ailleurs, ET cette plage trop longue. La premiere corrigee, la seconde
+     * est restee, et elle a empire a mesure que la page s'allongeait.
+     *
+     * Mesure a 42%, chaque section amenee en position de lecture :
+     *   0.85  la meme personne, ecrite pour la machine
+     *   0.53  voila ce qui en sort
+     *   0.29  les metiers pour qui personne n'ecrit de modele
+     *   0.59  jusqu'au bout
+     *   0.63  comment on verifie
+     *
+     * Cinq sections sur six s'affichaient donc delavees a l'endroit meme ou
+     * on les lit. "cover 42%" veut dire 42% de la traversee complete du bloc,
+     * qui est longue pour une section haute : plus la section grandit, plus
+     * l'animation finit tard, et une page qui s'enrichit se degrade toute
+     * seule.
+     *
+     * A 30%, les six sont pleines. Essayee aussi, "entry 100%" en laissait
+     * une a 0.87 : la mesure tranche, pas l'intuition. */
+    animation-range: entry 0% cover 30%;
   }
   .nuvi-trait {
     animation: nuviTrait linear both;
@@ -1230,6 +1249,12 @@ html {
   left: -9999px;
   top: 0;
   z-index: 10000;
+  /* 44px de haut au minimum, comme toute commande de l'interface. Le
+     remplissage seul donnait 39px : sous ce plancher, le doigt couvre plus
+     que la cible. Un lien qu'on atteint au clavier se touche aussi. */
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
   padding: 12px 18px;
   background: var(--nuvi-ink);
   color: var(--nuvi-cream);

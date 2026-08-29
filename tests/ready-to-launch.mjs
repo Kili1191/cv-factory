@@ -260,6 +260,19 @@ function ausculter(page, mob, TOUCHE_MIN) {
         const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         if (cx < 0 || cx > vp.w || cy < -1 || cy > vp.h + 1) {
           // Hors ecran verticalement peut simplement vouloir dire "plus bas".
+          // LE LIEN D'EVITEMENT EST HORS DE L'ECRAN, ET C'EST SA DEFINITION
+          //
+          // Il doit etre le premier arret de tabulation et ne se montrer
+          // qu'une fois focalise. On ne peut pas le cacher avec display:none
+          // ni visibility:hidden : les deux le retireraient de l'ordre de
+          // tabulation, c'est-a-dire exactement ce qu'il sert a offrir. Il est
+          // donc deplace hors du cadre, et ce controle le voyait comme une
+          // commande injoignable.
+          //
+          // L'exemption ne se contente pas de le taire : le controle plus bas
+          // verifie qu'une fois focalise il revient bien dans l'ecran. Une
+          // exemption sans preuve serait juste un test qu'on a fait taire.
+          if (el.getAttribute("data-evitement")) continue;
           if (cx < 0 || cx > vp.w) dehors.push({ t: t || el.tagName.toLowerCase(), x: Math.round(cx) });
         }
       }
@@ -315,6 +328,7 @@ export async function run() {
           // Ecran d'arrivee compris, puis chaque destination.
           const etapes = ["(arrivee)", ...liste];
           let explorees = 0;
+    let evitementVerifie = false;
           for (const etape of etapes) {
             if (etape !== "(arrivee)") {
               if (A_NE_PAS_CLIQUER.test(etape)) continue;
@@ -342,6 +356,37 @@ export async function run() {
               if (deja) { deja.ecrans.add(etape); }
               else { petitsGroupes.set(cle, { ...p, ecrans: new Set([etape]) }); }
             }
+            // LA CONTREPARTIE DE L'EXEMPTION
+            //
+            // Le lien d'evitement est exempte du controle des commandes hors
+            // ecran, parce que c'est sa definition. Il faut donc verifier ce
+            // qu'on lui accorde : focalise, il doit revenir dans l'ecran.
+            // Sinon on aurait juste fait taire un test.
+            if (appareil.mob && !evitementVerifie) {
+              const revient = await page.evaluate(() => {
+                const a = document.querySelector("[data-evitement]");
+                if (!a) return { absent: true };
+                a.focus();
+                const r = a.getBoundingClientRect();
+                return { x: Math.round(r.left), largeur: Math.round(r.width),
+                         focalise: document.activeElement === a };
+              });
+              evitementVerifie = true;
+              if (revient.absent) {
+                failures.push(
+                  "le lien d'evitement a disparu. Au clavier, atteindre le "
+                  + "contenu redemande de traverser toute la manchette."
+                );
+              } else if (!revient.focalise || revient.x < 0 || revient.largeur < 1) {
+                failures.push(
+                  "le lien d'evitement ne revient pas dans l'ecran une fois "
+                  + `focalise (x=${revient.x}, largeur=${revient.largeur}). Il est `
+                  + "donc hors de portee pour de bon, et son exemption du "
+                  + "controle des commandes hors ecran n'est plus justifiee."
+                );
+              }
+            }
+
             if (vu.dehors.length) {
               failures.push(
                 `${ou} > ${etape} : ${vu.dehors.length} commande(s) hors de l'ecran `
