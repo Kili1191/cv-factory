@@ -1272,3 +1272,25 @@ html {
   --t-display: clamp(30px, 6.6vw, 84px); /* le titre le plus large */
   --t-hero: clamp(38px, 9vw, 116px);     /* le titre de la page, une fois */
 }
+
+/* LE REPLI DU DEFILEMENT ANIME
+ *
+ * Voir app/components/RevelationDeSecours.jsx pour le raisonnement complet.
+ * En resume : les revelations de la vitrine vivent dans un @supports
+ * (animation-timeline: view()). Les navigateurs qui ne connaissent pas cette
+ * propriete, Safari compris, recevaient opacity: 1 et aucun mouvement.
+ *
+ * L'attribut data-revelation n'est pose QUE par le composant, une fois qu'il
+ * tourne et qu'il a arme l'observateur. Sans JavaScript, aucun bloc ne se
+ * cache : une page immobile vaut mille fois mieux qu'une page blanche.
+ */
+[data-revelation="js"] .nuvi-scroll-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 620ms cubic-bezier(.22, 1, .36, 1),
+              transform 620ms cubic-bezier(.22, 1, .36, 1);
+}
+[data-revelation="js"] .nuvi-scroll-in.nuvi-vu {
+  opacity: 1;
+  transform: none;
+}

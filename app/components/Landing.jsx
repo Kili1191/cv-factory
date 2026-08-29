@@ -7,6 +7,8 @@ import ScanEssai from "./ScanEssai";
 import Morph from "./Morph";
 import LandingCV from "./LandingCV";
 import { Magnetic } from "./motion";
+// Le defilement anime pour les navigateurs sans animation-timeline.
+import RevelationDeSecours from "./RevelationDeSecours";
 
 /**
  * LA VITRINE
@@ -301,6 +303,7 @@ export default function Landing({ lang = "en" }) {
 
   return (
     <div className="nuvi-page" style={{ fontFamily: Sans, color: Ink }}>
+      <RevelationDeSecours />
       {/* Manchette, la meme que dans l'application : les deux surfaces
           doivent se lire comme un seul produit. */}
       <header style={{
