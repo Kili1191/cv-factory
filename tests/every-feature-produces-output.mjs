@@ -84,7 +84,19 @@ const FEATURES = [
     // il le peut depuis que la mesure est locale et immediate.
     name: "Score recruteur", nav: "Score & Audits", sub: "Score recruteur",
     cta: null,
-    expect: /Ce CV tient|une faiblesse nette|fragile devant un logiciel|le tri l'ecartera|presque rien a ranger/,
+    // LE PANNEAU DIT MAINTENANT DEUX CHOSES, PAS UNE MOYENNE
+    //
+    // Il affichait un verdict global unique, dont ce motif couvrait les cinq
+    // bandes. Ce verdict a ete retire : il moyennait la lecture machine et la
+    // lecture humaine, et la moyenne se contredisait avec elles a l'ecran
+    // (96 et 45 affiches cote a cote, et 56 juste en dessous annoncant
+    // "fragile devant les logiciels de tri" alors que les six analyseurs
+    // lisaient le CV en entier).
+    //
+    // Ce que ce test garde est inchange : le panneau produit un resultat
+    // mesure, pas du texte bouchon. Le motif couvre donc les paliers des deux
+    // lectures, et garde les anciens pour ne pas dependre d'un seul libelle.
+    expect: /Lu proprement partout|Lu, sauf par les plus stricts|En partie perdu|Perdu avant d'atteindre un humain|Donne une raison d'appeler|Solide, pas encore frappant|Lisible mais interchangeable|Rien a quoi se raccrocher|Ce CV tient|une faiblesse nette|fragile devant un logiciel|le tri l'ecartera|presque rien a ranger/,
   },
   {
     name: "Audit ATS", nav: "Score & Audits", sub: "Audit ATS",

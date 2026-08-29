@@ -12,7 +12,7 @@
 // fonctionnalite n'existe pas sur telephone), et le texte lu revient dans la
 // zone de saisie comme si la personne l'avait colle.
 
-import { startServer, stopServer, launchBrowser, answerLanguageIfAsked } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, answerLanguageIfAsked, BASE_URL } from "./lib/harness.mjs";
 
 const APP = (b) => b + "/app";
 
@@ -38,7 +38,7 @@ export async function run() {
       }] }),
     }));
 
-    await page.goto(APP(process.env.BASE_URL || "http://127.0.0.1:4311"),
+    await page.goto(APP(BASE_URL),
       { waitUntil: "domcontentloaded" });
     await answerLanguageIfAsked(page, "en");
     await page.waitForTimeout(2500);

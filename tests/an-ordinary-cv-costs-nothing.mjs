@@ -12,7 +12,7 @@
 // Il verifie aussi l'autre face : un texte que la lecture ne sait pas ranger
 // doit repasser par le modele plutot que d'afficher un CV a moitie vide.
 
-import { startServer, stopServer, launchBrowser, seedApp, answerLanguageIfAsked } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, seedApp, answerLanguageIfAsked, BASE_URL } from "./lib/harness.mjs";
 
 const CV_ORDINAIRE = `Amara Okafor
 Care Assistant
@@ -75,7 +75,12 @@ export async function run() {
   const failures = [];
   const server = await startServer();
   const browser = await launchBrowser();
-  const base = process.env.BASE_URL || "http://127.0.0.1:4311";
+  // LE PORT NE SE RECOPIE PAS
+  // Ces deux lignes portaient 4311 en dur. La CI reglant TEST_PORT a 4311,
+  // elles passaient par coincidence, et cassaient des qu'on lance la suite
+  // sur un autre port - ce qui arrive des qu'un serveur occupe deja celui-la.
+  // Le harnais calcule deja l'adresse depuis TEST_PORT : on la lui demande.
+  const base = BASE_URL;
 
   try {
     // --- 1. Le CV ordinaire : local, gratuit, et juste ------------------
