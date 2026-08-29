@@ -1103,3 +1103,20 @@ html {
   overflow-x: hidden;
   overflow-x: clip;
 }
+
+/* LA LISTE DE VERIFICATION DE LA VITRINE
+   Sur telephone, le fait et son explication s'empilent : deux colonnes de
+   17 caracteres ne se lisent pas. A partir de 760px ils se mettent cote a
+   cote, le fait a gauche, ce qu'on en mesure a droite. */
+.nuvi-verif-ligne {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+}
+@media (min-width: 760px) {
+  .nuvi-verif-ligne {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+    gap: 24px;
+    align-items: baseline;
+  }
+}

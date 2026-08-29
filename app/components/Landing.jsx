@@ -45,6 +45,16 @@ const T = {
     s2body: "A tracking system does not read your CV. It extracts fields. What it cannot place, it drops - and what it drops was never in front of a human.",
     s3kicker: "Who this is for",
     s3title: "The jobs nobody writes templates for.",
+    s35kicker: "How we check",
+    s35title: "We do not guess. We export, and we read it back.",
+    s35body: "Every CV tool that sells you an \u201cATS score\u201d only has your PDF, so it guesses what you meant. Nuvi holds your CV as data before it builds the file. So it exports the PDF, re-reads it with real parsers, and compares field by field. Either the employer is found, or it is not.",
+    s35rows: [
+      ["Your name and contact", "Found by a regex, or lost. Nothing in between."],
+      ["Each employer and job title", "Compared to what you actually wrote, word for word."],
+      ["Every date range", "A parser needs two markers. \u201cSince forever\u201d is not one."],
+      ["The section headings", "A parser matches a known list. \u201cWhere I have been\u201d is never on it."],
+    ],
+    s35foot: "Six parser profiles, from the strictest to the most forgiving. The number does not move: the same CV gives the same result tomorrow.",
     s3body: "CV tools are built for engineers and consultants. Most people are not. Nuvi is written for the shifts, the rounds and the rotas.",
     finalTitle: "Your turn.",
     finalSub: "Paste a job ad. Get the CV that matches it.",
@@ -84,6 +94,16 @@ const T = {
     s2body: "Un logiciel de tri ne lit pas ton CV. Il en extrait des champs. Ce qu'il n'arrive pas a ranger, il l'ecarte - et ce qu'il ecarte n'est jamais passe devant un humain.",
     s3kicker: "Pour qui",
     s3title: "Les metiers pour qui personne n'ecrit de modele.",
+    s35kicker: "Comment on verifie",
+    s35title: "On ne devine pas. On exporte, et on relit.",
+    s35body: "Tous les outils qui te vendent un \u00ab score ATS \u00bb n'ont que ton PDF : ils devinent ce que tu voulais dire. Nuvi detient ton CV sous forme de donnees avant de fabriquer le fichier. Il exporte donc le PDF, le relit avec de vrais analyseurs, et compare champ par champ. Soit l'employeur est retrouve, soit il ne l'est pas.",
+    s35rows: [
+      ["Ton nom et tes coordonnees", "Retrouves, ou perdus. Rien entre les deux."],
+      ["Chaque employeur et chaque intitule", "Compares mot a mot a ce que tu as ecrit."],
+      ["Chaque periode", "Un analyseur cherche deux reperes. \u00ab Depuis toujours \u00bb n'en est pas un."],
+      ["Les intitules de rubrique", "Un analyseur compare a une liste connue. \u00ab Mon parcours \u00bb n'y figure pas."],
+    ],
+    s35foot: "Six profils d'analyseurs, du plus strict au plus tolerant. Le chiffre ne bouge pas : le meme CV donne le meme resultat demain.",
     s3body: "Les outils de CV sont faits pour les ingenieurs et les consultants. La plupart des gens ne le sont pas. Nuvi est ecrit pour les services, les tournees et les plannings.",
     finalTitle: "A toi.",
     finalSub: "Colle une annonce. Recupere le CV qui lui correspond.",
@@ -480,6 +500,65 @@ export default function Landing({ lang = "en" }) {
             color: Muted, maxWidth: 42 + "ch", margin: 0,
           }}>{t.s3body}</p>
         </div>
+      </section>
+
+      {/* ===== 3bis. COMMENT ON VERIFIE =====
+          La page montrait le probleme et le public, jamais la methode. Or
+          c'est la seule chose que les concurrents ne peuvent pas copier en
+          changeant leur texte : ils n'ont que le PDF de la personne, et
+          doivent deviner ce qu'elle voulait dire. Nuvi detient le CV sous
+          forme de donnees AVANT de fabriquer le fichier, donc il peut
+          exporter, relire, et comparer champ par champ.
+
+          Ce qui est affirme ici est verifiable, et rien de plus. Pas de
+          "score Workday" : cette note n'existe pas, ces logiciels ne notent
+          pas un CV seul et n'affichent aucun chiffre au candidat. Pas de
+          "seul site au monde" non plus : un concurrent qui ferait la meme
+          chose transformerait la promesse en mensonge, et la promesse est
+          deja assez forte sans superlatif. */}
+      <section className="nuvi-scroll-in" style={{
+        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
+        borderBottom: "1px solid " + Hair,
+        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
+      }}>
+        {eyebrow(t.s35kicker)}
+        <div className="nuvi-duo">
+          <h2 className="nuvi-titre-geant" style={{
+            fontFamily: Serif, fontWeight: 400, color: Ink,
+            fontSize: "clamp(28px, 5.4vw, 68px)", lineHeight: 1.04,
+            letterSpacing: "-0.035em", margin: 0,
+          }}>{t.s35title}</h2>
+          <p style={{
+            fontSize: "clamp(14px, 1.6vw, 18px)", lineHeight: 1.62,
+            color: Muted, maxWidth: 46 + "ch", margin: 0,
+          }}>{t.s35body}</p>
+        </div>
+
+        {/* Ce que l'analyseur retrouve, ligne par ligne. Une liste plutot
+            qu'un paragraphe : chaque ligne est un fait verifiable, et les
+            aligner les rend comparables au lieu de les noyer. */}
+        <div style={{ marginTop: "clamp(28px, 5vh, 54px)" }}>
+          {t.s35rows.map(([quoi, comment], i) => (
+            <div key={quoi} className="nuvi-verif-ligne" style={{
+              borderTop: "1px solid " + Hair,
+              paddingTop: 16, paddingBottom: 16,
+            }}>
+              <div style={{
+                fontFamily: Sans, fontSize: "clamp(14px, 1.5vw, 17px)",
+                fontWeight: 600, color: Ink, letterSpacing: "-0.01em",
+              }}>{quoi}</div>
+              <div style={{
+                fontSize: "clamp(13px, 1.4vw, 16px)", lineHeight: 1.55,
+                color: Muted,
+              }}>{comment}</div>
+            </div>
+          ))}
+        </div>
+
+        <p style={{
+          marginTop: 26, fontSize: "clamp(13px, 1.4vw, 16px)",
+          lineHeight: 1.6, color: Muted, maxWidth: 62 + "ch",
+        }}>{t.s35foot}</p>
       </section>
 
       {/* ===== 4. LA DEMANDE ===== */}
