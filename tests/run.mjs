@@ -19,6 +19,7 @@ const SUITES = [
   ["une offre trouvee devient une candidature", "./job-search-becomes-an-application.mjs"],
   ["l'extension lit une annonce", "./extension-reads-a-job-ad.mjs"],
   ["l'assistant d'entretien repond", "./live-assist-answers.mjs"],
+  ["l'assistant live ne se repond pas a lui-meme", "./the-live-assist-does-not-answer-itself.mjs"],
   ["Gmail rend au suivi son vrai etat", "./gmail-reads-the-replies.mjs"],
   ["l'app s'installe sur l'ecran d'accueil", "./installs-on-the-home-screen.mjs"],
   ["l'accueil ne cache aucun texte", "./the-home-screen-hides-no-text.mjs"],

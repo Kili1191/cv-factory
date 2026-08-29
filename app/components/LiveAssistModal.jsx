@@ -36,6 +36,15 @@ export default function LiveAssistModal({
   const [cues, setCues] = useState("");
   const [thinking, setThinking] = useState(false);
   const [support, setSupport] = useState("unknown");
+  // POURQUOI L'ERREUR EST UN ETAT ET NON UN SILENCE
+  //
+  // onerror se contentait de couper l'ecoute. Quand le navigateur refuse le
+  // micro, ou que son service de transcription est injoignable, il ne se
+  // passait donc RIEN : le bouton revenait a "Commencer a ecouter" et
+  // l'assistant paraissait casse sans raison. C'est ce qu'on voit sur
+  // ordinateur, ou la permission se demande une fois par site et ou le
+  // service passe par le reseau. Le motif est maintenant dit.
+  const [micErreur, setMicErreur] = useState("");
   const [manual, setManual] = useState("");
   // Tant que le poste n'est pas confirme, on n'ecoute pas. Se tromper de
   // poste en direct est pire que de perdre trois secondes a le choisir.
@@ -61,6 +70,13 @@ export default function LiveAssistModal({
     ask: "Get cues",
     noSupport: "This browser cannot transcribe. Type the question instead.",
     thinking: "...",
+    // Chaque motif dit quoi faire, pas seulement ce qui a rate.
+    micRefuse: "The microphone is blocked for this site. Allow it in the address bar, then start listening again.",
+    micAbsent: "No microphone found. Plug one in, or type the question below.",
+    micReseau: "The browser could not reach its transcription service. Type the question below, it works the same.",
+    micRien: "Nothing was heard. Start listening again, or type the question.",
+    micAutre: "Listening stopped. Start again, or type the question below.",
+    micRepris: "Mic off while you answer. Tap to catch the next question.",
   } : {
     title: "Assistant live",
     sub: "Il ecoute et te donne trois reperes. Jamais un texte a lire.",
@@ -71,6 +87,12 @@ export default function LiveAssistModal({
     ask: "Donne-moi les reperes",
     noSupport: "Ce navigateur ne sait pas transcrire. Tape la question a la place.",
     thinking: "...",
+    micRefuse: "Le micro est bloque pour ce site. Autorise-le dans la barre d'adresse, puis relance l'ecoute.",
+    micAbsent: "Aucun micro trouve. Branche-en un, ou tape la question ci-dessous.",
+    micReseau: "Le navigateur n'a pas pu joindre son service de transcription. Tape la question ci-dessous, ca marche pareil.",
+    micRien: "Rien n'a ete entendu. Relance l'ecoute, ou tape la question.",
+    micAutre: "L'ecoute s'est arretee. Relance-la, ou tape la question ci-dessous.",
+    micRepris: "Micro coupe pendant que tu reponds. Touche pour attraper la question suivante.",
   };
 
   // Le CV ENTIER, pas un extrait. Un recruteur peut demander n'importe quel
@@ -195,6 +217,7 @@ export default function LiveAssistModal({
       && (window.SpeechRecognition || window.webkitSpeechRecognition);
     if (!Ctor) { setSupport("no"); return; }
     setSupport("yes");
+    setMicErreur("");
 
     const rec = new Ctor();
     rec.continuous = true;
@@ -211,9 +234,31 @@ export default function LiveAssistModal({
       // On n'attend pas un long silence : des que ca s'arrete brievement, on
       // considere la question posee et on lance la reponse.
       if (silenceRef.current) clearTimeout(silenceRef.current);
-      silenceRef.current = setTimeout(() => { askFor(clean); }, SILENCE_MS);
+      silenceRef.current = setTimeout(() => {
+        askFor(clean);
+        // ON COUPE LE MICRO DES QU'UNE QUESTION EST PARTIE
+        //
+        // L'ecoute etait continue, y compris pendant que les reperes
+        // s'affichaient. Or a ce moment precis la personne LIT ces reperes a
+        // voix haute : c'est tout l'objet de l'ecran. Le micro entendait donc
+        // sa propre reponse, la prenait pour une nouvelle question, et
+        // remplacait a l'ecran ce qu'elle etait en train de dire.
+        //
+        // C'est une boucle : plus l'assistant sert, plus il se casse. Aucun
+        // reglage de duree de silence ne la corrige, parce que la voix qui
+        // parle est justement celle qu'on attend.
+        //
+        // Le micro s'arrete donc a chaque question. On le relance d'un geste
+        // pour la suivante, ce qui est aussi ce qu'on veut dans un entretien :
+        // personne ne souhaite un micro ouvert en permanence.
+        try { rec.stop(); } catch (err) { /* deja arrete */ }
+        setListening(false);
+      }, SILENCE_MS);
     };
-    rec.onerror = () => { setListening(false); };
+    rec.onerror = (e) => {
+      setListening(false);
+      setMicErreur((e && e.error) || "unknown");
+    };
     rec.onend = () => { setListening(false); };
 
     try { rec.start(); recRef.current = rec; setListening(true); }
@@ -591,6 +636,25 @@ export default function LiveAssistModal({
 
       {support === "no" && (
         <p style={{ color: "#ffb4a2", fontSize: 13, margin: "12px 0 0" }}>{T.noSupport}</p>
+      )}
+
+      {/* CE QUI A EMPECHE L'ECOUTE, DIT SUR PLACE
+          Sans ce bloc, un micro refuse ou un service injoignable rendait
+          simplement le bouton inerte. La personne est en entretien : elle n'a
+          pas le temps de chercher pourquoi, il faut lui dire ou cliquer. */}
+      {micErreur && (
+        <div role="status" aria-live="polite" style={{
+          marginTop: 14, padding: "12px 14px", borderRadius: 12,
+          background: "rgba(255,95,95,.12)",
+          border: "1px solid rgba(255,95,95,.3)",
+          color: "#ffd9d9", fontSize: 14, lineHeight: 1.5,
+        }}>
+          {micErreur === "not-allowed" || micErreur === "service-not-allowed" ? T.micRefuse
+            : micErreur === "audio-capture" ? T.micAbsent
+            : micErreur === "network" ? T.micReseau
+            : micErreur === "no-speech" ? T.micRien
+            : T.micAutre}
+        </div>
       )}
 
       <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
