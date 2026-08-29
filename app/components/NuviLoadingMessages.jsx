@@ -28,8 +28,9 @@ export default function NuviLoadingMessages({
   user = {},
   cycleDuration = 15,
   className = '',
+  lang = 'fr',
 }) {
-  const phases = useMemo(() => getPhases(series, user), [series, user]);
+  const phases = useMemo(() => getPhases(series, user, lang), [series, user, lang]);
   const [currentPhaseIdx, setCurrentPhaseIdx] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
   const startTimeRef = useRef(Date.now());
@@ -67,7 +68,7 @@ export default function NuviLoadingMessages({
     <>
       <style>{messagesStyles}</style>
       <div className={`nuvi-loading-messages ${className}`}>
-        <div className="nuvi-lm-series">{getSeriesLabel(series)}</div>
+        <div className="nuvi-lm-series">{getSeriesLabel(series, lang)}</div>
         <div
           className="nuvi-lm-stack"
           style={{ opacity: isVisible ? 1 : 0 }}
@@ -80,51 +81,71 @@ export default function NuviLoadingMessages({
   );
 }
 
-function getSeriesLabel(series) {
-  const labels = {
-    generation: 'Génération',
-    audit: 'Analyse',
-    match: 'Match',
-    interview: 'Entretien',
-    generic: 'En cours',
-  };
-  return labels[series] || labels.generic;
+function getSeriesLabel(series, lang) {
+  const l = ETIQUETTES[lang] || ETIQUETTES.fr;
+  return l[series] || l.generic;
 }
 
-// Helper de personnalisation avec gestion du pluriel pour "annees"
-function p(template, fallback, user) {
+const ETIQUETTES = {
+  fr: { generation: 'Génération', audit: 'Analyse', match: 'Match',
+        interview: 'Entretien', generic: 'En cours' },
+  en: { generation: 'Generating', audit: 'Analysis', match: 'Match',
+        interview: 'Interview', generic: 'Working' },
+};
+
+// Personnalisation, avec l'accord qui va avec.
+//
+// L'ancienne version rattrapait le pluriel par une regex sur le texte deja
+// rendu : elle remplacait "1 ans" par "1 an" et s'arretait la. L'adjectif
+// restait au pluriel, et "1 an condensés." s'affichait tel quel a l'ecran.
+// Un modele ne peut pas s'accorder apres coup : on en ecrit donc deux, et
+// c'est le nombre qui choisit.
+function p(modeles, fallback, user) {
   try {
-    let result = template;
-    let hasMissing = false;
-    result = template.replace(/\{(\w+)\}/g, (_, key) => {
-      if (user[key] !== null && user[key] !== undefined && user[key] !== '') {
-        return user[key];
-      }
-      hasMissing = true;
-      return '';
+    const brut = user.annees;
+    const n = (brut === undefined || brut === null || brut === '')
+      ? null : parseInt(brut, 10);
+    const modele = (typeof modeles === 'string')
+      ? modeles
+      : ((n === 0 || n === 1) ? modeles.un : modeles.plusieurs);
+
+    let manquant = false;
+    const sortie = String(modele).replace(/\{(\w+)\}/g, (_, cle) => {
+      const v = user[cle];
+      if (v === null || v === undefined || v === '') { manquant = true; return ''; }
+      return v;
     });
-    // Pluriel correct : "1 an" / "5 ans", "1 année" / "5 années"
-    if (!hasMissing && user.annees !== undefined && user.annees !== null && user.annees !== '') {
-      const n = parseInt(user.annees, 10);
-      if (n === 1 || n === 0) {
-        result = result.replace(/\b(\d+) ans\b/gi, '$1 an');
-        result = result.replace(/\b(\d+) années\b/gi, '$1 année');
-      }
-    }
-    return hasMissing ? fallback : result;
+    return manquant ? fallback : sortie;
   } catch {
     return fallback;
   }
 }
 
-function getPhases(series, user) {
-  const seriesMap = {
+// LA COPIE DES ATTENTES, DANS LES DEUX LANGUES
+//
+// Elle n'existait qu'en francais, et le composant n'acceptait meme pas de
+// langue : quelqu'un qui avait choisi l'anglais au premier ecran voyait
+// "Génération" et "C'est ce que les meilleurs savent faire." a chaque
+// attente. Un des deux appels passait deja lang, silencieusement ignore.
+//
+// L'anglais n'est pas une traduction ligne a ligne du francais. Ces phrases
+// visent quelqu'un qui lit vite, entre deux services : elles gardent le
+// rythme court plutot que la formulation exacte.
+function getPhases(series, user, lang) {
+  const langue = SERIES[lang] ? lang : 'fr';
+  const seriesMap = SERIES[langue](user);
+  return seriesMap[series] || seriesMap.generic;
+}
+
+const SERIES = {
+  fr: (user) => ({
     // ======== GÉNÉRATION ========
     // Cible : quelqu'un qui clique pour générer son CV
     // Émotion : excitation + appréhension du résultat
     generation: [
       { from: 0,    to: 0.18,
-        line1: p("{annees} ans condensés.", "Ton parcours condensé.", user),
+        line1: p({ un: "{annees} an condensé.", plusieurs: "{annees} ans condensés." },
+                 "Ton parcours condensé.", user),
         line2: "C'est ce que les meilleurs savent faire." },
       { from: 0.18, to: 0.34,
         line1: "Le candidat moyen postule.",
@@ -142,10 +163,6 @@ function getPhases(series, user) {
         line1: "Cette fois, il va te ressembler.",
         line2: "Et c'est ça qui change tout." },
     ],
-
-    // ======== AUDIT ========
-    // Cible : quelqu'un qui veut savoir pourquoi ses candidatures ratent
-    // Émotion : anxiété + soulagement de comprendre enfin
     audit: [
       { from: 0,    to: 0.18,
         line1: "Sept secondes.",
@@ -166,10 +183,6 @@ function getPhases(series, user) {
         line1: "Ce que tu vas lire dans 3 secondes",
         line2: "vaut plus qu'une heure de coaching." },
     ],
-
-    // ======== MATCH ========
-    // Cible : quelqu'un qui veut adapter son CV à une offre
-    // Émotion : ciblage + précision chirurgicale
     match: [
       { from: 0,    to: 0.18,
         line1: "Cette offre.",
@@ -181,7 +194,8 @@ function getPhases(series, user) {
         line1: "Chaque mot-clé compte.",
         line2: "Chaque silence aussi." },
       { from: 0.50, to: 0.66,
-        line1: p("Avec {annees} ans d'expérience", "Avec ton expérience", user),
+        line1: p({ un: "Avec {annees} an d'expérience", plusieurs: "Avec {annees} ans d'expérience" },
+                 "Avec ton expérience", user),
         line2: "tu mérites un CV taillé sur mesure." },
       { from: 0.66, to: 0.84,
         line1: "Les ATS filtrent 75% des CV en moins d'une seconde.",
@@ -190,10 +204,6 @@ function getPhases(series, user) {
         line1: "Dans quelques secondes",
         line2: "ce poste sera moins une chance qu'une cible." },
     ],
-
-    // ======== INTERVIEW ========
-    // Cible : quelqu'un qui se prépare à un entretien
-    // Émotion : préparation + confiance acquise
     interview: [
       { from: 0,    to: 0.18,
         line1: "Le candidat préparé",
@@ -214,10 +224,6 @@ function getPhases(series, user) {
         line1: "Demain, dans la salle",
         line2: "tu seras content d'avoir fait ça." },
     ],
-
-    // ======== GENERIC ========
-    // Cible : tout autre traitement (Coach, traduction, etc.)
-    // Émotion : confiance + sensation de momentum
     generic: [
       { from: 0,    to: 0.18,
         line1: "Les grands tournants ne s'annoncent jamais.",
@@ -238,9 +244,113 @@ function getPhases(series, user) {
         line1: "Le résultat dans quelques secondes.",
         line2: "Ce que tu en feras, c'est à toi." },
     ],
-  };
-  return seriesMap[series] || seriesMap.generic;
-}
+  }),
+
+  en: (user) => ({
+    generation: [
+      { from: 0,    to: 0.18,
+        line1: p({ un: "{annees} year, distilled.", plusieurs: "{annees} years, distilled." },
+                 "Your whole run of work, distilled.", user),
+        line2: "That is what the best ones do." },
+      { from: 0.18, to: 0.34,
+        line1: "The average candidate applies.",
+        line2: "The right candidate gets read." },
+      { from: 0.34, to: 0.50,
+        line1: "Somewhere, right now,",
+        line2: "your next employer is opening an inbox." },
+      { from: 0.50, to: 0.66,
+        line1: p("Nobody tells a {secteur} story", "Nobody tells your trade's story", user),
+        line2: "like the person who actually lived it." },
+      { from: 0.66, to: 0.84,
+        line1: "How many times have you thought",
+        line2: "that your CV was not really you?" },
+      { from: 0.84, to: 1.0,
+        line1: "This time, it will be.",
+        line2: "And that is what changes everything." },
+    ],
+    audit: [
+      { from: 0,    to: 0.18,
+        line1: "Seven seconds.",
+        line2: "That is all a recruiter gives you." },
+      { from: 0.18, to: 0.34,
+        line1: "What they see, what they miss, what puts them off.",
+        line2: "You will know it before they do." },
+      { from: 0.34, to: 0.50,
+        line1: "Nobody ever explained to you",
+        line2: "why your CV kept ending up in the bin." },
+      { from: 0.50, to: 0.66,
+        line1: "No flattery. No going easy on you.",
+        line2: "An honest read, the way an ally gives it." },
+      { from: 0.66, to: 0.84,
+        line1: "The people who land the good jobs",
+        line2: "got this read before everyone else." },
+      { from: 0.84, to: 1.0,
+        line1: "What you are about to read in 3 seconds",
+        line2: "is worth more than an hour of coaching." },
+    ],
+    match: [
+      { from: 0,    to: 0.18,
+        line1: "This job ad.",
+        line2: "Not another one. This one." },
+      { from: 0.18, to: 0.34,
+        line1: "The generic candidate sends the same CV everywhere.",
+        line2: "You are about to be surgical." },
+      { from: 0.34, to: 0.50,
+        line1: "Every keyword counts.",
+        line2: "So does every silence." },
+      { from: 0.50, to: 0.66,
+        line1: p({ un: "With {annees} year behind you", plusieurs: "With {annees} years behind you" },
+                 "With your experience", user),
+        line2: "you deserve a CV cut to measure." },
+      { from: 0.66, to: 0.84,
+        line1: "Tracking systems drop 75% of CVs in under a second.",
+        line2: "Yours is going to get through." },
+      { from: 0.84, to: 1.0,
+        line1: "In a few seconds",
+        line2: "this job will be less a hope than a target." },
+    ],
+    interview: [
+      { from: 0,    to: 0.18,
+        line1: "The prepared candidate",
+        line2: "does not say the same things as the rest." },
+      { from: 0.18, to: 0.34,
+        line1: "The trick questions. The silences. The blanks.",
+        line2: "We get ahead of them together, here, now." },
+      { from: 0.34, to: 0.50,
+        line1: "You will not get a second chance",
+        line2: "to make the first impression." },
+      { from: 0.50, to: 0.66,
+        line1: "The people who negotiate the best pay",
+        line2: "are not the ones who speak best." },
+      { from: 0.66, to: 0.84,
+        line1: "They are the ones who can say",
+        line2: "what they are worth without hesitating." },
+      { from: 0.84, to: 1.0,
+        line1: "Tomorrow, in that room,",
+        line2: "you will be glad you did this." },
+    ],
+    generic: [
+      { from: 0,    to: 0.18,
+        line1: "The big turns never announce themselves.",
+        line2: "You only recognise them afterwards." },
+      { from: 0.18, to: 0.34,
+        line1: "While you read these lines",
+        line2: "something is falling into place." },
+      { from: 0.34, to: 0.50,
+        line1: "What most people put off until tomorrow",
+        line2: "you are doing right now." },
+      { from: 0.50, to: 0.66,
+        line1: "No magic. No empty promise.",
+        line2: "Just clean work, on what matters." },
+      { from: 0.66, to: 0.84,
+        line1: "The you of six months from now",
+        line2: "will remember this exact moment." },
+      { from: 0.84, to: 1.0,
+        line1: "The result in a few seconds.",
+        line2: "What you do with it is yours." },
+    ],
+  }),
+};
 
 const messagesStyles = `
   .nuvi-loading-messages {

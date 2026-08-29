@@ -141,6 +141,7 @@ export default function NuviLoadingOverlay({
             series={series}
             user={user}
             cycleDuration={18}
+            lang={lang}
           />
         </div>
 

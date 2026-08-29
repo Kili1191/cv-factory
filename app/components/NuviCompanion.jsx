@@ -673,14 +673,68 @@ const nuviV16Styles = ({ coachOrigin }) => `
     68%           { transform: scaleY(1); }
   }
 
-  /* === MODE LOADING === */
+  /* === MODE LOADING ===
+     Le personnage tournait sur lui-meme, 360 degres en boucle. C'est le
+     signal d'attente le plus generique qui soit, et il dit exactement ce
+     qu'on ne veut pas dire pendant qu'on travaille : rien ne se passe.
+     Sur un personnage qui EST un oeil, il disait meme un peu plus, parce
+     qu'un oeil qui tourne se lit comme un oeil qui roule.
+
+     Ce que Nuvi fait reellement pendant cette attente, c'est lire un CV.
+     La pupille balaie donc la ligne de gauche a droite, revient d'un coup
+     sec au bord gauche comme le fait un oeil qui lit, et descend d'un cran
+     a chaque passage. Trois lignes, puis un clignement, puis on remonte.
+     Le corps ne tourne plus : il respire.
+
+     L'attente dure ce qu'elle dure et la boucle est longue (4.8s pour un
+     cycle complet), pour qu'on ne voie pas la meme seconde se repeter. */
   .nuvi-mode-loading .nuvi-everything {
-    animation: loadingSpin 2s linear infinite !important;
+    animation: breathe 3.2s ease-in-out infinite !important;
     transform-origin: 90px 91px;
   }
-  @keyframes loadingSpin {
-    0%   { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+  .nuvi-mode-loading .pupil-group {
+    animation: lectureBalayage 4.8s steps(1, end) infinite,
+               lectureLigne 4.8s ease-in-out infinite !important;
+  }
+  .nuvi-mode-loading .iris-pupil-grp {
+    animation: lectureClignement 4.8s ease-in-out infinite !important;
+    transform-origin: 90px 91px;
+  }
+
+  /* Le retour au bord gauche est instantane : un oeil qui lit ne glisse
+     pas en arriere, il saute. C'est ce saut qui rend le mouvement lisible
+     comme de la lecture plutot que comme un va-et-vient. */
+  @keyframes lectureBalayage {
+    0%      { transform: translateX(-6px); }
+    8%      { transform: translateX(-3px); }
+    16%     { transform: translateX(0); }
+    24%     { transform: translateX(3px); }
+    30%     { transform: translateX(6px); }
+    33%     { transform: translateX(-6px); }
+    41%     { transform: translateX(-3px); }
+    49%     { transform: translateX(0); }
+    57%     { transform: translateX(3px); }
+    63%     { transform: translateX(6px); }
+    66%     { transform: translateX(-6px); }
+    74%     { transform: translateX(-3px); }
+    82%     { transform: translateX(0); }
+    90%     { transform: translateX(3px); }
+    96%     { transform: translateX(6px); }
+    100%    { transform: translateX(-6px); }
+  }
+  /* La descente d'une ligne a l'autre, elle, est continue : c'est le seul
+     mouvement doux du lot, et il donne la profondeur du document. */
+  @keyframes lectureLigne {
+    0%, 30%   { transform: translateY(-3px); }
+    33%, 63%  { transform: translateY(0); }
+    66%, 96%  { transform: translateY(3px); }
+    100%      { transform: translateY(-3px); }
+  }
+  /* Un clignement au moment ou l'oeil remonte en haut du document. Il
+     couvre le seul instant ou le mouvement redevient arbitraire. */
+  @keyframes lectureClignement {
+    0%, 95%, 100% { transform: scaleY(1); }
+    97%           { transform: scaleY(0.1); }
   }
 
   /* === MODE WALKING === */
@@ -866,7 +920,23 @@ const nuviV16Styles = ({ coachOrigin }) => `
   .nuvi-expr-wizard .mouth-filled-smile { opacity: 1; transform: scale(0.7); }
   @keyframes wizardWiggle { 0%, 100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
 
+  /* LE MOUVEMENT SE REFUSE, MAIS PAS LE SIGNE DE VIE
+     Tout couper valait pour les gags, qui sont decoratifs. Pendant une
+     attente, non : un oeil parfaitement fige ne dit pas "je travaille",
+     il dit "c'est plante". Quelqu'un qui a demande moins d'animation a
+     droit a la meme information que les autres, pas a moins.
+     On garde donc, en mode loading seulement, une respiration d'opacite.
+     Elle ne deplace rien et ne fait tourner rien : c'est ce que demande
+     le reglage, et ca suffit a dire que ca avance. */
   @media (prefers-reduced-motion: reduce) {
     .nuvi-companion * { animation: none !important; }
+    .nuvi-companion.nuvi-mode-loading .iris-pupil-grp {
+      animation: lectureSouffle 2.4s ease-in-out infinite !important;
+      transform: none !important;
+    }
+  }
+  @keyframes lectureSouffle {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.45; }
   }
 `;
