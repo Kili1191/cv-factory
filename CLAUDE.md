@@ -101,17 +101,28 @@ avant de déboguer :
 
 ## Conventions d'écriture
 
-**Tout en français.** Le code, les commentaires, les messages d'erreur, les
-noms de tests, les messages de commit.
+**Tout en anglais.** Le code, les commentaires, les messages d'erreur
+internes, les noms de tests, les messages de commit. La règle était le
+français jusqu'au 30 août 2026 ; le dépôt contient donc encore des
+commentaires français, et rien n'oblige à les traduire en passant. Ce qu'on
+écrit à partir de maintenant est en anglais.
+
+Une chose ne change pas : **les textes que l'utilisateur lit restent
+bilingues**, dans `app/i18n/fr.js` et `app/i18n/en.js`. La langue de
+l'interface est un choix produit, pas une convention de code, et le français
+y a exactement le même statut qu'avant.
 
 **Les commentaires expliquent pourquoi, et prennent la place qu'il faut.** Le
 `timeout-minutes: 90` de la CI est accompagné de six lignes qui disent pourquoi
 90 et pas 60. C'est le style de la maison : on écrit la raison pendant qu'on
-l'a en tête, parce que dans six mois personne ne l'aura.
+l'a en tête, parce que dans six mois personne ne l'aura. Ça ne change pas avec
+la langue : un commentaire anglais qui se contente de répéter la ligne de code
+en dessous ne vaut pas mieux que son équivalent français.
 
-**Accents dans les documents, pas dans les commentaires de code.** `docs/` et
-ce fichier sont accentués. Les commentaires dans `.js`, `.jsx` et `.mjs` ne le
-sont pas.
+**Pas d'accents ni de caractères non ASCII dans les commentaires de code.**
+`docs/` et ce fichier sont accentués. Les commentaires dans `.js`, `.jsx` et
+`.mjs` restent en ASCII : c'était vrai pour le français sans accents, ça reste
+vrai pour l'anglais.
 
 ## Outillage agent
 
