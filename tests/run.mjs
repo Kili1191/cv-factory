@@ -53,6 +53,7 @@ const SUITES = [
   ["le diagnostic ne coute rien et ne bouge pas", "./the-diagnosis-costs-nothing.mjs"],
   ["un resultat n'est pas une responsabilite", "./an-achievement-is-not-a-responsibility.mjs"],
   ["Nuvi ne remplit pas le chiffre a ta place", "./nuvi-does-not-fill-in-your-figure.mjs"],
+  ["Nuvi vient le dire en face", "./nuvi-comes-and-says-it-to-your-face.mjs"],
   ["le coach lit un fichier depose", "./the-coach-reads-a-file.mjs"],
   ["chaque fonctionnalite produit un resultat", "./every-feature-produces-output.mjs"],
   ["le telephone atteint toutes les fonctionnalites", "./mobile-reaches-every-feature.mjs"],

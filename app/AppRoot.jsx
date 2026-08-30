@@ -6,6 +6,7 @@ import { useNuviReactions } from "./components/useNuviReactions";
 import { createPortal } from "react-dom";
 import BulletTransformer from "./components/BulletTransformer";
 import ScoreDashboard from "./components/ScoreDashboard";
+import ConseilCompanion from "./components/ConseilCompanion";
 import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
@@ -5769,6 +5770,22 @@ export default function App() {
     }
   }, [locale, notify, runPositioning, runTruthCheck]);
 
+  // NUVI VIENT DIRE LA CHOSE EN FACE
+  //
+  // La recommandation d'un axe est deja la bonne phrase : elle cite la puce
+  // et dit ce qui manque. Posee dans une carte, entre huit autres notes, elle
+  // se lit comme une ligne de rapport et s'oublie comme une ligne de rapport.
+  // Ce panneau la sort du tableau : Nuvi apparait, montre la ligne en cause,
+  // montre la forme a viser, dit pourquoi ca change quelque chose, et propose
+  // d'y aller. Aucun appel reseau : tout vient du diagnostic deja calcule.
+  const [axeExplique, setAxeExplique] = useState(null);
+  const ouvrirLExplication = useCallback((axisId) => {
+    const r = dashResult && Array.isArray(dashResult.scores)
+      ? dashResult.scores.find((x) => x && x.id === axisId)
+      : null;
+    if (r) setAxeExplique(r);
+  }, [dashResult]);
+
   // v17 chantier 5 : Gap Repair handlers (deterministes, pas d'IA).
   //
   // Strategy 1 : reformatte toutes les dates des experiences en YYYY (years only).
@@ -7103,38 +7120,59 @@ export default function App() {
           + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
           + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
           + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
-          // LE REGISTRE QUI PROMETTAIT L'IMPACT L'INVENTAIT
+          // LE REGISTRE QUI PROMETTAIT L'IMPACT, ET LA CASE VIDE QUI L'A REMPLACE
           //
-          // Il disait : "Si la phrase originale ne contient pas de chiffre,
-          // propose une fourchette plausible (par exemple +15-25%)." Trois
-          // lignes plus bas, QUI_DECIDE interdit d'ajouter de sa propre
-          // autorite un chiffre qui n'est pas dans le CV. Le meme prompt
-          // ordonnait donc une chose et son contraire, et le modele suivait
-          // la plus precise des deux : celle qui donnait un exemple.
+          // Version 1 : "Si la phrase ne contient pas de chiffre, propose une
+          // fourchette plausible, par exemple +15-25%." Le modele inventait,
+          // et la personne se faisait cueillir en entretien sur un chiffre
+          // qu'elle n'avait jamais mesure.
           //
-          // Un chiffre invente ne se paie pas a l'ecriture, il se paie en
-          // entretien. La personne arrive avec un "+20 % de chiffre
-          // d'affaires" qu'elle n'a jamais mesure, on lui demande comment
-          // elle l'a obtenu, et elle n'a rien a repondre. C'est le contraire
-          // exact de ce que le produit promet.
+          // Version 2 : la phrase revenait avec un trou et l'interface
+          // exigeait le chiffre avant de laisser adopter. Honnete, et
+          // inutilisable. Une serveuse a qui on montre une case vide et le
+          // mot "chiffre" ne sait pas quoi y mettre : ce n'est pas qu'elle
+          // refuse de repondre, c'est que personne ne lui a jamais demande de
+          // mesurer son travail. Une case vide n'est pas une question, c'est
+          // un examen. Le produit doit AIDER, pas interroger.
           //
-          // Le registre garde donc ce qu'il apportait, la FORME du resultat,
-          // et rend le chiffre a qui le connait : la phrase revient avec le
-          // marqueur [?] a l'endroit ou la mesure doit venir, et l'interface
-          // demande le chiffre avant de laisser adopter la version.
+          // Version 3, celle-ci. Le modele fait le travail qu'il sait faire :
+          // il connait le metier, il sait quels chiffres s'y mesurent, il
+          // pose la vraie question et propose des reponses. La phrase arrive
+          // COMPLETE, adoptable d'un geste. La personne n'a plus a inventer
+          // une mesure a partir de rien : elle reconnait la sienne dans une
+          // liste, ou corrige d'un chiffre.
+          //
+          // Ce qui reste vrai de la version 2 : le chiffre est une
+          // proposition, il est marque comme telle, et la personne peut
+          // toujours le changer. Reconnaitre son chiffre dans trois
+          // propositions, c'est encore le sien. C'est ce que fait un bon
+          // coach en entretien de conseil : il ne demande pas "quel etait
+          // votre chiffre", il demande "vous serviez plutot 50, 80 ou 120
+          // couverts ?", et la personne repond tout de suite.
           + "5. impact: transforme la responsabilite en resultat, c'est a dire en ce "
-          + "qui a CHANGE grace a cette personne. N'utilise QUE les chiffres deja "
-          + "presents dans la phrase originale. Si elle n'en contient aucun, ecris "
-          + "quand meme la phrase sous sa forme de resultat et laisse la mesure en "
-          + "attente avec le marqueur exact [?], une seule fois, a l'endroit precis "
-          + "ou le chiffre doit venir. N'invente ni chiffre, ni pourcentage, ni "
-          + "fourchette, ni estimation, meme presentee comme plausible : c'est le "
-          + "candidat qui connait ce chiffre, et c'est lui qu'un recruteur "
-          + "interrogera dessus.\n\n"
+          + "qui a CHANGE grace a cette personne. Utilise en priorite les chiffres "
+          + "deja presents dans la phrase originale. S'il n'y en a aucun, ecris la "
+          + "phrase sous sa forme de resultat en placant le marqueur exact [?] a "
+          + "l'endroit precis de la mesure, une seule fois.\n\n"
+          + "AVEC CE REGISTRE, ET SEULEMENT SI TU AS PLACE UN [?], AJOUTE DEUX CHAMPS :\n"
+          + "- \"impact_question\" : la question a poser a la personne pour obtenir "
+          + "cette mesure. Elle doit etre courte, concrete, dans le vocabulaire de son "
+          + "metier, et repondable de tete. \"Combien de couverts par service ?\" et "
+          + "non \"quel etait votre impact quantifie ?\".\n"
+          + "- \"impact_choix\" : trois valeurs plausibles pour ce metier, ce niveau "
+          + "et ce type d'etablissement, de la plus courante a la plus elevee. Ce sont "
+          + "des propositions a reconnaitre ou a corriger, pas des affirmations : "
+          + "l'interface les presente comme telles et la personne choisit. C'est ce "
+          + "qui rend la question repondable pour quelqu'un a qui on n'a jamais "
+          + "demande de mesurer son travail.\n\n"
           + "REGLES:\n"
           + "- Reste fidele au sens de la phrase d'origine.\n"
           + "- Le marqueur [?] n'apparait que dans la version impact, une fois au plus, "
           + "et jamais dans les quatre autres.\n"
+          + "- N'ecris jamais un chiffre A L'INTERIEUR de la phrase impact quand il ne "
+          + "vient pas de l'original : il va dans impact_choix, ou la personne le voit "
+          + "comme une proposition et peut le changer. Un chiffre glisse dans la phrase "
+          + "sans le dire est un chiffre invente.\n"
           + "- " + QUI_DECIDE + "\n"
           + "- Maximum 18 mots par version.\n"
           + "- " + NO_DASH + "\n"
@@ -7144,7 +7182,9 @@ export default function App() {
           + '  "pro": "version pro",\n'
           + '  "ats": "version ats",\n'
           + '  "premium": "version premium",\n'
-          + '  "impact": "version chiffree"\n'
+          + '  "impact": "version resultat, avec [?] si la mesure manque",\n'
+          + '  "impact_question": "la question a poser, si [?] present",\n'
+          + '  "impact_choix": ["valeur 1", "valeur 2", "valeur 3"]\n'
           + '}';
       }
       const txt = await aiCall(p);
@@ -8198,10 +8238,22 @@ export default function App() {
             dashResult={dashResult}
             onRunDashboard={runScoreDashboard}
             onCtaAxis={onCtaAxisDispatch}
+            onExplainAxis={ouvrirLExplication}
           />
           </Suspense>
         </Sheet>
       )}
+      <ConseilCompanion
+        T={T} locale={locale}
+        ouvert={!!axeExplique}
+        axe={axeExplique}
+        onClose={() => setAxeExplique(null)}
+        onGo={() => {
+          const id = axeExplique && axeExplique.id;
+          setAxeExplique(null);
+          if (id) onCtaAxisDispatch(id);
+        }}
+      />
       {showJobs && (
         <Suspense fallback={null}>
           <JobSearchModal

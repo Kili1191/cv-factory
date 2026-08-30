@@ -26,22 +26,45 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradDark, KEYFRAMES_V17, B, Trans } from "./tokens";
 
-// LE CHIFFRE QUE NUVI NE REMPLIT PAS
+// LA MESURE MANQUANTE : PROPOSEE, PAS EXIGEE
 //
-// Le registre "impact" demandait au modele une fourchette plausible quand la
-// phrase d'origine ne portait aucun chiffre. Ce chiffre ne coute rien a
-// ecrire et se paie en entretien : on demande a la personne comment elle a
-// obtenu ses "+20 %", et elle n'a rien a repondre.
+// Le registre "impact" a eu deux versions fausses avant celle-ci.
 //
-// Le modele rend donc la phrase sous sa forme de resultat avec le marqueur
-// [?] a la place de la mesure. C'est ici que la mesure se demande, a la seule
-// personne qui la connait, avant que la version puisse etre adoptee.
+// La premiere demandait au modele une fourchette plausible et l'ecrivait
+// dans la phrase sans le dire. La personne se faisait cueillir en entretien
+// sur un chiffre qu'elle n'avait jamais mesure.
+//
+// La seconde rendait la phrase avec un trou et exigeait que la personne le
+// remplisse avant de pouvoir adopter. Honnete, et inutilisable. Montrer une
+// case vide et le mot "chiffre" a quelqu'un a qui on n'a jamais demande de
+// mesurer son travail, ce n'est pas lui poser une question, c'est lui faire
+// passer un examen. Il n'y repond pas, il ferme le panneau.
+//
+// Ici : la phrase arrive COMPLETE, avec la proposition du modele deja en
+// place, adoptable d'un geste. La question du metier est posee en clair,
+// deux autres propositions attendent a cote, et le champ libre reste ouvert.
+// Le chiffre est marque comme une proposition, et il se change d'un tap.
+// Reconnaitre son chiffre parmi trois, c'est encore le sien.
 const MARQUEUR = "[?]";
 function aUnTrou(t) { return typeof t === "string" && t.includes(MARQUEUR); }
 
 export default function BulletTransformer({ kind = "bullet", original, levels, loading, onAdopt, onClose, T }) {
-  // Ce que la personne tape pour combler le trou, par registre.
+  // Ce que la personne a tape ou choisi pour combler le trou, par registre.
+  // Vide veut dire "je n'ai rien touche", pas "je veux du vide" : c'est alors
+  // la premiere proposition du modele qui sert.
   const [chiffres, setChiffres] = useState({});
+  const propositions = (levels && Array.isArray(levels.impact_choix))
+    ? levels.impact_choix.filter((v) => typeof v === "string" && v.trim()).slice(0, 3)
+    : [];
+  // La valeur qui part sur le CV pour un registre donne.
+  const valeur = (k) => {
+    const tape = (chiffres[k] || "").trim();
+    if (tape) return tape;
+    return (propositions[0] || "").trim();
+  };
+  const combler = (k) => aUnTrou(levels[k])
+    ? levels[k].split(MARQUEUR).join(valeur(k))
+    : levels[k];
 
   // Empeche le scroll du body quand le modal est ouvert.
   useEffect(() => {
@@ -242,19 +265,13 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                   }}>{c.hint}</span>
                 </div>
                 <button
-                  onClick={()=>onAdopt(
-                    aUnTrou(levels[c.key])
-                      ? levels[c.key].split(MARQUEUR).join((chiffres[c.key] || "").trim())
-                      : levels[c.key]
-                  )}
-                  disabled={aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()}
+                  onClick={()=>onAdopt(combler(c.key))}
+                  disabled={aUnTrou(levels[c.key]) && !valeur(c.key)}
                   style={{
                     ...B({
                       padding:"6px 14px", borderRadius:RadiusPill,
-                      background: aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()
-                        ? Gray200 : Ink,
-                      color: aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()
-                        ? Gray600 : Cream,
+                      background: aUnTrou(levels[c.key]) && !valeur(c.key) ? Gray200 : Ink,
+                      color: aUnTrou(levels[c.key]) && !valeur(c.key) ? Gray600 : Cream,
                       fontSize:11, fontWeight:600, fontFamily:Sans,
                       letterSpacing:"0.02em",
                       flexShrink:0,
@@ -272,28 +289,59 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                         {bout}
                         {i < tab.length - 1 && (
                           <span style={{
-                            background: (chiffres[c.key] || "").trim() ? "transparent" : "rgba(255,90,54,.14)",
-                            color: (chiffres[c.key] || "").trim() ? Ink : Coral,
-                            borderRadius: 4, padding: "0 4px", fontWeight: 600,
-                          }}>{(chiffres[c.key] || "").trim() || "?"}</span>
+                            background: "rgba(255,90,54,.14)",
+                            color: Coral,
+                            borderRadius: 4, padding: "0 5px", fontWeight: 600,
+                          }}>{valeur(c.key) || "?"}</span>
                         )}
                       </span>
                     ))
                   : levels[c.key]}
               </div>
 
-              {/* CE QUI MANQUE, ET POURQUOI CE N'EST PAS A NUVI DE LE METTRE */}
+              {/* LA QUESTION, PUIS LES REPONSES A RECONNAITRE */}
               {aUnTrou(levels[c.key]) && (
                 <div style={{
                   marginTop:12, paddingTop:12,
                   borderTop:"0.5px solid "+Gray200,
                 }}>
+                  <div style={{
+                    fontSize:12, color:Ink, fontWeight:600,
+                    lineHeight:1.45, marginBottom:9,
+                  }}>{levels.impact_question || T.bt_trou_q
+                      || "Ce chiffre, c'etait plutot combien ?"}</div>
+
+                  {propositions.length > 0 && (
+                    <div style={{
+                      display:"flex", flexWrap:"wrap", gap:6, marginBottom:10,
+                    }}>
+                      {propositions.map((v) => {
+                        const actif = valeur(c.key) === v.trim();
+                        return (
+                          <button key={v}
+                            onClick={()=>setChiffres(p => ({ ...p, [c.key]: v }))}
+                            style={{
+                              ...B({
+                                padding:"8px 14px", minHeight:40,
+                                borderRadius:RadiusPill,
+                                background: actif ? Ink : Paper,
+                                color: actif ? Cream : Ink,
+                                border:"1px solid "+(actif ? Ink : Gray200),
+                                fontFamily:Sans, fontSize:12, fontWeight:600,
+                                transition: Trans(["background","color","border-color"], "fast"),
+                              })
+                            }}>{v}</button>
+                        );
+                      })}
+                    </div>
+                  )}
+
                   <label style={{display:"block"}}>
                     <span style={{
                       display:"block", fontSize:11, fontWeight:600,
                       letterSpacing:"0.08em", textTransform:"uppercase",
-                      color:Coral, marginBottom:5,
-                    }}>{T.bt_trou_label || "Ton chiffre"}</span>
+                      color:Gray600, marginBottom:5,
+                    }}>{T.bt_trou_label || "Ou ton chiffre exact"}</span>
                     <input
                       value={chiffres[c.key] || ""}
                       onChange={(e)=>setChiffres(p => ({ ...p, [c.key]: e.target.value }))}
@@ -308,8 +356,8 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                   <div style={{
                     fontSize:11, color:Gray600, lineHeight:1.5, marginTop:7,
                   }}>{T.bt_trou_why
-                    || "Nuvi n'ecrit pas ce chiffre a ta place : c'est toi qui l'as vecu, "
-                     + "et c'est toi qu'un recruteur interrogera dessus."}</div>
+                    || "Nuvi propose ce chiffre d'apres ton metier. Verifie qu'il est "
+                     + "juste : c'est celui qu'un recruteur te demandera d'expliquer."}</div>
                 </div>
               )}
             </div>

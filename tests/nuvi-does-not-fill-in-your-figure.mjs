@@ -20,12 +20,29 @@
 // a repondre. Le produit promet a quelqu'un un CV credible : lui donner une
 // phrase qu'elle ne peut pas defendre est le contraire du service rendu.
 //
+// LA CORRECTION QUI A RATE
+//
+// La premiere correction rendait la phrase avec un trou et refusait de la
+// laisser adopter tant que la personne n'avait rien tape. Honnete, et
+// inutilisable. Montrer une case vide et le mot "chiffre" a quelqu'un a qui
+// on n'a jamais demande de mesurer son travail, ce n'est pas poser une
+// question, c'est faire passer un examen. La personne ne repond pas, elle
+// ferme le panneau. Une fonctionnalite qu'on n'utilise pas ne protege
+// personne : elle laisse la puce en l'etat, ce qui etait le probleme.
+//
 // CE QUE LE PRODUIT FAIT MAINTENANT
 //
-// Le registre garde la forme du resultat et rend la mesure a qui la connait :
-// la phrase revient avec le marqueur [?] a l'endroit du chiffre, et
-// l'interface demande le chiffre avant de laisser adopter la version, en
-// disant pourquoi elle le demande.
+// Le modele fait le travail qu'il sait faire : il connait le metier, il sait
+// quels chiffres s'y mesurent. Il pose la vraie question ("Combien de
+// couverts par service ?") et propose trois valeurs plausibles. La phrase
+// arrive COMPLETE, avec la premiere proposition en place, adoptable d'un
+// geste. La personne reconnait son chiffre, en tape un autre, ou corrige.
+//
+// Ce qui reste vrai : le chiffre propose est marque comme une proposition,
+// il se change d'un tap, et la carte dit qu'il faut le verifier parce que
+// c'est celui qu'un recruteur demandera d'expliquer. Ce qui n'est plus vrai :
+// on ne bloque plus la personne. Reconnaitre son chiffre parmi trois, c'est
+// encore le sien ; une case vide, c'est un abandon.
 //
 // Ce test lit le source, pas le rendu : il n'y a pas de cle d'API dans la
 // suite, donc aucune reponse de modele a observer. Ce qu'on peut prouver,
@@ -90,26 +107,43 @@ export async function run() {
       + "rendre une phrase qui n'est plus un resultat."
     );
   }
-  if (!/N'invente ni chiffre, ni pourcentage/.test(appRoot)) {
+  if (!/impact_question/.test(appRoot) || !/impact_choix/.test(appRoot)) {
     failures.push(
-      "l'interdiction d'inventer un chiffre a disparu du registre impact. "
-      + "QUI_DECIDE la porte deja en general, et c'est exactement ici qu'elle "
-      + "avait ete contredite."
+      "le prompt ne reclame plus la question du metier et ses propositions. "
+      + "Sans elles la carte retombe sur une case vide, et une case vide n'est "
+      + "pas une question : c'est un examen que la personne ne passe pas."
+    );
+  }
+  if (!/Un chiffre glisse dans la phrase\s*"\s*\+\s*"sans le dire est un chiffre invente/.test(appRoot)
+      && !/sans le dire est un chiffre invente/.test(appRoot)) {
+    failures.push(
+      "l'interdiction d'ecrire un chiffre invente A L'INTERIEUR de la phrase a "
+      + "disparu. C'est la seule difference qui compte entre proposer et "
+      + "inventer : dans impact_choix la personne le voit et le change, dans la "
+      + "phrase elle ne sait meme pas qu'il vient du modele."
     );
   }
 
   // 3. L'interface bloque l'adoption tant que le trou n'est pas comble.
-  if (!/disabled=\{aUnTrou\(levels\[c\.key\]\) && !\(chiffres\[c\.key\] \|\| ""\)\.trim\(\)\}/.test(transformer)) {
+  if (!/const valeur = \(k\)/.test(transformer)
+      || !/return \(propositions\[0\] \|\| ""\)\.trim\(\)/.test(transformer)) {
     failures.push(
-      "le bouton Adopter n'est plus desactive quand la version porte un trou. "
-      + "La personne mettrait alors un [?] litteral sur son CV, ce qui est pire "
-      + "qu'un chiffre invente."
+      "la carte ne retombe plus sur la proposition du modele quand la personne "
+      + "n'a rien tape. Elle redevient une case vide a remplir, ce qui est la "
+      + "version dont on est parti."
     );
   }
   if (!/split\(MARQUEUR\)\.join\(/.test(transformer)) {
     failures.push(
-      "le marqueur n'est plus remplace par ce que la personne a tape : la "
-      + "version adoptee garderait le [?]."
+      "le marqueur n'est plus remplace par la valeur retenue : la version "
+      + "adoptee garderait le [?]."
+    );
+  }
+  if (!/disabled=\{aUnTrou\(levels\[c\.key\]\) && !valeur\(c\.key\)\}/.test(transformer)) {
+    failures.push(
+      "la carte laisse adopter une phrase dont le trou n'a AUCUNE valeur, ni "
+      + "tapee ni proposee. Un [?] litteral partirait sur le CV, ce qui est "
+      + "pire qu'un chiffre approximatif."
     );
   }
 
@@ -138,9 +172,17 @@ export async function run() {
   if (/bt_impact_hint:"Avec estimation chiffree"/.test(fr)
       || /bt_impact_hint:"With quantified estimate"/.test(en)) {
     failures.push(
-      "le registre s'annonce encore comme une estimation. Il ne produit plus "
-      + "d'estimation : il produit la forme du resultat et demande la mesure."
+      "le registre s'annonce encore comme une estimation faite par la machine. "
+      + "Le chiffre est une proposition que la personne valide ou corrige."
     );
+  }
+  for (const [langue, src] of [["fr", fr], ["en", en]]) {
+    if (!/bt_trou_q:/.test(src)) {
+      failures.push(
+        "[" + langue + "] la question de repli a disparu. Quand le modele "
+        + "n'en fournit pas, la carte afficherait un champ sans rien demander."
+      );
+    }
   }
 
   // 6. A L'ECRAN : le trou ne se ferme pas tout seul.
@@ -153,9 +195,9 @@ export async function run() {
 
   if (!failures.length) {
     console.log(
-      "      aucun prompt ne reclame de chiffre invente, la version a trou ne "
-      + "s'adopte pas vide, le chiffre tape remplace le marqueur, et les deux "
-      + "langues disent pourquoi il est demande"
+      "      aucun chiffre invente ne se glisse dans la phrase, la carte arrive "
+      + "remplie et adoptable, la question du metier est posee, les propositions "
+      + "se changent d'un tap, et c'est la valeur choisie qui part sur le CV"
     );
   }
   return failures;
@@ -169,6 +211,8 @@ const VERSIONS = {
   ats: "Gestion de bar, encaissement, stocks",
   premium: "Orchestration du bar en service",
   impact: "Marge boissons tenue a [?] sur l'annee",
+  impact_question: "Quelle marge tenais-tu sur les boissons ?",
+  impact_choix: ["65 %", "72 %", "80 %"],
 };
 const REPONSE = JSON.stringify({
   content: [{ type: "text", text: JSON.stringify(VERSIONS) }],
@@ -257,7 +301,7 @@ async function surLEcran() {
         trouve: true,
         bloque: adopter ? adopter.disabled : null,
         aUnChamp: !!champ,
-        texte: (carte.textContent || "").replace(/\s+/g, " ").slice(0, 300),
+        texte: (carte.textContent || "").replace(/\s+/g, " ").slice(0, 900),
       };
     });
 
@@ -266,75 +310,92 @@ async function surLEcran() {
       await ctx.close();
       return echecs;
     }
-    if (etat.bloque !== true) {
-      echecs.push(
-        "le bouton Adopter est actif alors que le chiffre n'est pas rempli. "
-        + "La personne poserait un marqueur litteral sur son CV."
-      );
-    }
-    if (!etat.aUnChamp) {
-      echecs.push(
-        "aucun champ ne demande le chiffre manquant. La version reste "
-        + "inadoptable sans que rien ne dise comment la debloquer."
-      );
-    }
-    if (!/n'ecrit pas ce chiffre a ta place/.test(etat.texte)) {
-      echecs.push(
-        "la carte ne dit pas pourquoi Nuvi ne remplit pas le chiffre : "
-        + `"${etat.texte}". Un champ obligatoire sans raison se subit ; avec `
-        + "la raison, c'est la question que le recruteur posera."
-      );
-    }
 
-    // On tape le chiffre, on adopte, et on regarde ce qui atterrit sur le CV.
+    // LE POINT QUI A CHANGE : LA CARTE N'EST PAS UN CUL-DE-SAC
     //
-    // Le champ se designe par son exemple : c'est le seul repere qui ne
-    // depende ni de l'ordre du DOM ni de la structure des cartes. Une
-    // premiere version prenait "le premier input du bloc qui contient la
-    // phrase", et ce bloc englobait tout le modal : elle tapait dans un
-    // autre champ et concluait que le produit ne repondait pas.
-    if (etat.aUnChamp) {
-      const champ = page.getByPlaceholder("12 %, 80 couverts, 3 semaines").first();
-      if (await champ.count() === 0) {
-        echecs.push("le champ du chiffre n'a pas l'exemple annonce par l'i18n.");
-        await ctx.close();
-        return echecs;
-      }
-      await champ.fill("78 %");
-      await page.waitForTimeout(500);
+    // Avant, cette carte arrivait avec un trou et un bouton mort. Elle arrive
+    // maintenant remplie de la premiere proposition du modele : la personne
+    // adopte d'un geste si le chiffre lui parle, et le change sinon.
+    if (etat.bloque !== false) {
+      echecs.push(
+        "le bouton Adopter est inerte alors que le modele a propose des "
+        + "valeurs. La personne se retrouve devant une case a remplir, ce qui "
+        + "est la version dont on est parti : elle ferme le panneau et la puce "
+        + "reste telle quelle."
+      );
+    }
+    if (!/65 %/.test(etat.texte)) {
+      echecs.push(
+        "la phrase n'affiche pas la proposition du modele a la place du "
+        + `marqueur : "${etat.texte}". Un trou ne se remplit pas tout seul dans `
+        + "la tete de quelqu'un a qui on n'a jamais demande de mesurer son travail."
+      );
+    }
 
-      const adopter = page.getByRole("button", { name: "Adopter", exact: true });
-      const nb = await adopter.count();
-      let bloqueEncore = true;
-      for (let i = 0; i < nb; i++) {
-        const b = adopter.nth(i);
-        const texteCarte = await b.evaluate(
-          (el) => (el.closest("div").parentElement.textContent || ""));
-        if (!/Marge boissons tenue a/.test(texteCarte)) continue;
-        bloqueEncore = await b.isDisabled();
-        if (!bloqueEncore) await b.click();
-        break;
-      }
-      if (bloqueEncore) {
+    // LA QUESTION EST POSEE, ET ELLE EST REPONDABLE
+    if (!/Quelle marge tenais-tu sur les boissons/.test(etat.texte)) {
+      echecs.push(
+        "la question du modele n'est pas affichee. Sans elle, la personne voit "
+        + "un chiffre surligne sans savoir ce qu'il mesure ni ce qu'on lui demande."
+      );
+    }
+    for (const v of ["72 %", "80 %"]) {
+      if (!etat.texte.includes(v)) {
         echecs.push(
-          "le bouton Adopter reste bloque apres avoir tape le chiffre : la "
-          + "version est inadoptable quoi qu'on fasse."
+          `la proposition "${v}" n'est pas offerte. Reconnaitre son chiffre `
+          + "parmi plusieurs est ce qui rend la question repondable ; une seule "
+          + "valeur imposee redevient une affirmation du modele."
         );
       }
-      await page.waitForTimeout(1200);
-      const surLeCv = await page.evaluate(() => document.body.innerText);
-      if (/\[\?\]/.test(surLeCv)) {
-        echecs.push(
-          "un marqueur [?] reste visible apres adoption : il partirait sur le "
-          + "CV exporte, ce qui est pire qu'un chiffre invente."
-        );
-      }
-      if (!/78 %/.test(surLeCv)) {
-        echecs.push(
-          "le chiffre tape n'a pas remplace le marqueur : la personne a "
-          + "repondu et sa reponse est perdue."
-        );
-      }
+    }
+    if (!/proposant|propose ce chiffre|suggests this figure/i.test(etat.texte)) {
+      echecs.push(
+        "la carte ne dit pas que le chiffre est une proposition a verifier : "
+        + `"${etat.texte}". La personne le prendrait pour une mesure, et c'est `
+        + "elle qu'un recruteur interrogera dessus."
+      );
+    }
+
+    // ON CHANGE LA VALEUR D'UN TAP, ET C'EST ELLE QUI PART SUR LE CV
+    const autre = page.getByRole("button", { name: "80 %", exact: true }).first();
+    if (await autre.count() === 0) {
+      echecs.push("les propositions ne sont pas des boutons : on ne peut pas en changer d'un tap.");
+      await ctx.close();
+      return echecs;
+    }
+    await autre.click();
+    await page.waitForTimeout(400);
+
+    const adopter = page.getByRole("button", { name: "Adopter", exact: true });
+    const nb = await adopter.count();
+    let clique = false;
+    for (let i = 0; i < nb; i++) {
+      const b = adopter.nth(i);
+      const texteCarte = await b.evaluate(
+        (el) => (el.closest("div").parentElement.textContent || ""));
+      if (!/Marge boissons tenue a/.test(texteCarte)) continue;
+      if (await b.isDisabled()) break;
+      await b.click();
+      clique = true;
+      break;
+    }
+    if (!clique) {
+      echecs.push("le bouton Adopter de la carte a trou est introuvable ou inerte.");
+    }
+    await page.waitForTimeout(1200);
+
+    const surLeCv = await page.evaluate(() => document.body.innerText);
+    if (/\[\?\]/.test(surLeCv)) {
+      echecs.push(
+        "un marqueur [?] reste visible apres adoption : il partirait sur le "
+        + "CV exporte, ce qui est pire qu'un chiffre approximatif."
+      );
+    }
+    if (!/80 %/.test(surLeCv)) {
+      echecs.push(
+        "la valeur choisie par la personne n'est pas celle qui atterrit sur le "
+        + "CV : elle a repondu et sa reponse est perdue."
+      );
     }
 
     await ctx.close();

@@ -36,7 +36,7 @@ import { CountUp } from "./motion";
 const AXES = [
   { id: "title",           tKey: "sd_ax_title",           subKey: "sd_ax_title_sub",           ctaKey: "sd_cta_title",           accent: Purple,    bg: PurpleSoft },
   { id: "bullets",         tKey: "sd_ax_bullets",         subKey: "sd_ax_bullets_sub",         ctaKey: "sd_cta_bullets",         accent: Purple,    bg: PurpleSoft },
-  { id: "achievements",    tKey: "sd_ax_achievements",    subKey: "sd_ax_achievements_sub",    ctaKey: "sd_cta_achievements",    accent: Magenta,   bg: PurpleSoft },
+  { id: "achievements",    tKey: "sd_ax_achievements",    subKey: "sd_ax_achievements_sub",    ctaKey: "sd_cta_achievements",    accent: Magenta,   bg: PurpleSoft, explique: true },
   { id: "ats",             tKey: "sd_ax_ats",             subKey: "sd_ax_ats_sub",             ctaKey: "sd_cta_ats",             accent: Ink,       bg: Gray100 },
   { id: "relevance",       tKey: "sd_ax_relevance",       subKey: "sd_ax_relevance_sub",       ctaKey: "sd_cta_relevance",       accent: Purple,    bg: PurpleSoft },
   { id: "credibility",     tKey: "sd_ax_credibility",     subKey: "sd_ax_credibility_sub",     ctaKey: "sd_cta_credibility",     accent: Coral,     bg: CoralSoft },
@@ -60,7 +60,7 @@ function scoreBg(s) {
 }
 
 // Card individuelle. Mode collapsed (juste score+nom) ou expanded (+ reco + CTA).
-function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta, seuleSurSaLigne }) {
+function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta, onExplain, seuleSurSaLigne }) {
   const validScore = typeof score === "number" && !isNaN(score)
     ? Math.max(0, Math.min(100, Math.round(score)))
     : null;
@@ -146,6 +146,21 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta, seuleS
                   letterSpacing: "-0.005em",
                 }}>"{reco}"</div>
               </>
+            )}
+            {onExplain && axis.explique && (
+              <button
+                onClick={(e)=>{ e.stopPropagation(); onExplain(axis.id); }}
+                style={{
+                  ...B({
+                    display:"inline-flex", alignItems:"center", gap:6,
+                    padding:"9px 16px", borderRadius: RadiusPill,
+                    background: Paper, color: Ink,
+                    border:"1px solid "+Ink,
+                    fontFamily: Sans, fontWeight: 600, fontSize: 12,
+                    minHeight: 40, marginRight: 8,
+                    transition: Trans(["background","color","border-color"], "fast"),
+                  })
+                }}>{T.cc_bouton || "Nuvi t'explique"}</button>
             )}
             <button
               onClick={(e)=>{ e.stopPropagation(); onCta(axis.id); }}
@@ -296,7 +311,7 @@ function DeuxLectures({ lectures, locale }) {
   );
 }
 
-export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, onCta, locale }) {
+export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, onCta, onExplain, locale }) {
   const [expandedId, setExpandedId] = useState(null);
   const grilleRef = useRef(null);
   const [largeur, setLargeur] = useState(0);
@@ -344,6 +359,19 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
   // plus haute que large. On garde donc 2 colonnes par defaut, la valeur qui
   // marche sur telephone, et on n'en ajoute que si la place existe vraiment.
   const cols = largeur >= 640 ? 4 : largeur >= 470 ? 3 : 2;
+
+  // L'axe designe par "priorite numero 1". Le diagnostic y recopie la
+  // recommandation de l'axe le plus penalisant : on retrouve donc l'axe par
+  // egalite de texte, sans reclasser quoi que ce soit ici. Si la forme du
+  // rapport change un jour, le bouton disparait au lieu de designer le
+  // mauvais axe, ce qui est le bon echec.
+  const axePrioritaire = (() => {
+    if (!result || !result.top_priority) return null;
+    const trouve = (result.scores || []).find(
+      (x) => x && x.reco && x.reco === result.top_priority);
+    if (!trouve) return null;
+    return AXES.some((a) => a.id === trouve.id && a.explique) ? trouve.id : null;
+  })();
 
   return (
     <div style={{fontFamily:Sans}}>
@@ -480,6 +508,26 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
                 fontFamily: Sans, fontSize: 13, fontWeight: 500,
                 color: Ink, lineHeight: 1.45,
               }}>{result.top_priority}</div>
+              {/* LA OU LE CONSEIL SE LIT VRAIMENT
+                  Le bouton existait aussi sur la carte de l'axe, mais la
+                  carte doit d'abord etre depliee pour le montrer : autant
+                  dire qu'il n'existe pas. Le bloc "priorite numero 1" est la
+                  premiere chose lue du panneau, et c'est deja le conseil de
+                  cet axe qui s'y affiche. */}
+              {onExplain && axePrioritaire && (
+                <button
+                  onClick={()=>onExplain(axePrioritaire)}
+                  style={{
+                    ...B({
+                      marginTop: 12, padding: "10px 18px", minHeight: 44,
+                      borderRadius: RadiusPill,
+                      background: Ink, color: Cream,
+                      fontFamily: Sans, fontWeight: 600, fontSize: 12,
+                      display: "inline-flex", alignItems: "center", gap: 7,
+                      transition: Trans(["background","color","opacity"], "fast"),
+                    })
+                  }}>{T.cc_bouton || "Nuvi t'explique"}</button>
+              )}
             </div>
           )}
 
@@ -511,6 +559,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
                   expanded={expandedId === axis.id}
                   onToggle={()=>setExpandedId(prev => prev === axis.id ? null : axis.id)}
                   onCta={onCta}
+                  onExplain={onExplain}
                   seuleSurSaLigne={seuleSurSaLigne}
                 />
               );

@@ -19,7 +19,7 @@ function scoreBg(s) {
 }
 
 function ScorePanel({ cv, apiKey, notify, layout, T, locale,
-  dashLoading, dashResult, onRunDashboard, onCtaAxis }) {
+  dashLoading, dashResult, onRunDashboard, onCtaAxis, onExplainAxis }) {
   const [mode, setMode] = useState("dashboard");
   const [quickRes, setQuickRes] = useState(null);
 
@@ -118,6 +118,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
           result={dashResult}
           onRun={onRunDashboard}
           onCta={onCtaAxis}
+          onExplain={onExplainAxis}
           locale={locale}
         />
       )}
