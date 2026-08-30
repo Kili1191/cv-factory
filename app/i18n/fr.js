@@ -126,7 +126,7 @@ const FR_T = {
   bt_pro:"Pro", bt_pro_hint:"Corporate sobre, verbe d'action",
   bt_ats:"ATS", bt_ats_hint:"Mots-cles metier maximises",
   bt_premium:"Premium", bt_premium_hint:"Registre executive elegant",
-  bt_impact:"Resultat", bt_impact_hint:"Ce qui a change, chiffre par toi",
+  bt_impact:"Resultat", bt_impact_hint:"Ce qui a change, ton chiffre",
   bt_trou_label:"Ton chiffre",
   bt_trou_ph:"12 %, 80 couverts, 3 semaines",
   bt_trou_why:"Nuvi n'ecrit pas ce chiffre a ta place : c'est toi qui l'as vecu, et c'est toi qu'un recruteur interrogera dessus en entretien.",

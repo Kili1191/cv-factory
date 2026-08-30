@@ -127,7 +127,7 @@ const EN_T = {
   bt_pro:"Pro", bt_pro_hint:"Corporate tone, action verb",
   bt_ats:"ATS", bt_ats_hint:"Maximizes industry keywords",
   bt_premium:"Premium", bt_premium_hint:"Executive elegant register",
-  bt_impact:"Result", bt_impact_hint:"What changed, measured by you",
+  bt_impact:"Result", bt_impact_hint:"What changed, your figure",
   bt_trou_label:"Your figure",
   bt_trou_ph:"12%, 80 covers, 3 weeks",
   bt_trou_why:"Nuvi will not write this figure for you: you are the one who lived it, and you are the one a recruiter will question about it.",

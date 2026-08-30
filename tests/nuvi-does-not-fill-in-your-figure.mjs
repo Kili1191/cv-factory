@@ -214,7 +214,11 @@ async function surLEcran() {
     }
     await carteAxe.click();
     await page.waitForTimeout(600);
-    const cta = page.locator("button").filter({ hasText: "Chiffrer mes resultats" }).first();
+    // Le texte du bouton est aussi contenu dans le texte de la carte qui le
+    // porte : un filtre "hasText" attrape la carte avant le bouton, et le
+    // clic replie la carte au lieu d'ouvrir l'editeur. On demande donc le
+    // bouton dont le nom accessible EST exactement celui-la.
+    const cta = page.getByRole("button", { name: "Chiffrer mes resultats", exact: true }).first();
     if (await cta.count() === 0) {
       echecs.push(
         "l'axe des resultats n'offre aucun bouton pour aller corriger : le "
@@ -225,7 +229,9 @@ async function surLEcran() {
     }
     await cta.click();
     await page.waitForTimeout(1200);
-    const bouton = page.locator('button[title="Transformer ce bullet avec Nuvi"]').first();
+    // Le titre exact vient de l'i18n (bt_btn_title) et a deja change une
+    // fois : on s'accroche a son debut, pas a sa formulation complete.
+    const bouton = page.locator('button[title^="Transformer ce bullet"]').first();
     if (await bouton.count() === 0) {
       echecs.push(
         "le bouton qui reformule une puce est introuvable : le test ne peut "
@@ -281,34 +287,41 @@ async function surLEcran() {
     }
 
     // On tape le chiffre, on adopte, et on regarde ce qui atterrit sur le CV.
+    //
+    // Le champ se designe par son exemple : c'est le seul repere qui ne
+    // depende ni de l'ordre du DOM ni de la structure des cartes. Une
+    // premiere version prenait "le premier input du bloc qui contient la
+    // phrase", et ce bloc englobait tout le modal : elle tapait dans un
+    // autre champ et concluait que le produit ne repondait pas.
     if (etat.aUnChamp) {
-      const champ = page.locator("input").filter({ hasNot: page.locator("x") });
-      await page.evaluate(() => {
-        const cartes = [...document.querySelectorAll("div")].filter(
-          (d) => /Marge boissons tenue a/.test(d.textContent || ""));
-        const carte = cartes[cartes.length - 1];
-        const i = carte && carte.querySelector("input");
-        if (i) i.focus();
-      });
-      await page.keyboard.type("78 %");
-      await page.waitForTimeout(400);
-      const apres = await page.evaluate(() => {
-        const cartes = [...document.querySelectorAll("div")].filter(
-          (d) => /Marge boissons tenue a/.test(d.textContent || "")
-            && d.querySelector("button"));
-        const carte = cartes[cartes.length - 1];
-        const adopter = [...carte.querySelectorAll("button")].find(
-          (b) => /Adopter/i.test(b.textContent || ""));
-        if (adopter && !adopter.disabled) adopter.click();
-        return adopter ? adopter.disabled : null;
-      });
-      if (apres !== false) {
+      const champ = page.getByPlaceholder("12 %, 80 couverts, 3 semaines").first();
+      if (await champ.count() === 0) {
+        echecs.push("le champ du chiffre n'a pas l'exemple annonce par l'i18n.");
+        await ctx.close();
+        return echecs;
+      }
+      await champ.fill("78 %");
+      await page.waitForTimeout(500);
+
+      const adopter = page.getByRole("button", { name: "Adopter", exact: true });
+      const nb = await adopter.count();
+      let bloqueEncore = true;
+      for (let i = 0; i < nb; i++) {
+        const b = adopter.nth(i);
+        const texteCarte = await b.evaluate(
+          (el) => (el.closest("div").parentElement.textContent || ""));
+        if (!/Marge boissons tenue a/.test(texteCarte)) continue;
+        bloqueEncore = await b.isDisabled();
+        if (!bloqueEncore) await b.click();
+        break;
+      }
+      if (bloqueEncore) {
         echecs.push(
           "le bouton Adopter reste bloque apres avoir tape le chiffre : la "
           + "version est inadoptable quoi qu'on fasse."
         );
       }
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(1200);
       const surLeCv = await page.evaluate(() => document.body.innerText);
       if (/\[\?\]/.test(surLeCv)) {
         echecs.push(
@@ -322,7 +335,6 @@ async function surLEcran() {
           + "repondu et sa reponse est perdue."
         );
       }
-      void champ;
     }
 
     await ctx.close();
