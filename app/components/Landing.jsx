@@ -95,19 +95,6 @@ const T = {
     cvBody: "Not one sentence - every section. Paste the ad you are going for, and Nuvi writes the CV for that ad, then hands you the file.",
     morphLead: "Watch the same facts re-file themselves",
     morphNote: "Not one of these adds anything. The years are the same years, the work is the same work. Only the shape changed, and with it whether the software can put it anywhere.",
-    resKicker: "What your CV leaves out",
-    resTitle: "You did more than your CV says.",
-    resBody: "Nobody ever taught you to write down what you achieved. They taught you to describe your job. So your CV says what you were handed, and the recruiter is looking for what you did with it. Nuvi reads every line, shows you which ones describe the job and which ones describe you, and helps you write the difference.",
-    resLeft: "What you wrote",
-    resRight: "What you actually did",
-    resRows: [
-      ["Responsible for the bar and supplier orders", "Held beverage margin at 78% across the year"],
-      ["Care and meals for 12 residents a day", "Falls on the unit down from 9 a month to 2"],
-      ["Round of 120 parcels a day", "On-time delivery up from 88% to 97%"],
-      ["Picking 300 orders a day", "Picking errors cut by two thirds in six months"],
-      ["Welcoming customers in store", "Average basket up from 18 to 24 pounds in a quarter"],
-    ],
-    resFoot: "Nothing on the right was invented. It was already true on the left, it just was not written down. And if you have never counted any of it, that is normal: nobody counts their own work while they are doing it. Nuvi asks the question your trade can answer, and offers you figures to recognise. It never invents one for you, because on the day, you are the one answering.",
     answerTitle: "Nothing invented. Only re-filed.",
     answerBody: "Ten years is still ten years. The job title is one the software recognises, the result is a number instead of an adjective. Same facts, different fate.",
   },
@@ -167,19 +154,6 @@ const T = {
     cvBody: "Pas une phrase - toutes les sections. Colle l'annonce que tu vises, Nuvi ecrit le CV pour elle, et te rend le fichier.",
     morphLead: "Regarde les memes faits se ranger autrement",
     morphNote: "Aucun n'ajoute quoi que ce soit. Les annees sont les memes annees, le travail est le meme travail. Seule la forme a change, et avec elle le fait que le logiciel sache ou la mettre.",
-    resKicker: "Ce que ton CV ne dit pas de toi",
-    resTitle: "Tu as fait plus que ce que ton CV raconte.",
-    resBody: "Personne ne t'a appris a ecrire ce que tu as reussi. On t'a appris a decrire ton poste. Alors ton CV dit ce qu'on t'a confie, et le recruteur, lui, cherche ce que tu en as fait. Nuvi lit chaque ligne, te montre laquelle raconte ton poste et laquelle te raconte toi, et t'aide a ecrire la difference.",
-    resLeft: "Ce que tu as ecrit",
-    resRight: "Ce que tu as vraiment fait",
-    resRows: [
-      ["Responsable du bar et des commandes fournisseurs", "Marge boissons tenue a 78 % sur l'annee"],
-      ["Toilettes et repas pour 12 residents par jour", "Chutes ramenees de 9 a 2 par mois sur l'unite"],
-      ["Tournee de 120 colis par jour", "Livraisons a l'heure portees de 88 a 97 %"],
-      ["Preparation de 300 commandes par jour", "Erreurs de preparation divisees par trois en six mois"],
-      ["Accueil des clients en boutique", "Panier moyen porte de 18 a 24 euros en un trimestre"],
-    ],
-    resFoot: "Rien de ce qui est a droite n'a ete invente. C'etait deja vrai a gauche, ce n'etait juste ecrit nulle part. Et si tu n'as jamais compte tout ca, c'est normal : personne ne compte son travail pendant qu'il le fait. Nuvi te pose la question que ton metier sait repondre, et te propose des chiffres a reconnaitre. Il n'en invente jamais un a ta place, parce que le jour venu, c'est toi qui repondras.",
     answerTitle: "Rien d'invente. Juste range autrement.",
     answerBody: "Dix ans restent dix ans. L'intitule est un que le logiciel connait, le resultat est un chiffre au lieu d'un adjectif. Memes faits, autre sort.",
   },
@@ -623,102 +597,6 @@ export default function Landing({ lang = "en" }) {
           marginTop: 26, fontSize: "var(--t-micro)",
           lineHeight: 1.6, color: Muted, maxWidth: 62 + "ch",
         }}>{t.s34foot}</p>
-      </section>
-
-      {/* ===== 3bis. CE QUI FAIT RAPPELER =====
-          La page montrait comment un CV se fait RANGER par une machine. Elle
-          ne disait rien de ce qui, une fois range, fait DECROCHER LE
-          TELEPHONE. C'est pourtant la moitie du produit, et la moitie qu'on
-          ne trouve nulle part ailleurs : les autres outils s'arretent au
-          format.
-
-          La section dit deux choses, dans cet ordre : ce que c'est, puis ce
-          que ca fait pour la personne. Un mecanisme explique tout seul
-          n'interesse que celui qui l'a construit.
-
-          Les paires font le travail que le texte ne peut pas faire. Quelqu'un
-          qui lit "Responsable du bar" a gauche reconnait sa propre ligne, et
-          voit a droite ce qu'elle pourrait etre. C'est la qu'il se projette,
-          et c'est pour ca que les metiers changent d'une ligne a l'autre :
-          serveur, aide-soignante, livreur, magasinier, vendeuse. Une seule
-          famille de metier dirait a tous les autres que ce n'est pas pour eux.
-
-          La note de bas de section repond a l'objection qui tue la vente :
-          "je n'ai aucun chiffre". Si elle n'y est pas, la personne se juge
-          disqualifiee par la page meme qui devait l'aider. */}
-      <section className="nuvi-scroll-in" style={{
-        padding: "clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
-        borderBottom: "1px solid " + Hair,
-        maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
-      }}>
-        {eyebrow(t.resKicker)}
-        <div className="nuvi-duo">
-          <h2 className="nuvi-titre-geant" style={{
-            fontFamily: Serif, fontWeight: 400, color: Ink,
-            fontSize: "var(--t-title)", lineHeight: 1.04,
-            letterSpacing: "-0.035em", margin: 0,
-          }}>{t.resTitle}</h2>
-          <p style={{
-            fontSize: "var(--t-body)", lineHeight: 1.62,
-            color: Muted, maxWidth: 46 + "ch", margin: 0,
-          }}>{t.resBody}</p>
-        </div>
-
-        {/* LES DEUX EN-TETES FONT LA MOITIE DU TRAVAIL
-            Sans eux, la colonne de droite se lit comme une correction : voila
-            la bonne phrase, la tienne etait ratee. Avec eux, elle se lit comme
-            une restitution : "ce que tu as vraiment fait" dit que le resultat
-            etait deja la, et que seule l'ecriture manquait. C'est la meme
-            grille, la meme donnee, et ce n'est plus le meme message pour la
-            personne qui se reconnait dans la colonne de gauche. */}
-        <div className="nuvi-verif-ligne" style={{
-          marginTop: "clamp(28px, 5vh, 54px)",
-          fontFamily: Sans, fontSize: "var(--t-micro)",
-          letterSpacing: "0.12em", textTransform: "uppercase",
-        }}>
-          <div style={{ color: Muted }}>{t.resLeft}</div>
-          <div style={{ color: Accent }}>{t.resRight}</div>
-        </div>
-
-        <div>
-          {t.resRows.map(([avant, apres], i) => (
-            <div key={avant} className="nuvi-verif-ligne nuvi-entree" style={{
-              "--nuvi-rang": i,
-              borderTop: "1px solid " + Hair,
-              paddingTop: 16, paddingBottom: 16,
-            }}>
-              {/* AUCUN TEXTE BARRE A GAUCHE
-                  La premiere version rayait la phrase de depart. Barrer
-                  "Toilettes et repas pour 12 residents par jour" dit a une
-                  aide-soignante que son travail est a supprimer, alors que
-                  toute la section lui dit l'inverse : elle a fait plus que ce
-                  qu'elle a ecrit. La ligne de gauche n'est pas fausse, elle
-                  est incomplete. Le gris, les en-tetes et la fleche le disent
-                  sans rien rayer de ce qu'elle a vecu. */}
-              <div style={{
-                fontFamily: Sans, fontSize: "var(--t-body)",
-                lineHeight: 1.5, color: Muted,
-              }}>{avant}</div>
-              <div style={{
-                fontFamily: Sans, fontSize: "var(--t-body)",
-                fontWeight: 600, lineHeight: 1.5, color: Ink,
-                letterSpacing: "-0.01em",
-                display: "flex", alignItems: "baseline", gap: 10,
-              }}>
-                <span aria-hidden="true" style={{
-                  fontFamily: Serif, fontSize: "var(--t-micro)",
-                  color: Accent, fontWeight: 400, flexShrink: 0,
-                }}>{"\u2192"}</span>
-                {apres}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <p style={{
-          marginTop: 26, fontSize: "var(--t-micro)",
-          lineHeight: 1.6, color: Muted, maxWidth: 62 + "ch",
-        }}>{t.resFoot}</p>
       </section>
 
       {/* ===== 3ter. COMMENT ON VERIFIE =====
