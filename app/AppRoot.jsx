@@ -5249,7 +5249,7 @@ export default function App() {
     // raisonnement ecrit vingt lignes plus haut dans ce fichier. L'audit,
     // lui, etait reste sur l'ancien systeme.
     //
-    // Le diagnostic compte huit axes ponderes et rend, pour chacun, la mesure
+    // Le diagnostic compte neuf axes ponderes et rend, pour chacun, la mesure
     // qui le justifie : combien de puces portent un chiffre, combien de
     // champs qu'un logiciel de tri cherche sont absents. Deux passages sur le
     // meme CV rendent exactement le meme rapport.
@@ -5690,7 +5690,7 @@ export default function App() {
   // et la priorite numero 1 a corriger.
   // LE TABLEAU DE BORD NE DEMANDE PLUS RIEN A PERSONNE
   //
-  // Les huit axes etaient notes par le modele. Le meme CV n'obtenait donc pas
+  // Les axes etaient notes par le modele. Le meme CV n'obtenait donc pas
   // deux fois la meme note : un score qui bouge sans que rien n'ait change
   // n'est pas un score, c'est un tirage. Et l'axe "design" demandait de juger
   // une mise en page a partir d'un bloc de texte - ce chiffre etait invente.
@@ -5743,7 +5743,11 @@ export default function App() {
     if (axisId === "title") {
       close();
       setModal("id");
-    } else if (axisId === "bullets") {
+    } else if (axisId === "bullets" || axisId === "achievements") {
+      // Les deux axes se corrigent au meme endroit : dans les puces des
+      // experiences. "bullets" demande un chiffre, "achievements" demande que
+      // le chiffre mesure un resultat et non le perimetre confie. On ouvre
+      // donc l'editeur d'experiences dans les deux cas.
       close();
       setModal("exp");
     } else if (axisId === "ats") {

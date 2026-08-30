@@ -1,6 +1,6 @@
 // LE DIAGNOSTIC NE COUTE RIEN, ET NE BOUGE PAS
 //
-// Les huit axes du tableau de bord etaient notes par le modele. Trois defauts,
+// Les axes du tableau de bord etaient notes par le modele. Trois defauts,
 // dont un grave :
 //
 //   - Le meme CV n'obtenait pas deux fois la meme note. Un score qui bouge
@@ -55,7 +55,7 @@ export async function run() {
     await page.waitForTimeout(1200);
 
     // --- 1. Le rapport est bien la ------------------------------------
-    const axes = ["title", "bullets", "ats", "relevance",
+    const axes = ["title", "bullets", "achievements", "ats", "relevance",
       "credibility", "design", "readability", "differentiation"];
     const rapport = await page.evaluate(() => (window.__nuviDernierDiagnostic
       ? { ok: true, ids: window.__nuviDernierDiagnostic.scores.map((s) => s.id) }
@@ -71,7 +71,7 @@ export async function run() {
       if (manquants.length) {
         failures.push(
           "le rapport ne couvre plus " + manquants.join(", ") + ". Le tableau "
-          + "annonce huit axes : un axe absent est une note que personne ne rend."
+          + "annonce neuf axes : un axe absent est une note que personne ne rend."
         );
       }
     }
@@ -120,7 +120,7 @@ export async function run() {
     if (!failures.length) {
       const d = await page.evaluate(() => window.__nuviDernierDiagnostic);
       console.log(
-        "      8 axes mesures sur place, " + d.global_score + "/100, "
+        "      9 axes mesures sur place, " + d.global_score + "/100, "
         + "zero appel reseau, deux passages identiques, chaque note avec sa preuve"
       );
     }

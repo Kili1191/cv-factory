@@ -2,7 +2,7 @@
 
 // CV Factory v17 - ScoreDashboard
 //
-// Affiche 8 axes de score d'un CV, chaque axe ayant une note 0..100,
+// Affiche 9 axes de score d'un CV, chaque axe ayant une note 0..100,
 // une barre de progression coloree et une recommandation actionnable.
 //
 // Sur mobile : grille 2 colonnes. Sur desktop large (>=768px) : grille 4 colonnes.
@@ -25,11 +25,18 @@ import {
   GradPurple, B, Trans } from "./tokens";
 import { CountUp } from "./motion";
 
-// 8 axes : id stable, label/sub viennent de T (i18n).
+// 9 axes : id stable, label/sub viennent de T (i18n).
 // L'ordre ici detemine l'ordre d'affichage dans la grille.
+//
+// "achievements" suit "bullets" expres : les deux lisent les memes phrases,
+// et l'un ne se comprend qu'a cote de l'autre. Une puce peut porter un
+// chiffre (bullets content) et ne dire aucun resultat (achievements bas) :
+// "Encadre une equipe de 12" mesure ce qu'on vous a confie, pas ce qui en
+// est advenu. Les voir cote a cote est ce qui rend l'ecart lisible.
 const AXES = [
   { id: "title",           tKey: "sd_ax_title",           subKey: "sd_ax_title_sub",           ctaKey: "sd_cta_title",           accent: Purple,    bg: PurpleSoft },
   { id: "bullets",         tKey: "sd_ax_bullets",         subKey: "sd_ax_bullets_sub",         ctaKey: "sd_cta_bullets",         accent: Purple,    bg: PurpleSoft },
+  { id: "achievements",    tKey: "sd_ax_achievements",    subKey: "sd_ax_achievements_sub",    ctaKey: "sd_cta_achievements",    accent: Magenta,   bg: PurpleSoft },
   { id: "ats",             tKey: "sd_ax_ats",             subKey: "sd_ax_ats_sub",             ctaKey: "sd_cta_ats",             accent: Ink,       bg: Gray100 },
   { id: "relevance",       tKey: "sd_ax_relevance",       subKey: "sd_ax_relevance_sub",       ctaKey: "sd_cta_relevance",       accent: Purple,    bg: PurpleSoft },
   { id: "credibility",     tKey: "sd_ax_credibility",     subKey: "sd_ax_credibility_sub",     ctaKey: "sd_cta_credibility",     accent: Coral,     bg: CoralSoft },
@@ -53,14 +60,14 @@ function scoreBg(s) {
 }
 
 // Card individuelle. Mode collapsed (juste score+nom) ou expanded (+ reco + CTA).
-function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta }) {
+function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta, seuleSurSaLigne }) {
   const validScore = typeof score === "number" && !isNaN(score)
     ? Math.max(0, Math.min(100, Math.round(score)))
     : null;
 
   return (
     <div style={{
-      gridColumn: expanded ? "1 / -1" : "auto",
+      gridColumn: expanded || seuleSurSaLigne ? "1 / -1" : "auto",
       transition: "grid-column 200ms ease-out",
     }}>
       <button onClick={onToggle} style={{
@@ -460,15 +467,24 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
             </div>
           )}
 
-          {/* Grille des 8 axes */}
+          {/* Grille des axes */}
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat("+cols+", 1fr)",
             gap: 10,
             marginBottom: 12,
           }}>
-            {AXES.map(axis => {
+            {AXES.map((axis, i) => {
               const s = scoresMap[axis.id];
+              // UN NEUVIEME AXE LAISSE UNE CARTE ORPHELINE
+              //
+              // La grille tient 2 colonnes sur telephone et 4 au-dela. Avec
+              // huit axes, les lignes tombaient juste. Le neuvieme laisse la
+              // derniere carte seule a gauche, avec un trou a sa droite : ca
+              // se lit comme un chargement interrompu, pas comme une grille.
+              // Elle prend donc toute la largeur, ce qui referme la ligne.
+              const seuleSurSaLigne = (AXES.length % cols) === 1
+                && i === AXES.length - 1;
               return (
                 <ScoreAxisCard
                   key={axis.id}
@@ -479,6 +495,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
                   expanded={expandedId === axis.id}
                   onToggle={()=>setExpandedId(prev => prev === axis.id ? null : axis.id)}
                   onCta={onCta}
+                  seuleSurSaLigne={seuleSurSaLigne}
                 />
               );
             })}
