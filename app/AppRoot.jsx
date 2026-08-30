@@ -7103,9 +7103,38 @@ export default function App() {
           + "2. pro: ton corporate sobre, verbe d'action en debut, focus sur le faire.\n"
           + "3. ats: maximise les mots-cles du metier (CRM, P&L, KPI, B2B, etc.) pour passer les filtres ATS.\n"
           + "4. premium: registre executive elegant, tournure plus litteraire, mots forts (orchestre, pilote, deploie).\n"
-          + "5. impact: ajoute une estimation chiffree credible (CA, %, nombre de personnes, delai). Si la phrase originale ne contient pas de chiffre, propose une fourchette plausible (par exemple: \"+15-25%\", \"5-10 personnes\").\n\n"
+          // LE REGISTRE QUI PROMETTAIT L'IMPACT L'INVENTAIT
+          //
+          // Il disait : "Si la phrase originale ne contient pas de chiffre,
+          // propose une fourchette plausible (par exemple +15-25%)." Trois
+          // lignes plus bas, QUI_DECIDE interdit d'ajouter de sa propre
+          // autorite un chiffre qui n'est pas dans le CV. Le meme prompt
+          // ordonnait donc une chose et son contraire, et le modele suivait
+          // la plus precise des deux : celle qui donnait un exemple.
+          //
+          // Un chiffre invente ne se paie pas a l'ecriture, il se paie en
+          // entretien. La personne arrive avec un "+20 % de chiffre
+          // d'affaires" qu'elle n'a jamais mesure, on lui demande comment
+          // elle l'a obtenu, et elle n'a rien a repondre. C'est le contraire
+          // exact de ce que le produit promet.
+          //
+          // Le registre garde donc ce qu'il apportait, la FORME du resultat,
+          // et rend le chiffre a qui le connait : la phrase revient avec le
+          // marqueur [?] a l'endroit ou la mesure doit venir, et l'interface
+          // demande le chiffre avant de laisser adopter la version.
+          + "5. impact: transforme la responsabilite en resultat, c'est a dire en ce "
+          + "qui a CHANGE grace a cette personne. N'utilise QUE les chiffres deja "
+          + "presents dans la phrase originale. Si elle n'en contient aucun, ecris "
+          + "quand meme la phrase sous sa forme de resultat et laisse la mesure en "
+          + "attente avec le marqueur exact [?], une seule fois, a l'endroit precis "
+          + "ou le chiffre doit venir. N'invente ni chiffre, ni pourcentage, ni "
+          + "fourchette, ni estimation, meme presentee comme plausible : c'est le "
+          + "candidat qui connait ce chiffre, et c'est lui qu'un recruteur "
+          + "interrogera dessus.\n\n"
           + "REGLES:\n"
           + "- Reste fidele au sens de la phrase d'origine.\n"
+          + "- Le marqueur [?] n'apparait que dans la version impact, une fois au plus, "
+          + "et jamais dans les quatre autres.\n"
           + "- " + QUI_DECIDE + "\n"
           + "- Maximum 18 mots par version.\n"
           + "- " + NO_DASH + "\n"

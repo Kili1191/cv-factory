@@ -18,7 +18,7 @@
 // pour garder la meme shape JSON, mais les LABELS affiches a l'utilisateur sont
 // adaptes : Sobre / Pro / ATS / Premium / Storytelling.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple,
@@ -26,7 +26,22 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
   GradDark, KEYFRAMES_V17, B, Trans } from "./tokens";
 
+// LE CHIFFRE QUE NUVI NE REMPLIT PAS
+//
+// Le registre "impact" demandait au modele une fourchette plausible quand la
+// phrase d'origine ne portait aucun chiffre. Ce chiffre ne coute rien a
+// ecrire et se paie en entretien : on demande a la personne comment elle a
+// obtenu ses "+20 %", et elle n'a rien a repondre.
+//
+// Le modele rend donc la phrase sous sa forme de resultat avec le marqueur
+// [?] a la place de la mesure. C'est ici que la mesure se demande, a la seule
+// personne qui la connait, avant que la version puisse etre adoptee.
+const MARQUEUR = "[?]";
+function aUnTrou(t) { return typeof t === "string" && t.includes(MARQUEUR); }
+
 export default function BulletTransformer({ kind = "bullet", original, levels, loading, onAdopt, onClose, T }) {
+  // Ce que la personne tape pour combler le trou, par registre.
+  const [chiffres, setChiffres] = useState({});
 
   // Empeche le scroll du body quand le modal est ouvert.
   useEffect(() => {
@@ -226,23 +241,77 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                     whiteSpace:"nowrap",
                   }}>{c.hint}</span>
                 </div>
-                <button onClick={()=>onAdopt(levels[c.key])} style={{
-                  ...B({
-                    padding:"6px 14px", borderRadius:RadiusPill,
-                    background:Ink, color:Cream,
-                    fontSize:11, fontWeight:600, fontFamily:Sans,
-                    letterSpacing:"0.02em",
-                    flexShrink:0,
-                  })
-                }}>{T.bt_adopt}</button>
+                <button
+                  onClick={()=>onAdopt(
+                    aUnTrou(levels[c.key])
+                      ? levels[c.key].split(MARQUEUR).join((chiffres[c.key] || "").trim())
+                      : levels[c.key]
+                  )}
+                  disabled={aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()}
+                  style={{
+                    ...B({
+                      padding:"6px 14px", borderRadius:RadiusPill,
+                      background: aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()
+                        ? Gray200 : Ink,
+                      color: aUnTrou(levels[c.key]) && !(chiffres[c.key] || "").trim()
+                        ? Gray600 : Cream,
+                      fontSize:11, fontWeight:600, fontFamily:Sans,
+                      letterSpacing:"0.02em",
+                      flexShrink:0,
+                    })
+                  }}>{T.bt_adopt}</button>
               </div>
               <div style={{
                 fontSize:13, color:Ink, lineHeight:1.55,
                 fontFamily:isSummary ? Serif : Sans,
                 fontWeight: isSummary ? 400 : 400,
               }}>
-                {levels[c.key]}
+                {aUnTrou(levels[c.key])
+                  ? levels[c.key].split(MARQUEUR).map((bout, i, tab) => (
+                      <span key={i}>
+                        {bout}
+                        {i < tab.length - 1 && (
+                          <span style={{
+                            background: (chiffres[c.key] || "").trim() ? "transparent" : "rgba(255,90,54,.14)",
+                            color: (chiffres[c.key] || "").trim() ? Ink : Coral,
+                            borderRadius: 4, padding: "0 4px", fontWeight: 600,
+                          }}>{(chiffres[c.key] || "").trim() || "?"}</span>
+                        )}
+                      </span>
+                    ))
+                  : levels[c.key]}
               </div>
+
+              {/* CE QUI MANQUE, ET POURQUOI CE N'EST PAS A NUVI DE LE METTRE */}
+              {aUnTrou(levels[c.key]) && (
+                <div style={{
+                  marginTop:12, paddingTop:12,
+                  borderTop:"0.5px solid "+Gray200,
+                }}>
+                  <label style={{display:"block"}}>
+                    <span style={{
+                      display:"block", fontSize:11, fontWeight:600,
+                      letterSpacing:"0.08em", textTransform:"uppercase",
+                      color:Coral, marginBottom:5,
+                    }}>{T.bt_trou_label || "Ton chiffre"}</span>
+                    <input
+                      value={chiffres[c.key] || ""}
+                      onChange={(e)=>setChiffres(p => ({ ...p, [c.key]: e.target.value }))}
+                      placeholder={T.bt_trou_ph || "12 %, 80 couverts, 3 semaines"}
+                      style={{
+                        width:"100%", padding:"10px 12px",
+                        borderRadius:RadiusSm, border:"1px solid "+Gray200,
+                        background:Paper, color:Ink,
+                        fontFamily:Sans, fontSize:13, minHeight:44,
+                      }}/>
+                  </label>
+                  <div style={{
+                    fontSize:11, color:Gray600, lineHeight:1.5, marginTop:7,
+                  }}>{T.bt_trou_why
+                    || "Nuvi n'ecrit pas ce chiffre a ta place : c'est toi qui l'as vecu, "
+                     + "et c'est toi qu'un recruteur interrogera dessus."}</div>
+                </div>
+              )}
             </div>
           ))}
         </div>
