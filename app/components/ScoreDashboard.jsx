@@ -17,7 +17,7 @@
 //   onRun()      : declenche l'analyse
 //   onCta(axisId): redirige vers l'outil correspondant a l'axe (callback fourni par App)
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft, Magenta,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
@@ -298,23 +298,35 @@ function DeuxLectures({ lectures, locale }) {
 
 export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, onCta, locale }) {
   const [expandedId, setExpandedId] = useState(null);
-  const [isWide, setIsWide] = useState(false);
+  const grilleRef = useRef(null);
+  const [largeur, setLargeur] = useState(0);
 
-  // Detect wide viewport (>=768px) for responsive grid 2->4 cols.
+  // LA GRILLE MESURE SON PANNEAU, PAS LA FENETRE
+  //
+  // Le nombre de colonnes venait d'une media query sur la fenetre : 4 des que
+  // l'ecran depassait 768px. Or cette grille ne vit pas dans la fenetre, elle
+  // vit dans le panneau lateral du diagnostic, qui fait environ 470px quel que
+  // soit l'ecran. Sur n'importe quel ordinateur, la grille demandait donc 4
+  // colonnes dans une largeur qui en tient 2 : la troisieme etait coupee au
+  // bord du panneau et la quatrieme n'apparaissait pas du tout. Deux axes sur
+  // neuf etaient invisibles, et rien ne le disait.
+  //
+  // C'est le defaut classique de la media query : elle repond sur la taille
+  // de l'ecran quand la question porte sur la place disponible. On mesure donc
+  // le conteneur, et le compte de colonnes suit la place reelle.
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mql = window.matchMedia("(min-width: 768px)");
-    const onChange = () => setIsWide(mql.matches);
-    onChange();
-    if (mql.addEventListener) {
-      mql.addEventListener("change", onChange);
-      return () => mql.removeEventListener("change", onChange);
-    } else {
-      // Fallback older browsers
-      mql.addListener(onChange);
-      return () => mql.removeListener(onChange);
+    const el = grilleRef.current;
+    if (!el || typeof ResizeObserver === "undefined") {
+      if (el) setLargeur(el.getBoundingClientRect().width);
+      return;
     }
-  }, []);
+    const ro = new ResizeObserver((entries) => {
+      for (const e of entries) setLargeur(e.contentRect.width);
+    });
+    ro.observe(el);
+    setLargeur(el.getBoundingClientRect().width);
+    return () => ro.disconnect();
+  }, [result]);
 
   const cvIsEmpty = !cv.name && !cv.title && !cv.summary
     && (cv.experience || []).every(e => !e.title && !e.company);
@@ -327,7 +339,11 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
     });
   }
 
-  const cols = isWide ? 4 : 2;
+  // Une carte tient son score, son nom et son sous-titre a partir d'environ
+  // 150px ; en dessous le nom se casse en trois lignes et la carte devient
+  // plus haute que large. On garde donc 2 colonnes par defaut, la valeur qui
+  // marche sur telephone, et on n'en ajoute que si la place existe vraiment.
+  const cols = largeur >= 640 ? 4 : largeur >= 470 ? 3 : 2;
 
   return (
     <div style={{fontFamily:Sans}}>
@@ -468,7 +484,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
           )}
 
           {/* Grille des axes */}
-          <div style={{
+          <div ref={grilleRef} style={{
             display: "grid",
             gridTemplateColumns: "repeat("+cols+", 1fr)",
             gap: 10,
