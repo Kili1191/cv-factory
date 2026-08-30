@@ -129,7 +129,7 @@ const EN_T = {
   bt_premium:"Premium", bt_premium_hint:"Executive elegant register",
   bt_impact:"Result", bt_impact_hint:"What changed, your figure",
   bt_trou_label:"Or your exact figure",
-  bt_trou_ph:"12%, 80 covers, 3 weeks",
+  bt_trou_ph:"12%, 30 cases, 3 weeks",
   bt_trou_why:"Nuvi suggests this figure from your trade. Check that it is right: it is the one a recruiter will ask you to explain.",
   bt_trou_q:"Roughly what was that figure?",
   // === Nuvi explains (companion panel for one axis) ===

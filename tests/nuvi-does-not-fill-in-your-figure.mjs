@@ -107,6 +107,21 @@ export async function run() {
       + "rendre une phrase qui n'est plus un resultat."
     );
   }
+  // LA QUESTION EST DU TEXTE NEUF, DONC SA LANGUE SE DIT
+  //
+  // "en gardant la langue d'origine" porte sur les cinq reformulations : ce
+  // sont des reecritures, elles heritent de la langue de la phrase.
+  // impact_question et impact_choix sont neufs, adresses a la personne. Ce
+  // prompt etant redige en francais, le modele repondait en francais a
+  // quelqu'un qui avait choisi l'anglais.
+  if (!/MEME LANGUE que la phrase/.test(appRoot)) {
+    failures.push(
+      "le prompt n'impose plus la langue de la question et des propositions. "
+      + "Ce sont les deux seuls champs qui ne sont pas des reformulations : "
+      + "sans consigne, ils reviennent dans la langue du prompt, et une "
+      + "personne qui a choisi l'anglais lit une question en francais."
+    );
+  }
   if (!/impact_question/.test(appRoot) || !/impact_choix/.test(appRoot)) {
     failures.push(
       "le prompt ne reclame plus la question du metier et ses propositions. "

@@ -128,7 +128,7 @@ const FR_T = {
   bt_premium:"Premium", bt_premium_hint:"Registre executive elegant",
   bt_impact:"Resultat", bt_impact_hint:"Ce qui a change, ton chiffre",
   bt_trou_label:"Ou ton chiffre exact",
-  bt_trou_ph:"12 %, 80 couverts, 3 semaines",
+  bt_trou_ph:"12 %, 30 dossiers, 3 semaines",
   bt_trou_why:"Nuvi propose ce chiffre d'apres ton metier. Verifie qu'il est juste : c'est celui qu'un recruteur te demandera d'expliquer.",
   bt_trou_q:"Ce chiffre, c'etait plutot combien ?",
   // === Nuvi t'explique (panneau compagnon d'un axe) ===

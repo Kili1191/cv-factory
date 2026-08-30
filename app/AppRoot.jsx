@@ -7155,6 +7155,18 @@ export default function App() {
           + "phrase sous sa forme de resultat en placant le marqueur exact [?] a "
           + "l'endroit precis de la mesure, une seule fois.\n\n"
           + "AVEC CE REGISTRE, ET SEULEMENT SI TU AS PLACE UN [?], AJOUTE DEUX CHAMPS :\n"
+          // LA QUESTION N'EST PAS UNE REFORMULATION
+          //
+          // "en gardant la langue d'origine", plus haut, porte sur les cinq
+          // versions : ce sont des reecritures de la phrase, elles heritent de
+          // sa langue. impact_question et impact_choix sont du texte NEUF,
+          // adresse a la personne. Ce prompt etant redige en francais, un
+          // modele a qui l'on demande une question nouvelle repond en
+          // francais, et une personne qui a choisi l'anglais lisait "Quelle
+          // marge tenais-tu sur les boissons ?". On le dit donc en toutes
+          // lettres pour ces deux champs.
+          + "- Ces deux champs s'ecrivent dans la MEME LANGUE que la phrase "
+          + "originale, pas dans celle de cette consigne.\n"
           + "- \"impact_question\" : la question a poser a la personne pour obtenir "
           + "cette mesure. Elle doit etre courte, concrete, dans le vocabulaire de son "
           + "metier, et repondable de tete. \"Combien de couverts par service ?\" et "

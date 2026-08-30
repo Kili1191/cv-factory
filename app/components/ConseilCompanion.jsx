@@ -91,14 +91,33 @@ export default function ConseilCompanion({ T, locale, ouvert, axe, onClose, onGo
   // ecrite. La colonne "apres" ne porte PAS une phrase reecrite : Nuvi ne
   // sait pas ce qui a change grace a elle, et une phrase inventee ici serait
   // exactement ce que le produit s'interdit. Elle porte la FORME que la
-  // phrase doit prendre, avec un exemple pris dans un autre metier pour
-  // qu'on ne le recopie pas tel quel.
+  // phrase doit prendre, avec un exemple pris dans un AUTRE metier que celui
+  // de la personne, pour deux raisons : on ne le recopie pas tel quel, et on
+  // comprend que la regle vaut partout.
+  //
+  // L'exemple tourne. Nuvi s'adresse a des serveurs, des aides-soignantes,
+  // des livreurs, des magasiniers, des agents d'entretien. Un exemple fige
+  // dans la restauration disait a tous les autres que ce produit n'est pas
+  // pour eux. Le tirage suit la longueur de la phrase visee : il ne bouge
+  // donc pas d'une ouverture a l'autre sur le meme CV, ce qui compte autant
+  // que la variete. Un exemple qui change tout seul ferait douter du reste.
   const forme = en
     ? "What you did + what changed + by how much"
     : "Ce que tu as fait + ce qui a change + de combien";
-  const exemple = en
-    ? "Cut supplier waste from 12% to 4% in six months"
-    : "Perte fournisseurs ramenee de 12 % a 4 % en six mois";
+  const EXEMPLES = en ? [
+    "Cut medication errors from 9 a month to 2 on the ward",
+    "Took on-time delivery from 88% to 97% over one round",
+    "Cut picking errors by two thirds in six months",
+    "Raised average basket from 18 to 24 pounds in a quarter",
+    "Cut room turnaround from 25 to 17 minutes",
+  ] : [
+    "Chutes ramenees de 9 a 2 par mois sur l'unite",
+    "Livraisons a l'heure portees de 88 a 97 % sur la tournee",
+    "Erreurs de preparation divisees par trois en six mois",
+    "Panier moyen porte de 18 a 24 euros en un trimestre",
+    "Remise en etat d'une chambre ramenee de 25 a 17 minutes",
+  ];
+  const exemple = EXEMPLES[(cible && cible.texte ? cible.texte.length : 0) % EXEMPLES.length];
 
   return createPortal((
     <div

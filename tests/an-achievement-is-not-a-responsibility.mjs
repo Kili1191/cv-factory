@@ -39,7 +39,19 @@ const CV = (puces) => ({
   education: [], skills: ["Bar"], languages: [], certifications: [],
 });
 
-// Les cas qui comptent, pris dans les metiers que Nuvi vise.
+// LES CAS COUVRENT LES METIERS QUE NUVI VISE, PAS SEULEMENT UN
+//
+// La premiere version de cette liste ne contenait que de la restauration :
+// bar, couverts, points de vente. Le classement s'en tirait quand meme, parce
+// qu'il s'appuie sur des verbes de deplacement et des formes de chiffres et
+// non sur le vocabulaire d'un metier. Mais une liste qui ne teste qu'un
+// metier ne PROUVE rien sur les autres, et la personne qui lit ces tests
+// croit une couverture qui n'existe pas.
+//
+// La liste elargie a d'ailleurs trouve un vrai defaut du premier coup :
+// "Erreurs de preparation divisees par trois" etait classe responsabilite,
+// parce que le multiple etait ecrit en toutes lettres. C'est exactement
+// comme ca qu'ecrit quelqu'un qui n'a jamais redige de CV.
 const CAS = [
   // Un perimetre, chiffre ou non : ce n'est pas un resultat.
   ["Responsible for the bar", "responsabilite"],
@@ -59,6 +71,30 @@ const CAS = [
   ["Improved the service", "indetermine"],
   ["Helped improve the business", "indetermine"],
   ["Ameliore la satisfaction client", "indetermine"],
+
+  // --- Hors restauration : le meme classement doit tenir ------------------
+  // Soin et aide a la personne
+  ["Toilettes et repas pour 12 patients par jour", "responsabilite"],
+  ["Visites a domicile aupres de 8 beneficiaires", "responsabilite"],
+  ["Chutes ramenees de 9 a 2 par mois sur l unite", "resultat"],
+  // Livraison et conduite
+  ["Tournee de 120 colis par jour sur Lyon centre", "responsabilite"],
+  ["Conduite de 180 km par tournee", "responsabilite"],
+  ["Taux de livraison a l heure porte de 88 a 97 %", "resultat"],
+  // Logistique et entrepot
+  ["Preparation de 300 commandes par jour", "responsabilite"],
+  ["Inventaire de 4 000 references", "responsabilite"],
+  ["Chargement de 25 palettes par equipe", "responsabilite"],
+  // Le multiple ecrit en toutes lettres reste un resultat mesure.
+  ["Erreurs de preparation divisees par trois en six mois", "resultat"],
+  ["Picking errors halved in six months", "resultat"],
+  // Proprete, securite, petite enfance, vente, batiment
+  ["Nettoyage de 22 chambres par service", "responsabilite"],
+  ["Surveillance de 3 sites la nuit", "responsabilite"],
+  ["Encadrement de 15 enfants en section moyenne", "responsabilite"],
+  ["Accueil de 200 clients par jour en boutique", "responsabilite"],
+  ["Panier moyen porte de 18 a 24 euros", "resultat"],
+  ["Pose de 40 m2 de carrelage par jour", "responsabilite"],
 ];
 
 export async function run() {
