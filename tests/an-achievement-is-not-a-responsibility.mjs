@@ -126,6 +126,21 @@ export async function run() {
         + "laquelle de ses puces est concernee."
       );
     }
+    // LA CITATION NE PEUT PAS PORTER DE GUILLEMET DROIT
+    //
+    // La carte du tableau de bord entoure deja la recommandation de
+    // guillemets droits : elle rend "{reco}". Une citation en guillemets
+    // droits a l'interieur donnait donc un double guillemet ouvrant a
+    // l'ecran, vu sur la carte "Resultats obtenus". On cite avec les
+    // guillemets de la langue, ce qui separe la citation de son enrobage.
+    if (/"/.test(a.reco)) {
+      failures.push(
+        `[${langue}] le conseil cite entre guillemets droits : ${a.reco}. `
+        + "La carte ajoute les siens autour, et l'utilisateur lit un double "
+        + "guillemet ouvrant."
+      );
+    }
+
     // Et il dit POURQUOI, pas seulement quoi.
     if (!/what came of it|ce qui en est sorti/.test(a.reco)) {
       failures.push(
