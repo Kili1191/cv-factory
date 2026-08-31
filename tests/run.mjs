@@ -59,6 +59,7 @@ const SUITES = [
   ["an achievement is not a responsibility", "./an-achievement-is-not-a-responsibility.mjs"],
   ["Nuvi does not fill in your figure for you", "./nuvi-does-not-fill-in-your-figure.mjs"],
   ["Nuvi comes and says it to your face", "./nuvi-comes-and-says-it-to-your-face.mjs"],
+  ["what they will make you prove", "./what-they-will-make-you-prove.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],

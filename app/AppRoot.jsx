@@ -10,6 +10,7 @@ import ConseilCompanion from "./components/ConseilCompanion";
 import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
+import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
@@ -3671,6 +3672,17 @@ export default function App() {
   const [interviewOffer, setInterviewOffer] = useState("");
   // v2 Interview Continuity : round + questions to ask
   const [interviewRound, setInterviewRound] = useState("all"); // "all"|"hr"|"manager"|"board"
+  // SUR QUEL CV ON PREPARE
+  //
+  // La preparation lisait toujours le CV ouvert dans l'editeur. Or une
+  // candidature garde son annonce mais PAS le CV envoye : entre l'envoi et
+  // l'entretien, la personne a pu retailler son CV pour une autre offre. Elle
+  // se preparait donc sur un document que le recruteur n'a jamais vu, et les
+  // questions portaient sur des lignes absentes de ce qu'il a devant lui.
+  //
+  // On ne devine pas quel document est parti : Nuvi demande. null = le CV en
+  // cours, sinon l'id d'une version enregistree.
+  const [interviewCvId, setInterviewCvId] = useState(null);
   const [askRecruiterLoading, setAskRecruiterLoading] = useState(false);
   const [askRecruiterResult, setAskRecruiterResult] = useState(null);
   // v2 Tab Apres : contexte + email + debrief
@@ -5898,7 +5910,16 @@ export default function App() {
   // v2 Interview Continuity : prend aussi le round (RH/manager/board/all) en compte.
 
   // Helpers factorises : on les utilise dans runInterviewPrep ET runAskRecruiter.
+  // Le CV sur lequel toute la preparation travaille : celui que la personne a
+  // designe, ou celui de l'editeur si elle n'a rien designe.
+  const cvPrepare = useMemo(() => {
+    if (!interviewCvId) return cv;
+    const v = (versions || []).find((x) => x && x.id === interviewCvId);
+    return (v && v.cv) ? v.cv : cv;
+  }, [cv, versions, interviewCvId]);
+
   const buildInterviewCvText = useCallback(() => {
+    const cv = cvPrepare;
     const expT = (cv.experience || []).map(e =>
       (e.title||"") + " chez " + (e.company||"")
       + " (" + (e.period||"") + "): "
@@ -5911,7 +5932,7 @@ export default function App() {
       + "\nExperiences: " + expT
       + "\nCompetences: " + (cv.skills||[]).filter(s=>s).join(", ")
       + "\nLangues: " + (cv.languages||[]).filter(l=>l.lang).map(l=>l.lang+" ("+(l.level||"")+")").join(", ");
-  }, [cv]);
+  }, [cvPrepare]);
 
   // Directive selon le round choisi. "all" = pas de directive specifique.
   // Ces directives sont injectees dans le prompt principal et dans le prompt
@@ -5996,6 +6017,103 @@ export default function App() {
     setInterviewLoading(false);
   }, [apiKey, cv, cvIsEmpty, interviewOffer, locale, notify, T,
       buildInterviewCvText, roundDirective]);
+
+  // CE QU'ON VA TE FAIRE PROUVER
+  //
+  // Nuvi pousse les gens a ecrire "Marge boissons tenue a 78 %" plutot que
+  // "Responsable du bar". C'est ce qui fait rappeler, et c'est aussi ce qui se
+  // fait interroger : un recruteur qui lit un chiffre demande comment il a ete
+  // obtenu. Ecrire la phrase sans preparer sa defense revient a envoyer
+  // quelqu'un en entretien avec un chiffre qu'il ne sait pas expliquer, ce qui
+  // est pire que de ne pas l'avoir ecrit.
+  //
+  // QUELLES LIGNES SERONT SONDEES NE SE DEMANDE PAS AU MODELE
+  //
+  // lib/resultatOuResponsabilite.js le sait deja, et de facon deterministe :
+  // ce sont exactement les puces classees "resultat", celles qui portent un
+  // chiffre de deplacement. On les selectionne sur place, gratuitement, et le
+  // modele ne fait que ce qu'il fait bien : formuler la question que le
+  // recruteur posera et ce qu'il faut avoir prepare.
+  //
+  // Les puces "indetermine" comptent aussi : "ameliore le service" attire un
+  // "c'est a dire ?" qui est tout aussi difficile a improviser.
+  const [proofLoading, setProofLoading] = useState(false);
+  const [proofResult, setProofResult] = useState(null);
+
+  const runProof = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    setProofLoading(true);
+    setProofResult(null);
+    try {
+      const cvSource = cvPrepare;
+      const puces = [];
+      for (const e of (cvSource.experience || [])) {
+        for (const b of (e.bullets || [])) {
+          const t = String(b || "").trim();
+          if (!t) continue;
+          const { etat } = etatDeLaPuce(t);
+          if (etat === "resultat" || etat === "indetermine") {
+            puces.push({ poste: [e.title, e.company].filter(Boolean).join(" chez "), texte: t, etat });
+          }
+        }
+      }
+      if (!puces.length) {
+        // Rien a defendre n'est pas une bonne nouvelle : cela veut dire
+        // qu'aucune ligne du CV n'affirme de resultat. On le dit plutot que
+        // de rendre une liste vide qui passerait pour une reussite.
+        setProofResult({ aucune: true, lignes: [] });
+        setProofLoading(false);
+        return;
+      }
+
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais. "
+        : "Reponds STRICTEMENT en francais. ";
+      const offerLine = interviewOffer && interviewOffer.trim()
+        ? "\n\nOFFRE VISEE:\n" + interviewOffer.trim()
+        : "";
+
+      const p = "Tu es recruteur senior. On te donne les lignes d'un CV qui"
+        + " AFFIRMENT un resultat. Ce sont celles sur lesquelles tu vas creuser"
+        + " en entretien, parce qu'une affirmation chiffree se verifie et qu'une"
+        + " affirmation vague appelle un 'c'est a dire ?'."
+        + offerLine
+        + "\n\nLIGNES A SONDER:\n"
+        + puces.map((x, i) => (i + 1) + ". [" + x.poste + "] " + x.texte
+            + (x.etat === "indetermine" ? "  (annonce un resultat sans le mesurer)" : "")).join("\n")
+        + "\n\nMISSION:"
+        + "\nPour CHAQUE ligne, produis :"
+        + "\n- \"probe\" : la question exacte que tu poserais, mot pour mot, pour"
+        + " verifier cette ligne. Une seule question, celle qui met le plus en"
+        + " difficulte quelqu'un qui aurait exagere."
+        + "\n- \"prepare\" : ce que la personne doit avoir prepare pour y repondre"
+        + " en trente secondes. Concret : d'ou vient le chiffre, sur quelle"
+        + " periode, comment il etait suivi, qui d'autre le savait."
+        + "\n- \"faible\" : le point precis par lequel cette ligne peut s'ecrouler"
+        + " si la personne hesite."
+        + "\n\nREGLES STRICTES:"
+        + "\n- Tu n'inventes AUCUN element de reponse a la place de la personne."
+        + " Tu dis ce qu'il faut preparer, pas ce qu'il faut repondre : c'est"
+        + " elle qui a vecu la situation, et un recruteur sent immediatement une"
+        + " reponse apprise qui ne tient pas."
+        + "\n- Les questions sont celles d'un recruteur ordinaire, pas d'un"
+        + " interrogatoire. Elles doivent sonner vrai."
+        + "\n- " + QUI_DECIDE
+        + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
+        + "\n\nFORMAT JSON STRICT:"
+        + '\n{"lignes":[{"ligne":"la ligne du CV, recopiee",'
+        + '"probe":"la question du recruteur","prepare":"ce qu il faut avoir pret",'
+        + '"faible":"par ou ca casse"}]}';
+
+      const txt = await aiCall(p);
+      const parsed = parseJSON(txt);
+      setProofResult(parsed && Array.isArray(parsed.lignes) ? parsed : { lignes: [] });
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setProofLoading(false);
+  }, [apiKey, cvIsEmpty, cvPrepare, interviewOffer, locale, notify, T]);
 
   // v2 Interview Continuity : runAskRecruiter
   // Genere 8-12 questions strategiques que LE CANDIDAT va poser AU recruteur,
@@ -8402,6 +8520,12 @@ export default function App() {
           onClose={()=>setShowInterview(false)}
           round={interviewRound}
           setRound={setInterviewRound}
+          versions={versions}
+          cvId={interviewCvId}
+          setCvId={setInterviewCvId}
+          proofLoading={proofLoading}
+          proofResult={proofResult}
+          onRunProof={runProof}
           askRecruiterLoading={askRecruiterLoading}
           askRecruiterResult={askRecruiterResult}
           onRunAskRecruiter={runAskRecruiter}

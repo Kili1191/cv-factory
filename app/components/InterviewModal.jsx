@@ -155,6 +155,125 @@ function categoryAccentAsk(cat) {
 // Section "Questions a poser au recruteur" : se rend dans le tab "before"
 // apres les flashcards principales. Cards organisees par categorie avec
 // "why this question" et "best for" (round suggere).
+// CE QU'ON VA TE FAIRE PROUVER
+//
+// Nuvi pousse les gens a ecrire "Marge boissons tenue a 78 %" plutot que
+// "Responsable du bar", parce que c'est ce qui fait rappeler. C'est aussi ce
+// qui se fait interroger : un recruteur qui lit un chiffre demande d'ou il
+// sort. Ecrire la phrase sans preparer sa defense revient a envoyer quelqu'un
+// en entretien avec un chiffre qu'il ne sait pas expliquer, ce qui est pire
+// que de ne pas l'avoir ecrit.
+//
+// Les lignes montrees ici ne sont pas choisies par le modele : le classeur de
+// puces designe deterministiquement celles qui affirment un resultat. Le
+// modele n'ecrit que la question et ce qu'il faut avoir pret.
+function ProofSection({ T, loading, result, hasMainResult, onRun }) {
+  if (!hasMainResult) return null;
+  const lignes = (result && Array.isArray(result.lignes)) ? result.lignes : [];
+  return (
+    <div style={{ marginTop:26 }}>
+      <div style={{
+        fontSize:11, fontWeight:700, letterSpacing:"0.12em",
+        textTransform:"uppercase", color:Coral, marginBottom:6, fontFamily:Sans,
+      }}>{T.iv_proof_eyebrow || "On va te le faire prouver"}</div>
+      <div style={{
+        fontFamily:Serif, fontSize:19, fontWeight:400, color:Ink,
+        letterSpacing:"-0.02em", lineHeight:1.2, marginBottom:6,
+      }}>{T.iv_proof_title || "Les lignes de ton CV qu'un recruteur va creuser"}</div>
+      <div style={{
+        fontSize:12.5, color:InkMuted, lineHeight:1.55, marginBottom:14,
+      }}>{T.iv_proof_sub
+        || "Ce sont tes lignes qui affirment un resultat. Un chiffre sur un CV appelle toujours la meme question : d'ou il sort. Prepare-la maintenant, pas dans le bureau."}</div>
+
+      {!result && !loading && (
+        <button onClick={onRun} style={{
+          ...B({
+            width:"100%", padding:"14px 22px", borderRadius:RadiusPill,
+            minHeight:48,
+            background:Ink, color:Cream,
+            fontFamily:Sans, fontWeight:600, fontSize:13,
+            transition: Trans(["background","color","opacity"], "fast"),
+          })
+        }}>{T.iv_proof_run || "Preparer mes preuves"}</button>
+      )}
+
+      {loading && (
+        <div style={{
+          padding:"30px 20px", textAlign:"center",
+          background:Paper, borderRadius:RadiusMd,
+          border:"0.5px solid "+Hairline,
+        }}>
+          <div style={{
+            width:34, height:34, margin:"0 auto 12px",
+            border:"3px solid "+Hairline, borderTopColor:Coral,
+            borderRadius:"50%", animation:"cvfSpin 1s linear infinite",
+          }}/>
+          <div style={{ fontSize:12.5, color:InkMuted }}>
+            {T.iv_proof_loading || "Nuvi relit tes chiffres comme un recruteur"}
+          </div>
+        </div>
+      )}
+
+      {/* AUCUNE LIGNE A DEFENDRE N'EST PAS UNE BONNE NOUVELLE
+          Cela veut dire qu'aucune ligne du CV n'affirme de resultat. Une
+          liste vide se lirait comme une reussite : on dit ce que ca veut
+          vraiment dire, et ou aller le corriger. */}
+      {result && result.aucune && (
+        <div style={{
+          background:CoralSoft, borderRadius:RadiusSm, padding:"14px 16px",
+          fontSize:13, color:Ink, lineHeight:1.6,
+        }}>{T.iv_proof_none
+          || "Aucune ligne de ton CV n'affirme de resultat, donc il n'y a rien a te faire prouver. Ce n'est pas une bonne nouvelle : c'est aussi ce qui fait qu'on ne te rappelle pas. Repasse par le diagnostic, axe Resultats obtenus."}</div>
+      )}
+
+      {lignes.map((l, i) => (
+        <div key={i} style={{
+          background:Paper, border:"0.5px solid "+Hairline,
+          borderRadius:RadiusMd, padding:"14px 16px", marginBottom:10,
+          boxShadow:ShadowSm,
+        }}>
+          <div style={{
+            fontFamily:Serif, fontStyle:"italic", fontSize:14,
+            color:Ink, lineHeight:1.5, marginBottom:10,
+          }}>{l.ligne}</div>
+
+          <div style={{
+            borderTop:"0.5px solid "+Hairline, paddingTop:10, marginBottom:10,
+          }}>
+            <div style={{
+              fontSize:10, fontWeight:700, letterSpacing:"0.1em",
+              textTransform:"uppercase", color:Coral, marginBottom:5,
+            }}>{T.iv_proof_probe || "Ce qu'on va te demander"}</div>
+            <div style={{ fontSize:13.5, color:Ink, lineHeight:1.5, fontWeight:600 }}>
+              {l.probe}
+            </div>
+          </div>
+
+          <div style={{ marginBottom:10 }}>
+            <div style={{
+              fontSize:10, fontWeight:700, letterSpacing:"0.1em",
+              textTransform:"uppercase", color:Green, marginBottom:5,
+            }}>{T.iv_proof_prepare || "A avoir pret"}</div>
+            <div style={{ fontSize:13, color:Ink, lineHeight:1.55 }}>{l.prepare}</div>
+          </div>
+
+          {l.faible && (
+            <div style={{
+              background:CoralSoft, borderRadius:RadiusSm, padding:"9px 12px",
+              fontSize:12, color:Ink, lineHeight:1.5,
+            }}>
+              <strong style={{ fontWeight:600 }}>
+                {T.iv_proof_weak || "Par ou ca casse"}{" : "}
+              </strong>
+              {l.faible}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyAll }) {
   const [copiedIdx, setCopiedIdx] = useState(-1);
   const [copiedAll, setCopiedAll] = useState(false);
@@ -1298,6 +1417,8 @@ export default function InterviewModal({
   onRun, onClose,
   // v2 Interview Continuity : nouveaux props
   round, setRound,
+  versions, cvId, setCvId,
+  proofLoading, proofResult, onRunProof,
   askRecruiterLoading, askRecruiterResult, onRunAskRecruiter,
   // v2 Tab Apres
   afterContext, setAfterContext,
@@ -1704,6 +1825,46 @@ export default function InterviewModal({
                 />
               </div>
 
+              {/* SUR QUEL CV ON PREPARE
+                  Une candidature garde son annonce mais pas le CV envoye.
+                  Entre l'envoi et l'entretien, la personne a pu retailler son
+                  CV pour une autre offre : elle se preparait alors sur un
+                  document que le recruteur n'a jamais vu. Nuvi ne devine pas
+                  lequel est parti, il demande. */}
+              {Array.isArray(versions) && versions.length > 0 && (
+                <div style={{ marginBottom:18 }}>
+                  <div style={{
+                    fontSize:11, fontWeight:600,
+                    letterSpacing:"0.1em", textTransform:"uppercase",
+                    color:Coral, marginBottom:8, fontFamily:Sans,
+                  }}>{T.iv_cv_label || "Preparer sur quel CV"}</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {[{ id:null, name:T.iv_cv_current || "CV en cours" }]
+                      .concat(versions.map(v => ({ id:v.id, name:v.name })))
+                      .map(o => {
+                        const actif = (cvId || null) === (o.id || null);
+                        return (
+                          <button key={String(o.id)} onClick={()=>setCvId(o.id)} style={{
+                            ...B({
+                              padding:"9px 14px", minHeight:40,
+                              borderRadius:RadiusPill,
+                              background: actif ? Ink : Paper,
+                              color: actif ? Cream : Ink,
+                              border:"1px solid "+(actif ? Ink : Hairline),
+                              fontFamily:Sans, fontSize:12, fontWeight:600,
+                              transition: Trans(["background","color","border-color"], "fast"),
+                            })
+                          }}>{o.name}</button>
+                        );
+                      })}
+                  </div>
+                  <div style={{
+                    fontSize:11, color:InkMuted, lineHeight:1.5, marginTop:7,
+                  }}>{T.iv_cv_why
+                    || "Le recruteur a une seule version sous les yeux. Prepare sur celle-la, pas sur celle que tu viens de retoucher."}</div>
+                </div>
+              )}
+
               {/* CTA Run */}
               <button onClick={onRun} disabled={!apiKey} style={{
                 ...B({
@@ -1915,6 +2076,15 @@ export default function InterviewModal({
 
           {/* v2 : Section "Questions a poser au recruteur" sous les flashcards */}
           {!cvIsEmpty && (
+            <ProofSection
+              T={T}
+              loading={!!proofLoading}
+              result={proofResult}
+              hasMainResult={!!result}
+              onRun={onRunProof}
+            />
+          )}
+          {tab === "before" && (
             <AskRecruiterSection
               T={T}
               loading={!!askRecruiterLoading}
