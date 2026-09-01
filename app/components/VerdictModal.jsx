@@ -124,7 +124,18 @@ export default function VerdictModal({
           position: "fixed",
           inset: 0,
           zIndex: 3000,
-          background: "rgba(10, 10, 10, 0.55)",
+          // LE VERDICT DOIT ETRE LE SEUL ECRAN
+          //
+          // A 0.55, le tableau de bord qui l'a declenche restait lisible
+          // derriere : mesure a 1440x900, on lisait encore des phrases
+          // entieres de l'axe precedent et le bouton de fermeture du panneau
+          // se detachait en haut a droite comme un caractere egare.
+          //
+          // Le flou seul n'y suffit pas : il brouille les contours, pas le
+          // contraste, et un texte sombre sur fond clair traverse. C'est le
+          // meme defaut que l'assistance d'entretien et que la barre laterale
+          // avaient chacune de leur cote, pour la meme raison.
+          background: "rgba(10, 10, 10, 0.74)",
           backdropFilter: "blur(60px) saturate(200%)",
           WebkitBackdropFilter: "blur(60px) saturate(200%)",
           animation: "vrdFadeIn 600ms ease-out",
