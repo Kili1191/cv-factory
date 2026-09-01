@@ -12,6 +12,8 @@ import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
 import { experiencesAVerifier, direLaFermeture } from "../lib/registresEntreprises";
+import { lireCommeLesAts } from "../lib/atsVendors";
+import { texteProbable } from "../lib/deuxLectures";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
@@ -6328,6 +6330,31 @@ export default function App() {
   // Les anciens employeurs qu'un registre officiel donne pour radies.
   const [employeursDisparus, setEmployeursDisparus] = useState([]);
 
+  // LA PROMESSE DU PRODUIT, LISIBLE PENDANT QU'ON ECRIT
+  //
+  // "Le CV doit passer les robots de tri" est la phrase qui vend Nuvi, et
+  // elle n'etait verifiable nulle part sans ouvrir une fenetre et lancer un
+  // audit. Quelqu'un qui edite son CV pendant vingt minutes n'avait aucun
+  // signe que son travail allait dans le bon sens, ni qu'une modification
+  // venait de casser la lecture.
+  //
+  // Les six profils tournent en local, sans reseau et sans modele, sur le
+  // texte que le produit emet vraiment. Assez peu cher pour se recalculer a
+  // chaque frappe, donc assez peu cher pour rester affiche en permanence.
+  const lectureAts = useMemo(() => {
+    try {
+      if (!cv || cvIsEmpty) return null;
+      const r = lireCommeLesAts(cv, texteProbable(cv));
+      const profils = (r && r.profils) || [];
+      if (!profils.length) return null;
+      return { passent: profils.filter((p) => p.passe).length, total: profils.length };
+    } catch (e) {
+      // Un CV a moitie saisi peut faire trebucher un lecteur. On n'affiche
+      // alors rien : un compte faux vaut moins que pas de compte.
+      return null;
+    }
+  }, [cv, cvIsEmpty]);
+
   // LA VERIFICATION SUIT LE CV, PAS LE CHEMIN QUI L'A PRODUIT
   //
   // Un CV arrive par l'import, par la generation depuis une annonce, ou par
@@ -9659,6 +9686,38 @@ export default function App() {
               )}
             </div>
             <div style={{display:"flex", alignItems:"center", gap:10, flexShrink:0}}>
+            {/* CE QUE PROMET LE PRODUIT, A COTE DE CE QU'ON EN FAIT
+                La bande portait un nom a gauche, un bouton a droite, et rien
+                entre les deux. Ce qui manquait n'etait pas une decoration :
+                c'etait le seul chiffre qui dit si le CV tient la promesse
+                pour laquelle la personne est venue. Il se recalcule a chaque
+                frappe, en local, donc il repond pendant qu'on ecrit et pas
+                seulement quand on pense a ouvrir un audit. */}
+            {lectureAts && (
+              <button
+                onClick={() => ouvrirSeul(setShowAudit)}
+                data-nuvi-ats-entete={lectureAts.passent + "/" + lectureAts.total}
+                title={locale === "en" ? "Open the parser audit" : "Ouvrir l'audit des analyseurs"}
+                style={{
+                  ...B({
+                    display:"flex", alignItems:"center", gap:8,
+                    padding:"7px 13px", minHeight:38, borderRadius:RadiusPill,
+                    // Vert quand les six passent, ambre sinon. Pas de rouge :
+                    // un CV qui passe quatre analyseurs sur six n'est pas une
+                    // erreur, c'est un travail en cours.
+                    background: lectureAts.passent === lectureAts.total ? GreenSoft : CoralSoft,
+                    color: lectureAts.passent === lectureAts.total ? Green : Coral,
+                    border:"none", fontFamily:Sans, fontSize:12.5, fontWeight:600,
+                  })
+                }}>
+                <span aria-hidden="true" style={{
+                  width:7, height:7, borderRadius:999, flexShrink:0,
+                  background:"currentColor",
+                }}/>
+                {lectureAts.passent + "/" + lectureAts.total + " "
+                  + (locale === "en" ? "parsers" : "analyseurs")}
+              </button>
+            )}
             {/* La meme condition que portait l'ancien bouton flottant, et que
                 j'avais laissee tomber en le deplacant : l'action principale
                 doit s'effacer des qu'une fenetre s'ouvre. Sinon elle flotte
