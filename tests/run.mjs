@@ -61,6 +61,7 @@ const SUITES = [
   ["Nuvi comes and says it to your face", "./nuvi-comes-and-says-it-to-your-face.mjs"],
   ["what they will make you prove", "./what-they-will-make-you-prove.mjs"],
   ["the product does not promise a check it skips", "./the-product-does-not-promise-a-check-it-skips.mjs"],
+  ["anyone can check what a parser sees", "./anyone-can-check-what-a-parser-sees.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],
