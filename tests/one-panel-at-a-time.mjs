@@ -114,6 +114,74 @@ export async function run() {
       );
     }
     await ctx.close();
+
+    // ================================================================
+    // LE MENU QUI S'OUVRAIT AU SURVOL, DERRIERE LE PANNEAU
+    // ================================================================
+    //
+    // Ce test ne verifiait que des enchainements de CLICS, et il passait au
+    // vert pendant que la cascade etait sous les yeux du proprietaire : le
+    // panneau Apparence ouvert avec le menu DESIGN encore visible dessous.
+    //
+    // Le sous-menu de la barre laterale ne s'ouvre pas au clic, il s'ouvre au
+    // SURVOL. Une fois un panneau ouvert, la souris qui remonte vers lui
+    // traverse la barre et rouvre le menu derriere. Aucun scenario de clic ne
+    // pouvait produire ca, et c'est pourtant le geste que tout le monde fait.
+    //
+    // On reproduit donc le geste : survoler une entree a sous-menu, ouvrir un
+    // panneau depuis ce menu, puis ramener la souris sur la barre.
+    {
+      const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      const p2 = await ctx2.newPage();
+      await seedApp(p2, SAMPLE_CV, { locale: "en" });
+
+      const design = p2.locator('[aria-label="Design"]').first();
+      if (await design.count() === 0) {
+        failures.push(
+          "l'entree Design de la barre laterale est introuvable : ce controle "
+          + "ne peut pas verifier le survol."
+        );
+      } else {
+        await design.hover();
+        await p2.waitForTimeout(700);
+        const sous = p2.locator('button,[role="button"]').filter({ hasText: /Customi/i }).first();
+        if (await sous.count() === 0) {
+          failures.push("le sous-menu Design ne s'ouvre pas au survol.");
+        } else {
+          await sous.click();
+          await p2.waitForTimeout(900);
+          // La souris revient sur la barre, comme quand on va vers le panneau.
+          await design.hover();
+          await p2.waitForTimeout(900);
+
+          const menuVisible = await p2.evaluate(() => {
+            for (const el of document.querySelectorAll("div,aside,section,nav")) {
+              const st = getComputedStyle(el);
+              if (st.position !== "fixed" && st.position !== "absolute") continue;
+              if (st.visibility === "hidden" || parseFloat(st.opacity) < 0.2) continue;
+              const r = el.getBoundingClientRect();
+              if (r.width < 140 || r.height < 100) continue;
+              const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+              // Le menu flottant, reconnaissable a ses trois entrees et a sa
+              // petitesse : la barre elle-meme porte bien plus de libelles.
+              if (/Customize/.test(t) && /Translate/.test(t) && t.length < 90) return t.slice(0, 60);
+            }
+            return null;
+          });
+
+          if (menuVisible) {
+            failures.push(
+              "le sous-menu de la barre laterale se rouvre derriere le panneau "
+              + `ouvert : "${menuVisible}". C'est la cascade. Le survol doit `
+              + "rester muet tant qu'un panneau est ouvert, sinon la souris qui "
+              + "remonte vers le panneau rallume le menu au passage."
+            );
+          }
+        }
+      }
+      await ctx2.close();
+    }
+
   } catch (err) {
     failures.push("le test a plante : " + (err && err.message ? err.message : String(err)));
   } finally {

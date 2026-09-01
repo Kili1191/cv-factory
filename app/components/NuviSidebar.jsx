@@ -8,6 +8,9 @@ const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: fa
 const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
 
 export default function NuviSidebar({
+  // Vrai des qu'un panneau est ouvert : le survol n'ouvre plus de
+  // sous-menu, sinon il reapparait derriere le panneau.
+  panneauOuvert = false,
   active = "home",
   onSelect = () => {},
   onSubSelect = () => {},
@@ -199,6 +202,18 @@ export default function NuviSidebar({
       clearTimeout(closeTimerRef.current);
       closeTimerRef.current = null;
     }
+    // LA CASCADE VENAIT D'ICI
+    //
+    // Le sous-menu s'ouvre au survol. Une fois un panneau ouvert, la souris
+    // qui remonte vers lui traverse la barre, reveille ce gestionnaire, et le
+    // sous-menu se rouvre DERRIERE le panneau. On voyait alors le menu DESIGN
+    // sous la feuille Apparence.
+    //
+    // Aucun test ne l'attrapait : "un panneau a la fois" verifie que deux
+    // panneaux ne coexistent pas apres des CLICS, et ce menu s'ouvre sans
+    // clic. Il fallait repasser la souris sur la barre, ce que personne ne
+    // scriptait et que tout le monde fait.
+    if (panneauOuvert) { setHoveredItem(null); return; }
     if (hasSub) {
       setHoveredItem(key);
     } else {
@@ -224,6 +239,10 @@ export default function NuviSidebar({
       setHoveredItem(null);
     }, 600);
   };
+
+  useEffect(() => {
+    if (panneauOuvert) setHoveredItem(null);
+  }, [panneauOuvert]);
 
   useEffect(() => {
     return () => {

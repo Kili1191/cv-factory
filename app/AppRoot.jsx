@@ -3794,6 +3794,8 @@ export default function App() {
     setShowApplications(false);
     setShowAdjust(false);
   }, []);
+
+
   // v17 chantier 13 : Dark mode (interface uniquement, le CV reste clair)
   const [darkMode, setDarkMode] = useState(false);
   // v17 chantier 14 : Settings panel
@@ -3853,6 +3855,28 @@ export default function App() {
   const [gmailConnected, setGmailConnected] = useState(false);
   const [showLive, setShowLive] = useState(false);
   const [showJobs, setShowJobs] = useState(false);
+
+  // UN PANNEAU OUVERT REND LA BARRE LATERALE MUETTE
+  //
+  // Le sous-menu de la barre s'ouvre au SURVOL. Une fois un panneau ouvert,
+  // la souris qui remonte vers lui traverse la barre, reveille le survol, et
+  // le sous-menu reapparait DERRIERE le panneau. C'est la cascade signalee :
+  // le panneau Apparence ouvert avec le menu DESIGN encore visible dessous.
+  //
+  // Le test "un panneau a la fois" ne l'attrapait pas : il verifie que deux
+  // PANNEAUX ne coexistent pas, et ce menu-la n'en est pas un. Il s'ouvre
+  // sans clic, donc aucun scenario de clic ne pouvait le produire. Il fallait
+  // repasser la souris sur la barre, ce qu'aucun test ne faisait et ce que
+  // tout le monde fait.
+  //
+  // Tant qu'un panneau est ouvert, le survol n'ouvre plus rien. Ce n'est pas
+  // une garde defensive : c'est la meme regle que le reste du produit, un
+  // panneau a la fois, appliquee a l'objet qui y echappait.
+  const panneauOuvert = showCoach || showOffer || showPack || showScore
+    || showTruth || showGapRepair || showPos || showInterview || showMultiCV
+    || showVersions || showCompare || showCustomize || showTranslate
+    || showLinkedIn || showAudit || showApplications || showAdjust
+    || showSettings || showActivity || showJobs || showLive;
 
 
   const [cloud, setCloud] = useState({ status: "off", user: null });
@@ -9032,6 +9056,7 @@ export default function App() {
           background:"var(--nuvi-bg-gradient)", overflow:"hidden",
         }}>
           <NuviSidebar
+            panneauOuvert={panneauOuvert}
             cloudEnabled={isCloudConfigured()}
             cloudUser={cloud.user}
             cloudStatus={cloud.status}
