@@ -5822,6 +5822,94 @@ export default function App() {
     if (r) setAxeExplique(r);
   }, [dashResult]);
 
+  // PARTIR DE L'ANNONCE, PAS DU CV
+  //
+  // Toutes les entrees exigeaient un CV, sauf celle qui en fabrique un a
+  // partir d'un intitule et d'un nombre d'annees. Quelqu'un qui n'a jamais
+  // redige de CV n'arrive pas avec un CV : il arrive avec une annonce qui
+  // l'interesse.
+  //
+  // On part donc de la. L'annonce dit ce que le poste reclame ; le parcours
+  // en clair, meme jete en trois lignes mal ecrites, dit ce que la personne a
+  // fait. Le modele range le second pour repondre au premier.
+  //
+  // CE QUE LE PROMPT INTERDIT, ET CE QU'IL N'INTERDIT PAS
+  //
+  // Il interdit d'ajouter un employeur, une date ou un diplome que la
+  // personne n'a pas donnes : ce sont les seules choses qu'un recruteur
+  // verifie d'un coup de telephone, et une invention la ferait sortir de
+  // l'entretien. Tout le reste - la formulation, l'ordre, le vocabulaire du
+  // secteur, l'intitule qui colle a l'annonce - est du travail de redaction,
+  // et c'est exactement ce qu'on lui demande de faire a fond.
+  //
+  // Il ne fait la morale a personne. QUI_DECIDE le dit deja en toutes
+  // lettres, et rien n'est ajoute ici : c'est un outil, il execute.
+  const runFromOffer = useCallback(async (offre, parcours) => {
+    if (!apiKey) { notify(T.nk); return; }
+    const a = String(offre || "").trim();
+    const p0 = String(parcours || "").trim();
+    if (a.length < 40 || p0.length < 10) return;
+    setObImp(true);
+    try {
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais."
+        : "Reponds STRICTEMENT en francais.";
+
+      const p = "Tu es un redacteur de CV. On te donne une ANNONCE et le "
+        + "parcours d'une personne, ecrit en clair et peut-etre en desordre. "
+        + "Tu produis le CV qui a le plus de chances d'etre rappele POUR CETTE "
+        + "ANNONCE.\n\n"
+        + "ANNONCE:\n" + a + "\n\n"
+        + "PARCOURS DE LA PERSONNE, TEL QU'ELLE L'A ECRIT:\n" + p0 + "\n\n"
+        + "METHODE:\n"
+        + "1. Releve dans l'annonce ce que le poste reclame vraiment : "
+        + "l'intitule exact, les mots-cles du metier, les competences citees, "
+        + "le niveau attendu.\n"
+        + "2. Reformule le parcours de la personne pour repondre a ces points, "
+        + "dans le vocabulaire de l'annonce. Un meme fait se dit de plusieurs "
+        + "facons : choisis celle que ce recruteur-la cherche.\n"
+        + "3. Ecris des puces qui disent un RESULTAT quand la personne en a "
+        + "donne un, et un perimetre precis sinon. Reprends ses chiffres. "
+        + "N'en cree aucun.\n"
+        + "4. L'intitule du CV reprend celui de l'annonce quand le parcours le "
+        + "justifie.\n\n"
+        + "CE QUE TU N'INVENTES JAMAIS : un employeur, une date, un diplome, "
+        + "une certification ou un chiffre que la personne n'a pas donnes. Ce "
+        + "sont les seules choses qu'un recruteur verifie en un appel. Si une "
+        + "information manque, laisse le champ vide : un champ vide se "
+        + "complete, un fait invente se paie en entretien.\n"
+        + "Tout le reste est de la redaction, et c'est la que tu donnes tout : "
+        + "l'ordre, la formulation, les mots du secteur, la mise en avant.\n\n"
+        + QUI_DECIDE + "\n"
+        + NO_DASH + " " + langLine + "\n"
+        + "JSON UNIQUEMENT, sans markdown:\n"
+        + '{"name":"","title":"","email":"","phone":"","location":"",'
+        + '"linkedin":"","summary":"","experience":[{"id":1,"title":"","company":"",'
+        + '"period":"","location":"","bullets":["",""]}],'
+        + '"education":[{"id":1,"degree":"","school":"","period":""}],'
+        + '"skills":[""],"languages":[{"lang":"","level":""}],"certifications":[""]}';
+
+      const txt = await aiCall(p);
+      const cvNouveau = parseJSON(txt);
+      if (!cvNouveau || typeof cvNouveau !== "object") throw new Error("reponse illisible");
+      const propre = normCV({ ...cvNouveau, custom: cv && cv.custom });
+      pushH(propre);
+      setCVFn(() => propre);
+      // L'annonce sert deux fois : elle a produit le CV, elle servira au
+      // diagnostic et a la preparation d'entretien. On la garde.
+      setInterviewOffer(a);
+      setPendingOffer(a);
+      setObMode(null);
+      setTab("ai");
+      logActivity(ACT.CV_IMPORTED,
+        locale === "en" ? "CV written from a job ad" : "CV ecrit depuis une annonce");
+      notify(locale === "en" ? "Your CV is ready" : "Ton CV est pret");
+    } catch (err) {
+      notify(T.ea + (err && err.message ? ": " + err.message : ""));
+    }
+    setObImp(false);
+  }, [apiKey, locale, notify, T, pushH, setCVFn, cv]);
+
   // v17 chantier 5 : Gap Repair handlers (deterministes, pas d'IA).
   //
   // Strategy 1 : reformatte toutes les dates des experiences en YYYY (years only).
@@ -8891,6 +8979,7 @@ export default function App() {
       apiKey={apiKey} mode={obMode} setMode={setObMode}
       raw={obRaw} setRaw={setObRaw} imping={obImp}
       onImport={onImport} setTab={setTab} setAiMode={setAiMode}
+      onFromOffer={runFromOffer}
       lireImageCv={lireImageCv}
       choixGabarit={<ChoixDeGabarit layout={layout} setLy={setLy} locale={locale}/>}/>
     </Suspense>
@@ -8927,6 +9016,7 @@ export default function App() {
   const NuviHomeEl = showNuviHome && (
     <Suspense fallback={null}>
       <NuviHome
+        onFromOffer={() => setObMode("offre")}
         lang={locale}
         mob={false}
         userName={cv.name ? cv.name.split(" ")[0] : null}
@@ -9557,6 +9647,7 @@ export default function App() {
       {showNuviHome && (
         <Suspense fallback={null}>
           <NuviHome
+          onFromOffer={() => setObMode("offre")}
             lang={locale}
             mob={true}
             userName={cv.name ? cv.name.split(" ")[0] : null}

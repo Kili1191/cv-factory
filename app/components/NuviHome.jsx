@@ -40,6 +40,7 @@ const TEXT = {
     transforming: "Nuvi reecrit...",
     ctaMain: "Envie de ca pour le mien",
     ctaImport: "J'ai deja un CV",
+    ctaOffre: "Je pars de l'annonce",
     coachLabel: "Coach",
   },
   en: {
@@ -57,6 +58,7 @@ const TEXT = {
     transforming: "Nuvi is rewriting...",
     ctaMain: "I want this for mine",
     ctaImport: "I already have a CV",
+    ctaOffre: "I start from the job ad",
     coachLabel: "Coach",
   },
 };
@@ -346,6 +348,13 @@ export default function NuviHome({
   userName = null,
   onGenerate = () => {},
   onImport = () => {},
+  // PARTIR DE L'ANNONCE
+  //
+  // Les deux chemins existants supposent soit un CV a importer, soit un
+  // profil a decrire. Quelqu'un qui n'a jamais redige de CV n'a ni l'un ni
+  // l'autre : il a une annonce qui l'interesse. C'est le troisieme chemin, et
+  // pour ce public c'est le plus court vers un CV utilisable.
+  onFromOffer = () => {},
   onCoachOpen = () => {},
 }) {
   const T = TEXT[lang] || TEXT.fr;
@@ -689,6 +698,31 @@ export default function NuviHome({
             }}
           >{T.ctaImport}</button>
           </Magnetic>
+        </Reveal>
+
+        {/* LA TROISIEME VOIE
+            Elle ne vole pas la vedette aux deux boutons, et elle est la des la
+            premiere seconde. Pour quelqu'un qui n'a ni CV a importer ni envie
+            de decrire son profil dans le vide, c'est le chemin le plus court
+            vers un CV utilisable : il a deja l'annonce sous les yeux. */}
+        <Reveal delay={200} y={12} style={{
+          maxWidth: mob ? "100%" : 440, margin: "14px auto 0", textAlign: "center",
+        }}>
+          <button
+            onClick={onFromOffer}
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              fontFamily: "'Inter', sans-serif", fontSize: 13.5,
+              color: InkMuted, padding: "10px 8px", minHeight: 44,
+              textDecoration: "underline", textUnderlineOffset: 4,
+              textDecorationColor: Hairline,
+              transition: "color 180ms ease, text-decoration-color 180ms ease",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = Ink;
+              e.currentTarget.style.textDecorationColor = Coral; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = InkMuted;
+              e.currentTarget.style.textDecorationColor = Hairline; }}
+          >{T.ctaOffre}</button>
         </Reveal>
 
       </Aurora>

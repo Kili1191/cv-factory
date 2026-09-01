@@ -26,7 +26,12 @@ async function extractCvText(file, T) {
 
 function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   raw, setRaw, imping, onImport, setTab, setAiMode, lireImageCv,
-  choixGabarit }) {
+  choixGabarit, onFromOffer = () => {} }) {
+
+  // Les deux champs du chemin "je pars de l'annonce". Ils vivent ici parce
+  // qu'ils ne servent qu'a cet ecran et ne survivent pas a sa fermeture.
+  const [offreTexte, setOffreTexte] = useState("");
+  const [parcoursTexte, setParcoursTexte] = useState("");
 
   const fileInputRef = useRef(null);
   const [fileBusy, setFileBusy] = useState("");   // nom du fichier en lecture
@@ -207,6 +212,104 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           {/* Le meme choix etait ici AUSSI, juste sous la question qui vient
               de le poser. Il vit dans les reglages ; il n'a rien a faire sur
               le chemin de quelqu'un qui commence son CV. */}
+        </div>
+      </div>
+    );
+  }
+
+  // === Ecran "je pars de l'annonce" ===
+  //
+  // Deux champs et un bouton. L'annonce dit ce que le poste reclame ; le
+  // parcours, meme jete en trois lignes, dit ce que la personne a fait. Nuvi
+  // ecrit le CV vise sur cette annonce a partir de ce qu'elle a donne.
+  //
+  // Aucun sermon nulle part sur ce chemin. Le prompt porte deja QUI_DECIDE,
+  // qui interdit au modele de faire la morale, d'avertir ou de transformer une
+  // demande en version plus sage. Ici on n'ajoute rien de plus : c'est un
+  // outil, il execute.
+  if (mode === "offre") {
+    const pret = offreTexte.trim().length > 40 && parcoursTexte.trim().length > 10;
+    return (
+      <div style={{
+        position:"fixed", inset:0, zIndex:500, background:CreamSoft,
+        overflowY:"auto", fontFamily:Sans,
+      }}>
+        <div style={{ padding:"24px 24px 48px", maxWidth:760, margin:"0 auto" }}>
+          <button onClick={()=>setMode(null)} style={{
+            ...B({
+              background:"none", color:Gray600, fontSize:13, fontFamily:Sans,
+              fontWeight:500, textAlign:"left", padding:"4px 8px 4px 0",
+              marginBottom:10, minHeight:44, display:"inline-flex",
+              alignItems:"center", gap:6,
+            })
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            {T.back}
+          </button>
+
+          <h2 style={{
+            fontFamily:Serif, fontWeight:400, fontSize:"clamp(24px, 5vw, 38px)",
+            letterSpacing:"-0.03em", lineHeight:1.1, margin:"6px 0 8px",
+          }}>{T.ob_offre_title}</h2>
+          <p style={{ fontSize:14.5, lineHeight:1.6, color:Gray600, margin:"0 0 26px", maxWidth:"52ch" }}>
+            {T.ob_offre_sub}
+          </p>
+
+          <label style={{ display:"block", marginBottom:18 }}>
+            <span style={{
+              display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.12em",
+              textTransform:"uppercase", color:Coral, marginBottom:8,
+            }}>{T.ob_offre_label}</span>
+            <textarea
+              value={offreTexte}
+              onChange={(e)=>setOffreTexte(e.target.value)}
+              placeholder={T.ob_offre_ph}
+              rows={8}
+              style={{
+                width:"100%", padding:"14px 16px", borderRadius:RadiusSm,
+                border:"1px solid "+Gray200, background:Paper, color:Ink,
+                fontFamily:Sans, fontSize:14, lineHeight:1.6, resize:"vertical",
+                boxSizing:"border-box", outline:"none",
+              }}/>
+          </label>
+
+          <label style={{ display:"block", marginBottom:10 }}>
+            <span style={{
+              display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.12em",
+              textTransform:"uppercase", color:Coral, marginBottom:8,
+            }}>{T.ob_parcours_label}</span>
+            <textarea
+              value={parcoursTexte}
+              onChange={(e)=>setParcoursTexte(e.target.value)}
+              placeholder={T.ob_parcours_ph}
+              rows={7}
+              style={{
+                width:"100%", padding:"14px 16px", borderRadius:RadiusSm,
+                border:"1px solid "+Gray200, background:Paper, color:Ink,
+                fontFamily:Sans, fontSize:14, lineHeight:1.6, resize:"vertical",
+                boxSizing:"border-box", outline:"none",
+              }}/>
+          </label>
+          <div style={{ fontSize:12.5, color:Gray600, lineHeight:1.55, marginBottom:24 }}>
+            {T.ob_parcours_aide}
+          </div>
+
+          <button
+            onClick={()=>onFromOffer(offreTexte, parcoursTexte)}
+            disabled={!pret || imping}
+            style={{
+              ...B({
+                width:"100%", padding:"16px 24px", minHeight:52,
+                borderRadius:RadiusPill,
+                background: pret && !imping ? GradPurple : Gray200,
+                color: pret && !imping ? "#fff" : Gray600,
+                fontFamily:Sans, fontWeight:600, fontSize:15,
+              })
+            }}>{imping ? T.ob_offre_encours : T.ob_offre_cta}</button>
         </div>
       </div>
     );
