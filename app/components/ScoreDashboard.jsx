@@ -299,13 +299,38 @@ function DeuxLectures({ lectures, locale }) {
 
       {/* D'ou vient la note. Une note tiree d'un texte reconstitue et une note
           tiree d'un vrai PDF ne valent pas la meme chose, et le dire coute une
-          ligne. */}
+          ligne.
+
+          CETTE LIGNE A PROMIS UNE VERIFICATION QUI N'EXISTE PAS
+
+          Elle annoncait que telecharger le fichier le faisait relire par trois
+          analyseurs reels. La phrase exacte n'est pas recopiee ici :
+          tests/the-product-does-not-promise-a-check-it-skips.mjs la cherche
+          dans le source, et un commentaire qui la cite ferait echouer le test
+          sur lui-meme.
+
+          C'etait faux. lib/atsFidelity.js, qui fait cette comparaison, n'est
+          importe que par deux fichiers, tous deux des tests : les trois
+          analyseurs tournent en integration continue, jamais sur la machine de
+          la personne. Telecharger ne verifiait rien.
+
+          Le proprietaire du produit s'en est servi pour se rassurer, puis a
+          decouvert que rien ne verifiait. C'est la phrase qu'il ne faut pas
+          ecrire a la legere : une promesse de verification ARRETE le doute au
+          lieu de l'informer. La personne cesse de controler parce qu'on lui a
+          dit qu'un controle avait eu lieu, et quand la promesse se revele
+          creuse elle emporte la credibilite de tout le reste, y compris de ce
+          qui etait vrai.
+
+          En attendant que le controle tourne vraiment dans le navigateur, on
+          dit ce qui est exact, et on donne le geste qui verifie en trente
+          secondes sans avoir a nous croire. */}
       <div style={{ marginTop: 8, fontSize: 11, color: Gray600, lineHeight: 1.5 }}>
         {machine.source === "pdf"
           ? (en ? "Measured on your exported PDF, re-read field by field."
                 : "Mesure sur ton PDF exporte, relu champ par champ.")
-          : (en ? "Estimated before export. Downloading re-checks it against three real parsers."
-                : "Estime avant export. Telecharger le verifie avec trois vrais analyseurs.")}
+          : (en ? "Estimated from your CV data, before export. To check the real file: open the downloaded PDF, select all, copy, paste it anywhere. What you paste is what a screening tool reads."
+                : "Estime a partir de tes donnees, avant export. Pour controler le vrai fichier : ouvre le PDF telecharge, tout selectionner, copier, coller n'importe ou. Ce que tu colles est ce que lit un logiciel de tri.")}
       </div>
     </div>
   );
