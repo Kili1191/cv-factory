@@ -60,6 +60,23 @@ ${cvContext}`,
 // JSON du CV une fois la reflexion payee : la reponse aurait pu etre coupee en
 // plein milieu, ce qui se serait vu comme un JSON invalide, pas comme une
 // erreur d'API.
+// CE QUE L'API ACCEPTE COMME SCHEMA, ET CE QU'ELLE REFUSE
+//
+// La documentation liste des restrictions qui ne se devinent pas : pas de
+// minLength/maxLength, pas de minimum/maximum, minItems seulement a 0 ou 1,
+// et additionalProperties uniquement a false. Un schema qui les enfreint fait
+// echouer l'appel entier avec une 400, c'est a dire pire que pas de schema du
+// tout.
+//
+// On ne valide pas le detail ici : le schema vient de notre propre code, pas
+// de l'utilisateur. On verifie seulement qu'il a la forme minimale attendue,
+// pour qu'une valeur mal passee degrade vers l'ancien comportement au lieu de
+// casser l'appel.
+function schemaValide(s) {
+  return !!s && typeof s === "object" && !Array.isArray(s)
+    && s.type === "object" && !!s.properties && typeof s.properties === "object";
+}
+
 function pickMaxTokens(requestedMax) {
   if (typeof requestedMax === "number" && requestedMax > 0 && requestedMax <= 32000) {
     return requestedMax;
@@ -78,6 +95,7 @@ export async function POST(request) {
       messages: providedMessages,
       cv_context: cvContext,
       max_tokens: requestedMaxTokens,
+      schema: requestedSchema,
       task_name: requestedTaskName,
     } = body || {};
 
@@ -120,7 +138,25 @@ export async function POST(request) {
       body: JSON.stringify({
         model: MODEL_DEFAULT,
         max_tokens,
-        output_config: { effort: EFFORT_DEFAULT },
+        // LA SORTIE STRUCTUREE REMPLACE UNE PILE ENTIERE
+        //
+        // Le produit demandait le JSON en prose ("JSON UNIQUEMENT, sans
+        // markdown") dans vingt et un prompts, puis retirait les cloture de
+        // bloc a la main avant JSON.parse. C'est l'echafaudage classique
+        // d'avant les sorties structurees : il tient la plupart du temps et
+        // rate exactement quand le modele est le plus sollicite, sur les
+        // reponses longues.
+        //
+        // Quand l'appelant fournit un schema, l'API garantit du JSON conforme.
+        // Ce n'est pas une consigne mieux ecrite, c'est une contrainte de
+        // decodage : la classe de panne "reponse illisible" disparait.
+        //
+        // Sans schema, rien ne change : les appels qui n'attendent pas de JSON
+        // (la prose du coach, l'avis en toutes lettres) passent comme avant.
+        ...(schemaValide(requestedSchema)
+          ? { output_config: { effort: EFFORT_DEFAULT,
+                               format: { type: "json_schema", schema: requestedSchema } } }
+          : { output_config: { effort: EFFORT_DEFAULT } }),
         system,
         messages,
       }),

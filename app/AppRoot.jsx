@@ -905,6 +905,75 @@ function signalerNouvelleTentative(detail) {
   } catch { /* un navigateur sans CustomEvent : on retente en silence */ }
 }
 
+// LA FORME D'UN CV, DITE A L'API PLUTOT QU'AU MODELE
+//
+// Les restrictions sont celles que la documentation impose aux schemas de
+// sortie structuree : additionalProperties uniquement a false, pas de
+// minLength ni de maximum, minItems seulement a 0 ou 1. Un schema qui les
+// enfreint fait echouer l'appel entier, donc on s'en tient au strict
+// descriptif.
+//
+// Tout est requis et les chaines peuvent etre vides : c'est voulu. Un champ
+// absent obligerait chaque lecteur en aval a se demander s'il manque ou s'il
+// est vide, alors qu'une chaine vide se lit et se corrige. C'est aussi la
+// regle que le produit tient partout ailleurs : ce qu'on ne sait pas reste
+// vide plutot que d'etre invente.
+const SCHEMA_CV = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    name: { type: "string" },
+    title: { type: "string" },
+    email: { type: "string" },
+    phone: { type: "string" },
+    location: { type: "string" },
+    linkedin: { type: "string" },
+    summary: { type: "string" },
+    experience: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          company: { type: "string" },
+          period: { type: "string" },
+          location: { type: "string" },
+          bullets: { type: "array", items: { type: "string" } },
+        },
+        required: ["title", "company", "period", "location", "bullets"],
+      },
+    },
+    education: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          degree: { type: "string" },
+          school: { type: "string" },
+          period: { type: "string" },
+        },
+        required: ["degree", "school", "period"],
+      },
+    },
+    skills: { type: "array", items: { type: "string" } },
+    languages: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: { lang: { type: "string" }, level: { type: "string" } },
+        required: ["lang", "level"],
+      },
+    },
+    certifications: { type: "array", items: { type: "string" } },
+  },
+  required: ["name", "title", "email", "phone", "location", "linkedin",
+             "summary", "experience", "education", "skills", "languages",
+             "certifications"],
+};
+
 async function aiCall(prompt, options = {}) {
   // Options: { cv, max_tokens, task_name, messages }
   // [Migration Opus 5] `temperature` a disparu : les parametres
@@ -915,7 +984,10 @@ async function aiCall(prompt, options = {}) {
   // contre un serveur qu'ils controlent afin d'observer les nouvelles
   // tentatives. En production il est absent et l'appel part sur la route
   // relative, comme avant.
-  const { cv, max_tokens, task_name = "unknown", messages, __base } = options;
+  // `schema` : quand l'appelant attend du JSON, il donne sa forme. L'API
+  // garantit alors une reponse conforme, au lieu qu'on la demande en prose et
+  // qu'on rattrape les cloture de bloc a la main.
+  const { cv, max_tokens, task_name = "unknown", messages, schema, __base } = options;
   const url = (__base || "") + "/api/claude";
 
   // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
@@ -934,6 +1006,7 @@ async function aiCall(prompt, options = {}) {
     cv_context,
     max_tokens,
     task_name,
+    schema,
   });
 
   let derniere = null;
@@ -5882,14 +5955,16 @@ export default function App() {
         + "l'ordre, la formulation, les mots du secteur, la mise en avant.\n\n"
         + QUI_DECIDE + "\n"
         + NO_DASH + " " + langLine + "\n"
-        + "JSON UNIQUEMENT, sans markdown:\n"
-        + '{"name":"","title":"","email":"","phone":"","location":"",'
-        + '"linkedin":"","summary":"","experience":[{"id":1,"title":"","company":"",'
-        + '"period":"","location":"","bullets":["",""]}],'
-        + '"education":[{"id":1,"degree":"","school":"","period":""}],'
-        + '"skills":[""],"languages":[{"lang":"","level":""}],"certifications":[""]}';
+        // LA FORME N'EST PLUS DEMANDEE EN PROSE
+        //
+        // Elle est passee en schema : l'API garantit du JSON conforme au lieu
+        // qu'on l'implore. Le prompt ne porte donc plus ni exemple de sortie
+        // ni consigne "JSON uniquement, sans markdown", qui coutaient des
+        // jetons a chaque appel et ratait exactement sur les reponses longues,
+        // c'est a dire sur les CV les plus fournis.
+        + "Laisse vide tout champ que le parcours ne renseigne pas.";
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV, task_name: "cv-from-offer" });
       const cvNouveau = parseJSON(txt);
       if (!cvNouveau || typeof cvNouveau !== "object") throw new Error("reponse illisible");
       const propre = normCV({ ...cvNouveau, custom: cv && cv.custom });
