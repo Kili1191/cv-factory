@@ -151,7 +151,11 @@ export async function run() {
       );
     }
     // La preuve brute doit etre montrable : c'est elle qu'on ne peut pas contester.
-    const bouton = p2.getByRole("button", { name: /texte brut/i });
+    // On vise l'attribut, pas le libelle : le texte du bouton a le droit de
+    // changer, ce qu'il ouvre n'a pas le droit de disparaitre. La premiere
+    // version cherchait "texte brut" et est tombee au premier changement de
+    // formulation, en accusant une page qui allait bien.
+    const bouton = p2.locator('[data-nuvi-texte-brut="1"]');
     if (await bouton.count() === 0) {
       failures.push(
         "la page ne montre pas le texte brut extrait. C'est la seule chose "
@@ -161,8 +165,9 @@ export async function run() {
       await bouton.first().click();
       await p2.waitForTimeout(500);
       const brut = await p2.evaluate(() => {
-        const pre = document.querySelector("pre");
-        return pre ? pre.textContent : "";
+        const boite = document.querySelector('[data-nuvi-texte-brut="1"]');
+        const zone = boite && boite.parentElement;
+        return zone ? zone.textContent : "";
       });
       for (const [quoi, aiguille] of [["l'employeur", "Acme SaaS"], ["l'ecole", "ESSEC"],
         ["le chiffre", "4M EUR"]]) {
