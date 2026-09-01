@@ -111,7 +111,7 @@ import {
   Ink, InkSoft, Cream, CreamSoft, Paper, Gold, GoldDeep,
   Purple, PurpleSoft, Magenta, Coral, CoralSoft, Green, GreenSoft,
   Gray50, Gray100, Gray200, Gray400, Gray600, Gray900,
-  Serif, Sans, Dark,
+  Serif, Sans, Dark, Desk,
   RadiusSm, RadiusMd, RadiusLg, RadiusPill,
   ShadowSm, ShadowMd, ShadowLg,
   GradDark, GradGold, GradPurple, GradCoral,
@@ -9632,12 +9632,12 @@ export default function App() {
             alignItems:"center", gap:10, padding:"12px 22px 12px",
             borderBottom:"1px solid "+Gray200,
           }}>
-            {/* Recule quand la barre laterale s'ouvre par-dessus. Le CV, lui,
-                ne bouge pas : c'est toute la raison d'etre du recouvrement. */}
+            {/* Le decalage compensait une barre laterale qui s'ouvrait au
+                survol PAR-DESSUS l'en-tete. Elle ne s'ouvre plus : elle est
+                large en permanence, dans le flux, et l'espaceur lui garde sa
+                place. Il n'y a donc plus rien a compenser. */}
             <div style={{
               minWidth:0, display:"flex", alignItems:"baseline", gap:9,
-              paddingLeft:"calc(var(--nuvi-rail, 56px) - 56px)",
-              transition:"padding-left 180ms cubic-bezier(.22,1,.36,1)",
             }}>
               <span style={{
                 fontFamily:Sans, fontSize:Text.micro, fontWeight:700,
@@ -9718,9 +9718,18 @@ export default function App() {
             )}
             </div>
           </div>
+          {/* LE DOCUMENT FLOTTAIT DANS DU VIDE
+              La zone de travail avait la meme couleur creme que la feuille
+              posee dessus. Mesure a 1440x900 : un CV blanc casse sur un fond
+              blanc casse, sans bord franc, au milieu d'une grande surface
+              vide - on ne voyait pas une page, on voyait du texte qui flotte.
+              La zone prend donc un ton plus soutenu que la feuille. C'est ce
+              que fait tout editeur de document, et pour la meme raison : une
+              page ne se lit comme une page que posee sur autre chose. */}
           <div ref={attachDeskZone} style={{
             flex:1, overflow:"auto",
-            padding: Space.lg + "px " + Space.xl + "px " + Space.xl + "px",
+            background: Desk,
+            padding: Space.xl + "px " + Space.xl + "px " + (Space.xl * 2) + "px",
             display:"flex", justifyContent:"center", alignItems:"flex-start",
           }}>
             {/* La boite exterieure reserve la taille APRES agrandissement :
@@ -9737,8 +9746,10 @@ export default function App() {
                 width:794,
                 transform: deskScale === 1 ? "none" : `scale(${deskScale})`,
                 transformOrigin: "top left",
-                boxShadow:"0 8px 48px rgba(0,0,0,.14)",
-                borderRadius:4, overflow:"hidden",
+                // L'ombre porte la feuille au-dessus de la zone : franche et
+                // proche pour le contact, large et douce pour la hauteur.
+                boxShadow:"0 1px 2px rgba(10,10,10,.10), 0 12px 40px rgba(10,10,10,.13)",
+                borderRadius:3, overflow:"hidden",
               }}>
                 {CVEl}
               </div>

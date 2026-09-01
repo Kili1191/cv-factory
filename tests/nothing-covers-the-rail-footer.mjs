@@ -2,21 +2,34 @@
 //
 // LE DEFAUT QU'IL EMPECHE
 //
-// Le bouton Telecharger est en position fixe, en bas a gauche, avec un
-// z-index superieur a celui de la barre. Repliee, la barre fait 56px et le
-// bouton passe a cote. Deployee, elle fait 240px - et le bouton se pose
-// DESSUS, coupant le libelle des dernieres entrees.
+// Le bouton Telecharger est en position fixe, avec un z-index superieur a
+// celui de la barre. Quand la barre etait un rail de 56px, il passait a cote ;
+// des qu'elle s'ouvrait a 240px, il se posait DESSUS et coupait le libelle des
+// dernieres entrees : Rejouer, Reglages, Compte.
 //
 // Rien ne le signale : pas d'erreur, pas de log, le build passe, les autres
-// tests passent. Il faut regarder l'ecran, la barre ouverte. C'est ainsi
-// qu'on l'a trouve, et c'est pour ca que ce test existe.
+// tests passent. Il faut regarder l'ecran. C'est ainsi qu'on l'a trouve, et
+// c'est pour ca que ce test existe.
+//
+// CE QUI A CHANGE, ET POURQUOI LE TEST RESTE
+//
+// La barre ne se deplie plus au survol : elle est large en permanence, avec
+// ses libelles lisibles sans rien survoler. L'etat ou le defaut apparaissait
+// est donc devenu l'etat NORMAL, et ce controle compte davantage qu'avant, pas
+// moins.
+//
+// Une version precedente cherchait ses entrees avec [role="button"]. La barre
+// utilise maintenant de vrais <button>, et ce selecteur ne trouvait plus rien
+// : le test passait en ne verifiant plus AUCUNE ligne. C'est le pire mode
+// d'echec possible, et la raison pour laquelle il compte desormais ce qu'il a
+// balaye et echoue s'il n'a rien trouve.
 //
 // CE QU'IL FAIT DE PLUS QU'UN CLIC
 //
-// Il ne se contente pas de tester le centre de chaque entree : le centre est
-// l'icone, et l'icone n'etait justement PAS recouverte - seul le texte, a
-// droite, disparaissait. Un test au centre aurait donc dit "tout va bien"
-// pendant que le libelle etait illisible. Il balaie donc toute la largeur.
+// Il ne teste pas le centre de chaque entree : le centre est l'icone, et
+// l'icone n'etait justement PAS recouverte - seul le texte, a droite,
+// disparaissait. Un test au centre aurait dit "tout va bien" pendant que le
+// libelle etait illisible. Il balaie donc toute la largeur.
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
 
@@ -28,129 +41,121 @@ export async function run() {
   try {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
-    await seedApp(page, SAMPLE_CV);
+    await seedApp(page, SAMPLE_CV, { locale: "en" });
 
-    // Balaie une entree sur toute sa largeur et rend ce qui la recouvre.
     const balayer = async () => page.evaluate(() => {
       const rail = document.querySelector("aside");
       if (!rail) return { absent: true };
-      const rows = [...rail.querySelectorAll('[role="button"]')];
-      const bas = rows.slice(-3); // les dernieres entrees : Rejouer, Reglages, Compte
+      // data-nv-nav est pose par la barre elle-meme sur chacune de ses
+      // entrees : il ne depend ni de la balise choisie ni du role ARIA, donc
+      // il survit a une refonte, ce que [role="button"] n'avait pas fait.
+      const rows = [...rail.querySelectorAll("[data-nv-nav]")];
+      const bas = rows.slice(-3); // Rejouer, Reglages, Compte
       const out = [];
+      let balayees = 0;
       for (const row of bas) {
         const r = row.getBoundingClientRect();
         if (r.width < 4 || r.height < 4) continue;
+        balayees++;
         for (let f = 0.1; f <= 0.95; f += 0.1) {
-          const x = r.x + r.width * f;
-          const y = r.y + r.height / 2;
-          const sur = document.elementFromPoint(x, y);
+          const sur = document.elementFromPoint(r.x + r.width * f, r.y + r.height / 2);
           if (sur && !row.contains(sur) && sur !== row) {
             out.push({
-              entree: (row.getAttribute("aria-label") || row.innerText || "?").slice(0, 24),
+              entree: (row.innerText || row.getAttribute("data-nv-nav") || "?").trim().slice(0, 24),
               par: (sur.getAttribute("aria-label") || sur.innerText || sur.tagName).trim().slice(0, 24),
             });
             break;
           }
         }
       }
-      return { largeur: Math.round(rail.getBoundingClientRect().width), bloques: out };
+      return {
+        largeur: Math.round(rail.getBoundingClientRect().width),
+        bloques: out, balayees, total: rows.length,
+      };
     });
 
-    // LE CURSEUR DOIT ETRE AILLEURS AVANT DE MESURER L'ETAT REPLIE
+    const vu = await balayer();
+    if (vu.absent) {
+      failures.push("la barre laterale n'existe plus : ce test ne verifie plus rien.");
+    } else {
+      // SANS CETTE LIGNE, LE TEST PEUT PASSER SUR RIEN
+      if (vu.balayees < 2) {
+        failures.push(
+          "ce test n'a balaye que " + vu.balayees + " entree(s) sur " + vu.total
+          + " : il ne verifie plus le bas de la barre, il se contente de ne "
+          + "rien trouver."
+        );
+      }
+      for (const b of vu.bloques) {
+        failures.push('"' + b.entree + '" est recouverte par "' + b.par
+          + '". Le libelle est illisible.');
+      }
+    }
+
+    // --- LA BARRE NE MANGE PAS LE NOM DU DOCUMENT ---------------------
     //
-    // Playwright demarre sa souris en (0,0) - c'est-a-dire SUR la barre, qui
-    // s'ouvre au survol. Le test mesurait donc une barre deja ouverte et
-    // croyait qu'elle ne s'ouvrait plus. Il passait ici et rougissait en CI,
-    // selon l'endroit ou le curseur avait fini sa course.
+    // Elle se posait AU-DESSUS du contenu quand elle s'ouvrait : sur une
+    // capture d'utilisateur, "Kilian Maisonnette" se lisait "ette". Elle est
+    // maintenant dans le flux, donc le nom doit commencer a sa droite.
+    const pos = await page.evaluate(() => {
+      const rail = document.querySelector("aside");
+      const spans = [...document.querySelectorAll("span")];
+      // Hors de la barre : son propre logo est serif lui aussi.
+      const nom = spans.find((x) => !x.closest("aside")
+        && /Fraunces|serif/i.test(getComputedStyle(x).fontFamily)
+        && x.getBoundingClientRect().top < 90
+        && x.getBoundingClientRect().width > 30);
+      const cv = document.querySelector('[data-cvf="cv"]');
+      return {
+        nom: nom ? Math.round(nom.getBoundingClientRect().left) : null,
+        rail: rail ? Math.round(rail.getBoundingClientRect().right) : null,
+        cv: cv ? Math.round(cv.getBoundingClientRect().left) : null,
+      };
+    });
+    if (pos.nom !== null && pos.rail !== null && pos.nom < pos.rail) {
+      failures.push(
+        "le nom du document commence a " + pos.nom + "px, sous une barre qui va "
+        + "jusqu'a " + pos.rail + "px : le titre est ampute."
+      );
+    }
+
+    // --- ET ELLE NE BOUGE PLUS, MEME SI ON LA SURVOLE -----------------
     //
-    // On l'ecarte explicitement, et on attend la fin de l'animation.
+    // C'est la garantie que la refonte apporte, et elle merite d'etre tenue
+    // par un test : tant que la largeur ne depend plus du curseur, ni le CV ni
+    // l'en-tete ne peuvent sauter sous les yeux de quelqu'un qui lit. Ce
+    // controle echoue le jour ou quelqu'un remet l'ouverture au survol.
     await page.mouse.move(1200, 450);
-    await page.waitForTimeout(900);
-
-    const replie = await balayer();
-    if (replie.absent) {
-      failures.push("la barre laterale n'existe plus : ce test ne verifie plus rien");
-    } else if (replie.bloques.length) {
-      for (const b of replie.bloques) {
-        failures.push(`barre repliee : "${b.entree}" est recouverte par "${b.par}"`);
-      }
-    }
-
-    // Deploie la barre en la survolant, comme le fait un utilisateur.
+    await page.waitForTimeout(400);
+    const froid = await page.evaluate(() => ({
+      rail: Math.round(document.querySelector("aside").getBoundingClientRect().width),
+      cv: Math.round((document.querySelector('[data-cvf="cv"]') || {}).getBoundingClientRect
+        ? document.querySelector('[data-cvf="cv"]').getBoundingClientRect().left : 0),
+    }));
     await page.locator("aside").first().hover({ position: { x: 25, y: 300 } });
-    await page.waitForTimeout(1200);
-
-    const deploye = await balayer();
-    if (!deploye.absent) {
-      if (deploye.largeur <= (replie.largeur || 0)) {
-        failures.push(
-          `la barre ne s'ouvre plus au survol (${replie.largeur}px -> ${deploye.largeur}px) : `
-          + "le test ne verifie donc plus l'etat ou le defaut apparaissait"
-        );
-      }
-      for (const b of deploye.bloques) {
-        failures.push(
-          `barre ouverte : "${b.entree}" est recouverte par "${b.par}". `
-          + "Le libelle devient illisible des qu'on survole la barre."
-        );
-      }
+    await page.waitForTimeout(900);
+    const chaud = await page.evaluate(() => ({
+      rail: Math.round(document.querySelector("aside").getBoundingClientRect().width),
+      cv: Math.round((document.querySelector('[data-cvf="cv"]') || {}).getBoundingClientRect
+        ? document.querySelector('[data-cvf="cv"]').getBoundingClientRect().left : 0),
+    }));
+    if (froid.rail !== chaud.rail) {
+      failures.push(
+        "la barre change de largeur au survol (" + froid.rail + "px -> " + chaud.rail
+        + "px). C'est ce qui faisait sauter le document sous les yeux, et ce "
+        + "que la barre permanente devait supprimer."
+      );
     }
-
-    // --- LA BARRE OUVERTE NE MANGE PAS LE NOM DU DOCUMENT -------------
-    //
-    // Se poser au-dessus a regle le vrai probleme - le CV ne se decale plus
-    // au survol. Mais la ligne d'en-tete commence bien plus a gauche que le
-    // document, et elle, se faisait avaler : sur une capture d'utilisateur,
-    // "Kilian Maisonnette" se lisait "ette". Le CV etait intact, le titre du
-    // document illisible, et rien ne le signalait.
-    {
-      const lire = () => page.evaluate(() => {
-        const cv = document.querySelector('[data-cvf="cv"]');
-        const rail = document.querySelector("aside");
-        // Le nom du document est le premier texte serif de la bande du haut.
-        const spans = [...document.querySelectorAll("span")];
-        // Hors de la barre : son propre logo "Nuvi" est serif lui aussi et
-        // se trouve tout en haut, donc il repondait a la place du nom du CV.
-        const nom = spans.find((x) => !x.closest("aside")
-          && /Fraunces|serif/i.test(getComputedStyle(x).fontFamily)
-          && x.getBoundingClientRect().top < 90
-          && x.getBoundingClientRect().width > 30);
-        return {
-          nom: nom ? Math.round(nom.getBoundingClientRect().left) : null,
-          rail: rail ? Math.round(rail.getBoundingClientRect().right) : null,
-          cv: cv ? Math.round(cv.getBoundingClientRect().left) : null,
-        };
-      });
-
-      const replie = await lire();
-      await page.hover("aside");
-      await page.waitForTimeout(700);
-      const ouvert = await lire();
-
-      if (ouvert.nom !== null && ouvert.rail !== null && ouvert.nom < ouvert.rail) {
-        failures.push(
-          "barre ouverte : le nom du document commence a " + ouvert.nom + "px, "
-          + "sous une barre qui va jusqu'a " + ouvert.rail + "px. Le titre du CV "
-          + "est donc ampute - on lit la fin d'un nom sans savoir quel document "
-          + "on edite."
-        );
-      }
-      // Et le document, lui, ne doit toujours pas bouger : c'est la raison
-      // d'etre du recouvrement, et le corriger d'un cote ne doit pas le
-      // casser de l'autre.
-      if (replie.cv !== null && replie.cv !== ouvert.cv) {
-        failures.push(
-          "le CV se decale de " + replie.cv + "px a " + ouvert.cv + "px quand la "
-          + "barre s'ouvre. C'est exactement ce que le recouvrement devait "
-          + "supprimer."
-        );
-      }
+    if (froid.cv !== chaud.cv) {
+      failures.push(
+        "le CV se decale de " + froid.cv + "px a " + chaud.cv + "px quand la souris "
+        + "passe sur la barre."
+      );
     }
 
     await ctx.close();
-    if (!failures.length) {
-      console.log(`      bas de barre libre, repliee (${replie.largeur}px) comme ouverte (${deploye.largeur}px)`);
-    }
+  } catch (err) {
+    failures.push("le test a plante : " + (err && err.message ? err.message : String(err)));
   } finally {
     await browser.close();
     await stopServer(server);

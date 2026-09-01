@@ -3,6 +3,11 @@ import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple } from "./tokens";
+
+// La largeur de la barre, en un seul endroit : l'espaceur, la barre elle-meme
+// et la variable CSS que lit l'en-tete doivent dire le meme nombre, sinon le
+// nom du document repasse sous la navigation.
+const RAIL = 244;
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
 const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
@@ -31,15 +36,32 @@ export default function NuviSidebar({
   onSignOut = () => {},
   onConnectGmail = () => {},
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const [hoveredItem, setHoveredItem] = useState(null);
-  const closeTimerRef = useRef(null);
+  // LA BARRE EST OUVERTE, ET ELLE LE RESTE
+  //
+  // Elle etait un rail de douze icones sans un mot, qui ne se depliait qu'au
+  // survol. Trois consequences, constatees a l'ecran et pas supposees :
+  //
+  //   1. Personne ne sait ce que font les icones. Nuvi s'adresse a des gens
+  //      qui cherchent un poste en salle ou en aide a domicile, pas a des
+  //      habitues des barres d'outils. Un cercle dans un cercle ne dit rien.
+  //   2. Rien n'indique que des libelles existent. Ce qui n'apparait qu'au
+  //      survol n'existe pas pour qui ne survole pas.
+  //   3. La cascade venait de la : le sous-menu s'ouvrait au survol, donc
+  //      derriere le panneau qu'on venait d'ouvrir. On a soigne le symptome
+  //      avec panneauOuvert ; ouvrir au clic supprime la cause.
+  //
+  // Une seule section reste ouverte a la fois : deux accordeons deplies
+  // rendraient la liste plus longue que l'ecran.
+  const [sectionOuverte, setSectionOuverte] = useState(null);
 
 
+  // Le tutoriel designait une entree en simulant un survol. Il n'y a plus de
+  // survol : il ouvre maintenant la section, ce qui est ce qu'il voulait
+  // montrer depuis le debut.
   useEffect(() => {
     const onTutHover = (e) => {
       if (e && e.detail && e.detail.key !== undefined) {
-        setHoveredItem(e.detail.key);
+        setSectionOuverte(e.detail.key);
       }
     };
     if (typeof window !== "undefined") {
@@ -194,365 +216,208 @@ export default function NuviSidebar({
 
   const handleSubSelect = (parentKey, subKey) => {
     onSubSelect(parentKey, subKey);
-    setHoveredItem(null);
   };
-
-  const handleItemMouseEnter = (key, hasSub) => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-    // LA CASCADE VENAIT D'ICI
-    //
-    // Le sous-menu s'ouvre au survol. Une fois un panneau ouvert, la souris
-    // qui remonte vers lui traverse la barre, reveille ce gestionnaire, et le
-    // sous-menu se rouvre DERRIERE le panneau. On voyait alors le menu DESIGN
-    // sous la feuille Apparence.
-    //
-    // Aucun test ne l'attrapait : "un panneau a la fois" verifie que deux
-    // panneaux ne coexistent pas apres des CLICS, et ce menu s'ouvre sans
-    // clic. Il fallait repasser la souris sur la barre, ce que personne ne
-    // scriptait et que tout le monde fait.
-    if (panneauOuvert) { setHoveredItem(null); return; }
-    if (hasSub) {
-      setHoveredItem(key);
-    } else {
-      setHoveredItem(null);
-    }
-  };
-
-  const handleItemMouseLeave = () => {
-    closeTimerRef.current = setTimeout(() => {
-      setHoveredItem(null);
-    }, 600);
-  };
-
-  const handlePanelMouseEnter = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  };
-
-  const handlePanelMouseLeave = () => {
-    closeTimerRef.current = setTimeout(() => {
-      setHoveredItem(null);
-    }, 600);
-  };
-
-  useEffect(() => {
-    if (panneauOuvert) setHoveredItem(null);
-  }, [panneauOuvert]);
-
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
-    };
-  }, []);
 
   const itemStyle = (isActive, accentColor) => ({
     display: "flex",
     alignItems: "center",
-    gap: 14,
-    // 40px de haut : sous le minimum tactile de 44px (WCAG 2.5.5).
-    // La barre est repliee en icones, donc la cible etait un carre de 40.
-    padding: "10px 12px",
+    gap: 12,
+    width: "calc(100% - 16px)",
+    textAlign: "left",
+    padding: "0 12px",
+    // 44px : le minimum tactile de WCAG 2.5.5. La barre etant desormais
+    // toujours large, la cible l'est aussi.
     minHeight: 44,
-    minWidth: 44,
     boxSizing: "border-box",
-    margin: "2px 8px",
+    margin: "1px 8px",
     borderRadius: 10,
+    border: "none",
     cursor: "pointer",
-    background: isActive ? accentColor + "15" : "transparent",
+    background: isActive ? accentColor + "14" : "transparent",
     color: isActive ? accentColor : InkMuted,
-    transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
+    transition: Trans(["background", "color"], "fast"),
     fontFamily: "'Inter', -apple-system, sans-serif",
-    fontSize: 13,
+    fontSize: 13.5,
     fontWeight: isActive ? 600 : 500,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
     position: "relative",
   });
 
-  const subChevron = (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: "auto", opacity: 0.4 }}>
+  const chevron = (ouvert) => (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"
+      style={{
+        marginLeft: "auto", opacity: 0.45, flexShrink: 0,
+        transform: "rotate(" + (ouvert ? 90 : 0) + "deg)",
+        transition: "transform 180ms cubic-bezier(0.22, 1, 0.36, 1)",
+      }}>
       <path d="m9 18 6-6-6-6"/>
     </svg>
   );
 
+  const survol = (accent) => ({
+    onMouseEnter: (e) => {
+      if (e.currentTarget.getAttribute("data-nv-actif") === "1") return;
+      e.currentTarget.style.background = accent + "0d";
+      e.currentTarget.style.color = accent;
+    },
+    onMouseLeave: (e) => {
+      if (e.currentTarget.getAttribute("data-nv-actif") === "1") return;
+      e.currentTarget.style.background = "transparent";
+      e.currentTarget.style.color = InkMuted;
+    },
+  });
+
+  const pastille = (
+    <span style={{
+      position: "absolute", top: -2, right: -2, width: 7, height: 7,
+      background: Coral, borderRadius: "50%", border: "1.5px solid " + Paper,
+    }}/>
+  );
+
   const renderItem = (item) => {
     const isActive = active === item.key;
-    const hasNotif = hasNotification[item.key];
-    const accentColor = itemColors[item.key] || Coral;
+    const accent = itemColors[item.key] || Coral;
+    const sousItems = subItemsMap[item.key];
+    const ouvert = sectionOuverte === item.key;
+
     return (
-      <div
-        key={item.key}
-        role="button"
-        tabIndex={0}
-        onClick={() => !item.hasSub && handleSelect(item.key)}
-        onKeyDown={(e) => {
-          if ((e.key === "Enter" || e.key === " ") && !item.hasSub) {
-            e.preventDefault();
-            handleSelect(item.key);
-          }
-        }}
-        onMouseEnter={(e) => {
-          handleItemMouseEnter(item.key, item.hasSub);
-          if (!isActive) {
-            e.currentTarget.style.background = accentColor + "0a";
-            e.currentTarget.style.color = accentColor;
-          }
-        }}
-        onMouseLeave={(e) => {
-          handleItemMouseLeave();
-          if (!isActive) {
-            e.currentTarget.style.background = "transparent";
-            e.currentTarget.style.color = InkMuted;
-          }
-        }}
-        style={itemStyle(isActive, accentColor)}
-        data-nv-nav={item.key}
-        aria-label={item.label}
-        aria-current={isActive ? "page" : undefined}
-        aria-haspopup={item.hasSub ? "menu" : undefined}
-        aria-expanded={item.hasSub && hoveredItem === item.key ? "true" : undefined}
-      >
-        <span style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          width: 20,
-          height: 20,
-          flexShrink: 0,
-          position: "relative",
-          color: "inherit",
-        }}>
-          {Icons[item.key]}
-          {hasNotif && (
-            <span style={{
-              position: "absolute",
-              top: -2,
-              right: -2,
-              width: 7,
-              height: 7,
-              background: Coral,
-              borderRadius: "50%",
-              border: "1.5px solid " + Paper,
-            }} />
-          )}
-        </span>
-        <span style={{
-          flex: 1,
-          opacity: expanded ? 1 : 0,
-          transition: "opacity 150ms ease " + (expanded ? "60ms" : "0ms"),
-          pointerEvents: expanded ? "auto" : "none",
-        }}>
-          {item.label}
-        </span>
-        {item.hasSub && expanded && subChevron}
+      <div key={item.key}>
+        <button
+          type="button"
+          onClick={() => {
+            if (item.hasSub) {
+              // Un accordeon a la fois : ouvrir celui-ci referme l'autre.
+              setSectionOuverte(ouvert ? null : item.key);
+            } else {
+              handleSelect(item.key);
+            }
+          }}
+          {...survol(accent)}
+          style={itemStyle(isActive, accent)}
+          data-nv-nav={item.key}
+          data-nv-actif={isActive ? "1" : "0"}
+          aria-current={isActive ? "page" : undefined}
+          aria-expanded={item.hasSub ? (ouvert ? "true" : "false") : undefined}
+        >
+          <span style={{
+            display: "flex", alignItems: "center", justifyContent: "center",
+            width: 20, height: 20, flexShrink: 0, position: "relative",
+            color: "inherit",
+          }}>
+            {Icons[item.key]}
+            {hasNotification[item.key] && pastille}
+          </span>
+          {/* LE LIBELLE N'EST PLUS UNE INFOBULLE
+              Il est la, tout le temps, lisible sans rien survoler. C'est la
+              seule facon qu'une barre de navigation soit utilisable par
+              quelqu'un qui ouvre le produit pour la premiere fois. */}
+          <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {item.label}
+          </span>
+          {item.hasSub && chevron(ouvert)}
+        </button>
+
+        {/* Les sous-entrees poussent leurs voisines vers le bas au lieu de
+            flotter par-dessus. Rien ne peut donc recouvrir rien. */}
+        {item.hasSub && ouvert && sousItems && (
+          <div role="group" aria-label={item.label} data-nv-sous={item.key} style={{
+            margin: "2px 8px 6px 26px",
+            paddingLeft: 12,
+            borderLeft: "1.5px solid " + accent + "33",
+            animation: "cvfFadeIn 180ms ease both",
+          }}>
+            {sousItems.map((sub) => (
+              <button
+                key={sub.key}
+                type="button"
+                onClick={() => handleSubSelect(item.key, sub.key)}
+                {...survol(accent)}
+                data-nv-sub={item.key + ":" + sub.key}
+                data-nv-actif="0"
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", textAlign: "left", border: "none",
+                  background: "transparent", cursor: "pointer",
+                  minHeight: 40, padding: "0 10px", borderRadius: 8,
+                  color: InkMuted, fontFamily: "'Inter', -apple-system, sans-serif",
+                  fontSize: 12.5, fontWeight: 500,
+                  transition: Trans(["background", "color"], "fast"),
+                }}>
+                <span style={{ display: "flex", width: 14, height: 14, flexShrink: 0, color: "inherit" }}>
+                  {sub.icon}
+                </span>
+                <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {sub.label}
+                </span>
+                {/* Ce qui coute un appel au modele le dit. Les autres entrees
+                    sont instantanees et gratuites, et la difference se voit
+                    avant de cliquer, pas apres. */}
+                {sub.isAI && (
+                  <span aria-hidden="true" style={{
+                    fontSize: 9, letterSpacing: ".06em", fontWeight: 700,
+                    color: Purple, background: Purple + "14",
+                    borderRadius: 4, padding: "2px 5px", flexShrink: 0,
+                  }}>{lang === "en" ? "AI" : "IA"}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
 
+  const pied = (key, label, icone, onClick) => (
+    <button
+      type="button"
+      onClick={onClick}
+      {...survol(InkMuted)}
+      style={itemStyle(false, InkMuted)}
+      data-nv-nav={key}
+      data-nv-actif="0"
+    >
+      <span style={{
+        display: "flex", alignItems: "center", justifyContent: "center",
+        width: 20, height: 20, flexShrink: 0, color: "inherit",
+      }}>{icone}</span>
+      <span style={{ flex: 1, whiteSpace: "nowrap" }}>{label}</span>
+    </button>
+  );
+
   return (
     <>
-      {/* L'espaceur. Il tient la place de la barre repliee et ne bouge
-          jamais : c'est lui qui garantit que rien ne se decale au survol. */}
-      <div aria-hidden="true" style={{ width: 56, flexShrink: 0 }}/>
-      {/* LA BARRE OUVERTE RECOUVRAIT LE NOM DU DOCUMENT
-          Se poser au-dessus a resolu le vrai probleme - le CV ne se decale
-          plus au survol - mais la ligne d'en-tete, elle, commence a 78px et
-          se faisait donc avaler : "Kilian Maisonnette" se lisait "ette".
-          On publie la largeur reelle de la barre ; l'en-tete s'ecarte de
-          juste ce qu'il faut, et le document ne bouge toujours pas. */}
+      {/* L'ESPACEUR VAUT LA LARGEUR REELLE
+          La barre ne se deplie plus, donc elle ne recouvre plus rien et ne
+          decale plus rien : l'espaceur lui garde exactement sa place, une fois
+          pour toutes. */}
+      <div aria-hidden="true" style={{ width: RAIL, flexShrink: 0 }}/>
       <aside
-        onMouseEnter={() => {
-          setExpanded(true);
-          if (typeof document !== "undefined") {
-            document.documentElement.style.setProperty("--nuvi-rail", "240px");
-          }
-        }}
-        onMouseLeave={() => {
-          setExpanded(false);
-          if (typeof document !== "undefined") {
-            document.documentElement.style.setProperty("--nuvi-rail", "56px");
-          }
-        }}
+        aria-label={L.home}
         style={{
-          // LA BARRE SE POSE PAR-DESSUS, ELLE NE POUSSE PLUS
-          //
-          // Elle etait dans le flux, en position relative, et sa largeur
-          // passait de 56 a 240 au survol. Tout ce qui suit se decalait donc
-          // de 92px : mesure a 1440x900, le CV sautait de x=213 a x=305 des
-          // que le curseur passait pres du bord gauche, et revenait en
-          // partant.
-          //
-          // Ce n'est pas un detail d'animation. On lit son CV, la souris
-          // derive vers la gauche, et le document bondit sous les yeux. Si
-          // l'on etait en train de viser un mot, on le rate.
-          //
-          // Elle est donc fixee et se pose AU-DESSUS du contenu quand elle
-          // s'ouvre ; un espaceur de 56px garde sa place dans le flux, qui ne
-          // bouge plus jamais. L'ombre n'apparait qu'ouverte : c'est ce qui
-          // dit qu'on est au-dessus de quelque chose, et non a cote.
-          position: "fixed",
-          top: 0,
-          left: 0,
-          width: expanded ? 240 : 56,
-          height: "100vh",
-          boxShadow: expanded
-            ? "0 0 0 1px rgba(0,0,0,.04), 18px 0 46px rgba(26,24,22,.10)"
-            : "inset -1px 0 1px rgba(255,255,255,0.4)",
-          // OPAQUE UNE FOIS OUVERTE, ET C'EST LA CONSEQUENCE DU RESTE
-          //
-          // Le verre translucide convenait tant que la barre etait A COTE du
-          // contenu : il n'y avait rien derriere elle. Depuis qu'elle se pose
-          // AU-DESSUS, la ligne d'en-tete et le CV transparaissent derriere
-          // les libelles - constate a l'ecran, "Jane Doe" lisible a travers
-          // "Home" et "Coach".
-          //
-          // C'est exactement le defaut corrige sur l'ecran d'assistance
-          // d'entretien : un fond a 95% laisse passer assez d'un texte sombre
-          // pour qu'on le lise. Repliee elle garde son verre, puisqu'elle ne
-          // recouvre plus rien.
-          background: expanded
-            ? "var(--nuvi-paper, #fff)"
-            : "var(--nuvi-glass-bg, " + Paper + ")",
-          WebkitBackdropFilter: "blur(24px) saturate(160%)",
-          backdropFilter: "blur(24px) saturate(160%)",
-          borderRight: "0.5px solid rgba(255,255,255,0.6)",
-          display: "flex",
-          flexDirection: "column",
-          transition: "width 220ms cubic-bezier(0.22, 1, 0.36, 1)",
-          overflow: "visible",
-          flexShrink: 0,
-          zIndex: 50,
-        }}
-      >
-        <div style={{
-          height: 56,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: expanded ? "flex-start" : "center",
-          paddingLeft: expanded ? 18 : 0,
-          paddingRight: expanded ? 18 : 0,
-          flexShrink: 0,
-          borderBottom: "0.5px solid rgba(255,255,255,0.5)",
-          overflow: "hidden",
-          transition: "padding 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+          position: "fixed", top: 0, left: 0, width: RAIL, height: "100vh",
+          display: "flex", flexDirection: "column",
+          background: Paper,
+          borderRight: "0.5px solid " + Hairline,
+          zIndex: 300,
+          fontFamily: "'Inter', -apple-system, sans-serif",
         }}>
-          <NuviLogo
-            size={expanded ? 32 : 26}
-            inkColor={Ink}
-          />
-        </div>
-
-        <div style={{ paddingTop: 16, overflowY: "auto", overflowX: "visible" }}>
-          {topItems.map(renderItem)}
-        </div>
-
         <div style={{
-          height: 1,
-          background: Hairline,
-          margin: "8px 14px",
-        }} />
-
-        <div style={{ flex: 1, overflowY: "auto", overflowX: "visible" }}>
-          {middleItems.map(renderItem)}
+          height: 64, display: "flex", alignItems: "center",
+          padding: "0 18px", flexShrink: 0,
+          borderBottom: "0.5px solid " + Hairline,
+        }}>
+          <NuviLogo size={30} inkColor={Ink}/>
         </div>
 
-        <div style={{ borderTop: "0.5px solid rgba(255,255,255,0.5)", padding: "8px 0" }}>
-          {onReset && (
-            <div
-              role="button"
-              tabIndex={0}
-              onClick={() => onReset()}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  onReset();
-                }
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = InkMuted + "0a";
-                e.currentTarget.style.color = Ink;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "transparent";
-                e.currentTarget.style.color = InkMuted;
-              }}
-              style={itemStyle(false, InkMuted)}
-              data-nv-nav="reset"
-              aria-label={L.replay}
-              title={L.replay}
-            >
-              <span style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                width: 20,
-                height: 20,
-                flexShrink: 0,
-                color: "inherit",
-              }}>
-                {Icons.replay}
-              </span>
-              <span style={{
-                opacity: expanded ? 1 : 0,
-                transition: "opacity 150ms ease " + (expanded ? "60ms" : "0ms"),
-                pointerEvents: expanded ? "auto" : "none",
-              }}>
-                {L.replay}
-              </span>
-            </div>
-          )}
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => handleSelect("settings")}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                handleSelect("settings");
-              }
-            }}
-            onMouseEnter={(e) => {
-              handleItemMouseEnter("settings", false);
-              e.currentTarget.style.background = InkMuted + "0a";
-              e.currentTarget.style.color = Ink;
-            }}
-            onMouseLeave={(e) => {
-              handleItemMouseLeave();
-              e.currentTarget.style.background = "transparent";
-              e.currentTarget.style.color = InkMuted;
-            }}
-            style={itemStyle(false, InkMuted)}
-            data-nv-nav="settings"
-            aria-label={L.settings}
-          >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 20,
-              height: 20,
-              flexShrink: 0,
-              color: "inherit",
-            }}>
-              {Icons.settings}
-            </span>
-            <span style={{
-              opacity: expanded ? 1 : 0,
-              transition: "opacity 150ms ease " + (expanded ? "60ms" : "0ms"),
-              pointerEvents: expanded ? "auto" : "none",
-            }}>
-              {L.settings}
-            </span>
-          </div>
+        <nav style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
+          {topItems.map(renderItem)}
+          <div style={{ height: 1, background: Hairline, margin: "10px 20px" }}/>
+          {middleItems.map(renderItem)}
+        </nav>
 
-          {/* Le compte ferme la barre, sous les Reglages : c'est la place que
-              tout le monde connait deja, et elle reste visible en permanence. */}
+        <div style={{ borderTop: "0.5px solid " + Hairline, padding: "8px 0", flexShrink: 0 }}>
+          {onReset && pied("reset", L.replay, Icons.replay, () => onReset())}
+          {pied("settings", L.settings, Icons.settings, () => handleSelect("settings"))}
           {cloudEnabled && (
             <AccountBadge
               user={cloudUser}
@@ -560,7 +425,7 @@ export default function NuviSidebar({
               lastSyncAt={cloudLastSyncAt}
               error={cloudError}
               gmailConnected={gmailConnected}
-              expanded={expanded}
+              expanded
               lang={lang}
               onSignIn={onSignIn}
               onSignOut={onSignOut}
@@ -569,185 +434,6 @@ export default function NuviSidebar({
           )}
         </div>
       </aside>
-
-      {hoveredItem && subItemsMap[hoveredItem] && (
-        <FloatingPanel
-          parentKey={hoveredItem}
-          subItems={subItemsMap[hoveredItem]}
-          accentColor={itemColors[hoveredItem]}
-          parentLabel={L[hoveredItem]}
-          onSelect={(subKey) => handleSubSelect(hoveredItem, subKey)}
-          onMouseEnter={handlePanelMouseEnter}
-          onMouseLeave={handlePanelMouseLeave}
-          sidebarExpanded={expanded}
-          parentVerticalIndex={
-            [...topItems, ...middleItems].findIndex(i => i.key === hoveredItem)
-          }
-          parentSection={
-            topItems.find(i => i.key === hoveredItem) ? "top" : "middle"
-          }
-          colors={{ Paper, Ink, InkMuted, Hairline, Purple, Coral }}
-        />
-      )}
     </>
-  );
-}
-
-function FloatingPanel({
-  parentKey,
-  subItems,
-  accentColor,
-  parentLabel,
-  onSelect,
-  onMouseEnter,
-  onMouseLeave,
-  sidebarExpanded,
-  parentVerticalIndex,
-  parentSection,
-  colors,
-}) {
-  const { Paper, Ink, InkMuted, Hairline, Purple, Coral } = colors;
-
-  const ITEM_HEIGHT = 44;
-  const TOP_PADDING = 16;
-  const TOP_ITEMS_COUNT = 7;
-  const SEPARATOR_HEIGHT = 17;
-
-  let topPosition;
-  if (parentSection === "top") {
-    topPosition = TOP_PADDING + parentVerticalIndex * ITEM_HEIGHT;
-  } else {
-    const middleIdx = parentVerticalIndex - TOP_ITEMS_COUNT;
-    topPosition = TOP_PADDING + TOP_ITEMS_COUNT * ITEM_HEIGHT
-                  + SEPARATOR_HEIGHT + middleIdx * ITEM_HEIGHT;
-  }
-
-  const leftPosition = sidebarExpanded ? 244 : 60;
-
-  return (
-    <div
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
-      role="menu"
-      style={{
-        position: "fixed",
-        left: leftPosition,
-        top: topPosition,
-        minWidth: 220,
-        maxWidth: 260,
-        background: "var(--nuvi-glass-bg, " + Paper + ")",
-        backdropFilter: "blur(28px) saturate(160%)",
-        WebkitBackdropFilter: "blur(28px) saturate(160%)",
-        border: "0.5px solid rgba(255,255,255,0.7)",
-        borderRadius: 14,
-        boxShadow: "inset 0 1px 1px rgba(255,255,255,0.6), 0 8px 24px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04)",
-        padding: 8,
-        zIndex: 100,
-        animation: "nuviPanelIn 320ms cubic-bezier(0.22, 1, 0.36, 1)",
-        transformOrigin: "left center",
-        fontFamily: "'Inter', -apple-system, sans-serif",
-      }}
-    >
-      <div style={{
-        position: "absolute",
-        left: -24,
-        top: -8,
-        width: 28,
-        height: "calc(100% + 16px)",
-        background: "transparent",
-      }} />
-
-      <div style={{
-        fontSize: 10,
-        fontWeight: 600,
-        letterSpacing: "0.08em",
-        textTransform: "uppercase",
-        color: InkMuted,
-        padding: "6px 10px 8px",
-        borderBottom: "0.5px solid " + Hairline,
-        marginBottom: 4,
-      }}>
-        {parentLabel}
-      </div>
-
-      {subItems.map((sub, idx) => {
-        const isStarred = idx < 2;
-        const iconColor = sub.isAI ? Purple : Ink;
-
-        return (
-          <button
-            key={sub.key}
-            role="menuitem"
-            onClick={() => onSelect(sub.key)}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = accentColor + "0d";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "transparent";
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              width: "100%",
-              padding: "9px 10px",
-              border: "none",
-              background: "transparent",
-              borderRadius: 8,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              fontSize: 13,
-              fontWeight: isStarred ? 600 : 500,
-              color: Ink,
-              textAlign: "left",
-              transition: "background 120ms ease-out",
-            }}
-          >
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: 18,
-              height: 18,
-              color: iconColor,
-              flexShrink: 0,
-            }}>
-              {sub.icon}
-            </span>
-            <span style={{ flex: 1 }}>{sub.label}</span>
-            {sub.isAI && (
-              <span style={{
-                fontSize: 9,
-                fontWeight: 700,
-                letterSpacing: "0.05em",
-                color: Purple,
-                background: Purple + "12",
-                padding: "2px 6px",
-                borderRadius: 4,
-              }}>NUVI</span>
-            )}
-          </button>
-        );
-      })}
-
-      <style>{`
-        @keyframes nuviPanelIn {
-          0% {
-            opacity: 0;
-            transform: translateX(-12px) scale(0.96);
-            filter: blur(2px);
-          }
-          50% {
-            opacity: 0.5;
-            filter: blur(0px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateX(0) scale(1);
-            filter: blur(0px);
-          }
-        }
-      `}</style>
-    </div>
   );
 }

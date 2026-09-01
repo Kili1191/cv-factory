@@ -24,7 +24,15 @@
   --nuvi-cream-soft: #f6f2e8;
   --nuvi-paper: #ffffff;
   --nuvi-hairline: #e8e3d6;
-  
+
+  /* LE PLAN DE TRAVAIL, SOUS LA FEUILLE
+     Un role a part, et pas une nuance de gris de plus. La zone qui porte le
+     CV doit etre PLUS SOUTENUE que la feuille, sinon la page ne se lit pas
+     comme une page : gray100 (#f5f4f0) contre une feuille creme (#faf8f3),
+     cinq points d'ecart, donnait un document qui flottait dans du vide.
+     Chaud plutot que neutre, pour rester dans la famille de la marque. */
+  --nuvi-desk: #e6e2d8;
+
   /* Echelle de gris */
   --nuvi-gray50: #fafaf9;
   --nuvi-gray100: #f5f4f0;
@@ -56,7 +64,10 @@
   --nuvi-cream-soft: #232326; /* Fond secondaire */
   --nuvi-paper: #2a2a2e;      /* Cards */
   --nuvi-hairline: #3a3a3e;   /* Borders */
-  
+  /* En sombre, la feuille reste claire pour l'export : le plan de travail
+     doit donc etre franchement plus sombre qu'elle, pas plus clair. */
+  --nuvi-desk: #141416;
+
   /* Echelle de gris inversee */
   --nuvi-gray50: #1a1a1c;
   --nuvi-gray100: #232326;

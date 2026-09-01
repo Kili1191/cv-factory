@@ -123,59 +123,83 @@ export async function run() {
     // vert pendant que la cascade etait sous les yeux du proprietaire : le
     // panneau Apparence ouvert avec le menu DESIGN encore visible dessous.
     //
-    // Le sous-menu de la barre laterale ne s'ouvre pas au clic, il s'ouvre au
-    // SURVOL. Une fois un panneau ouvert, la souris qui remonte vers lui
-    // traverse la barre et rouvre le menu derriere. Aucun scenario de clic ne
-    // pouvait produire ca, et c'est pourtant le geste que tout le monde fait.
+    // LA CASCADE EST MORTE PAR CONSTRUCTION, ET C'EST CA QU'ON VERIFIE
     //
-    // On reproduit donc le geste : survoler une entree a sous-menu, ouvrir un
-    // panneau depuis ce menu, puis ramener la souris sur la barre.
+    // Version d'origine du defaut : le sous-menu s'ouvrait au SURVOL, dans un
+    // panneau flottant. Une fois une fenetre ouverte, la souris qui remontait
+    // vers elle traversait la barre et rallumait le menu DERRIERE. Aucun
+    // scenario de clic ne pouvait le produire, et c'est pourtant le geste que
+    // tout le monde fait.
+    //
+    // On avait d'abord soigne le symptome : un drapeau panneauOuvert qui
+    // faisait taire le survol. La barre s'ouvre desormais au CLIC et deroule
+    // ses entrees DANS le flux, donc plus rien ne peut se poser par-dessus
+    // quoi que ce soit.
+    //
+    // Ce controle garde les deux bouts : le geste d'origine ne doit rallumer
+    // aucun menu, ET le sous-menu doit rester dans le flux. La seconde
+    // assertion est celle qui tient dans le temps : elle echoue le jour ou
+    // quelqu'un remet un panneau flottant, avant meme que la cascade se voie.
     {
       const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
       const p2 = await ctx2.newPage();
       await seedApp(p2, SAMPLE_CV, { locale: "en" });
 
-      const design = p2.locator('[aria-label="Design"]').first();
+      const design = p2.locator('[data-nv-nav="design"]').first();
       if (await design.count() === 0) {
         failures.push(
           "l'entree Design de la barre laterale est introuvable : ce controle "
-          + "ne peut pas verifier le survol."
+          + "ne peut pas verifier la cascade."
         );
       } else {
-        await design.hover();
-        await p2.waitForTimeout(700);
-        const sous = p2.locator('button,[role="button"]').filter({ hasText: /Customi/i }).first();
-        if (await sous.count() === 0) {
-          failures.push("le sous-menu Design ne s'ouvre pas au survol.");
+        await design.click();
+        await p2.waitForTimeout(500);
+        const sousMenu = p2.locator('[data-nv-sous="design"]');
+        if (await sousMenu.count() === 0) {
+          failures.push("le sous-menu Design ne s'ouvre pas au clic.");
         } else {
-          await sous.click();
-          await p2.waitForTimeout(900);
-          // La souris revient sur la barre, comme quand on va vers le panneau.
-          await design.hover();
-          await p2.waitForTimeout(900);
-
-          const menuVisible = await p2.evaluate(() => {
-            for (const el of document.querySelectorAll("div,aside,section,nav")) {
-              const st = getComputedStyle(el);
-              if (st.position !== "fixed" && st.position !== "absolute") continue;
-              if (st.visibility === "hidden" || parseFloat(st.opacity) < 0.2) continue;
-              const r = el.getBoundingClientRect();
-              if (r.width < 140 || r.height < 100) continue;
-              const t = (el.innerText || "").replace(/\s+/g, " ").trim();
-              // Le menu flottant, reconnaissable a ses trois entrees et a sa
-              // petitesse : la barre elle-meme porte bien plus de libelles.
-              if (/Customize/.test(t) && /Translate/.test(t) && t.length < 90) return t.slice(0, 60);
-            }
-            return null;
+          // DANS LE FLUX, PAS AU-DESSUS
+          const flottant = await sousMenu.evaluate((el) => {
+            const st = getComputedStyle(el);
+            return (st.position === "fixed" || st.position === "absolute") ? st.position : null;
           });
-
-          if (menuVisible) {
+          if (flottant) {
             failures.push(
-              "le sous-menu de la barre laterale se rouvre derriere le panneau "
-              + `ouvert : "${menuVisible}". C'est la cascade. Le survol doit `
-              + "rester muet tant qu'un panneau est ouvert, sinon la souris qui "
-              + "remonte vers le panneau rallume le menu au passage."
+              "le sous-menu de la barre est en position " + flottant + " : il se "
+              + "pose au-dessus du contenu au lieu de le pousser. C'est la forme "
+              + "meme qui produisait la cascade."
             );
+          }
+
+          const sous = sousMenu.locator("button").filter({ hasText: /Customi/i }).first();
+          if (await sous.count() === 0) {
+            failures.push("le sous-menu Design ne propose pas Customize.");
+          } else {
+            await sous.click();
+            await p2.waitForTimeout(900);
+            // Le geste d'origine : la souris revient sur la barre.
+            await design.hover();
+            await p2.waitForTimeout(900);
+
+            const menuVisible = await p2.evaluate(() => {
+              for (const el of document.querySelectorAll("div,aside,section,nav")) {
+                const st = getComputedStyle(el);
+                if (st.position !== "fixed" && st.position !== "absolute") continue;
+                if (st.visibility === "hidden" || parseFloat(st.opacity) < 0.2) continue;
+                const r = el.getBoundingClientRect();
+                if (r.width < 140 || r.height < 100) continue;
+                const t = (el.innerText || "").replace(/\s+/g, " ").trim();
+                if (/Customize/.test(t) && /Translate/.test(t) && t.length < 90) return t.slice(0, 60);
+              }
+              return null;
+            });
+
+            if (menuVisible) {
+              failures.push(
+                "un menu flottant de la barre laterale se pose par-dessus le "
+                + `panneau ouvert : "${menuVisible}". C'est la cascade.`
+              );
+            }
           }
         }
       }

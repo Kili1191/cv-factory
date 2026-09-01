@@ -19,6 +19,9 @@ export const Cream     = "var(--nuvi-cream)";
 export const CreamSoft = "var(--nuvi-cream-soft)";
 export const Paper     = "var(--nuvi-paper)";
 export const Hairline  = "var(--nuvi-hairline)";
+// Le plan de travail qui porte la feuille du CV. Plus soutenu qu'elle,
+// pour qu'une page se lise comme une page posee sur quelque chose.
+export const Desk      = "var(--nuvi-desk)";
 export const Gold      = "var(--nuvi-gold)";       // RESERVE au CV preview
 export const GoldDeep  = "var(--nuvi-gold-deep)";  // RESERVE au CV preview
 export const Purple    = "var(--nuvi-purple)";
