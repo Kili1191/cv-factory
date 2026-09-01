@@ -10,6 +10,7 @@ import ConseilCompanion from "./components/ConseilCompanion";
 import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
+import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
@@ -5991,8 +5992,59 @@ export default function App() {
         + "Rends un CV complet, dense, pret a envoyer.";
 
       const txt = await aiCall(p, { schema: SCHEMA_CV, task_name: "cv-from-offer" });
-      const cvNouveau = parseJSON(txt);
+      let cvNouveau = parseJSON(txt);
       if (!cvNouveau || typeof cvNouveau !== "object") throw new Error("reponse illisible");
+
+      // ECRIRE, MESURER, CORRIGER, GARDER LE MEILLEUR
+      //
+      // "Le meilleur CV possible" ne veut rien dire tant que personne ne
+      // mesure. Le modele rend quelque chose de plausible et on le livre :
+      // c'est ce que faisait ce chemin, et la seule garantie offerte etait ma
+      // parole.
+      //
+      // Les trois lecteurs du produit repondent a la question sans rien
+      // couter : les six profils d'analyseur, la couverture de CETTE annonce,
+      // et le diagnostic en neuf axes. Ils tournent en local, en une
+      // milliseconde, donc ils peuvent tourner a chaque generation.
+      //
+      // La reprise ne renvoie pas "fais mieux" : elle nomme les mots de
+      // l'annonce absents du CV, les profils qui echouent et pourquoi. Une
+      // consigne vide veut dire qu'il n'y a rien de mesurable a corriger, et
+      // on ne depense pas un second appel.
+      //
+      // ON GARDE LE MEILLEUR DES DEUX, PAS LE DERNIER
+      //
+      // Une seconde passe peut degrader : le modele ajoute des mots-cles et
+      // casse une puce, ou perd une date en reformulant. Mesurer les deux et
+      // garder celui qui score le plus haut est la seule facon de ne jamais
+      // livrer pire que la premiere tentative.
+      let mesure = mesurerLeCv(normCV(cvNouveau), a, locale);
+      const consigne = consigneDeReprise(mesure, locale);
+      if (consigne) {
+        try {
+          const p2 = "Tu as ecrit ce CV pour l'annonce ci-dessous. Il a ete "
+            + "mesure par les analyseurs qu'utilisent les recruteurs, et voici "
+            + "ce qui ne passe pas. Corrige uniquement ces points, garde tout "
+            + "le reste.\n\nANNONCE:\n" + a
+            + "\n\nPARCOURS DE LA PERSONNE:\n" + p0
+            + "\n\nCV ACTUEL:\n" + JSON.stringify(cvNouveau)
+            + "\n\nCE QUI NE PASSE PAS:\n" + consigne
+            + "\n\nLes memes regles qu'a l'ecriture : rien d'invente en "
+            + "silence, et tout ce qui vient de toi plutot que du parcours va "
+            + "dans \"deduit\".\n"
+            + QUI_DECIDE + "\n" + NO_DASH + " " + langLine;
+          const txt2 = await aiCall(p2, { schema: SCHEMA_CV, task_name: "cv-from-offer-reprise" });
+          const cv2 = parseJSON(txt2);
+          if (cv2 && typeof cv2 === "object") {
+            const mesure2 = mesurerLeCv(normCV(cv2), a, locale);
+            if (mesure2.note > mesure.note) { cvNouveau = cv2; mesure = mesure2; }
+          }
+        } catch (e) {
+          // Une reprise qui echoue laisse la premiere version, qui est deja
+          // complete. On ne fait pas payer a la personne un aller-retour rate.
+        }
+      }
+      setMesureDuCv(mesure);
       // `deduit` n'appartient pas au CV : c'est un renseignement sur sa
       // fabrication. On le retire avant de ranger le document, sinon il
       // voyagerait dans les sauvegardes et les exports.
@@ -6269,6 +6321,9 @@ export default function App() {
   // Les champs que Nuvi a remplis lui-meme au dernier passage depuis une
   // annonce. Vide la plupart du temps.
   const [deduitsAValider, setDeduitsAValider] = useState([]);
+  // Ce que le CV genere marque face a l'annonce, tel que les lecteurs locaux
+  // l'ont mesure. Sert a le DIRE a la personne plutot qu'a l'affirmer.
+  const [mesureDuCv, setMesureDuCv] = useState(null);
   const [proofLoading, setProofLoading] = useState(false);
   const [proofResult, setProofResult] = useState(null);
 
@@ -9093,33 +9148,94 @@ export default function App() {
   // NuviHome est le seul ecran d'arrivee : s'affiche quand CV vide et mode pas encore choisi
   // (NuviIntro est desactive en faveur de NuviHome qui est plus court et premium)
   const showNuviHome = cvIsEmpty && obMode === null;
-  // UNE LIGNE, APRES COUP, QUI NE BLOQUE RIEN
+  // CE QU'ON REPOND A "COMMENT TU SAIS QUE C'EST LE MEILLEUR ?"
   //
-  // Le CV est complet et pret a envoyer : c'est ce qui a ete demande. Certains
-  // champs viennent pourtant du modele et pas de la personne, et ceux-la se
-  // verifient par un appel a un ancien employeur ou a une ecole, pas a la
-  // lecture. On le dit une fois, avec le compte, et on s'efface.
-  const AvisDeduits = deduitsAValider.length > 0 ? (
-    <div role="status" style={{
+  // Trois chiffres, pris par les lecteurs du produit et pas par le modele qui
+  // vient d'ecrire : combien de profils d'analyseur lisent ce CV en entier,
+  // quelle part de ce que l'annonce reclame s'y trouve, ce que vaut la
+  // redaction hors annonce. Ils sont locaux, deterministes, gratuits, et se
+  // rejouent a l'identique.
+  //
+  // Ils sont affiches bruts, y compris quand ils sont mauvais. Une mesure
+  // qu'on ne montre que lorsqu'elle est bonne ne mesure rien : c'est la
+  // situation d'ou vient la question, ou le produit disait "ton CV est pret"
+  // sans que personne ait rien verifie.
+  //
+  // La ligne des champs remplis par Nuvi vient ensuite, dans la meme carte :
+  // c'est le meme moment de lecture, et deux encarts empiles se ferment sans
+  // etre lus.
+  const chiffres = mesureDuCv ? [
+    { k: "ats", v: mesureDuCv.ats + "/6",
+      l: locale === "en" ? "parsers read it whole" : "analyseurs le lisent en entier" },
+    { k: "couverture", v: mesureDuCv.couverture + "%",
+      l: locale === "en" ? "of what this ad asks for" : "de ce que l'annonce demande" },
+    { k: "diagnostic", v: mesureDuCv.diagnostic + "/100",
+      l: locale === "en" ? "on the nine writing axes" : "sur les neuf axes de redaction" },
+  ] : [];
+
+  const AvisDuCv = (mesureDuCv || deduitsAValider.length > 0) ? (
+    <div role="status" data-nuvi="mesure" style={{
       position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 4000,
       maxWidth: 560, margin: "0 auto",
-      background: Paper, border: "1px solid " + Coral,
-      borderRadius: 14, padding: "14px 16px",
-      boxShadow: "0 20px 50px -30px rgba(10,10,10,.5)",
-      fontFamily: Sans, display: "flex", gap: 12, alignItems: "flex-start",
+      background: Paper, border: "0.5px solid " + Gray200,
+      borderRadius: RadiusMd, padding: "16px 18px 14px",
+      boxShadow: ShadowLg, fontFamily: Sans,
+      animation: "cvfFadeIn .35s ease both",
     }}>
-      <div style={{ flex: 1, fontSize: 13, lineHeight: 1.55, color: Ink }}>
-        {locale === "en"
-          ? "Nuvi filled in " + deduitsAValider.length + " field(s) your text did not mention. They are in the CV, ready to send. Worth a look before you do: these are the ones a recruiter checks by phone."
-          : "Nuvi a rempli " + deduitsAValider.length + " champ(s) que ton texte ne mentionnait pas. Ils sont dans le CV, pret a envoyer. A regarder avant : ce sont ceux qu'un recruteur verifie par telephone."}
+      {mesureDuCv && (
+        <>
+          <div style={{
+            fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase",
+            color: Gray600, fontWeight: 600, marginBottom: 10,
+          }}>
+            {locale === "en" ? "Measured, not just written" : "Mesure, pas seulement ecrit"}
+          </div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap", marginBottom: mesureDuCv.manquantes.length || deduitsAValider.length ? 12 : 4 }}>
+            {chiffres.map((c) => (
+              <div key={c.k} data-nuvi-chiffre={c.k} style={{ minWidth: 96 }}>
+                <div style={{
+                  fontFamily: Serif, fontSize: 26, lineHeight: 1.1, color: Ink,
+                  background: GradPurple, WebkitBackgroundClip: "text",
+                  backgroundClip: "text", WebkitTextFillColor: "transparent",
+                }}>{c.v}</div>
+                <div style={{ fontSize: 11.5, lineHeight: 1.35, color: Gray600, marginTop: 3 }}>{c.l}</div>
+              </div>
+            ))}
+          </div>
+          {mesureDuCv.manquantes.length > 0 && (
+            // Ce que l'annonce demande et que le CV ne porte toujours pas, apres
+            // la passe de correction. Le taire rendrait le pourcentage decoratif.
+            <div style={{ fontSize: 12, lineHeight: 1.5, color: Gray600, marginBottom: deduitsAValider.length ? 10 : 4 }}>
+              {(locale === "en" ? "Still not in the CV: " : "Toujours absent du CV : ")}
+              <span style={{ color: Ink }}>{mesureDuCv.manquantes.slice(0, 6).join(", ")}</span>
+              {mesureDuCv.manquantes.length > 6
+                ? (locale === "en" ? " and " : " et ") + (mesureDuCv.manquantes.length - 6) + (locale === "en" ? " more" : " autres")
+                : ""}
+            </div>
+          )}
+        </>
+      )}
+      {/* UNE LIGNE, APRES COUP, QUI NE BLOQUE RIEN
+          Le CV est complet et pret a envoyer : c'est ce qui a ete demande.
+          Certains champs viennent pourtant du modele et pas de la personne, et
+          ceux-la se verifient par un appel a un ancien employeur ou a une
+          ecole, pas a la lecture. On le dit une fois, avec le compte. */}
+      {deduitsAValider.length > 0 && (
+        <div style={{ fontSize: 12.5, lineHeight: 1.55, color: Ink, borderTop: "0.5px solid " + Gray200, paddingTop: 10 }}>
+          {locale === "en"
+            ? "Nuvi filled in " + deduitsAValider.length + " field(s) your text did not mention. They are in the CV, ready to send. Worth a look before you do: these are the ones a recruiter checks by phone."
+            : "Nuvi a rempli " + deduitsAValider.length + " champ(s) que ton texte ne mentionnait pas. Ils sont dans le CV, pret a envoyer. A regarder avant : ce sont ceux qu'un recruteur verifie par telephone."}
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
+        <button onClick={() => { setDeduitsAValider([]); setMesureDuCv(null); }} style={{
+          ...B({
+            background: Ink, color: Cream, borderRadius: RadiusPill,
+            padding: "9px 18px", minHeight: 40, fontSize: 12.5,
+            fontWeight: 600, fontFamily: Sans,
+          })
+        }}>{locale === "en" ? "Got it" : "Compris"}</button>
       </div>
-      <button onClick={() => setDeduitsAValider([])} style={{
-        ...B({
-          background: Ink, color: Cream, borderRadius: 999,
-          padding: "9px 16px", minHeight: 40, fontSize: 12.5,
-          fontWeight: 600, fontFamily: Sans, flexShrink: 0,
-        })
-      }}>{locale === "en" ? "Got it" : "Compris"}</button>
     </div>
   ) : null;
 
@@ -9273,7 +9389,7 @@ export default function App() {
         {LangAskEl}
         {SignInErrEl}
         {Onboard}
-        {AvisDeduits}
+        {AvisDuCv}
         {NuviHomeEl}
         {showIntro && (
           <NuviIntro

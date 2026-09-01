@@ -17,6 +17,7 @@ const SUITES = [
   ["the design system does not drift", "./the-design-system-does-not-drift.mjs"],
   ["the request sent to the AI is well formed", "./the-ai-request-is-well-formed.mjs"],
   ["the shape is a contract, not a plea", "./the-shape-is-a-contract-not-a-plea.mjs"],
+  ["the best is a measurement, not a promise", "./the-best-is-a-measurement-not-a-promise.mjs"],
   ["accounts never lose the CV", "./accounts-never-lose-the-cv.mjs"],
   ["the setup page names what is missing", "./the-setup-page-names-what-is-missing.mjs"],
   ["job sources return the same shape", "./job-sources-normalise.mjs"],

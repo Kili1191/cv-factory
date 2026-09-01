@@ -266,6 +266,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             }}>{T.ob_offre_label}</span>
             <textarea
               value={offreTexte}
+              data-nuvi="offre-annonce"
               onChange={(e)=>setOffreTexte(e.target.value)}
               placeholder={T.ob_offre_ph}
               rows={8}
@@ -284,6 +285,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
             }}>{T.ob_parcours_label}</span>
             <textarea
               value={parcoursTexte}
+              data-nuvi="offre-parcours"
               onChange={(e)=>setParcoursTexte(e.target.value)}
               placeholder={T.ob_parcours_ph}
               rows={7}
@@ -300,6 +302,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 
           <button
             onClick={()=>onFromOffer(offreTexte, parcoursTexte)}
+            data-nuvi="offre-cta"
             disabled={!pret || imping}
             style={{
               ...B({

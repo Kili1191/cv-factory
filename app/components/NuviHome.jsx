@@ -710,6 +710,7 @@ export default function NuviHome({
         }}>
           <button
             onClick={onFromOffer}
+            data-nuvi="home-offre"
             style={{
               background: "none", border: "none", cursor: "pointer",
               fontFamily: "'Inter', sans-serif", fontSize: 13.5,
