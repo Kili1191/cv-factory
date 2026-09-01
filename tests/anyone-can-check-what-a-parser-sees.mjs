@@ -118,10 +118,24 @@ export async function run() {
     await dl.saveAs(bon);
     await ctx.close();
 
+    // LA LANGUE SE POSE, ELLE NE SE SUBIT PAS
+    //
+    // Le harnais le dit deja pour seedApp : un test qui affirme du texte doit
+    // dire dans quelle langue il l'attend, sinon il depend d'un reglage que
+    // le produit a le droit de changer. C'est exactement ce qui est arrive
+    // ici : ce test cherchait une phrase francaise, la page est passee a
+    // l'anglais par defaut comme le reste du produit, et le test a accuse une
+    // page qui allait bien.
+    //
+    // /verifier lit la meme cle que l'application, donc on la pose avant de
+    // naviguer.
     const ctx2 = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const p2 = await ctx2.newPage();
     p2.on("pageerror", (e) => jsErrs.push(e.message.split("\n")[0]));
-    await p2.goto(base + "/verifier", { waitUntil: "networkidle" });
+    await p2.goto(base + "/verifier", { waitUntil: "domcontentloaded" });
+    await p2.evaluate(() => localStorage.setItem("cvf_c", JSON.stringify("en")));
+    await p2.reload({ waitUntil: "domcontentloaded" });
+    await p2.waitForTimeout(700);
     await p2.setInputFiles("input[type=file]", bon);
     await p2.waitForTimeout(4000);
 
@@ -131,7 +145,7 @@ export async function run() {
       return {
         texte: nu,
         verdict: (nu.match(/(\d)\s*\/\s*6/) || [])[1] || null,
-        blanche: /PAGE BLANCHE/i.test(nu),
+        blanche: /BLANK PAGE/i.test(nu),
       };
     });
 
@@ -189,11 +203,14 @@ export async function run() {
     const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const p3 = await ctx3.newPage();
     p3.on("pageerror", (e) => jsErrs.push(e.message.split("\n")[0]));
-    await p3.goto(base + "/verifier", { waitUntil: "networkidle" });
+    await p3.goto(base + "/verifier", { waitUntil: "domcontentloaded" });
+    await p3.evaluate(() => localStorage.setItem("cvf_c", JSON.stringify("en")));
+    await p3.reload({ waitUntil: "domcontentloaded" });
+    await p3.waitForTimeout(700);
     await p3.setInputFiles("input[type=file]", vide);
     await p3.waitForTimeout(3500);
     const t3 = await p3.evaluate(() => document.body.innerText.replace(/\s+/g, " "));
-    if (!/aucun texte a lire/i.test(t3)) {
+    if (!/carries no text at all/i.test(t3)) {
       failures.push(
         "un PDF qui ne porte aucun texte n'est pas signale. C'est le seul "
         + "defaut qu'on ne peut pas voir en regardant le fichier : il "

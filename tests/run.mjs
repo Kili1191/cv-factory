@@ -62,6 +62,7 @@ const SUITES = [
   ["what they will make you prove", "./what-they-will-make-you-prove.mjs"],
   ["the product does not promise a check it skips", "./the-product-does-not-promise-a-check-it-skips.mjs"],
   ["anyone can check what a parser sees", "./anyone-can-check-what-a-parser-sees.mjs"],
+  ["two jobs do not become one", "./two-jobs-do-not-become-one.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],
