@@ -72,6 +72,45 @@ main, l'extension) fonctionne normalement.
 
 ---
 
+## 4 bis. Les anciens employeurs qui ont fermé : **facultatif**
+
+Nuvi demande aux registres officiels si les employeurs **antérieurs au poste
+actuel** existent encore. Quand l'un est radié, la personne le voit avant
+d'envoyer : un recruteur qui vérifie ce poste ne joindra personne, et ce qui
+tient encore, c'est un ancien responsable joignable et une preuve papier.
+
+| Pays | Variable | Coût | Ce qu'il donne |
+|---|---|---|---|
+| France | *aucune* | gratuit, sans clé | état administratif, date de cessation |
+| Royaume-Uni | `COMPANIES_HOUSE_KEY` | gratuit, clé immédiate | `company_status`, date de radiation |
+
+La France répond sans configuration : cette vérification fonctionne dès le
+premier déploiement. Le Royaume-Uni attend sa clé
+(<https://developer.company-house.gov.uk>) et, tant qu'elle est absente, une
+expérience britannique est simplement **non vérifiée**, jamais présentée comme
+fermée.
+
+**Les autres pays n'ont pas de registre ouvert.** Les Émirats, la Suisse et le
+Canada n'exposent rien d'interrogeable gratuitement : une expérience qui s'y
+déroule reste non vérifiable, et le produit le dit plutôt que de laisser croire
+qu'elle est saine.
+
+**Le doute ne penche que d'un côté.** Se tromper dans un sens fait rater une
+préparation ; se tromper dans l'autre annonce à quelqu'un que son ancien
+employeur a coulé alors qu'il tourne toujours, et cette phrase-là, il la répète
+en entretien. Donc « fermée » exige qu'un registre l'ait dit, dans un état
+reconnu, sur un nom qui correspond vraiment. Registre injoignable, champ
+renommé, deux sociétés du même nom, pays non couvert : tout cela vaut
+**inconnu**, et rien ne s'affiche.
+
+Pour vérifier la réponse d'un registre à la main :
+
+```bash
+curl -s 'https://recherche-entreprises.api.gouv.fr/search?q=camaieu&per_page=3' | head -c 800
+```
+
+---
+
 ## 5. L'extension Chrome : **prête, non publiée**
 
 Le dossier `extension/` est complet : manifeste, icônes tirées de l'œil de

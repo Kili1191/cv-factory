@@ -11,6 +11,7 @@ import { comparerCv } from "../lib/comparerCv";
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
+import { experiencesAVerifier, direLaFermeture } from "../lib/registresEntreprises";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
@@ -6324,6 +6325,58 @@ export default function App() {
   // Ce que le CV genere marque face a l'annonce, tel que les lecteurs locaux
   // l'ont mesure. Sert a le DIRE a la personne plutot qu'a l'affirmer.
   const [mesureDuCv, setMesureDuCv] = useState(null);
+  // Les anciens employeurs qu'un registre officiel donne pour radies.
+  const [employeursDisparus, setEmployeursDisparus] = useState([]);
+
+  // LA VERIFICATION SUIT LE CV, PAS LE CHEMIN QUI L'A PRODUIT
+  //
+  // Un CV arrive par l'import, par la generation depuis une annonce, ou par
+  // la saisie a la main. Accrocher la verification a chacun de ces chemins en
+  // ferait oublier un, et ce serait celui-la que quelqu'un utiliserait.
+  //
+  // La question ne depend que du contenu : quels employeurs anterieurs sont
+  // nommes, et ou. On la repose donc quand cette liste change, et jamais
+  // autrement. Reformuler une puce ou changer de gabarit ne redeclenche rien.
+  const signatureEmployeurs = useMemo(() => {
+    try {
+      return JSON.stringify(experiencesAVerifier(cv)
+        .map((e) => [e.company, e.location, e.period]));
+    } catch { return "[]"; }
+  }, [cv]);
+
+  useEffect(() => {
+    let vivant = true;
+    let aVerifier = [];
+    try { aVerifier = JSON.parse(signatureEmployeurs); } catch { aVerifier = []; }
+    if (!aVerifier.length) { setEmployeursDisparus([]); return undefined; }
+    (async () => {
+      try {
+        const res = await fetch("/api/entreprise", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ experience: (cv && cv.experience) || [] }),
+        });
+        if (!res.ok) return;
+        const d = await res.json();
+        if (!vivant) return;
+        const morts = (d && Array.isArray(d.verifiees) ? d.verifiees : [])
+          .filter((v) => v && v.etat === "fermee");
+        setEmployeursDisparus(morts);
+      } catch (e) {
+        // UNE VERIFICATION QUI ECHOUE NE DIT RIEN
+        //
+        // Reseau coupe, registre en panne, route absente : on ne sait pas, donc
+        // on se tait. Le CV reste utilisable et rien ne s'affiche. C'est la
+        // meme pente que dans lib/registresEntreprises.js, et elle vaut aussi
+        // ici : le silence est la seule erreur qu'on s'autorise.
+      }
+    })();
+    return () => { vivant = false; };
+    // `cv` est lu dans le corps mais n'est PAS une dependance : il change a
+    // chaque frappe, et la question ne se repose que si les employeurs
+    // changent. C'est exactement ce que la signature encode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [signatureEmployeurs]);
   const [proofLoading, setProofLoading] = useState(false);
   const [proofResult, setProofResult] = useState(null);
 
@@ -9173,7 +9226,7 @@ export default function App() {
       l: locale === "en" ? "on the nine writing axes" : "sur les neuf axes de redaction" },
   ] : [];
 
-  const AvisDuCv = (mesureDuCv || deduitsAValider.length > 0) ? (
+  const AvisDuCv = (mesureDuCv || deduitsAValider.length > 0 || employeursDisparus.length > 0) ? (
     <div role="status" data-nuvi="mesure" style={{
       position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 4000,
       maxWidth: 560, margin: "0 auto",
@@ -9215,6 +9268,30 @@ export default function App() {
           )}
         </>
       )}
+      {/* UN EMPLOYEUR QU'ON NE PEUT PLUS APPELER
+          C'est la ou une candidature meurt sans que personne ne le dise : le
+          recruteur appelle l'employeur d'il y a six ans, ca ne repond plus, il
+          passe au dossier suivant. Rien ne se voit cote candidat.
+          On le dit donc avant l'envoi, avec le registre qui l'affirme, et avec
+          ce qui tient encore : une personne joignable et un papier. */}
+      {employeursDisparus.map((v, i) => (
+        <div key={v.index + "-" + v.company} data-nuvi-ferme={v.company} style={{
+          fontSize: 12.5, lineHeight: 1.55, color: Ink,
+          // Le filet separe deux blocs. Quand cette ligne ouvre la carte -
+          // aucune mesure au-dessus, premier employeur de la liste - il ne
+          // separerait rien et pendrait sous le bord.
+          borderTop: (mesureDuCv || i > 0) ? "0.5px solid " + Gray200 : "none",
+          paddingTop: (mesureDuCv || i > 0) ? 10 : 0,
+          marginTop: (mesureDuCv || i > 0) ? 10 : 0,
+          display: "flex", gap: 10, alignItems: "flex-start",
+        }}>
+          <span aria-hidden="true" style={{
+            width: 6, height: 6, borderRadius: 999, background: Coral,
+            flexShrink: 0, marginTop: 6,
+          }}/>
+          <span>{direLaFermeture(v, v, locale)}</span>
+        </div>
+      ))}
       {/* UNE LIGNE, APRES COUP, QUI NE BLOQUE RIEN
           Le CV est complet et pret a envoyer : c'est ce qui a ete demande.
           Certains champs viennent pourtant du modele et pas de la personne, et
@@ -9228,7 +9305,7 @@ export default function App() {
         </div>
       )}
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12 }}>
-        <button onClick={() => { setDeduitsAValider([]); setMesureDuCv(null); }} style={{
+        <button onClick={() => { setDeduitsAValider([]); setMesureDuCv(null); setEmployeursDisparus([]); }} style={{
           ...B({
             background: Ink, color: Cream, borderRadius: RadiusPill,
             padding: "9px 18px", minHeight: 40, fontSize: 12.5,

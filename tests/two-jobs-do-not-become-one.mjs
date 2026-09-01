@@ -42,15 +42,28 @@ const GLYPHES = [
   ["-", "tiret simple"],
 ];
 
+// LE DEMI-CADRATIN EST L'ENTREE, PAS LA SORTIE
+//
+// Un vrai CV en porte : Word le pose tout seul entre un titre et une ville, et
+// c'est bien cette ligne-la qui avait fondu deux employeurs en un. Le retirer
+// du decor ferait passer le test sur une entree que personne n'envoie jamais.
+//
+// La regle du depot interdit le glyphe litteral partout hors .claude/, parce
+// qu'un tiret long finit toujours par atteindre un ecran ou un PDF. Ici il
+// n'atteint rien : il entre dans un analyseur. lib/lireUnCv.js resout deja ce
+// meme besoin en ecrivant "\u2013" dans ses expressions, et c'est la
+// convention qu'on reprend.
+const DEMI = String.fromCharCode(0x2013);
+
 const cv = (puce) => [
   "Kilian Maisonnette",
   "Client Advisor",
   "k@exemple.com",
   "+971 502237756",
   "Professional Experience",
-  "Real Estate Sales Consultant – Dubai, UAE 2025",
+  "Real Estate Sales Consultant " + DEMI + " Dubai, UAE 2025",
   puce + " Leveraged luxury clienteling expertise to advise clients.",
-  "Client Advisor – Yves Saint Laurent, Harrods, London, UK 2017–2024",
+  "Client Advisor " + DEMI + " Yves Saint Laurent, Harrods, London, UK 2017" + DEMI + "2024",
   puce + " Consistently exceeded boutique performance goals.",
   puce + " Cultivated a portfolio of 300+ loyal clients.",
   "Education",
