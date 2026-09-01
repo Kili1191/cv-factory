@@ -968,10 +968,25 @@ const SCHEMA_CV = {
       },
     },
     certifications: { type: "array", items: { type: "string" } },
+    // CE QUE NUVI A MIS SANS QU'ON LE LUI DISE
+    //
+    // Le modele remplit tout, y compris ce que le parcours ne renseignait pas.
+    // C'est voulu : un CV a trous se fait ecarter avant d'etre lu.
+    //
+    // Mais un employeur, une date ou un diplome ne se verifient pas comme une
+    // tournure de phrase : ils se verifient par un appel. La personne doit
+    // donc savoir lesquels viennent d'elle et lesquels viennent de Nuvi, sans
+    // avoir a relire ligne a ligne un document que la machine a produit d'un
+    // bloc. Le modele liste ici le chemin de chaque champ de ce type qu'il a
+    // rempli lui-meme.
+    //
+    // Rien n'est bloque et rien n'est retire : c'est un signalement, pas une
+    // autorisation a demander.
+    deduit: { type: "array", items: { type: "string" } },
   },
   required: ["name", "title", "email", "phone", "location", "linkedin",
              "summary", "experience", "education", "skills", "languages",
-             "certifications"],
+             "certifications", "deduit"],
 };
 
 async function aiCall(prompt, options = {}) {
@@ -5941,18 +5956,29 @@ export default function App() {
         + "2. Reformule le parcours de la personne pour repondre a ces points, "
         + "dans le vocabulaire de l'annonce. Un meme fait se dit de plusieurs "
         + "facons : choisis celle que ce recruteur-la cherche.\n"
-        + "3. Ecris des puces qui disent un RESULTAT quand la personne en a "
-        + "donne un, et un perimetre precis sinon. Reprends ses chiffres. "
-        + "N'en cree aucun.\n"
-        + "4. L'intitule du CV reprend celui de l'annonce quand le parcours le "
-        + "justifie.\n\n"
-        + "CE QUE TU N'INVENTES JAMAIS : un employeur, une date, un diplome, "
-        + "une certification ou un chiffre que la personne n'a pas donnes. Ce "
-        + "sont les seules choses qu'un recruteur verifie en un appel. Si une "
-        + "information manque, laisse le champ vide : un champ vide se "
-        + "complete, un fait invente se paie en entretien.\n"
-        + "Tout le reste est de la redaction, et c'est la que tu donnes tout : "
-        + "l'ordre, la formulation, les mots du secteur, la mise en avant.\n\n"
+        + "3. REMPLIS TOUT. Un poste tenu implique un travail reel : ecris-le. "
+        + "Quelqu'un qui dit \"chef de rang, 80 couverts\" a tenu un rang, "
+        + "encaisse, gere les recla­mations, forme les nouveaux, suivi les "
+        + "stocks du bar. Deroule ce que ce poste comporte vraiment, dans le "
+        + "vocabulaire de l'annonce, avec le niveau de detail d'un CV ecrit par "
+        + "un professionnel. Trois a cinq puces par poste, aucune vague.\n"
+        + "4. Les competences, les langues et le profil se deduisent du meme "
+        + "materiau : un poste en salle a Lyon suppose le francais, le service, "
+        + "l'encaissement, l'hygiene alimentaire. Remplis ces champs.\n"
+        + "5. L'intitule du CV reprend celui de l'annonce des que le parcours "
+        + "le justifie, meme si la personne n'a jamais porte ce titre-la : "
+        + "c'est le meme travail sous le nom que ce recruteur cherche.\n"
+        + "6. Aucun champ vide. Un CV a trous se fait ecarter avant d'etre lu.\n\n"
+        + "LA SEULE CHOSE QUI NE S'INVENTE PAS EN SILENCE\n"
+        + "Un employeur, une date, un diplome, une certification ou un chiffre "
+        + "que la personne n'a pas donnes. Tu as le droit d'en proposer quand "
+        + "le poste vise en reclame : ecris-les normalement dans le CV, ET "
+        + "liste leur chemin dans le champ \"deduit\" (par exemple "
+        + "\"education.0.degree\" ou \"experience.1.company\"). La personne "
+        + "les verra signales et decidera de les garder.\n"
+        + "Ce qui vient de son parcours ne se liste pas : reformuler ce qu'elle "
+        + "a ecrit, deduire les taches de son poste, choisir les mots de "
+        + "l'annonce, c'est de la redaction, et c'est la que tu donnes tout.\n\n"
         + QUI_DECIDE + "\n"
         + NO_DASH + " " + langLine + "\n"
         // LA FORME N'EST PLUS DEMANDEE EN PROSE
@@ -5962,11 +5988,16 @@ export default function App() {
         // ni consigne "JSON uniquement, sans markdown", qui coutaient des
         // jetons a chaque appel et ratait exactement sur les reponses longues,
         // c'est a dire sur les CV les plus fournis.
-        + "Laisse vide tout champ que le parcours ne renseigne pas.";
+        + "Rends un CV complet, dense, pret a envoyer.";
 
       const txt = await aiCall(p, { schema: SCHEMA_CV, task_name: "cv-from-offer" });
       const cvNouveau = parseJSON(txt);
       if (!cvNouveau || typeof cvNouveau !== "object") throw new Error("reponse illisible");
+      // `deduit` n'appartient pas au CV : c'est un renseignement sur sa
+      // fabrication. On le retire avant de ranger le document, sinon il
+      // voyagerait dans les sauvegardes et les exports.
+      const deduits = Array.isArray(cvNouveau.deduit) ? cvNouveau.deduit : [];
+      delete cvNouveau.deduit;
       const propre = normCV({ ...cvNouveau, custom: cv && cv.custom });
       pushH(propre);
       setCVFn(() => propre);
@@ -5978,6 +6009,17 @@ export default function App() {
       setTab("ai");
       logActivity(ACT.CV_IMPORTED,
         locale === "en" ? "CV written from a job ad" : "CV ecrit depuis une annonce");
+      // CE QUI VIENT DE NUVI SE DIT UNE FOIS, ET NE BLOQUE RIEN
+      //
+      // Le CV est complet et pret : c'est ce qui a ete demande. Reste que
+      // certains champs ont ete remplis par le modele et pas par la personne,
+      // et que ceux-la se verifient par un appel a un ancien employeur ou a
+      // une ecole, pas a la lecture.
+      //
+      // On le dit donc en une ligne, apres coup, avec le compte. Pas de
+      // fenetre a fermer, pas de case a cocher, rien de retire du document :
+      // la personne sait ou regarder si elle veut regarder.
+      setDeduitsAValider(deduits);
       notify(locale === "en" ? "Your CV is ready" : "Ton CV est pret");
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
@@ -6224,6 +6266,9 @@ export default function App() {
   //
   // Les puces "indetermine" comptent aussi : "ameliore le service" attire un
   // "c'est a dire ?" qui est tout aussi difficile a improviser.
+  // Les champs que Nuvi a remplis lui-meme au dernier passage depuis une
+  // annonce. Vide la plupart du temps.
+  const [deduitsAValider, setDeduitsAValider] = useState([]);
   const [proofLoading, setProofLoading] = useState(false);
   const [proofResult, setProofResult] = useState(null);
 
@@ -9048,6 +9093,36 @@ export default function App() {
   // NuviHome est le seul ecran d'arrivee : s'affiche quand CV vide et mode pas encore choisi
   // (NuviIntro est desactive en faveur de NuviHome qui est plus court et premium)
   const showNuviHome = cvIsEmpty && obMode === null;
+  // UNE LIGNE, APRES COUP, QUI NE BLOQUE RIEN
+  //
+  // Le CV est complet et pret a envoyer : c'est ce qui a ete demande. Certains
+  // champs viennent pourtant du modele et pas de la personne, et ceux-la se
+  // verifient par un appel a un ancien employeur ou a une ecole, pas a la
+  // lecture. On le dit une fois, avec le compte, et on s'efface.
+  const AvisDeduits = deduitsAValider.length > 0 ? (
+    <div role="status" style={{
+      position: "fixed", left: 16, right: 16, bottom: 16, zIndex: 4000,
+      maxWidth: 560, margin: "0 auto",
+      background: Paper, border: "1px solid " + Coral,
+      borderRadius: 14, padding: "14px 16px",
+      boxShadow: "0 20px 50px -30px rgba(10,10,10,.5)",
+      fontFamily: Sans, display: "flex", gap: 12, alignItems: "flex-start",
+    }}>
+      <div style={{ flex: 1, fontSize: 13, lineHeight: 1.55, color: Ink }}>
+        {locale === "en"
+          ? "Nuvi filled in " + deduitsAValider.length + " field(s) your text did not mention. They are in the CV, ready to send. Worth a look before you do: these are the ones a recruiter checks by phone."
+          : "Nuvi a rempli " + deduitsAValider.length + " champ(s) que ton texte ne mentionnait pas. Ils sont dans le CV, pret a envoyer. A regarder avant : ce sont ceux qu'un recruteur verifie par telephone."}
+      </div>
+      <button onClick={() => setDeduitsAValider([])} style={{
+        ...B({
+          background: Ink, color: Cream, borderRadius: 999,
+          padding: "9px 16px", minHeight: 40, fontSize: 12.5,
+          fontWeight: 600, fontFamily: Sans, flexShrink: 0,
+        })
+      }}>{locale === "en" ? "Got it" : "Compris"}</button>
+    </div>
+  ) : null;
+
   const Onboard = cvIsEmpty && obMode !== "done" && obMode !== null && (
     <Suspense fallback={null}>
     <OnboardScreen T={T} locale={locale} setLocale={setLc}
@@ -9198,6 +9273,7 @@ export default function App() {
         {LangAskEl}
         {SignInErrEl}
         {Onboard}
+        {AvisDeduits}
         {NuviHomeEl}
         {showIntro && (
           <NuviIntro
