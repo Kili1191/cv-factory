@@ -240,6 +240,32 @@ export default function Landing({ lang = "en" }) {
     if (dest) window.location.replace(dest);
   }, []);
 
+  // UN TITRE QUI S ASSEMBLE AU DEFILEMENT
+  //
+  // Chaque mot porte --part, sa position dans la phrase entre 0 et 1, et
+  // globals.css s en sert pour decaler sa plage d animation. Le tempo vient
+  // donc du defilement : on s arrete au milieu d un titre, il reste a
+  // mi-chemin.
+  //
+  // Les espaces restent des noeuds de texte entre les spans plutot que d etre
+  // enfermes dedans : un mot en inline-block qui contiendrait son espace le
+  // rendrait insecable, et le titre cesserait de se couper proprement en fin
+  // de ligne.
+  const Mots = ({ children }) => {
+    const mots = String(children || "").split(" ").filter(Boolean);
+    if (mots.length < 2) return children;
+    return (
+      <span className="nuvi-mots">
+        {mots.map((m, i) => (
+          <React.Fragment key={i}>
+            {i > 0 ? " " : null}
+            <span style={{ "--part": mots.length > 1 ? i / (mots.length - 1) : 0 }}>{m}</span>
+          </React.Fragment>
+        ))}
+      </span>
+    );
+  };
+
   const Ink = "var(--nuvi-ink, #0a0a0a)";
   const Muted = "var(--nuvi-ink-muted, #5a5a62)";
   const Hair = "var(--nuvi-hairline, #e8e3d6)";
@@ -434,7 +460,7 @@ export default function Landing({ lang = "en" }) {
             fontFamily: Serif, fontWeight: 400,
             fontSize: "var(--t-title)", lineHeight: 1.06,
             letterSpacing: "-0.032em", margin: 0,
-          }}>{t.answerTitle}</h2>
+          }}><Mots>{t.answerTitle}</Mots></h2>
           <p style={{
             fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 42 + "ch", margin: 0,
@@ -491,7 +517,7 @@ export default function Landing({ lang = "en" }) {
               fontFamily: Serif, fontWeight: 400,
               fontSize: "var(--t-title)", lineHeight: 1.05,
               letterSpacing: "-0.032em", margin: "0 0 16px",
-            }}>{t.cvTitle}</h2>
+            }}><Mots>{t.cvTitle}</Mots></h2>
             <p style={{
               fontSize: "var(--t-body)", lineHeight: 1.62,
               color: Muted, maxWidth: 40 + "ch", margin: 0,
@@ -525,7 +551,7 @@ export default function Landing({ lang = "en" }) {
             fontFamily: Serif, fontWeight: 400,
             fontSize: "var(--t-display)", lineHeight: 1.03,
             letterSpacing: "-0.035em", margin: 0,
-          }}>{t.s3title}</h2>
+          }}><Mots>{t.s3title}</Mots></h2>
           <p style={{
             fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 42 + "ch", margin: 0,
@@ -558,7 +584,7 @@ export default function Landing({ lang = "en" }) {
             fontFamily: Serif, fontWeight: 400, color: Ink,
             fontSize: "var(--t-title)", lineHeight: 1.04,
             letterSpacing: "-0.035em", margin: 0,
-          }}>{t.s34title}</h2>
+          }}><Mots>{t.s34title}</Mots></h2>
           <p style={{
             fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 46 + "ch", margin: 0,
@@ -624,7 +650,7 @@ export default function Landing({ lang = "en" }) {
             fontFamily: Serif, fontWeight: 400, color: Ink,
             fontSize: "var(--t-title)", lineHeight: 1.04,
             letterSpacing: "-0.035em", margin: 0,
-          }}>{t.s35title}</h2>
+          }}><Mots>{t.s35title}</Mots></h2>
           <p style={{
             fontSize: "var(--t-body)", lineHeight: 1.62,
             color: Muted, maxWidth: 46 + "ch", margin: 0,
@@ -667,7 +693,7 @@ export default function Landing({ lang = "en" }) {
           fontFamily: Serif, fontWeight: 400,
           fontSize: "var(--t-hero)", lineHeight: 1.0,
           letterSpacing: "-0.04em", margin: "0 0 18px",
-        }}>{t.finalTitle}</h2>
+        }}><Mots>{t.finalTitle}</Mots></h2>
         <p style={{
           fontSize: "var(--t-body)", lineHeight: 1.55,
           color: Muted, margin: "0 auto 32px", maxWidth: 44 + "ch",

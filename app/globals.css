@@ -594,6 +594,54 @@ body.cvf-dark.nuvi-grain::after {
 }
 
 /* ============================================================
+ * LES TITRES S ASSEMBLENT MOT A MOT
+ * ============================================================
+ *
+ * Mesure sur la vitrine : 5605 px de page, 43 animations vivantes, dont 12
+ * pilotees par le defilement. Sur ces 12, une seule section - le balayage du
+ * CV - porte une motion dessinee ; les 6 autres sont nuviEnScene, le meme
+ * fondu-montee applique a tout. Un seul geste sur toute la hauteur, ca se lit
+ * comme une transition, pas comme une intention.
+ *
+ * Les titres sont les elements dominants de cette page. Les faire arriver mot
+ * par mot, au rythme du defilement, change le caractere de la page entiere
+ * pour un cout nul : aucune bibliotheque, aucun javascript d animation, et le
+ * navigateur peut le calculer hors du fil principal.
+ *
+ * LE RETARD EST UNE FRACTION DE LA PLAGE, PAS UN DELAI
+ *
+ * C est la technique deja employee par le balayage juste au-dessus : chaque
+ * mot decale sa propre animation-range de --part, sa position dans la phrase
+ * entre 0 et 1. Le tempo vient donc du doigt qui fait defiler, pas d une
+ * horloge - on peut s arreter au milieu d un titre et il reste a mi-chemin.
+ *
+ * L etat par defaut reste VISIBLE, comme partout ici : sans la fonctionnalite,
+ * le titre s affiche entier. Ecrit dans l autre sens, un navigateur sans
+ * animation-timeline montrerait un titre vide.
+ */
+@keyframes nuviMotMonte {
+  from { opacity: 0; transform: translateY(0.44em); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.nuvi-mots > span { display: inline-block; }
+
+@supports (animation-timeline: view()) {
+  .nuvi-mots > span {
+    animation: nuviMotMonte linear both;
+    animation-timeline: view();
+    /* Le premier mot part des l entree, le dernier finit avant le milieu :
+       le titre est lisible bien avant d etre au centre de l ecran. */
+    animation-range: entry calc(6% + var(--part) * 34%) entry calc(26% + var(--part) * 34%);
+    animation-delay: 0s;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-mots > span { animation: none; opacity: 1; transform: none; }
+}
+
+/* ============================================================
  * L ARRIVEE DE LA PAGE
  * ============================================================
  *
