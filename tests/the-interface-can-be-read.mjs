@@ -31,7 +31,7 @@
 // skips is asserted too: if it ever swallows most of the screen, the sweep has
 // stopped being a sweep.
 
-import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
+import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV, BASE_URL } from "./lib/harness.mjs";
 
 function luminance([r, g, b]) {
   const c = [r, g, b].map((v) => {
@@ -63,6 +63,17 @@ const TAILLES = [
 ];
 
 const ECRANS = [
+  // LA VITRINE EST LE PREMIER ECRAN, ET N'ETAIT PAS COUVERTE
+  //
+  // Tout ce balayage partait de /app. La page d'accueil - celle que voit
+  // quelqu'un qui arrive de Google, celle qui doit le convaincre - n'etait
+  // verifiee par rien. Elle a ses propres couleurs, ecrites chez elle, et
+  // personne n'aurait signale qu'un surtitre y devienne illisible.
+  { nom: "vitrine", partout: true, seul: true,
+    ouvrir: async (p) => {
+      await p.goto(BASE_URL + "/", { waitUntil: "load" });
+      await p.waitForTimeout(1400);
+    } },
   { nom: "app", ouvrir: async () => {}, partout: true },
   { nom: "coach", ouvrir: async (p) => {
       await p.locator('[data-nv-nav="coach"]').click(); await p.waitForTimeout(1500); } },
@@ -87,15 +98,19 @@ export async function run() {
         if (taille.nom === "telephone" && !ecran.partout) continue;
         const ctx = await browser.newContext({ viewport: { width: taille.width, height: taille.height } });
         const page = await ctx.newPage();
-        await seedApp(page, SAMPLE_CV, { locale: "en" });
+        // La vitrine se visite telle quelle : seedApp irait sur /app et
+        // masquerait justement l'ecran qu'on veut regarder.
+        if (!ecran.seul) await seedApp(page, SAMPLE_CV, { locale: "en" });
+        if (ecran.seul || taille.nom !== "telephone") await ecran.ouvrir(page);
+        // Le theme se pose APRES la navigation : sur la vitrine, aller a "/"
+        // recharge le document et effacerait un theme pose avant.
         if (theme === "sombre") {
           await page.evaluate(() => {
             document.documentElement.dataset.theme = "dark";
             document.body.classList.add("cvf-dark");
           });
-          await page.waitForTimeout(500);
+          await page.waitForTimeout(600);
         }
-        if (taille.nom !== "telephone") await ecran.ouvrir(page);
 
         const releve = await page.evaluate(() => {
           const textes = [];
