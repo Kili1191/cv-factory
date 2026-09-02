@@ -12,7 +12,7 @@ import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
 import { experiencesAVerifier, direLaFermeture } from "../lib/registresEntreprises";
-import { SCHEMA_CV, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT, SCHEMA_VERITE } from "./components/schemas";
+import { SCHEMA_CV, SCHEMA_CV_IMPORTE, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT, SCHEMA_VERITE } from "./components/schemas";
 import { lireCommeLesAts } from "../lib/atsVendors";
 import { texteProbable } from "../lib/deuxLectures";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
@@ -22,8 +22,8 @@ import { estTelephone } from "../lib/breakpoint.js";
 
 // === LAZY MODALS ===
 // Ces modals ne sont rendus que sur action utilisateur (showXxx === true).
-// Ils sont chargés à la volée la première fois qu'ils s'ouvrent, ce qui
-// allège significativement le First Paint. Les chunks sont mis en cache
+// Ils sont charges a la volee la premiere fois qu'ils s'ouvrent, ce qui
+// allege significativement le First Paint. Les chunks sont mis en cache
 // par le navigateur pour les ouvertures suivantes.
 const GapRepairModal = dynamic(() => import("./components/GapRepairModal"), { ssr: false });
 const InterviewModal = dynamic(() => import("./components/InterviewModal"), { ssr: false });
@@ -46,15 +46,15 @@ const NuviTutorial = dynamic(() => import("./components/NuviTutorial"), { ssr: f
 const SettingsPanel = dynamic(() => import("./components/SettingsPanel"), { ssr: false });
 const ActivityModal = dynamic(() => import("./components/ActivityModal"), { ssr: false });
 
-// CoachModal est dynamic, chargé seulement à l'ouverture du Coach.
+// CoachModal est dynamic, charge seulement a l'ouverture du Coach.
 const CoachModal = dynamic(
   () => import("./components/CoachModal").then(m => ({ default: m.default })),
   { ssr: false }
 );
 
 // === LAZY UI COMPONENTS (extracted from page.jsx) ===
-// Composants conditionnels lourds extraits dans des fichiers séparés.
-// Chargés à la demande via React.lazy pour alléger le First Paint.
+// Composants conditionnels lourds extraits dans des fichiers separes.
+// Charges a la demande via React.lazy pour alleger le First Paint.
 const OnboardScreen = dynamic(() => import("./components/OnboardScreen"), { ssr: false });
 const TargetHub     = dynamic(() => import("./components/TargetHub"), { ssr: false });
 const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: false });
@@ -259,8 +259,8 @@ const QUI_DECIDE =
 const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk" };
 
 
-// === FR_T et EN_T ont été extraits dans ./i18n/{fr,en}.js ===
-// Importés en haut du fichier via : import { FR_T, EN_T } from "./i18n";
+// === FR_T et EN_T ont ete extraits dans ./i18n/{fr,en}.js ===
+// Importes en haut du fichier via : import { FR_T, EN_T } from "./i18n";
 // Voir ligne 5476 pour leur utilisation : const T = locale==="en" ? EN_T : FR_T;
 
 
@@ -595,7 +595,7 @@ const EMPTY = {
   labels: {},
 };
 
-// === Labels par défaut pour les sections du CV (éditables par l'utilisateur) ===
+// === Labels par defaut pour les sections du CV (editables par l'utilisateur) ===
 const DEFAULT_LABELS_FR = {
   profile: "Profil",
   experience: "Expérience",
@@ -616,14 +616,14 @@ const DEFAULT_LABELS_EN = {
   contact: "Contact",
   links: "Links",
 };
-// Helper : retourne le label custom de l'utilisateur OU le défaut selon la langue
+// Helper : retourne le label custom de l'utilisateur OU le defaut selon la langue
 function getLabel(cv, key, locale) {
   const custom = cv && cv.labels && cv.labels[key];
   if (custom && custom.trim()) return custom;
   const defaults = locale === "en" ? DEFAULT_LABELS_EN : DEFAULT_LABELS_FR;
   return defaults[key] || key;
 }
-// === EditableTitle : titre de section éditable au double-clic ===
+// === EditableTitle : titre de section editable au double-clic ===
 function EditableTitle({ cv, setCVFn, labelKey, locale, style, defaultUppercase }) {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
@@ -1093,7 +1093,7 @@ async function aiCall(prompt, options = {}) {
   const { cv, max_tokens, task_name = "unknown", messages, schema, __base } = options;
   const url = (__base || "") + "/api/claude";
 
-  // Sérialise le CV pour le system block caché (gain ~30% par cache_control Anthropic)
+  // Serialise le CV pour le system block cache (gain ~30% par cache_control Anthropic)
   let cv_context = null;
   if (cv) {
     try {
@@ -1153,7 +1153,7 @@ async function aiCall(prompt, options = {}) {
       throw new Error("Reponse serveur invalide (HTTP " + r.status + "). Probablement un timeout Vercel.");
     }
 
-    // Logging observabilité (gain via détection des doublons et erreurs)
+    // Logging observabilite (gain via detection des doublons et erreurs)
     if (d && d._cvf_meta && typeof window !== "undefined") {
       try {
         const log = JSON.parse(window.localStorage.getItem("cvf_api_log") || "[]");
@@ -1846,7 +1846,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       + "\n\nINSTRUCTION: \"" + inst + "\""
       + "\n\nRetourne UNIQUEMENT le JSON modifie.";
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "import-cv" });
       const nCV = parseJSON(txt);
       setCVFn(() => nCV);
       setInst("");
@@ -1877,7 +1877,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
       + "REGLES:toutes experiences, IDs depuis 1, vide si absent."
       + " " + NO_DASH + " UNIQUEMENT JSON.\nCV:\n" + raw;
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "import-cv" });
       const parsed = parseJSON(txt);
       setCVFn(() => normCV(parsed));
       setRaw("");
@@ -2417,7 +2417,7 @@ function ColorsTab({ T, scope, theme, cvCustom, versionCustom, writeCustom, loca
   );
 }
 
-// FontCard : aperçu d'une font (Aa + nom + vibe + ATS badge optionnel).
+// FontCard : apercu d'une font (Aa + nom + vibe + ATS badge optionnel).
 // Charge la font des le mount via ensureFontLoaded pour rendre l'apercu fidele.
 function FontCard({ font, active, onClick, sample, isBody }) {
   useEffect(() => {
@@ -3441,7 +3441,7 @@ const DEMO_CV = {
   labels: {},
 };
 
-// Theme demo cohérent pour les previews (Sidebar Pro doré classique)
+// Theme demo coherent pour les previews (Sidebar Pro dore classique)
 const DEMO_THEME = {
   bf: "Inter, system-ui, sans-serif",
   tf: "Fraunces, Georgia, serif",
@@ -3887,7 +3887,7 @@ export default function App() {
   const coachLongPressTimer = useRef(null);
   const coachDragStartRef = useRef(null);
   const coachScrollTimerRef = useRef(null);
-  // NuviIntro : présentation initiale du compagnon
+  // NuviIntro : presentation initiale du compagnon
   const [showIntro, setShowIntro] = useState(false);
   const [showIntroBubble, setShowIntroBubble] = useState(false); // bulle "Clique sur moi"
   const [introOrigin, setIntroOrigin] = useState(null); // { x, y } position de départ
@@ -4168,7 +4168,7 @@ export default function App() {
   }, []);
 
   // [FIX dedup 2026-05-20] Nettoie le CV au load initial : supprime les
-  // doublons education/certifications hérités d'imports anciens.
+  // doublons education/certifications herites d'imports anciens.
   // Tourne UNE FOIS au montage, apres hydration.
   useEffect(() => {
     if (!hydrated) return;
@@ -7590,7 +7590,7 @@ export default function App() {
 
       const txt = await aiCall(p, { schema: SCHEMA_MULTICV, task_name: "multi-cv" });
       const parsed = parseJSON(txt);
-      // Coerce ids to numbers (au cas où l'IA les retourne en string)
+      // Coerce ids to numbers (au cas ou l'IA les retourne en string)
       if (parsed) {
         if (parsed.recommended_id) parsed.recommended_id = Number(parsed.recommended_id);
         if (Array.isArray(parsed.alternatives)) {
@@ -7947,7 +7947,7 @@ export default function App() {
 
     let importSucceeded = false;
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "import-cv" });
       console.log("[onImport] aiCall response length:", txt?.length);
 
       const parsed = parseJSON(txt);

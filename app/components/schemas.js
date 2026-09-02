@@ -141,6 +141,43 @@ export const SCHEMA_POSITIONNEMENT = {
   required: ["angles"],
 };
 
+// L'IMPORT : LE PREMIER GESTE, ET IL DEMANDAIT ENCORE SA FORME EN PROSE
+//
+// Trois chemins menent ici - coller du texte, lire un fichier, l'ecran
+// d'arrivee - et tous trois finissaient par "UNIQUEMENT JSON" suivi d'une
+// STRUCTURE recopiee a la main. C'est le tout premier geste du produit :
+// quelqu'un colle son CV et attend devant un ecran vide. Quand la forme cede,
+// il ne voit pas une erreur, il voit un produit qui ne marche pas.
+//
+// Deux ecarts avec SCHEMA_CV, et un seul compte : l'import demande un "id" par
+// experience et par diplome, dont le reste de l'application se sert pour
+// suivre les lignes. additionalProperties etant a false, il faut les declarer,
+// sinon la reponse serait refusee. Et pas de "deduit" : lire un CV existant ne
+// remplit aucun trou.
+//
+// Derive de SCHEMA_CV plutot que recopie : une troisieme description du meme
+// objet finirait par diverger des deux autres.
+const avecId = (bloc) => ({
+  ...bloc,
+  items: {
+    ...bloc.items,
+    properties: { id: { type: "number" }, ...bloc.items.properties },
+    required: ["id", ...bloc.items.required],
+  },
+});
+
+export const SCHEMA_CV_IMPORTE = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    ...Object.fromEntries(
+      Object.entries(SCHEMA_CV.properties).filter(([k]) => k !== "deduit")),
+    experience: avecId(SCHEMA_CV.properties.experience),
+    education: avecId(SCHEMA_CV.properties.education),
+  },
+  required: SCHEMA_CV.required.filter((k) => k !== "deduit"),
+};
+
 // L'ANALYSE D'UNE ANNONCE : LA PLUS GROSSE SORTIE DU PRODUIT
 //
 // Elle rend une lecture de l'offre ET un CV complet reecrit pour elle. Elle
