@@ -968,6 +968,39 @@ body.cvf-dark.nuvi-grain::after {
 }
 
 /* ============================================================
+ * UNE SURFACE SOMBRE ASSUMEE, AVEC SES PROPRES ENCRES
+ * ============================================================
+ *
+ * La navigation etait blanche sur creme : la meme matiere que le reste, donc
+ * aucune separation entre l'outil et le document. C'est ce qui faisait dire,
+ * a juste titre, que l'interface n'avait pas change - on avait ajoute des mots
+ * a cote des icones sans rien changer d'autre.
+ *
+ * Elle devient une surface sombre, dans les DEUX themes. Un plan de travail
+ * clair qui porte une feuille, une colonne sombre qui porte les outils : la
+ * hierarchie se lit d'un coup d'oeil, avant d'avoir lu un seul mot.
+ *
+ * Le piege serait de repeindre le fond et de laisser les encres. Toutes les
+ * couleurs de texte calibrees plus haut le sont POUR DES FONDS CLAIRS. Cette
+ * surface redeclare donc les siennes, et tout ce qu'on y pose herite des
+ * bonnes. C'est le sens de data-nuvi-sombre : une surface qui annonce sa
+ * nature, au lieu d'une regle qui suppose la couleur de ce qu'il y a dessous.
+ */
+[data-nuvi-sombre] {
+  --nuvi-rail: #17171a;
+  --nuvi-paper: #17171a;
+  --nuvi-ink: #f5f1e8;
+  --nuvi-ink-muted: #a09d94;
+  --nuvi-hairline: rgba(245, 241, 232, 0.10);
+  /* Contrastes mesures sur #17171a : entre 7:1 et 8:1. */
+  --nuvi-coral-text: #e89579;
+  --nuvi-purple-text: #a894ff;
+  --nuvi-magenta-text: #e07cc4;
+  --nuvi-green-text: #4ec97a;
+  --nuvi-gray-text: #a09d94;
+}
+
+/* ============================================================
  * LE FOCUS SE VOIT, PARTOUT
  * ============================================================
  *
@@ -1021,13 +1054,10 @@ body.cvf-dark.nuvi-grain::after {
  * la barre, et seulement quand le theme sombre est actif. Ailleurs le violet
  * reprend la main, a 6,2:1 sur blanc.
  *
- * Une version de cette regle visait aussi [data-nuvi-sombre]. Cet attribut
- * n'est pose nulle part dans le produit : c'etait la meme forme de CSS mort
- * que la protection du CV, une garantie qui rassure et ne s'applique a rien.
- * Le balayage a la tabulation, quatre ecrans et deux themes, ne trouve aucune
- * autre surface sombre porteuse d'un element focalisable. On ne garde donc pas
- * un crochet pour un cas qui n'existe pas ; le jour ou il existera, ce
- * balayage le signalera.
+ * [data-nuvi-sombre] avait ete retire d'ici : l'attribut n'etait pose nulle
+ * part, donc la regle ne s'appliquait a rien. Il existe maintenant pour de
+ * bon - la navigation est une surface sombre declaree - et la branche revient
+ * avec lui. Le balayage a la tabulation le verifie dans les deux themes.
  *
  * ET LA COULEUR EST ECRITE EN CLAIR, PAS PRISE DANS UN JETON
  *
@@ -1037,6 +1067,7 @@ body.cvf-dark.nuvi-grain::after {
  * servir a peindre quelque chose dont on sait deja qu'il se pose sur du
  * sombre. La valeur est donc litterale, et le restera.
  */
+[data-nuvi-sombre] :where(button, a[href], [tabindex]):focus-visible,
 [data-theme="dark"] aside :where(button, a[href], [tabindex]):focus-visible,
 body.cvf-dark aside :where(button, a[href], [tabindex]):focus-visible {
   /* Important lui aussi : la regle de base l'est devenue, et une declaration

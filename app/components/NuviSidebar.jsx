@@ -53,6 +53,8 @@ export default function NuviSidebar({
   // Une seule section reste ouverte a la fois : deux accordeons deplies
   // rendraient la liste plus longue que l'ecran.
   const [sectionOuverte, setSectionOuverte] = useState(null);
+  // Reste-t-il des entrees sous le bord ? Sert au degrade qui le dit.
+  const [resteEnBas, setResteEnBas] = useState(false);
 
 
   // Le tutoriel designait une entree en simulant un survol. Il n'y a plus de
@@ -408,27 +410,63 @@ export default function NuviSidebar({
       <div aria-hidden="true" style={{ width: RAIL, flexShrink: 0 }}/>
       <aside
         aria-label={L.home}
+        // LA BARRE ANNONCE QU'ELLE EST UNE SURFACE SOMBRE
+        //
+        // Ce n'est pas decoratif : globals.css redeclare sous cet attribut les
+        // encres, le filet et le papier. Tout ce qu'on pose ici herite des
+        // valeurs qui tiennent sur du sombre, au lieu de celles calibrees pour
+        // du clair. Repeindre le fond sans ca aurait donne exactement le
+        // defaut corrige ce matin : du texte juste sur le mauvais fond.
+        data-nuvi-sombre="1"
         style={{
           position: "fixed", top: 0, left: 0, width: RAIL, height: "100vh",
           display: "flex", flexDirection: "column",
           background: Paper,
-          borderRight: "0.5px solid " + Hairline,
+          borderRight: "1px solid rgba(0,0,0,.10)",
           zIndex: 300,
           fontFamily: "'Inter', -apple-system, sans-serif",
         }}>
         <div style={{
-          height: 64, display: "flex", alignItems: "center",
-          padding: "0 18px", flexShrink: 0,
+          height: 72, display: "flex", alignItems: "center",
+          padding: "0 20px", flexShrink: 0,
           borderBottom: "0.5px solid " + Hairline,
         }}>
           <NuviLogo size={30} inkColor={Ink}/>
         </div>
 
-        <nav style={{ flex: 1, overflowY: "auto", padding: "12px 0" }}>
-          {topItems.map(renderItem)}
-          <div style={{ height: 1, background: Hairline, margin: "10px 20px" }}/>
-          {middleItems.map(renderItem)}
-        </nav>
+        {/* UN ELEMENT COUPE EN DEUX RESSEMBLE A UNE PANNE
+            Sur un portable avec la barre de favoris, la fenetre descend sous
+            740px de haut et la liste ne tient plus : mesure, "Applications" se
+            retrouvait tranchee par le pied de la barre. Elle defilait bien,
+            mais rien ne le disait, et une entree a moitie visible se lit comme
+            un bug plutot que comme une invitation a faire defiler.
+            Le degrade en bas apparait quand il reste quelque chose dessous, et
+            disparait une fois en bas. */}
+        <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+          <nav
+            onScroll={(e) => {
+              const el = e.currentTarget;
+              setResteEnBas(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
+            }}
+            ref={(el) => {
+              if (el) {
+                const reste = el.scrollHeight - el.scrollTop - el.clientHeight > 4;
+                if (reste !== resteEnBas) setResteEnBas(reste);
+              }
+            }}
+            style={{ height: "100%", overflowY: "auto", padding: "14px 0" }}>
+            {topItems.map(renderItem)}
+            <div style={{ height: 1, background: Hairline, margin: "12px 20px" }}/>
+            {middleItems.map(renderItem)}
+          </nav>
+          {resteEnBas && (
+            <div aria-hidden="true" style={{
+              position: "absolute", left: 0, right: 0, bottom: 0, height: 34,
+              background: "linear-gradient(to bottom, rgba(23,23,26,0), rgba(23,23,26,.95))",
+              pointerEvents: "none",
+            }}/>
+          )}
+        </div>
 
         <div style={{ borderTop: "0.5px solid " + Hairline, padding: "8px 0", flexShrink: 0 }}>
           {onReset && pied("reset", L.replay, Icons.replay, () => onReset())}

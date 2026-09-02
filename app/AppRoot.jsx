@@ -9670,9 +9670,18 @@ export default function App() {
               angle, et c'est la meme regle que la manchette de l'accueil.
               Le nom sert aussi a quelque chose : quelqu'un qui garde une
               version par metier voyait son CV sans jamais lire lequel. */}
+          {/* LA BANDE DU HAUT ETAIT UNE LIGNE, PAS UN EN-TETE
+              Douze pixels de haut de padding, une sur-ligne de dix pixels, le
+              nom du document a la meme taille que tout le reste, et un bouton
+              a l'autre bout. Rien n'y avait de rang : on ne savait pas d'un
+              coup d'oeil ce qu'on editait.
+              Elle respire maintenant, et le nom du document y est traite comme
+              un titre - en Fraunces, a sa taille, avec le poste dessous. C'est
+              ce que la personne cherche des yeux en arrivant. */}
           <div style={{
             flexShrink:0, display:"flex", justifyContent:"space-between",
-            alignItems:"center", gap:10, padding:"12px 22px 12px",
+            alignItems:"center", gap:16, padding:"18px 26px 16px",
+            background:Cream,
             borderBottom:"1px solid "+Gray200,
           }}>
             {/* Le decalage compensait une barre laterale qui s'ouvrait au
@@ -9680,25 +9689,27 @@ export default function App() {
                 large en permanence, dans le flux, et l'espaceur lui garde sa
                 place. Il n'y a donc plus rien a compenser. */}
             <div style={{
-              minWidth:0, display:"flex", alignItems:"baseline", gap:9,
+              minWidth:0, display:"flex", flexDirection:"column", gap:2,
             }}>
               <span style={{
-                fontFamily:Sans, fontSize:Text.micro, fontWeight:700,
-                letterSpacing:"0.12em", textTransform:"uppercase",
+                fontFamily:Sans, fontSize:10.5, fontWeight:700,
+                letterSpacing:"0.14em", textTransform:"uppercase",
                 // Gray400 donnait 2,32:1 sur le creme : la sur-ligne la plus
                 // petite du produit etait aussi la moins lisible.
                 color:GrayText, flexShrink:0,
               }}>{locale === "en" ? "Editing" : "En cours"}</span>
               <span style={{
-                fontFamily:Serif, fontSize:Text.lead, fontWeight:600,
-                color:Ink, letterSpacing:"-0.01em",
+                // Le nom du document est le titre de l'ecran : il en prend la
+                // taille. Il etait a Text.lead, soit celle d'un paragraphe.
+                fontFamily:Serif, fontSize:25, fontWeight:500,
+                color:Ink, letterSpacing:"-0.02em", lineHeight:1.1,
                 overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
               }}>
                 {cv.name || (locale === "en" ? "Untitled CV" : "CV sans nom")}
               </span>
               {cv.title && (
                 <span style={{
-                  fontFamily:Sans, fontSize:Text.small, color:Gray600,
+                  fontFamily:Sans, fontSize:13, color:Gray600, marginTop:1,
                   overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
                 }}>{cv.title}</span>
               )}
