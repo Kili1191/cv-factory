@@ -953,8 +953,25 @@ body.cvf-dark.nuvi-grain::after {
  * donc l apparence au clic ET la lisibilite au clavier, sans choisir.
  */
 :where(button, a[href], input, textarea, select, summary, [tabindex]):focus-visible {
-  outline: 2px solid var(--nuvi-purple, #5b3df5);
-  outline-offset: 2px;
+  /* !important, ET C'EST LA SEULE FACON QUE CETTE REGLE SERVE A QUELQUE CHOSE
+   *
+   * Le commentaire au-dessus dit vrai : vingt-sept endroits du produit posent
+   * outline:"none" en style INLINE. Un style inline bat toute regle CSS qui
+   * n'est pas importante - et :where() vaut zero en specificite, donc cette
+   * regle perdait contre chacun d'eux.
+   *
+   * Elle marchait pour les boutons, qui ne posent pas outline:none, et pas
+   * pour les champs de saisie, qui le posent tous. Balayage a la tabulation
+   * sur quatre ecrans et deux themes : chaque input et chaque textarea du
+   * produit n'avait AUCUN anneau. L'editeur de CV, le coach, la zone ou l'on
+   * colle une annonce - partout ou l'on tape du texte.
+   *
+   * Retirer les vingt-sept outline:none serait plus propre et les ramenerait
+   * un par un au premier composant recopie. Le plancher d'accessibilite se
+   * pose donc ici, une fois, et il gagne.
+   */
+  outline: 2px solid var(--nuvi-purple, #5b3df5) !important;
+  outline-offset: 2px !important;
   border-radius: 3px;
 }
 
@@ -967,10 +984,17 @@ body.cvf-dark.nuvi-grain::after {
  * navigue au clavier ne savait plus ou il etait dans la navigation - et la
  * navigation est justement ce qu'on parcourt au clavier.
  *
- * L'anneau clair n'a de sens que sur une surface sombre. On le reserve donc
- * aux surfaces qui le sont vraiment : celles marquees data-nuvi-sombre, et la
- * barre uniquement quand le theme sombre est actif. Ailleurs le violet
+ * L'anneau clair n'a de sens que sur une surface sombre. On le reserve donc a
+ * la barre, et seulement quand le theme sombre est actif. Ailleurs le violet
  * reprend la main, a 6,2:1 sur blanc.
+ *
+ * Une version de cette regle visait aussi [data-nuvi-sombre]. Cet attribut
+ * n'est pose nulle part dans le produit : c'etait la meme forme de CSS mort
+ * que la protection du CV, une garantie qui rassure et ne s'applique a rien.
+ * Le balayage a la tabulation, quatre ecrans et deux themes, ne trouve aucune
+ * autre surface sombre porteuse d'un element focalisable. On ne garde donc pas
+ * un crochet pour un cas qui n'existe pas ; le jour ou il existera, ce
+ * balayage le signalera.
  *
  * ET LA COULEUR EST ECRITE EN CLAIR, PAS PRISE DANS UN JETON
  *
@@ -980,10 +1004,11 @@ body.cvf-dark.nuvi-grain::after {
  * servir a peindre quelque chose dont on sait deja qu'il se pose sur du
  * sombre. La valeur est donc litterale, et le restera.
  */
-:where([data-nuvi-sombre]) :where(button, a[href], [tabindex]):focus-visible,
 [data-theme="dark"] aside :where(button, a[href], [tabindex]):focus-visible,
 body.cvf-dark aside :where(button, a[href], [tabindex]):focus-visible {
-  outline-color: #faf8f3;
+  /* Important lui aussi : la regle de base l'est devenue, et une declaration
+     ordinaire ne peut plus la corriger. */
+  outline-color: #faf8f3 !important;
 }
 
 /* ============================================================

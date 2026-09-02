@@ -15,12 +15,30 @@
 // That is the shape of defect this file exists for: nothing throws, nothing
 // looks broken in a screenshot taken with a mouse, and the feature is gone.
 //
+// AND THE SECOND ONE, WHICH THE FIRST SWEEP FOUND
+//
+// Checking only the sidebar was too narrow. Tabbing across four screens in
+// both themes showed that every input and every textarea in the product had NO
+// ring at all: the CV editor, the coach, the box where a job ad is pasted -
+// everywhere you type.
+//
+// The cause was in the fix itself. Twenty-seven places set outline:"none" as
+// an INLINE style, and the rule meant to undo that was wrapped in :where(),
+// which is worth zero specificity. Inline beats any non-important rule, so it
+// lost to all twenty-seven. It worked for buttons, which do not set it, and
+// never once for a text field.
+//
 // WHAT IT HOLDS
 //
-// The ring must stand out from the surface it is drawn on, in BOTH themes -
-// 3:1, which is what WCAG 2.2 asks of a focus indicator. Both themes matter
-// because the fix for one is what broke the other: cream on dark reads, cream
-// on white does not, and a single unconditional colour cannot serve both.
+// Every tabbable element on several screens, in BOTH themes, must carry a ring
+// that stands out from the surface behind it - 3:1, what WCAG 2.2 asks of a
+// focus indicator. Both themes matter because the fix for one is what broke
+// the other: cream on dark reads, cream on white does not, and one
+// unconditional colour cannot serve both.
+//
+// It walks with Tab rather than calling focus(): :focus-visible deliberately
+// does not light for a click or a script, so a test that clicked would never
+// see a ring and would pass whatever happened.
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
 
@@ -48,86 +66,101 @@ export async function run() {
   const server = await startServer();
   const browser = await launchBrowser();
 
+  // Quatre ecrans, choisis pour ce qu'ils contiennent : la coquille et sa
+  // navigation, une fenetre a saisie libre, un formulaire dense, et une liste.
+  const ECRANS = [
+    { nom: "app", ouvrir: async () => {} },
+    { nom: "coach", ouvrir: async (p) => {
+        await p.locator('[data-nv-nav="coach"]').click();
+        await p.waitForTimeout(1500);
+      } },
+    { nom: "editeur", ouvrir: async (p) => {
+        await p.locator('[data-nv-nav="edit"]').click();
+        await p.waitForTimeout(300);
+        await p.locator('[data-nv-sub="edit:exp"]').click();
+        await p.waitForTimeout(1500);
+      } },
+    { nom: "candidatures", ouvrir: async (p) => {
+        await p.locator('[data-nv-nav="tracking"]').click();
+        await p.waitForTimeout(1500);
+      } },
+  ];
+
   try {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-    const page = await ctx.newPage();
-    await seedApp(page, SAMPLE_CV, { locale: "en" });
-
-    const mesurer = async () => {
-      // AU CLAVIER, PAS A LA SOURIS
-      //
-      // :focus-visible ne s'allume pas sur un clic - c'est voulu, et c'est
-      // aussi pourquoi un test qui cliquerait ne verrait jamais l'anneau et
-      // passerait au vert quoi qu'il arrive.
-      await page.evaluate(() => document.activeElement && document.activeElement.blur());
-      await page.keyboard.press("Tab");
-      for (let i = 0; i < 14; i++) {
-        const dedans = await page.evaluate(() => {
-          const a = document.activeElement;
-          return !!(a && a.closest && a.closest("aside") && a.hasAttribute("data-nv-nav"));
-        });
-        if (dedans) break;
-        await page.keyboard.press("Tab");
-      }
-      return page.evaluate(() => {
-        const a = document.activeElement;
-        if (!a || !a.closest("aside")) return null;
-        const st = getComputedStyle(a);
-        // La surface derriere : la premiere boite qui peint vraiment.
-        let n = a, fond = null;
-        while (n && n !== document.documentElement) {
-          const bg = getComputedStyle(n).backgroundColor;
-          const m = bg.match(/[\d.]+/g);
-          if (m && (m.length < 4 || Number(m[3]) > 0.5)) { fond = bg; break; }
-          n = n.parentElement;
-        }
-        return {
-          quoi: a.getAttribute("data-nv-nav"),
-          couleur: st.outlineColor,
-          largeur: parseFloat(st.outlineWidth) || 0,
-          style: st.outlineStyle,
-          fond,
-        };
-      });
-    };
-
     for (const theme of ["clair", "sombre"]) {
-      if (theme === "sombre") {
-        await page.evaluate(() => {
-          document.documentElement.dataset.theme = "dark";
-          document.body.classList.add("cvf-dark");
-        });
-        await page.waitForTimeout(600);
-      }
-      const vu = await mesurer();
-      if (!vu) {
-        failures.push(
-          theme + " : la tabulation n'atteint aucune entree de navigation. Soit "
-          + "la barre n'est pas atteignable au clavier, soit ce test ne mesure rien."
-        );
-        continue;
-      }
-      if (!vu.largeur || vu.style === "none") {
-        failures.push(theme + " : aucun anneau de focus sur \"" + vu.quoi + "\".");
-        continue;
-      }
-      const c = rgb(vu.couleur), f = rgb(vu.fond);
-      if (!c || !f) {
-        failures.push(theme + " : impossible de lire les couleurs de l'anneau.");
-        continue;
-      }
-      const r = contraste(c, f);
-      if (r < MINIMUM) {
-        failures.push(
-          theme + " : l'anneau de focus affiche " + r.toFixed(2) + ":1 sur la barre "
-          + "(" + vu.couleur + " sur " + vu.fond + "), sous les " + MINIMUM + ":1 "
-          + "demandes. L'anneau existe dans les styles et ne se voit pas : au "
-          + "clavier, on ne sait plus ou on est."
-        );
+      for (const ecran of ECRANS) {
+        const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+        const page = await ctx.newPage();
+        await seedApp(page, SAMPLE_CV, { locale: "en" });
+        if (theme === "sombre") {
+          await page.evaluate(() => {
+            document.documentElement.dataset.theme = "dark";
+            document.body.classList.add("cvf-dark");
+          });
+          await page.waitForTimeout(500);
+        }
+        await ecran.ouvrir(page);
+
+        const deja = new Set();
+        let visites = 0;
+        for (let i = 0; i < 45; i++) {
+          await page.keyboard.press("Tab");
+          const vu = await page.evaluate(() => {
+            const a = document.activeElement;
+            if (!a || a === document.body) return null;
+            const st = getComputedStyle(a);
+            const quoi = a.getAttribute("data-nv-nav")
+              || a.getAttribute("aria-label")
+              || (a.innerText || "").trim().slice(0, 22)
+              || a.tagName;
+            if (st.outlineStyle === "none" || !parseFloat(st.outlineWidth)) {
+              return { quoi, sansAnneau: true };
+            }
+            let n = a, fond = null;
+            while (n && n !== document.documentElement) {
+              const bg = getComputedStyle(n).backgroundColor;
+              const m = bg.match(/[\d.]+/g);
+              if (m && (m.length < 4 || Number(m[3]) > 0.5)) { fond = bg; break; }
+              n = n.parentElement;
+            }
+            return { quoi, couleur: st.outlineColor, fond };
+          });
+          if (!vu) continue;
+          visites++;
+          const cle = ecran.nom + "/" + vu.quoi;
+          if (deja.has(cle)) continue;
+          deja.add(cle);
+
+          if (vu.sansAnneau) {
+            failures.push(
+              theme + " / " + ecran.nom + ' : "' + vu.quoi + '" ne montre aucun '
+              + "anneau au clavier. On tabule dessus sans savoir qu'on y est."
+            );
+            continue;
+          }
+          const c = rgb(vu.couleur), f = rgb(vu.fond);
+          if (!c || !f) continue;
+          const r = contraste(c, f);
+          if (r < MINIMUM) {
+            failures.push(
+              theme + " / " + ecran.nom + ' : "' + vu.quoi + '" a un anneau a '
+              + r.toFixed(2) + ":1 (" + vu.couleur + " sur " + vu.fond + "), sous "
+              + "les " + MINIMUM + ":1 demandes. L'anneau est dans les styles et "
+              + "ne se voit pas."
+            );
+          }
+        }
+
+        // SANS CETTE LIGNE, UN ECRAN QUI NE SE TABULE PLUS PASSERAIT AU VERT
+        if (visites < 8) {
+          failures.push(
+            theme + " / " + ecran.nom + " : la tabulation n'a atteint que "
+            + visites + " element(s). Ce balayage ne verifie plus rien."
+          );
+        }
+        await ctx.close();
       }
     }
-
-    await ctx.close();
   } catch (err) {
     failures.push("le test a plante : " + (err && err.message ? err.message : String(err)));
   } finally {
