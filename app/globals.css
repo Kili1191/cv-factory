@@ -985,19 +985,41 @@ body.cvf-dark.nuvi-grain::after {
  * surface redeclare donc les siennes, et tout ce qu'on y pose herite des
  * bonnes. C'est le sens de data-nuvi-sombre : une surface qui annonce sa
  * nature, au lieu d'une regle qui suppose la couleur de ce qu'il y a dessous.
+ *
+ * LA COULEUR VIENT DE LA MARQUE, PAS D'AILLEURS
+ *
+ * Premiere version : #17171a. Un quasi-noir emprunte aux outils de
+ * developpeur, choisi parce qu'il rendait le changement visible tout de suite.
+ * Mauvaise raison, et mauvaise couleur : ses canaux donnent 23/23/26, le bleu
+ * domine, elle est donc FROIDE. Posee a cote d'un creme chaud et d'un corail,
+ * elle ne vient de nulle part.
+ *
+ * Celle-ci est prise sur l'axe de la marque. Le creme #faf8f3 et le filet
+ * #e8e3d6 sont tous deux a la teinte 43 : c'est le neutre chaud de Nuvi. On
+ * garde cette teinte, on baisse la saturation a 10% et la luminosite a 12%.
+ * #22201c n'est donc pas un noir, c'est le bout sombre du papier de Nuvi.
+ *
+ * Tout est mesure sur ce fond :
+ *   texte principal #f6f2e8   14,55:1
+ *   libelle attenue #a8a196    6,35:1
+ *   actif corail    #d97757    5,21:1   (le corail de marque, tel quel)
+ *   ecart avec la feuille creme         15,3:1
+ *
+ * A noter : le corail de marque passe directement, sans version eclaircie. Sur
+ * le quasi-noir il fallait le delaver ; sur un fond chaud il tient tout seul,
+ * ce qui est le signe que la couleur est la bonne.
  */
 [data-nuvi-sombre] {
-  --nuvi-rail: #17171a;
-  --nuvi-paper: #17171a;
-  --nuvi-ink: #f5f1e8;
-  --nuvi-ink-muted: #a09d94;
-  --nuvi-hairline: rgba(245, 241, 232, 0.10);
-  /* Contrastes mesures sur #17171a : entre 7:1 et 8:1. */
-  --nuvi-coral-text: #e89579;
+  --nuvi-rail: #22201c;
+  --nuvi-paper: #22201c;
+  --nuvi-ink: #f6f2e8;
+  --nuvi-ink-muted: #a8a196;
+  --nuvi-hairline: rgba(246, 242, 232, 0.13);
+  --nuvi-coral-text: #d97757;
   --nuvi-purple-text: #a894ff;
   --nuvi-magenta-text: #e07cc4;
   --nuvi-green-text: #4ec97a;
-  --nuvi-gray-text: #a09d94;
+  --nuvi-gray-text: #a8a196;
 }
 
 /* ============================================================

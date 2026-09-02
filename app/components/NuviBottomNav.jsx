@@ -557,7 +557,7 @@ export default function NuviBottomNav({
         right: 0,
         height: 70,
         background: Paper,
-        borderTop: "1px solid rgba(245,241,232,.14)",
+        borderTop: "1px solid rgba(246,242,232,.13)",
         display: "flex",
         alignItems: "stretch",
         zIndex: 80,

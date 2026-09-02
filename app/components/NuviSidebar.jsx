@@ -463,7 +463,7 @@ export default function NuviSidebar({
             collee a une douzieme a moitie coupee. Un vrai separateur dit que
             ce qui suit est d'une autre nature. */}
         <div style={{
-          borderTop: "1px solid rgba(245,241,232,.14)",
+          borderTop: "1px solid rgba(246,242,232,.13)",
           padding: "10px 0 12px", flexShrink: 0,
         }}>
           {onReset && pied("reset", L.replay, Icons.replay, () => onReset())}
