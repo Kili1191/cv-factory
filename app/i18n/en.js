@@ -856,6 +856,45 @@ const EN_T = {
   cust_suggest_why:"Why this combination",
   cust_suggest_adopt:"Adopt this style",
   cust_adopted:"Style applied",
+
+  // WHY YOUR APPLICATIONS GO NOWHERE
+  //
+  // The verdict is computed in lib/pourquoiPasDentretien.js. These strings
+  // only say it: one sentence per cause, plus what to do next. Each cause
+  // leads to a different tool, which is the whole point of the screen.
+  pq_titre:"Why nobody answers",
+  pq_intro:"Paste three ads you applied to and heard nothing from. Nuvi reads them against your record and tells you what is actually in the way.",
+  pq_placeholder:"Paste the ad here",
+  pq_ajouter:"Add an ad",
+  pq_lancer:"Tell me what is in the way",
+  pq_encours:"Nuvi is reading your ads...",
+  pq_manque_cv:"Load your CV first",
+  pq_manque_annonces:"Three at least: on two, a gap can come from the ads themselves.",
+  pq_sur:"of",
+  pq_annonces_lues:"ads read",
+  pq_correspondance:"median match",
+  pq_revoir:"Look at these",
+  pq_suite:"Next",
+
+  pq_pas_assez_titre:"Not enough to say yet",
+  pq_pas_assez_quoi:"Two ads are not a pattern: a gap can come from the ads themselves. From three, what repeats means something.",
+  pq_pas_assez_action:"Add an ad",
+
+  pq_niveau_titre:"You are aiming above what your CV proves",
+  pq_niveau_quoi:"These ads ask for more seniority or responsibility than your record currently shows. Your CV is not badly written. The step is too high.",
+  pq_niveau_action:"Find the right angle",
+
+  pq_ciblage_titre:"These are not the right roles",
+  pq_ciblage_quoi:"Half of what these ads ask for is nowhere in your record. No rewrite changes that: you cannot reword work you have not done.",
+  pq_ciblage_action:"See roles that fit",
+
+  pq_mots_titre:"Right roles, but the same thing is missing every time",
+  pq_mots_quoi:"Your record matches these ads. The same requirement is missing each time: if you have done it without writing it down, it needs to be there.",
+  pq_mots_action:"Add what is missing",
+
+  pq_ailleurs_titre:"Your CV is not the problem",
+  pq_ailleurs_quoi:"Right level, right roles, nothing missing twice. What is left does not show up in an ad: how many you send, through which channel, whether you follow up. More rewriting will not change it.",
+  pq_ailleurs_action:"Track my applications",
 };
 
 export default EN_T;

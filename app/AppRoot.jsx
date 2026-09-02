@@ -58,6 +58,8 @@ const CoachModal = dynamic(
 const OnboardScreen = dynamic(() => import("./components/OnboardScreen"), { ssr: false });
 const TargetHub     = dynamic(() => import("./components/TargetHub"), { ssr: false });
 const MatchPanel    = dynamic(() => import("./components/MatchPanel"), { ssr: false });
+const PourquoiPanel = dynamic(() => import("./components/PourquoiPanel"), { ssr: false });
+const LiquidGlassModal = dynamic(() => import("./components/LiquidGlassModal"), { ssr: false });
 const ScorePanel    = dynamic(() => import("./components/ScorePanel"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./components/NuviCompanion"), { ssr: false });
 const NuviLogo      = dynamic(() => import("./components/NuviLogo"), { ssr: false });
@@ -3913,6 +3915,9 @@ export default function App() {
   const [adjPrefill, setAdjPrefill] = useState("");
   const [kwLoading, setKwLoading] = useState(false);
   const [showPack, setShowPack]   = useState(false);
+  // L'ecran qui dit LAQUELLE des causes est la sienne. Les autres outils
+  // reparent chacun une chose ; celui-ci choisit lequel ouvrir.
+  const [showPourquoi, setShowPourquoi] = useState(false);
   const [packLoading, setPackLoading] = useState(false);
   const [packResult, setPackResult]   = useState(null);
   const [packMsgIdx, setPackMsgIdx]   = useState(0);
@@ -5402,6 +5407,7 @@ export default function App() {
     setShowCompare, setShowApplications, setShowMultiCV, setShowSettings,
     setShowActivity, setShowCustomize, setShowLive, setShowJobs,
     setShowOffer, setShowPack, setShowPos, setShowScore, setShowTruth,
+    setShowPourquoi,
     // Jamais ouvertes par cette fonction - seulement fermees. Le verdict
     // et le choix de format se posent sur un panneau a dessein, mais
     // survivaient a la navigation : on quittait le Score pour Match et le
@@ -9266,6 +9272,49 @@ export default function App() {
         />
         </Suspense>
       )}
+      {/* POURQUOI PERSONNE NE REPOND
+          Le seul ecran qui ne repare rien : il dit lequel des autres ouvrir.
+          Le verdict vient de lib/pourquoiPasDentretien.js, le bouton de sortie
+          mene a l'outil qui traite cette cause-la. */}
+      {showPourquoi && (
+        <Suspense fallback={null}>
+        <LiquidGlassModal
+          open={showPourquoi}
+          onClose={() => setShowPourquoi(false)}
+          width={640}
+          title={T.pq_titre}
+        >
+          <PourquoiPanel
+            cv={cv}
+            versions={versions}
+            T={T}
+            locale={locale}
+            apiKey={apiKey}
+            notify={notify}
+            aiCall={aiCall}
+            parseJSON={parseJSON}
+            onAction={(cause) => {
+              // Chaque cause a son outil. C'est tout l'interet de l'ecran :
+              // il ne conclut pas dans le vide, il ouvre la suite.
+              setShowPourquoi(false);
+              if (cause === "niveau" || cause === "ciblage") {
+                ouvrirSeul(setShowPos);
+              } else if (cause === "mots_cles") {
+                ouvrirSeul(setShowOffer);
+              } else if (cause === "ailleurs") {
+                setNavSection("tracking");
+                ouvrirSeul(setShowApplications);
+              } else {
+                // "pas_assez" : rien a ouvrir, il faut coller une annonce de
+                // plus. On laisse l'ecran ouvert.
+                setShowPourquoi(true);
+              }
+            }}
+          />
+        </LiquidGlassModal>
+        </Suspense>
+      )}
+
       {showPack && (
         <Suspense fallback={null}>
         <ApplicationPackModal
@@ -9672,6 +9721,8 @@ export default function App() {
               } else if (key === "adjust") {
                 // Ouvre l'AdjustModal (chat-style avec Nuvi)
                 ouvrirSeul(setShowAdjust);
+              } else if (key === "pourquoi") {
+                ouvrirSeul(setShowPourquoi);
               } else if (key === "jobs") {
                 ouvrirSeul(setShowJobs);
               } else if (key === "target") {

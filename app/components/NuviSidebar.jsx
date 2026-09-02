@@ -82,6 +82,7 @@ export default function NuviSidebar({
   const encreItem = {
     home: CoralText, coach: PurpleText, edit: CoralText, adjust: PurpleText,
     jobs: CoralText, target: CoralText, pack: PurpleText, live: MagentaText,
+    pourquoi: CoralText,
     audits: PurpleText, cvs: CoralText, design: CoralText, tracking: CoralText,
     settings: InkMuted,
   };
@@ -106,6 +107,7 @@ export default function NuviSidebar({
     fr: {
       home: "Accueil", coach: "Coach", edit: "Editer", adjust: "Ajuster",
       jobs: "Trouver un poste", target: "Match offre", pack: "Pack candidature",
+      pourquoi: "Pourquoi personne ne repond",
       live: "Entretien live",
       audits: "Score & Audits", cvs: "Mes CV", design: "Design",
       tracking: "Candidatures", settings: "Reglages",
@@ -123,6 +125,7 @@ export default function NuviSidebar({
     en: {
       home: "Home", coach: "Coach", edit: "Edit", adjust: "Tweak",
       jobs: "Find a role", target: "Match", pack: "Application Pack",
+      pourquoi: "Why nobody answers",
       live: "Live interview",
       audits: "Score & Audits", cvs: "My CVs", design: "Design",
       tracking: "Applications", settings: "Settings",
@@ -183,6 +186,7 @@ export default function NuviSidebar({
     { key: "coach",    label: L.coach,    hasSub: false },
     { key: "edit",     label: L.edit,     hasSub: true  },
     { key: "adjust",   label: L.adjust,   hasSub: false },
+    { key: "pourquoi", label: L.pourquoi, hasSub: false },
     { key: "jobs",     label: L.jobs,     hasSub: false },
     { key: "target",   label: L.target,   hasSub: false },
     { key: "pack",     label: L.pack,     hasSub: false },

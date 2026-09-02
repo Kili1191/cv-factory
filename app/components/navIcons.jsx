@@ -55,6 +55,9 @@ export const NAV_TEINTES = {
 };
 
 export const NAV_ICONS = {
+    // Une loupe sur un point d'interrogation : on cherche la cause, on ne
+    // repare pas encore.
+    pourquoi: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/><path d="M9.4 9a1.8 1.8 0 1 1 2.3 2.2c-.5.2-.8.6-.8 1.1v.4"/><path d="M11 15.2h.01"/></svg>),
     // Trois entrees n'existent que dans le tiroir du telephone : elles
     // n'avaient donc aucun dessin nulle part.
     design: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="9.5" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.5" cy="9" r="1.1" fill="currentColor" stroke="none"/><circle cx="16" cy="14" r="1.1" fill="currentColor" stroke="none"/></svg>),

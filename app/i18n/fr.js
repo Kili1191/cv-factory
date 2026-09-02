@@ -855,6 +855,45 @@ const FR_T = {
   cust_suggest_why:"Pourquoi cette combinaison",
   cust_suggest_adopt:"Adopter ce style",
   cust_adopted:"Style applique",
+
+  // POURQUOI TES CANDIDATURES NE DONNENT RIEN
+  //
+  // Le verdict se calcule dans lib/pourquoiPasDentretien.js. Ces textes ne
+  // font que le dire : une phrase par cause, plus la suite a donner. Chaque
+  // cause mene a un outil different, et c'est tout l'interet de l'ecran.
+  pq_titre:"Pourquoi personne ne repond",
+  pq_intro:"Colle trois annonces auxquelles tu as postule sans reponse. Nuvi les lit avec ton parcours et te dit ce qui bloque vraiment.",
+  pq_placeholder:"Colle l'annonce ici",
+  pq_ajouter:"Ajouter une annonce",
+  pq_lancer:"Dis-moi ce qui bloque",
+  pq_encours:"Nuvi lit tes annonces...",
+  pq_manque_cv:"Charge d'abord ton CV",
+  pq_manque_annonces:"Il en faut au moins trois : sur deux, un ecart peut venir des annonces.",
+  pq_sur:"sur",
+  pq_annonces_lues:"annonces lues",
+  pq_correspondance:"correspondance mediane",
+  pq_revoir:"Regarde surtout",
+  pq_suite:"La suite",
+
+  pq_pas_assez_titre:"Pas encore assez pour se prononcer",
+  pq_pas_assez_quoi:"Deux annonces ne font pas une tendance : un ecart peut venir des offres elles-memes. A partir de trois, ce qui se repete veut dire quelque chose.",
+  pq_pas_assez_action:"Ajouter une annonce",
+
+  pq_niveau_titre:"Tu vises au-dessus de ce que ton CV prouve",
+  pq_niveau_quoi:"Ces annonces demandent plus d'anciennete ou de responsabilite que ce que ton parcours montre aujourd'hui. Ce n'est pas ton CV qui est mal ecrit, c'est la marche qui est trop haute.",
+  pq_niveau_action:"Trouver le bon angle",
+
+  pq_ciblage_titre:"Ce ne sont pas les bons postes",
+  pq_ciblage_quoi:"La moitie de ce que demandent ces annonces n'existe nulle part dans ton parcours. Aucune reecriture n'y changera quoi que ce soit : on ne reformule pas ce qu'on n'a pas fait.",
+  pq_ciblage_action:"Voir les postes qui te vont",
+
+  pq_mots_titre:"Les bons postes, mais il manque toujours la meme chose",
+  pq_mots_quoi:"Ton parcours correspond a ces annonces. La meme exigence manque a chaque fois : si tu l'as deja faite sans l'ecrire, elle doit apparaitre.",
+  pq_mots_action:"Ajouter ce qui manque",
+
+  pq_ailleurs_titre:"Ton CV n'est pas le probleme",
+  pq_ailleurs_quoi:"Bon niveau, bons postes, rien qui manque deux fois. Ce qui reste ne se lit pas dans une annonce : le nombre d'envois, le canal, la relance. Continuer a reecrire ne changera rien.",
+  pq_ailleurs_action:"Suivre mes candidatures",
 };
 
 export default FR_T;

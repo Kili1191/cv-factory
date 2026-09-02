@@ -238,3 +238,49 @@ export const SCHEMA_VERITE = {
   },
   required: ["issues", "overall_verdict"],
 };
+
+// POURQUOI LES CANDIDATURES NE DONNENT RIEN
+//
+// Ce schema ne demande PAS de diagnostic. Il demande des lectures : pour
+// chaque annonce, la part des exigences que le parcours couvre deja, si
+// l'annonce demande au-dessus ou en dessous de ce parcours, et ce qui manque.
+// Un modele est bon a ca.
+//
+// Le verdict, lui, se calcule dans lib/pourquoiPasDentretien.js, en code
+// ordinaire. Trois raisons : il se teste sur des entrees fixes sans appel
+// paye, il se relit par quelqu'un qui veut savoir pourquoi on lui a dit ca,
+// et il ne derive pas. Un modele a qui l'on demande un diagnostic rend
+// volontiers deux diagnostics differents sur la meme matiere.
+//
+// "niveau" reste une chaine libre plutot qu'un enum : une valeur refusee par
+// l'API ferait echouer l'appel entier, ce qui est pire que pas de contrainte.
+// La consigne demande trois mots precis et le code retombe sur "niveau" pour
+// tout le reste.
+export const SCHEMA_DIAGNOSTIC = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    annonces: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          titre: { type: "string" },
+          entreprise: { type: "string" },
+          // La part des exigences de l'annonce que le parcours couvre, sur 100.
+          score: { type: "number" },
+          // "dessous", "niveau" ou "dessus" : ce que l'annonce demande par
+          // rapport a ce que le parcours montre.
+          niveau: { type: "string" },
+          // Les exigences de l'annonce qu'on ne retrouve nulle part dans le
+          // parcours. C'est leur repetition d'une annonce a l'autre qui fait
+          // le motif, pas leur presence dans une seule.
+          manques: { type: "array", items: { type: "string" } },
+        },
+        required: ["titre", "entreprise", "score", "niveau", "manques"],
+      },
+    },
+  },
+  required: ["annonces"],
+};
