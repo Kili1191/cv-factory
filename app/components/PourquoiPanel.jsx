@@ -115,10 +115,21 @@ export default function PourquoiPanel({
   return (
     <div data-nuvi-pourquoi="1" style={{
       fontFamily: Sans, color: Ink,
-      // Le texte se pose sur une surface a lui. Voir le commentaire en tete
-      // de fichier : la modale est en verre, et ce qui vit derriere remontait
-      // au travers jusqu'a rendre l'introduction illisible.
-      background: Paper, borderRadius: RadiusMd, padding: 18,
+      // LE VERRE, MAIS PAS AU PRIX DE LA LECTURE
+      //
+      // Pose sur le verre nu, le texte devenait illisible : le CV qui vit
+      // derriere la modale remontait au travers, et l'introduction se lisait
+      // par-dessus "PRODUCT MANAGER" en gris sur gris.
+      //
+      // La reponse de la maison est la carte de verre : translucide ET
+      // floutee. Le flou est ce qui compte, il detruit le texte du dessous au
+      // lieu de le laisser concurrencer le notre. L'opacite est celle mesuree
+      // plus bas, pas celle du repli de la modale : a 0,5 sur un CV sombre le
+      // fond tombe vers un gris moyen et l'encre passe sous 4,5:1.
+      background: "var(--nuvi-glass-card, rgba(255,255,255,0.5))",
+      backdropFilter: "var(--nuvi-glass-card-blur, blur(20px) saturate(180%))",
+      WebkitBackdropFilter: "var(--nuvi-glass-card-blur, blur(20px) saturate(180%))",
+      borderRadius: RadiusMd, padding: 18,
     }}>
       <p style={{
         fontSize: 14, lineHeight: 1.55, color: InkMuted, margin: "0 0 20px",
