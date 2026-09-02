@@ -185,10 +185,24 @@ export default function NuviIntro({
     onSkip && onSkip();
   }, [onSkip]);
 
-  // Couleurs Nuvi
-  const Ink = "#0f0f12";
-  const Cream = "#faf8f3";
-  const Coral = "#d97757";
+  // TROIS COULEURS FIGEES, ET C'EST VOULU
+  //
+  // Cet ecran est un voile sombre a 85% avec des cartes claires posees dessus.
+  // Ses couleurs ne decrivent pas un theme, elles decrivent une scene : le
+  // clair est du texte SUR le voile, le sombre est du texte SUR la carte. Les
+  // brancher sur les jetons les ferait basculer en mode sombre, et le texte
+  // pose sur le voile deviendrait sombre sur sombre.
+  //
+  // Elles s'appelaient InkFixed, LightFixed et CoralFixed, exactement comme les jetons du
+  // produit, avec une valeur differente pour la premiere : #0f0f12 contre
+  // #0a0a0a. Meme nom, meme sens apparent, autre valeur, et aucune indication
+  // qu'il ne faut PAS les remplacer par les jetons. Le piege etait la, pas
+  // dans les couleurs.
+  //
+  // Le suffixe le dit maintenant : fige, delibere, ne suit pas le theme.
+  const InkFixed = "#0f0f12";
+  const LightFixed = "#faf8f3";
+  const CoralFixed = "#d97757";
 
   const companionSize = mob ? 80 : 110;
 
@@ -226,7 +240,7 @@ export default function NuviIntro({
           top: mob ? 14 : 24,
           right: mob ? 14 : 24,
           background: "rgba(255,255,255,0.12)",
-          color: Cream,
+          color: LightFixed,
           border: "1px solid rgba(255,255,255,0.22)",
           borderRadius: 999,
           padding: mob ? "6px 14px" : "8px 18px",
@@ -289,7 +303,7 @@ export default function NuviIntro({
           <div
             key={step}
             style={{
-              background: Cream,
+              background: LightFixed,
               borderRadius: 18,
               padding: mob ? "20px 22px" : "24px 32px",
               maxWidth: mob ? "100%" : 540,
@@ -298,7 +312,7 @@ export default function NuviIntro({
               fontFamily: "'Inter', sans-serif",
               animation: "nuviBubbleIn 350ms cubic-bezier(0.22, 1, 0.36, 1)",
               position: "relative",
-              border: currentLine.isFeature ? "2px solid " + Coral : "none",
+              border: currentLine.isFeature ? "2px solid " + CoralFixed : "none",
             }}
           >
             <div style={{
@@ -308,14 +322,14 @@ export default function NuviIntro({
               transform: "translateX(-50%) rotate(45deg)",
               width: 18,
               height: 18,
-              background: Cream,
+              background: LightFixed,
               borderTopLeftRadius: 4,
-              borderLeft: currentLine.isFeature ? "2px solid " + Coral : "none",
-              borderTop: currentLine.isFeature ? "2px solid " + Coral : "none",
+              borderLeft: currentLine.isFeature ? "2px solid " + CoralFixed : "none",
+              borderTop: currentLine.isFeature ? "2px solid " + CoralFixed : "none",
             }} />
 
             <div style={{
-              color: Ink,
+              color: InkFixed,
               fontSize: mob ? 15 : 18,
               lineHeight: 1.5,
               fontWeight: 500,
@@ -334,7 +348,7 @@ export default function NuviIntro({
                   display: "inline-block",
                   width: 2,
                   height: mob ? 16 : 20,
-                  background: Ink,
+                  background: InkFixed,
                   marginLeft: 2,
                   animation: "nuviCursorBlink 700ms infinite",
                   verticalAlign: "middle",
@@ -359,7 +373,7 @@ export default function NuviIntro({
                   width: i === step ? 18 : 6,
                   height: 6,
                   borderRadius: 999,
-                  background: i <= step ? Cream : "rgba(255,255,255,0.3)",
+                  background: i <= step ? LightFixed : "rgba(255,255,255,0.3)",
                   transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "base"),
                 }} />
               ))}
