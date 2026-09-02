@@ -288,6 +288,18 @@ export default function AdjustModal({
         + '\n{"reply": "Je suis Nuvi...", "operations": []}';
 
       // [Fix] Passe le CV via options.cv (cache ephemeral)
+      // PAS DE SCHEMA ICI, ET C'EST VOULU
+      //
+      // La reponse est un JSON Patch RFC 6902, et "value" y transporte selon
+      // l'operation une chaine (le texte d'un bullet), un tableau (la liste
+      // des competences remplacee d'un bloc) ou un objet (une experience
+      // entiere). additionalProperties a false exige un type declare pour
+      // chaque propriete : figer "value" sur une chaine casserait les deux
+      // autres formes, et l'appel entier partirait en 400.
+      //
+      // C'est la meme raison qui laisse read_cv_image sans schema : il rend du
+      // texte brut. Un schema n'est pas un progres partout, seulement la ou la
+      // forme attendue est vraiment fixe.
       const txt = await aiCall(prompt, { cv, task_name: "adjust_modal_v3" });
       console.log("[AdjustModal v3 JSON Patch] aiCall response length:", (txt || "").length);
 

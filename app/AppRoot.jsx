@@ -1077,6 +1077,111 @@ const SCHEMA_CV_TRADUIT = {
   required: SCHEMA_CV.required.filter((k) => k !== "deduit"),
 };
 
+// FOUR MORE PROMPTS THAT WERE STILL ASKING FOR THEIR OWN SHAPE
+//
+// Same scaffolding as the interview family: "JSON UNIQUEMENT, sans markdown"
+// followed by a hand-copied template, and parseJSON stripping code fences
+// afterwards. Two of these are among the longest answers the product asks
+// for. The application pack alone wants a cover letter, five STAR answers,
+// three objections and a negotiation range in one response, which is exactly
+// where the prose request gives way.
+//
+// The output templates come out of the prompts at the same time. They cost
+// tokens on every call to describe what the schema now guarantees.
+
+const SCHEMA_STYLE = {
+  type: "object", additionalProperties: false,
+  properties: {
+    combos: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: {
+          name: chaine, accentId: chaine, sidebarId: chaine, paperId: chaine,
+          hfId: chaine, bfId: chaine, target: chaine, why: chaine,
+        },
+        required: ["name", "accentId", "sidebarId", "paperId", "hfId", "bfId",
+                   "target", "why"],
+      },
+    },
+  },
+  required: ["combos"],
+};
+
+const SCHEMA_PACK = {
+  type: "object", additionalProperties: false,
+  properties: {
+    cover_letter: chaine,
+    linkedin_message: chaine,
+    application_email: {
+      type: "object", additionalProperties: false,
+      properties: { subject: chaine, body: chaine },
+      required: ["subject", "body"],
+    },
+    interview_pitch: chaine,
+    star_answers: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { question: chaine, situation: chaine, task: chaine,
+                      action: chaine, result: chaine },
+        required: ["question", "situation", "task", "action", "result"],
+      },
+    },
+    follow_up: {
+      type: "object", additionalProperties: false,
+      properties: { subject: chaine, body: chaine },
+      required: ["subject", "body"],
+    },
+    objections: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { doubt: chaine, answer: chaine },
+        required: ["doubt", "answer"],
+      },
+    },
+    questions_to_ask: listeDeChaines,
+    negotiation: {
+      type: "object", additionalProperties: false,
+      properties: { range: chaine, argument: chaine, levers: listeDeChaines },
+      required: ["range", "argument", "levers"],
+    },
+  },
+  required: ["cover_letter", "linkedin_message", "application_email",
+             "interview_pitch", "star_answers", "follow_up", "objections",
+             "questions_to_ask", "negotiation"],
+};
+
+// THE FIVE REGISTERS, AND WHY THE BULLET SHAPE IS A SECOND ONE
+//
+// Rewriting a summary returns five versions. Rewriting a bullet returns the
+// same five plus the two fields that carry the missing measurement, and the
+// prompt asks for those two only when it placed a [?] marker. A schema has no
+// "only when", so they are always required and come back empty when there is
+// no marker. That costs nothing: BulletTransformer shows the question on
+// aUnTrou(), the marker itself, and never reads the fields without it.
+const REGISTRES = {
+  simple: chaine, pro: chaine, ats: chaine, premium: chaine, impact: chaine,
+};
+const CLES_REGISTRES = ["simple", "pro", "ats", "premium", "impact"];
+
+const SCHEMA_REGISTRES = {
+  type: "object", additionalProperties: false,
+  properties: { ...REGISTRES },
+  required: [...CLES_REGISTRES],
+};
+
+const SCHEMA_REGISTRES_BULLET = {
+  type: "object", additionalProperties: false,
+  properties: {
+    ...REGISTRES,
+    impact_question: chaine,
+    impact_choix: listeDeChaines,
+  },
+  required: [...CLES_REGISTRES, "impact_question", "impact_choix"],
+};
+
 async function aiCall(prompt, options = {}) {
   // Options: { cv, max_tokens, task_name, messages }
   // [Migration Opus 5] `temperature` a disparu : les parametres
@@ -1653,14 +1758,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
       +" Langue:"+(lang==="fr"?"Francais":"Anglais");
     if(parc.trim())p+=" Parcours:"+parc;
     if(offre.trim())p+=" Offre:"+offre;
-    p+=" JSON uniquement sans markdown:"
-      +'{"name":"","title":"","email":"","phone":"","location":"",'
-      +'"linkedin":"","summary":"","experience":[{"id":1,"title":"","company":"",'
-      +'"period":"","location":"","bullets":["","",""]}],'
-      +'"education":[{"id":1,"degree":"","school":"","period":""}],'
-      +'"skills":["","","","","","","",""],'
-      +'"languages":[{"lang":"","level":""}],"certifications":[""]}'
-      +" 3 exps chiffrees 2 formations 8 competences. " + NO_DASH;
+    p+=" 3 exps chiffrees 2 formations 8 competences. " + NO_DASH;
     onGen(p);
   };
 
@@ -2823,8 +2921,7 @@ function buildStylePrompt(cv, locale) {
     + "\n  -> JAMAIS deux foncees ensemble: bordeaux+ink, navy+midnight, forest+forest, plum+darkwine, teal+forest sont INTERDITS."
     + "\n  -> Si tu hesites, prefere accent gold (le plus polyvalent) sur sidebar fonce, ou bordeaux/navy sur sidebar cream."
     + "\n- Le 'why' doit etre 1 phrase concrete (max 25 mots) qui cite le secteur ou la culture cible et explique le choix typographique."
-    + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-    + '\n\n{"combos":[{"name":"Banque classique","accentId":"gold","sidebarId":"ink","paperId":"cream","hfId":"playfair","bfId":"lato","target":"banque privee, gestion patrimoine","why":"explication 1 phrase precise"}]}'
+    + "\n- " + NO_DASH + " " + langLine
   );
 }
 
@@ -3131,7 +3228,7 @@ function SuggestTab({ T, cv, locale, apiKey, notify, scope, writeCustom, onAdopt
     setLoading(true);
     setCombos([]);
     try {
-      const txt = await aiCall(buildStylePrompt(cv, locale));
+      const txt = await aiCall(buildStylePrompt(cv, locale), { schema: SCHEMA_STYLE, task_name: "style-combos" });
       const parsed = parseJSON(txt);
       const raw = Array.isArray(parsed && parsed.combos) ? parsed.combos : [];
       // Validation + enrichment : chaque combo passe par le filtre qui garantit
@@ -4700,7 +4797,7 @@ export default function App() {
     pushH();
     setLoad(true);
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "generate-cv" });
       const json = parseJSON(txt);
       setCVFn(() => normCV(json));
       notify(T.ok);
@@ -5593,9 +5690,9 @@ export default function App() {
       + "7. " + NO_DASH + "\n\n"
       + "MOTS-CLES A INTEGRER: " + kwList + "\n\n"
       + "CV:\n" + JSON.stringify(cv) + "\n\n"
-      + "Reponds UNIQUEMENT avec le CV modifie en JSON valide strict, sans markdown.";
+      + "CV modifie:";
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "integrate-keywords" });
       const json = parseJSON(txt);
       pushH();
       setCVFn(() => normCV(json, cv));
@@ -5654,46 +5751,10 @@ export default function App() {
       +"qui montrent qu'il a compris l'enjeu du poste. Aucune question dont la reponse est sur leur site.\n"
       +"- Negociation: fourchette realiste argumentee pour ce poste et ce marche, "
       +"plus les deux leviers non salariaux les plus credibles a demander.\n"
-      +"- " + NO_DASH + "\n"
-      +"- Reponds UNIQUEMENT en JSON valide strict, sans markdown.\n\n"
-      +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "")
-      +'JSON STRUCTURE:\n'
-      +'{\n'
-      +'  "cover_letter": "lettre complete avec sauts de ligne",\n'
-      +'  "linkedin_message": "message direct au recruteur",\n'
-      +'  "application_email": {\n'
-      +'    "subject": "objet specifique",\n'
-      +'    "body": "corps de l email"\n'
-      +'  },\n'
-      +'  "interview_pitch": "pitch 60 secondes",\n'
-      +'  "star_answers": [\n'
-      +'    {\n'
-      +'      "question": "question probable",\n'
-      +'      "situation": "contexte concret tire du CV",\n'
-      +'      "task": "ce qu il fallait accomplir",\n'
-      +'      "action": "action prise par le candidat",\n'
-      +'      "result": "resultat chiffre si possible"\n'
-      +'    }\n'
-      +'  ],\n'
-      +'  "follow_up": {\n'
-      +'    "subject": "objet de la relance",\n'
-      +'    "body": "corps de la relance, 80 mots max"\n'
-      +'  },\n'
-      +'  "objections": [\n'
-      +'    {\n'
-      +'      "doubt": "le doute du recruteur, formule franchement",\n'
-      +'      "answer": "la reponse honnete et courte du candidat"\n'
-      +'    }\n'
-      +'  ],\n'
-      +'  "questions_to_ask": ["question de fin d entretien"],\n'
-      +'  "negotiation": {\n'
-      +'    "range": "fourchette realiste",\n'
-      +'    "argument": "pourquoi cette fourchette, appuye sur le parcours",\n'
-      +'    "levers": ["levier non salarial"]\n'
-      +'  }\n'
-      +'}';
+      +"- " + NO_DASH + "\n\n"
+      +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "");
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_PACK, task_name: "application-pack" });
       const r = parseJSON(txt);
       setPackResult(r);
       if (typeof nuviTrigger === 'function') nuviTrigger('feature-completed');
@@ -7204,6 +7265,17 @@ export default function App() {
         }]
         : undefined;
 
+      // PAS DE SCHEMA ICI, ET C'EST VOULU
+      //
+      // Le coach repond en prose quand il n'a rien a modifier, et en JSON
+      // quand il propose des operations. La ligne d'apres accepte les deux :
+      // parsed.reply si le JSON tient, le texte brut sinon. Un schema
+      // obligerait le JSON a chaque tour et supprimerait la conversation.
+      //
+      // Meme sur le tour qui porte des operations, "value" transporte tantot
+      // une chaine, tantot un tableau de competences, tantot une experience
+      // entiere. additionalProperties a false demande un type declare : en
+      // figer un casserait les deux autres.
       const txt = await aiCall(invite, {
         cv, task_name: "coach_chat",
         ...(messagesAvecImage ? { messages: messagesAvecImage } : {}),
@@ -7651,17 +7723,10 @@ export default function App() {
           + "- Reste fidele au sens de la phrase d'origine.\n"
           + "- " + QUI_DECIDE + "\n"
           + "- Format : 2 a 3 phrases par version, entre 30 et 60 mots.\n"
-          + "- " + NO_DASH + "\n"
-          + "- JSON valide strict uniquement, sans markdown.\n\n"
-          + '{\n'
-          + '  "simple": "version sobre",\n'
-          + '  "pro": "version pro",\n'
-          + '  "ats": "version ats",\n'
-          + '  "premium": "version premium",\n'
-          + '  "impact": "version storytelling"\n'
-          + '}';
+          + "- " + NO_DASH + "\n";
       } else {
-        // Prompt bullet (inchange par rapport a l'existant).
+        // Prompt bullet : cinq registres, plus les deux champs qui portent la
+        // mesure manquante quand le modele a place un marqueur.
         p = "Tu es expert CV. On te donne UNE phrase de bullet d'experience professionnelle. "
           + "Tu dois generer 5 reformulations differentes, chacune dans un registre distinct, "
           + "en gardant la langue d'origine.\n\n"
@@ -7705,7 +7770,7 @@ export default function App() {
           + "deja presents dans la phrase originale. S'il n'y en a aucun, ecris la "
           + "phrase sous sa forme de resultat en placant le marqueur exact [?] a "
           + "l'endroit precis de la mesure, une seule fois.\n\n"
-          + "AVEC CE REGISTRE, ET SEULEMENT SI TU AS PLACE UN [?], AJOUTE DEUX CHAMPS :\n"
+          + "DEUX CHAMPS ACCOMPAGNENT CE REGISTRE :\n"
           // LA QUESTION N'EST PAS UNE REFORMULATION
           //
           // "en gardant la langue d'origine", plus haut, porte sur les cinq
@@ -7737,20 +7802,13 @@ export default function App() {
           + "comme une proposition et peut le changer. Un chiffre glisse dans la phrase "
           + "sans le dire est un chiffre invente.\n"
           + "- " + QUI_DECIDE + "\n"
+          + "- Sans [?] dans la phrase impact, impact_question est une chaine "
+          + "vide et impact_choix une liste vide. On ne pose pas une question "
+          + "dont la mesure est deja la.\n"
           + "- Maximum 18 mots par version.\n"
-          + "- " + NO_DASH + "\n"
-          + "- JSON valide strict uniquement.\n\n"
-          + '{\n'
-          + '  "simple": "version simple",\n'
-          + '  "pro": "version pro",\n'
-          + '  "ats": "version ats",\n'
-          + '  "premium": "version premium",\n'
-          + '  "impact": "version resultat, avec [?] si la mesure manque",\n'
-          + '  "impact_question": "la question a poser, si [?] present",\n'
-          + '  "impact_choix": ["valeur 1", "valeur 2", "valeur 3"]\n'
-          + '}';
+          + "- " + NO_DASH + "\n";
       }
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: kind === "summary" ? SCHEMA_REGISTRES : SCHEMA_REGISTRES_BULLET, task_name: "text-registers" });
       const r = parseJSON(txt);
       setBt(s => s ? { ...s, levels: r, loading: false } : null);
     } catch (err) {
