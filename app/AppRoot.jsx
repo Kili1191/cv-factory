@@ -1073,6 +1073,138 @@ const SCHEMA_VERITE = {
   required: ["issues", "overall_verdict"],
 };
 
+// LA FAMILLE ENTRETIEN, HUIT PROMPTS QUI IMPLORAIENT LEUR FORME
+//
+// Tous finissaient par "FORMAT JSON STRICT" suivi d'un gabarit de sortie, et
+// parseJSON retirait les blocs de code a la main. Ce sont justement les
+// fonctionnalites les plus longues a produire - dix questions d'entretien avec
+// leur reponse en quatre temps, un debrief complet, une fiche de preparation -
+// donc celles ou l'ancienne methode lache le plus souvent. Et elles lachent en
+// silence : "reponse illisible", et l'ecran reste vide.
+const chaine = { type: "string" };
+const listeDeChaines = { type: "array", items: { type: "string" } };
+
+const SCHEMA_ENTRETIEN = {
+  type: "object", additionalProperties: false,
+  properties: {
+    country: chaine, sector: chaine, level: chaine,
+    total_questions: { type: "number" },
+    questions: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: {
+          category: chaine, question: chaine, why: chaine,
+          answer: {
+            type: "object", additionalProperties: false,
+            properties: { situation: chaine, task: chaine, action: chaine, result: chaine },
+            required: ["situation", "task", "action", "result"],
+          },
+        },
+        required: ["category", "question", "why", "answer"],
+      },
+    },
+  },
+  required: ["country", "sector", "level", "total_questions", "questions"],
+};
+
+const SCHEMA_PREUVES = {
+  type: "object", additionalProperties: false,
+  properties: {
+    lignes: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { ligne: chaine, probe: chaine, prepare: chaine, faible: chaine },
+        required: ["ligne", "probe", "prepare", "faible"],
+      },
+    },
+  },
+  required: ["lignes"],
+};
+
+const SCHEMA_QUESTIONS_RECRUTEUR = {
+  type: "object", additionalProperties: false,
+  properties: {
+    questions: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { category: chaine, question: chaine, why: chaine, best_for: chaine },
+        required: ["category", "question", "why", "best_for"],
+      },
+    },
+  },
+  required: ["questions"],
+};
+
+const SCHEMA_EMAIL = {
+  type: "object", additionalProperties: false,
+  properties: { subject: chaine, body: chaine },
+  required: ["subject", "body"],
+};
+
+const SCHEMA_DEBRIEF = {
+  type: "object", additionalProperties: false,
+  properties: {
+    strengths: listeDeChaines,
+    improvements: listeDeChaines,
+    red_flags: listeDeChaines,
+    verdict: {
+      type: "object", additionalProperties: false,
+      properties: { label: chaine, why: chaine },
+      required: ["label", "why"],
+    },
+    next_steps: listeDeChaines,
+  },
+  required: ["strengths", "improvements", "red_flags", "verdict", "next_steps"],
+};
+
+const SCHEMA_FICHE = {
+  type: "object", additionalProperties: false,
+  properties: {
+    key_messages: listeDeChaines,
+    top_questions: listeDeChaines,
+    checklist: listeDeChaines,
+  },
+  required: ["key_messages", "top_questions", "checklist"],
+};
+
+const SCHEMA_MULTICV = {
+  type: "object", additionalProperties: false,
+  properties: {
+    recommended_id: { type: "number" },
+    recommended_score: { type: "number" },
+    why: chaine,
+    alternatives: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { id: { type: "number" }, score: { type: "number" }, comment: chaine },
+        required: ["id", "score", "comment"],
+      },
+    },
+  },
+  required: ["recommended_id", "recommended_score", "why", "alternatives"],
+};
+
+const SCHEMA_LINKEDIN = {
+  type: "object", additionalProperties: false,
+  properties: {
+    headline: chaine,
+    about: chaine,
+    experiences: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false,
+        properties: { role: chaine, company: chaine, description: chaine },
+        required: ["role", "company", "description"],
+      },
+    },
+  },
+  required: ["headline", "about", "experiences"],
+};
+
 // TRADUIRE N'INVENTE RIEN, DONC RIEN A DECLARER
 //
 // La meme forme, moins "deduit" : ce champ sert a signaler ce que le modele a
@@ -6366,16 +6498,12 @@ export default function App() {
         + "\n- Categories possibles : Technique, Comportementale, Cas pratique, Culture, Motivation."
         + roundDirective(false)
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"country":"France","sector":"Banque","level":"Senior",'
-        + '"total_questions":10,"questions":['
-        + '{"category":"Technique","question":"Question concrete posee par recruteur",'
-        + '"why":"pourquoi le recruteur la pose","answer":{'
-        + '"situation":"contexte concret tire du parcours","task":"objectif a atteindre",'
-        + '"action":"actions concretes prises","result":"resultat chiffre ou qualitatif"}}'
-        + ']}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_ENTRETIEN, task_name: "interview-prep" });
       const parsed = parseJSON(txt);
       setInterviewResult(parsed);
       logActivity(ACT.INTERVIEW_RUN, locale==="en" ? "Interview prep run" : "Preparation entretien lancee");
@@ -6552,12 +6680,12 @@ export default function App() {
         + " interrogatoire. Elles doivent sonner vrai."
         + "\n- " + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"lignes":[{"ligne":"la ligne du CV, recopiee",'
-        + '"probe":"la question du recruteur","prepare":"ce qu il faut avoir pret",'
-        + '"faible":"par ou ca casse"}]}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_PREUVES, task_name: "interview-proof" });
       const parsed = parseJSON(txt);
       setProofResult(parsed && Array.isArray(parsed.lignes) ? parsed : { lignes: [] });
     } catch (err) {
@@ -6612,13 +6740,12 @@ export default function App() {
         + "\n- Eviter les questions qui peuvent gener (salaire au 1er entretien, conges des le 1er rdv)."
         + roundDirective(true)
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"questions":['
-        + '{"category":"role","question":"...","why":"...","best_for":"manager"},'
-        + '{"category":"team","question":"...","why":"...","best_for":"RH+manager"}'
-        + ']}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_QUESTIONS_RECRUTEUR, task_name: "ask-recruiter" });
       const parsed = parseJSON(txt);
       setAskRecruiterResult(parsed);
     } catch (err) {
@@ -6694,10 +6821,12 @@ export default function App() {
         + "\n- Ne PAS poser de questions auxquelles le recruteur a deja repondu."
         + "\n- Ne PAS demander quand sera la decision (signe d'impatience)."
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"subject":"Sujet court professionnel","body":"Bonjour ...\\n\\nCorps complet de l\'email avec sauts de ligne via \\\\n.\\n\\nCordialement,\\n[Prenom]"}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_EMAIL, task_name: "followup-email" });
       const parsed = parseJSON(txt);
       setEmailResult(parsed);
     } catch (err) {
@@ -6763,14 +6892,12 @@ export default function App() {
         + "\n- Chaque point est ancre dans un detail du recap."
         + "\n" + QUI_DECIDE
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"strengths":["force 1 specifique","force 2","force 3"],'
-        + '"improvements":["axe 1 concret","axe 2"],'
-        + '"red_flags":["flag 1 si present","flag 2 si present"],'
-        + '"verdict":{"label":"passage probable|hesitation|refus probable","why":"explication 1 phrase"},'
-        + '"next_steps":["action 1","action 2","action 3"]}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_DEBRIEF, task_name: "interview-debrief" });
       const parsed = parseJSON(txt);
       setDebriefResult(parsed);
     } catch (err) {
@@ -6823,12 +6950,12 @@ export default function App() {
         + "\n- Les questions sont specifiques au profil et au round."
         + "\n- La checklist est PRATIQUE (logistique, pas conseil moral)."
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"key_messages":["msg 1","msg 2","msg 3","msg 4","msg 5"],'
-        + '"top_questions":["question 1","question 2","question 3"],'
-        + '"checklist":["check 1","check 2","check 3","check 4","check 5"]}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_FICHE, task_name: "cheat-sheet" });
       const parsed = parseJSON(txt);
       setCheatSheetResult(parsed);
     } catch (err) {
@@ -7420,16 +7547,17 @@ export default function App() {
         + "\n- Ton informel mais credible."
         + "\n- Mots-cles ATS pertinents."
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown, sans backticks."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"headline":"...","about":"para1\\n\\npara2\\n\\npara3\\n\\npara4",'
-        + '"experiences":[{"role":"...","company":"...","description":"bullet 1\\n\\nbullet 2\\n\\nbullet 3"}]}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
       const { value: parsed } = await cachedAiCall(
         "linkedin",
         cv,
         { locale },
         async () => {
-          const txt = await aiCall(p, { cv, task_name: "linkedin" });
+          const txt = await aiCall(p, { cv, schema: SCHEMA_LINKEDIN, task_name: "linkedin" });
           return parseJSON(txt);
         }
       );
@@ -7601,12 +7729,12 @@ export default function App() {
         + "\n\nREGLES:"
         + "\n- Sois honnete et tranchant."
         + "\n- " + NO_DASH + " " + langLine + "JSON UNIQUEMENT, sans markdown."
-        + "\n\nFORMAT JSON STRICT:"
-        + '\n{"recommended_id":12345,"recommended_score":85,'
-        + '"why":"explication 2-3 phrases",'
-        + '"alternatives":[{"id":67890,"score":62,"comment":"..."}]}';
+        // Forme garantie par le schema : le gabarit qui suivait ici
+        // decrivait ce que l'API impose desormais, en jetons payes a
+        // chaque appel.
+        ;
 
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_MULTICV, task_name: "multi-cv" });
       const parsed = parseJSON(txt);
       // Coerce ids to numbers (au cas où l'IA les retourne en string)
       if (parsed) {
