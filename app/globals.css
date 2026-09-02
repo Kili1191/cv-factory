@@ -97,10 +97,47 @@ html, body {
   transition: background-color 250ms ease, color 250ms ease;
 }
 
-/* ===== Force le CV preview a rester clair en dark mode ===== */
-/* Le CV preview garde son aspect cream/gold pour rester imprimable et professionnel */
+/* LE CV NE SUIT JAMAIS LE THEME, PARCE QUE C'EST LUI QUI PART EN PDF
+ *
+ * Cette regle existait deja, et ne s'appliquait a rien.
+ *
+ * Elle visait .cv-preview-container et [data-cv-preview="true"] : ni l'un ni
+ * l'autre n'apparait nulle part dans app/. Le document porte data-cvf="cv", et
+ * lui seul. La protection etait donc du CSS mort depuis le debut - ecrite
+ * juste, branchee sur rien, et personne ne pouvait s'en apercevoir puisque
+ * l'ecran, lui, avait l'air correct.
+ *
+ * Ce qui se passait vraiment : en mode sombre, le conteneur du document
+ * passait a rgb(26,26,28), mesure. Ses enfants le recouvrent, donc rien ne se
+ * voit a l'ecran. Mais l'export etire la feuille a 297mm quand le contenu est
+ * plus court : le fond redevient alors visible, et il finit dans le PDF que
+ * lit le recruteur. Quelqu'un qui met son CV a jour le soir enverrait une page
+ * a bande noire sans jamais le savoir.
+ *
+ * On declare donc les valeurs claires SUR le document lui-meme, dans les deux
+ * themes. Le sous-arbre entier ignore le theme par construction, pas par
+ * vigilance. Les anciens selecteurs restent : ils ne coutent rien et
+ * couvriront un futur gabarit qui les porterait.
+ */
+[data-cvf="cv"],
+body.cvf-dark [data-cvf="cv"],
+[data-theme="dark"] [data-cvf="cv"],
 [data-theme="dark"] .cv-preview-container,
 [data-theme="dark"] [data-cv-preview="true"] {
+  color-scheme: light;
+  /* LA COULEUR DU TEXTE SE POSE ICI, PAS SEULEMENT LES JETONS
+     body.cvf-dark [data-cvf="app"] impose color:#f5f1e8 !important, et le
+     document est un descendant : il HERITAIT donc du texte clair, jetons
+     corriges ou non. Mesure : rgb(10,10,10) en clair, rgb(245,241,232) en
+     sombre, sur la feuille creme - donc illisible, et illisible dans le PDF.
+     Une declaration portee par l'element l'emporte toujours sur une valeur
+     heritee, importante ou pas : une ligne suffit, sans !important. Les
+     gabarits qui posent leur propre couleur - la colonne noire du modele par
+     defaut - gardent la leur, une declaration propre primant l'heritage. */
+  color: var(--nuvi-ink);
+  --nuvi-desk: #e6e2d8;
+  --nuvi-gray50: #fafaf9;
+  --nuvi-gray900: #292524;
   --nuvi-ink: #0a0a0a;
   --nuvi-ink-muted: #5a5a62;
   --nuvi-cream: #faf8f3;
