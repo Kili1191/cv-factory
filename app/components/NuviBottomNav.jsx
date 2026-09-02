@@ -4,7 +4,7 @@ import { useInstallState } from "./InstallAppSheet";
 
 // Les jetons viennent du systeme, ils ne sont plus redeclares ici.
 import { Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral } from "./tokens";
-import { NAV_ICONS } from "./navIcons";
+import { NAV_ICONS, NAV_TEINTES } from "./navIcons";
 /**
  * NuviBottomNav - Bottom navigation mobile (5 icônes)
  *
@@ -461,7 +461,10 @@ export default function NuviBottomNav({
                   justifyContent: "center",
                   width: 22,
                   height: 22,
-                  color: item.danger ? "#c0392b" : InkMuted,
+                  // Meme grille de couleurs que la barre laterale : les deux
+                  // navigations doivent se ressembler, sinon on reapprend.
+                  color: item.danger ? "#c0392b"
+                    : (NAV_TEINTES[item.key] || InkMuted),
                   flexShrink: 0,
                 }}>
                   {/* Les cinq icones de la barre sont dessinees plus grand ici

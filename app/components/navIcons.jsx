@@ -17,6 +17,43 @@
 // sont celles des deux navigations - entrees principales et sous-entrees
 // melangees, puisque le tiroir du telephone met les deux au meme niveau.
 
+// LA COULEUR SERT A RANGER, PAS A DECORER
+//
+// La barre etait grise d'un bout a l'autre : quatorze entrees de la meme
+// teinte, ou l'on relit chaque libelle a chaque fois. Quatre familles, quatre
+// couleurs, et l'oeil apprend ou vont les choses avant de lire.
+//
+//   corail   le document lui-meme : l'accueil, l'editeur, les gabarits
+//   violet   ce qui reflechit a ta place : coach, ajustements, audits
+//   vert     chercher et postuler : offres, correspondance, candidatures
+//   magenta  le direct : l'assistance pendant l'entretien
+//
+// Ce sont les encres calibrees, pas les couleurs d'aplat : sous
+// data-nuvi-sombre elles basculent vers leurs versions claires, mesurees
+// au-dessus de 4,5:1 sur le rail. Une icone n'a besoin que de 3:1, donc la
+// marge est confortable, et le libelle reste neutre - c'est lui qu'on lit.
+export const NAV_TEINTES = {
+  home: "var(--nuvi-coral-text)",     edit: "var(--nuvi-coral-text)",
+  cvs: "var(--nuvi-coral-text)",      design: "var(--nuvi-coral-text)",
+  id: "var(--nuvi-coral-text)",       exp: "var(--nuvi-coral-text)",
+  edu: "var(--nuvi-coral-text)",      sk: "var(--nuvi-coral-text)",
+  list: "var(--nuvi-coral-text)",     versions: "var(--nuvi-coral-text)",
+  compare: "var(--nuvi-coral-text)",  templates: "var(--nuvi-coral-text)",
+  custom: "var(--nuvi-coral-text)",   translate: "var(--nuvi-coral-text)",
+  linkedin: "var(--nuvi-coral-text)",
+
+  coach: "var(--nuvi-purple-text)",   adjust: "var(--nuvi-purple-text)",
+  audits: "var(--nuvi-purple-text)",  pack: "var(--nuvi-purple-text)",
+  score: "var(--nuvi-purple-text)",   pos: "var(--nuvi-purple-text)",
+  truth: "var(--nuvi-purple-text)",   gap: "var(--nuvi-purple-text)",
+  ats: "var(--nuvi-purple-text)",     activity: "var(--nuvi-purple-text)",
+
+  jobs: "var(--nuvi-green-text)",     target: "var(--nuvi-green-text)",
+  tracking: "var(--nuvi-green-text)",
+
+  live: "var(--nuvi-magenta-text)",   interview: "var(--nuvi-magenta-text)",
+};
+
 export const NAV_ICONS = {
     // Trois entrees n'existent que dans le tiroir du telephone : elles
     // n'avaient donc aucun dessin nulle part.

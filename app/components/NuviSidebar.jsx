@@ -11,7 +11,7 @@ const RAIL = 244;
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const DesignPaletteIcon = dynamic(() => import("./DesignPaletteIcon"), { ssr: false });
 const AccountBadge = dynamic(() => import("./AccountBadge"), { ssr: false });
-import { NAV_ICONS } from "./navIcons";
+import { NAV_ICONS, NAV_TEINTES } from "./navIcons";
 
 export default function NuviSidebar({
   // Vrai des qu'un panneau est ouvert : le survol n'ouvre plus de
@@ -244,7 +244,7 @@ export default function NuviSidebar({
   const survol = (accent, encre) => ({
     onMouseEnter: (e) => {
       if (e.currentTarget.getAttribute("data-nv-actif") === "1") return;
-      e.currentTarget.style.background = accent + "0d";
+      e.currentTarget.style.background = accent + "14";
       e.currentTarget.style.color = encre || accent;
     },
     onMouseLeave: (e) => {
@@ -287,10 +287,15 @@ export default function NuviSidebar({
           aria-current={isActive ? "page" : undefined}
           aria-expanded={item.hasSub ? (ouvert ? "true" : "false") : undefined}
         >
+          {/* L'ICONE GARDE SA COULEUR, LE LIBELLE NON
+              Colorer les deux donnerait quatorze lignes bariolees, illisibles.
+              L'icone porte la famille, le mot porte le sens : on repere la
+              zone a la couleur, on lit ensuite. Sur l'entree active le libelle
+              rejoint la teinte, ce qui suffit a dire ou l'on est. */}
           <span style={{
             display: "flex", alignItems: "center", justifyContent: "center",
             width: 20, height: 20, flexShrink: 0, position: "relative",
-            color: "inherit",
+            color: NAV_TEINTES[item.key] || "inherit",
           }}>
             {Icons[item.key]}
             {hasNotification[item.key] && pastille}
@@ -331,7 +336,10 @@ export default function NuviSidebar({
                   fontSize: 12.5, fontWeight: 500,
                   transition: Trans(["background", "color"], "fast"),
                 }}>
-                <span style={{ display: "flex", width: 14, height: 14, flexShrink: 0, color: "inherit" }}>
+                <span style={{
+                  display: "flex", width: 14, height: 14, flexShrink: 0,
+                  color: NAV_TEINTES[sub.key] || "inherit",
+                }}>
                   {sub.icon}
                 </span>
                 <span style={{ flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
