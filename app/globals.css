@@ -594,6 +594,40 @@ body.cvf-dark.nuvi-grain::after {
 }
 
 /* ============================================================
+ * LE DOCUMENT SE DEPLACE MOINS VITE QUE LE TEXTE
+ * ============================================================
+ *
+ * Deux colonnes qui montent exactement a la meme vitesse forment un bloc
+ * plat : rien ne dit lequel est devant. Un ecart de quelques dizaines de
+ * pixels sur la traversee suffit a poser une profondeur, et c est ce qui
+ * separe une page qui defile d une page qui bouge.
+ *
+ * Le decalage est VOLONTAIREMENT petit. Un parallaxe qui se remarque devient
+ * un effet ; celui-ci se sent sans se voir, et surtout il ne desaligne jamais
+ * assez le document de son titre pour qu on les lise separement.
+ *
+ * Meme regle de repli que partout ici : sans animation-timeline, aucune
+ * transformation, les deux colonnes restent alignees. Rien ne disparait.
+ */
+@keyframes nuviProfondeur {
+  from { transform: translateY(26px); }
+  to   { transform: translateY(-26px); }
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) and (min-width: 900px) {
+    .nuvi-duo-doc > *:last-child {
+      animation: nuviProfondeur linear both;
+      animation-timeline: view();
+      /* La traversee entiere du bloc : le decalage est continu, il ne
+         demarre ni ne s arrete au milieu de l ecran. */
+      animation-range: cover;
+      will-change: transform;
+    }
+  }
+}
+
+/* ============================================================
  * LES TITRES S ASSEMBLENT MOT A MOT
  * ============================================================
  *
