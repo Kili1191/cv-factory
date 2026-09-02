@@ -50,8 +50,20 @@ function rgb(s) {
   return m && m.length >= 3 ? m.slice(0, 3).map(Number) : null;
 }
 
+// LE TELEPHONE FAISAIT PARTIE DE L'ANGLE MORT
+//
+// Ce balayage ne regardait que 1440x900. Or Nuvi sert des gens qui postulent
+// depuis leur telephone, entre deux services, et l'ecran mobile a sa propre
+// navigation, ses propres tailles et ses propres fonds : rien de ce qui est
+// verifie sur grand ecran ne le couvre. La barre du bas est passee sombre
+// sans qu'aucun test ne puisse le contredire.
+const TAILLES = [
+  { nom: "bureau", width: 1440, height: 900 },
+  { nom: "telephone", width: 390, height: 844 },
+];
+
 const ECRANS = [
-  { nom: "app", ouvrir: async () => {} },
+  { nom: "app", ouvrir: async () => {}, partout: true },
   { nom: "coach", ouvrir: async (p) => {
       await p.locator('[data-nv-nav="coach"]').click(); await p.waitForTimeout(1500); } },
   { nom: "editeur", ouvrir: async (p) => {
@@ -68,8 +80,12 @@ export async function run() {
 
   try {
     for (const theme of ["clair", "sombre"]) {
-      for (const ecran of ECRANS) {
-        const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+      for (const taille of TAILLES) {
+        for (const ecran of ECRANS) {
+        // Les panneaux s'ouvrent depuis la barre laterale, qui n'existe pas
+        // sur telephone : seul l'ecran principal s'y verifie.
+        if (taille.nom === "telephone" && !ecran.partout) continue;
+        const ctx = await browser.newContext({ viewport: { width: taille.width, height: taille.height } });
         const page = await ctx.newPage();
         await seedApp(page, SAMPLE_CV, { locale: "en" });
         if (theme === "sombre") {
@@ -79,7 +95,7 @@ export async function run() {
           });
           await page.waitForTimeout(500);
         }
-        await ecran.ouvrir(page);
+        if (taille.nom !== "telephone") await ecran.ouvrir(page);
 
         const releve = await page.evaluate(() => {
           const textes = [];
@@ -134,11 +150,11 @@ export async function run() {
           const seuil = t.gros ? 3 : 4.5;
           const r = contraste(c, f);
           if (r >= seuil) continue;
-          const cle = theme + "/" + ecran.nom + "/" + t.txt;
+          const cle = theme + "/" + taille.nom + "/" + ecran.nom + "/" + t.txt;
           if (vus.has(cle)) continue;
           vus.add(cle);
           failures.push(
-            theme + " / " + ecran.nom + ' : "' + t.txt + '" a un contraste de '
+            theme + " / " + taille.nom + " / " + ecran.nom + ' : "' + t.txt + '" a un contraste de '
             + r.toFixed(2) + ":1 (" + Math.round(t.px) + "px, minimum " + seuil
             + ":1) - " + t.couleur + " sur " + t.fond + "."
           );
@@ -147,19 +163,20 @@ export async function run() {
         // LE BALAYAGE DOIT AVOIR BALAYE
         if (releve.textes.length < 10) {
           failures.push(
-            theme + " / " + ecran.nom + " : seulement " + releve.textes.length
+            theme + " / " + taille.nom + " / " + ecran.nom + " : seulement " + releve.textes.length
             + " texte(s) mesurable(s). Ce balayage ne verifie plus l'ecran."
           );
         }
         // Et il ne doit pas s'exempter de la moitie de l'ecran.
         if (releve.ignores > releve.textes.length) {
           failures.push(
-            theme + " / " + ecran.nom + " : " + releve.ignores + " textes ignores "
+            theme + " / " + taille.nom + " / " + ecran.nom + " : " + releve.ignores + " textes ignores "
             + "pour " + releve.textes.length + " mesures. Les degrades avalent le "
             + "controle : il faudrait les mesurer autrement plutot que les sauter."
           );
         }
         await ctx.close();
+        }
       }
     }
   } catch (err) {

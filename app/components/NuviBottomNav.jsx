@@ -539,17 +539,25 @@ export default function NuviBottomNav({
         </div>
       )}
 
-      {/* Bottom nav */}
-      <nav style={{
+      {/* LE TELEPHONE SUIT L'ORDINATEUR, SINON CE SONT DEUX PRODUITS
+          La colonne de navigation est devenue sombre sur ordinateur. Laisser
+          la barre du bas en verre creme donnait un produit moderne sur grand
+          ecran et l'ancien sur telephone - et la moitie des gens que Nuvi sert
+          n'ouvriront jamais que le telephone.
+          data-nuvi-sombre fait ici exactement ce qu'il fait dans la barre
+          laterale : il redeclare les encres pour une surface sombre, donc les
+          libelles et l'entree active restent lisibles sans qu'on ait a
+          reprendre une seule couleur a la main. */}
+      <nav
+        data-nuvi-sombre="1"
+        style={{
         position: "fixed",
         bottom: 0,
         left: 0,
         right: 0,
         height: 70,
-        background: "var(--nuvi-glass-bg, " + Paper + ")",
-        WebkitBackdropFilter: "blur(28px) saturate(150%)",
-        backdropFilter: "blur(28px) saturate(150%)",
-        borderTop: "0.5px solid rgba(255,255,255,0.6)",
+        background: Paper,
+        borderTop: "1px solid rgba(245,241,232,.14)",
         display: "flex",
         alignItems: "stretch",
         zIndex: 80,

@@ -53,8 +53,6 @@ export default function NuviSidebar({
   // Une seule section reste ouverte a la fois : deux accordeons deplies
   // rendraient la liste plus longue que l'ecran.
   const [sectionOuverte, setSectionOuverte] = useState(null);
-  // Reste-t-il des entrees sous le bord ? Sert au degrade qui le dit.
-  const [resteEnBas, setResteEnBas] = useState(false);
 
 
   // Le tutoriel designait une entree en simulant un survol. Il n'y a plus de
@@ -443,32 +441,31 @@ export default function NuviSidebar({
             Le degrade en bas apparait quand il reste quelque chose dessous, et
             disparait une fois en bas. */}
         <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-          <nav
-            onScroll={(e) => {
-              const el = e.currentTarget;
-              setResteEnBas(el.scrollHeight - el.scrollTop - el.clientHeight > 4);
-            }}
-            ref={(el) => {
-              if (el) {
-                const reste = el.scrollHeight - el.scrollTop - el.clientHeight > 4;
-                if (reste !== resteEnBas) setResteEnBas(reste);
-              }
-            }}
-            style={{ height: "100%", overflowY: "auto", padding: "14px 0" }}>
+          <nav style={{ height: "100%", overflowY: "auto", padding: "14px 0" }}>
             {topItems.map(renderItem)}
             <div style={{ height: 1, background: Hairline, margin: "12px 20px" }}/>
             {middleItems.map(renderItem)}
           </nav>
-          {resteEnBas && (
-            <div aria-hidden="true" style={{
-              position: "absolute", left: 0, right: 0, bottom: 0, height: 34,
-              background: "linear-gradient(to bottom, rgba(23,23,26,0), rgba(23,23,26,.95))",
-              pointerEvents: "none",
-            }}/>
-          )}
+          {/* LE DEGRADE ETAIT PIRE QUE LE DEFAUT QU'IL COUVRAIT
+              Idee : estomper la derniere entree pour dire que la liste
+              continue. Rendu a l'ecran : "Applications" a demi effacee, et
+              juste dessous "Reglages" en pleine lumiere. Ca ne se lit pas
+              comme "fais defiler", ca se lit comme "cette entree est
+              desactivee" - une information fausse, et sur l'entree meme que la
+              personne cherchait.
+              Une coupe nette au-dessus d'un separateur franc est la convention
+              de toutes les navigations qui defilent, et elle ne ment pas. */}
         </div>
 
-        <div style={{ borderTop: "0.5px solid " + Hairline, padding: "8px 0", flexShrink: 0 }}>
+        {/* LE PIED EST UN BLOC, PAS LA SUITE DE LA LISTE
+            Son filet faisait 0,5px a 10% d'opacite : sur fond sombre, on ne le
+            voyait pas, et Reglages avait l'air d'etre la treizieme entree,
+            collee a une douzieme a moitie coupee. Un vrai separateur dit que
+            ce qui suit est d'une autre nature. */}
+        <div style={{
+          borderTop: "1px solid rgba(245,241,232,.14)",
+          padding: "10px 0 12px", flexShrink: 0,
+        }}>
           {onReset && pied("reset", L.replay, Icons.replay, () => onReset())}
           {pied("settings", L.settings, Icons.settings, () => handleSelect("settings"))}
           {cloudEnabled && (
