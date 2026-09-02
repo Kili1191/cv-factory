@@ -4371,13 +4371,28 @@ export default function App() {
     if (!zone || !cv || typeof ResizeObserver === "undefined") return undefined;
 
     const DESK_MAX = 1.35;      // au-dela, on perd le rapport a la page A4
+    // LE PLANCHER N'EST PLUS 1, ET C'EST LA BARRE QUI L'A IMPOSE
+    //
+    // La regle disait : jamais sous 1, mieux vaut defiler qu'un CV illisible.
+    // Elle a ete ecrite quand la barre laterale faisait 56px, ou une fenetre
+    // de 1024 laissait 968px a une feuille qui en fait 794 : le cas ne se
+    // presentait pas.
+    //
+    // La barre en fait 244 en permanence. Mesure a 1024x900 : la feuille
+    // s'arrete a x=1062 pour une zone qui finit a 1024, donc 38px de document
+    // coupes et un defilement lateral. 1024, c'est un iPad en paysage, un
+    // petit portable, une fenetre a moitie d'ecran - pas un cas rare.
+    //
+    // Reduire un peu plutot que couper : a 1024 le facteur tombe a 0,93, ce
+    // qui se lit sans effort. Le plancher garde l'intention d'origine, il la
+    // chiffre au lieu de l'interdire.
+    const DESK_MIN = 0.75;
     const MARGE = 44;           // le padding de la zone, des deux cotes
 
     const recalculer = () => {
       const dispo = zone.clientWidth - MARGE;
       if (dispo <= 0) return;
-      // Jamais en dessous de 1 : mieux vaut defiler qu'un CV illisible.
-      const f = Math.min(DESK_MAX, Math.max(1, dispo / 794));
+      const f = Math.min(DESK_MAX, Math.max(DESK_MIN, dispo / 794));
       setDeskScale(prev => (Math.abs(prev - f) < 0.01 ? prev : f));
       // Hauteur naturelle, mesuree AVANT agrandissement : offsetHeight ignore
       // le transform, c'est exactement ce qu'il nous faut ici.
