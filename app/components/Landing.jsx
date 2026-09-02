@@ -93,6 +93,11 @@ const T = {
     cvLead: "This is what comes out",
     cvTitle: "A whole CV, aimed at one job ad, in a file you can send.",
     cvBody: "Not one sentence - every section. Paste the ad you are going for, and Nuvi writes the CV for that ad, then hands you the file.",
+    // Les trois temps se decouvrent pendant que le document reste en place.
+    // Ils nomment le geste de la personne, pas la fonctionnalite : coller,
+    // attendre, envoyer. C'est le seul endroit de la page qui dit combien il
+    // y a a faire, et la reponse est "trois choses".
+    cvTemps: ["Paste the ad.", "Nuvi rewrites every section for it.", "Send the file."],
     morphLead: "Watch the same facts re-file themselves",
     morphNote: "Not one of these adds anything. The years are the same years, the work is the same work. Only the shape changed, and with it whether the software can put it anywhere.",
     answerTitle: "Nothing invented. Only re-filed.",
@@ -152,6 +157,7 @@ const T = {
     cvLead: "Voila ce qui en sort",
     cvTitle: "Un CV entier, vise sur une annonce, dans un fichier que tu peux envoyer.",
     cvBody: "Pas une phrase - toutes les sections. Colle l'annonce que tu vises, Nuvi ecrit le CV pour elle, et te rend le fichier.",
+    cvTemps: ["Colle l'annonce.", "Nuvi reecrit chaque section pour elle.", "Envoie le fichier."],
     morphLead: "Regarde les memes faits se ranger autrement",
     morphNote: "Aucun n'ajoute quoi que ce soit. Les annees sont les memes annees, le travail est le meme travail. Seule la forme a change, et avec elle le fait que le logiciel sache ou la mettre.",
     answerTitle: "Rien d'invente. Juste range autrement.",
@@ -499,35 +505,54 @@ export default function Landing({ lang = "en" }) {
           precise, et un fichier a envoyer. Si elle redisait "formule molle
           contre fait range", elle serait le morphing avec un cadre autour,
           et il faudrait la retirer. */}
-      <section className="nuvi-scroll-in" style={{
+      {/* La coupure ne se fait plus en style en ligne : overflow: hidden
+          fabrique un conteneur de defilement, et tout ce qui vit dedans
+          mesurerait alors sa progression contre un conteneur immobile. La
+          classe coupe avec clip, qui coupe sans rien fabriquer. Meme cause,
+          meme correctif que .nuvi-page, ou le defaut avait deja fige quatre
+          sections a mi-chemin. */}
+      {/* PAS DE nuvi-scroll-in ICI, ET C'EST LA MEME MESURE QU'AVANT
+          Sa plage se termine a "cover 30%", c'est-a-dire 30% de la traversee
+          complete du bloc. Plus la section est haute, plus le fondu finit
+          tard : c'est deja ce qui avait laisse cinq sections sur six
+          delavees a l'endroit ou on les lit. Celle-ci fait deux ecrans et
+          demi, elle serait de loin la pire. Et le fondu n'apporte rien : le
+          bloc qui se fige EST son entree. */}
+      <section className="nuvi-piste-doc" style={{
         padding: "clamp(56px, 12vh, 130px) 0 clamp(56px, 12vh, 130px) clamp(18px, 5vw, 56px)",
         borderBottom: "1px solid " + Hair,
         maxWidth: 1180, margin: "0 auto", width: "100%", boxSizing: "border-box",
-        overflow: "hidden",
       }}>
-        {/* Pas de grille en style en ligne : elle l'emporterait sur la
-            classe, et la requete de media qui passe a deux colonnes ne
-            gagnerait jamais. Le document restait donc sous le texte, avec la
-            moitie droite de l'ecran vide - exactement le defaut qu'on
-            corrigeait. */}
-        <div className="nuvi-duo nuvi-duo-doc" style={{ alignItems: "center" }}>
-          <div>
-            {eyebrow(t.cvLead)}
-            <h2 className="nuvi-titre-geant" style={{
-              fontFamily: Serif, fontWeight: 400,
-              fontSize: "var(--t-title)", lineHeight: 1.05,
-              letterSpacing: "-0.032em", margin: "0 0 16px",
-            }}><Mots>{t.cvTitle}</Mots></h2>
-            <p style={{
-              fontSize: "var(--t-body)", lineHeight: 1.62,
-              color: Muted, maxWidth: 40 + "ch", margin: 0,
-            }}>{t.cvBody}</p>
-          </div>
-          {/* Le document deborde volontairement du cadre : coupe par le bord,
-              il se lit comme un objet pose sur la page et non comme une
-              vignette centree dans une boite. */}
-          <div style={{ justifySelf: "start", marginRight: "-14vw" }}>
-            <LandingCV lang={lang}/>
+        <div className="nuvi-piste-colle">
+          {/* Pas de grille en style en ligne : elle l'emporterait sur la
+              classe, et la requete de media qui passe a deux colonnes ne
+              gagnerait jamais. Le document restait donc sous le texte, avec la
+              moitie droite de l'ecran vide - exactement le defaut qu'on
+              corrigeait. */}
+          <div className="nuvi-duo nuvi-duo-doc" style={{ alignItems: "center" }}>
+            <div>
+              {eyebrow(t.cvLead)}
+              <h2 className="nuvi-titre-geant" style={{
+                fontFamily: Serif, fontWeight: 400,
+                fontSize: "var(--t-title)", lineHeight: 1.05,
+                letterSpacing: "-0.032em", margin: "0 0 16px",
+              }}><Mots>{t.cvTitle}</Mots></h2>
+              <p style={{
+                fontSize: "var(--t-body)", lineHeight: 1.62,
+                color: Muted, maxWidth: 40 + "ch", margin: 0,
+              }}>{t.cvBody}</p>
+              <ol className="nuvi-temps-liste">
+                {(t.cvTemps || []).map((mot, i) => (
+                  <li key={mot} className="nuvi-temps" style={{ "--part": i }}>{mot}</li>
+                ))}
+              </ol>
+            </div>
+            {/* Le document deborde volontairement du cadre : coupe par le bord,
+                il se lit comme un objet pose sur la page et non comme une
+                vignette centree dans une boite. */}
+            <div style={{ justifySelf: "start", marginRight: "-14vw" }}>
+              <LandingCV lang={lang}/>
+            </div>
           </div>
         </div>
       </section>

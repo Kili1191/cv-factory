@@ -75,6 +75,7 @@ const SUITES = [
   ["the keyboard shows where it is", "./the-keyboard-shows-where-it-is.mjs"],
   ["the interface can be read", "./the-interface-can-be-read.mjs"],
   ["the page moves when you scroll", "./the-page-moves-when-you-scroll.mjs"],
+  ["the document holds while the steps arrive", "./the-document-holds-while-the-steps-arrive.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],

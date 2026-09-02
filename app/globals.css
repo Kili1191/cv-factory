@@ -1575,3 +1575,113 @@ html {
   opacity: 1;
   transform: none;
 }
+
+/* ============================================================
+ * LA SECTION QUI SE JOUE, AU LIEU DE SE MONTRER
+ *
+ * Six sections de la vitrine partagent le meme geste : elles montent de
+ * quelques pixels et s'allument quand elles entrent. C'est une transition
+ * d'arrivee, et une fois qu'on l'a vue une fois on l'a vue six fois. Rien
+ * n'y raconte quoi que ce soit ; le mouvement decore, il ne dit pas.
+ *
+ * Celle-ci est la seule qui montre le produit fini, donc la seule qui a
+ * quelque chose a raconter : le document reste en place pendant que les
+ * trois temps du geste se decouvrent a cote de lui. Le defilement ne
+ * declenche pas l'animation, il EST l'animation - la personne avance dans
+ * la sequence a la vitesse qu'elle choisit, et peut revenir en arriere.
+ *
+ * POURQUOI CE N'EST PAS SUR TELEPHONE
+ *
+ * En dessous de 900px la grille repasse a une colonne : le document se
+ * retrouve sous le texte, et une section collante n'a plus rien a tenir a
+ * cote de quoi. Elle mangerait deux ecrans de defilement pour montrer ce
+ * qui tient deja dans un. Le pin ne vaut que quand il y a deux colonnes.
+ */
+@media (min-width: 900px) {
+  .nuvi-piste-doc {
+    /* La piste depasse l'ecran : c'est ce surplus, et lui seul, qui donne au
+       document le temps de rester en place pendant qu'on avance. Sans
+       hauteur en trop, la position collante n'a nulle part ou coller. */
+    min-height: 220vh;
+    /* Le document deborde par la droite et il faut le couper. hidden en
+       ferait un conteneur de defilement, et la specification ramene alors
+       l'autre axe a auto : ce qui vit dedans lirait sa progression sur une
+       regle immobile. clip coupe sans rien fabriquer. hidden reste au-dessus
+       comme repli pour les navigateurs qui ignorent clip. */
+    overflow-x: hidden;
+    overflow-x: clip;
+  }
+
+  .nuvi-piste-colle {
+    position: sticky;
+    /* 12vh laisse respirer au-dessus : colle a 0, le bloc touche le bord
+       haut de l'ecran et se lit comme un entete fige, pas comme un objet
+       tenu en place. */
+    top: 12vh;
+  }
+}
+
+/* Les trois temps s'affichent par defaut. Un navigateur sans
+   animation-timeline, ou une personne qui a demande moins de mouvement, les
+   lit tous les trois d'un coup : c'est du texte, il doit etre lisible avant
+   d'etre anime. */
+.nuvi-temps-liste {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  counter-reset: temps;
+}
+
+.nuvi-temps {
+  counter-increment: temps;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: baseline;
+  font-size: var(--t-body);
+  line-height: 1.5;
+  color: var(--nuvi-ink);
+}
+
+.nuvi-temps::before {
+  content: counter(temps);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--nuvi-coral-text);
+}
+
+@keyframes nuviTempsEntre {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@supports (animation-timeline: view()) {
+  @media (min-width: 900px) {
+    .nuvi-piste-doc { view-timeline-name: --piste-doc; }
+
+    /* Chaque temps decale sa propre plage de --part, sa position dans la
+       liste. Les trois plages tiennent dans la fenetre ou le bloc est
+       reellement colle : en dehors, la personne verrait le texte s'allumer
+       pendant que la section defile normalement, ce qui se lit comme un
+       retard d'affichage et non comme une sequence. */
+    .nuvi-temps {
+      animation: nuviTempsEntre linear both;
+      animation-timeline: --piste-doc;
+      animation-range: cover calc(30% + var(--part) * 15%)
+                       cover calc(42% + var(--part) * 15%);
+    }
+  }
+}
+
+/* Le mouvement se coupe entierement quand le systeme le demande. La
+   sequence n'est pas de l'information : les trois temps restent lisibles,
+   ils cessent seulement de bouger. */
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-temps { animation: none; opacity: 1; transform: none; }
+  .nuvi-piste-doc { min-height: 0; }
+  .nuvi-piste-colle { position: static; }
+}
