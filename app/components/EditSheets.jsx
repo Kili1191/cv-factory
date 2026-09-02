@@ -24,7 +24,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper,
   Coral, CoralSoft, Purple, Magenta, Hairline,
   Gold,
-  Sans, B, Trans } from "./tokens";
+  Sans, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 import { FR, SaveBtn, MK } from "./EditHelpers";
 
@@ -36,8 +36,10 @@ import { FR, SaveBtn, MK } from "./EditHelpers";
 // Eyebrow terracotta uppercase
 const sectionHeaderStyle = {
   fontSize: 11,
+  // Corail de marque : 3,12:1 sur blanc, sous le plancher AA de 4,5:1.
+  // Les intitules prennent l'encre calibree ; les aplats gardent la marque.
   fontWeight: 600,
-  color: Coral,
+  color: CoralText,
   letterSpacing: "0.12em",
   textTransform: "uppercase",
   margin: "20px 0 12px",
@@ -226,7 +228,7 @@ export function SheetId({ cv, set, onClose, onTransformSummary, T }) {
             display: "block",
             fontSize: 10,
             fontWeight: 600,
-            color: Coral,
+            color: CoralText,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}>{T.sh_sum}</label>
@@ -388,7 +390,7 @@ export function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
             display: "block",
             fontSize: 10,
             fontWeight: 600,
-            color: Coral,
+            color: CoralText,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
             marginBottom: 8,

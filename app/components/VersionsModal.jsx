@@ -10,7 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B, Trans } from "./tokens";
+  GradPurple, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function VersionsModal({ T, versions, onSave, onLoad, onDelete, onClose }) {
@@ -85,7 +85,7 @@ export default function VersionsModal({ T, versions, onSave, onLoad, onDelete, o
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:10,
+            color:CoralText, marginBottom:10,
             fontFamily:Sans,
           }}>{versions.length} {T.vs_count}</div>
 
@@ -144,7 +144,7 @@ export default function VersionsModal({ T, versions, onSave, onLoad, onDelete, o
                 <button onClick={()=>onDelete(v.id)} style={{
                   ...B({
                     padding:"9px 14px", borderRadius:RadiusPill,
-                    background:CoralSoft, color:Coral,
+                    background:CoralSoft, color:CoralText,
                     border:"0.5px solid "+Coral,
                     fontSize:11, fontWeight:600, fontFamily:Sans,
                   })

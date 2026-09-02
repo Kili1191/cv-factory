@@ -8,7 +8,7 @@ import {
   Coral, CoralSoft, Cream, CreamSoft, Hairline, Ink, InkMuted,
   Gray100, Gray200, Gray400, Gray600,
   Green, GreenSoft, Magenta, Paper, Purple, PurpleSoft,
-  RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
+  RadiusLg, RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans, CoralText, PurpleText } from "./sharedTokens";
 
 function TargetHub({ T, cvIsEmpty, offerResult, locale,
   onOpenOffer, onOpenAudit, onOpenPos, onOpenTruth, onOpenPack, onOpenInterview, onOpenMultiCV }) {
@@ -39,7 +39,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:Coral, marginBottom:8,
+            color:CoralText, marginBottom:8,
           }}>{T.hub_eyebrow}</div>
           <p style={{
             fontFamily:Serif, fontWeight:400,
@@ -148,7 +148,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
         <button onClick={onOpenOffer} style={{
           ...B({
             display:"inline-flex", alignItems:"center", gap:8,
-            background:"#fff", color:Purple,
+            background:"#fff", color:PurpleText,
             padding:"13px 22px", minHeight:44, borderRadius:RadiusPill,
             fontSize:14, fontWeight:600,
             fontFamily:Sans, border:"none",
@@ -230,7 +230,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
                 <span key={i} style={{
                   padding:"5px 11px", borderRadius:RadiusPill,
                   fontSize:11, fontWeight:500,
-                  background:CoralSoft, color:Coral,
+                  background:CoralSoft, color:CoralText,
                   border:"0.5px solid "+Coral,
                 }}>+ {k}</span>
               ))}
@@ -243,7 +243,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:Coral, marginTop:18, marginBottom:10,
+        color:CoralText, marginTop:18, marginBottom:10,
       }}>{T.hub_subhead}</div>
 
       {/* Grille 2x2 super-pouvoirs */}
@@ -355,7 +355,7 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
           <div style={{
             width:40, height:40, borderRadius:11,
             display:"flex", alignItems:"center", justifyContent:"center",
-            background:CoralSoft, color:Coral,
+            background:CoralSoft, color:CoralText,
             flexShrink:0, position:"relative",
           }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none"

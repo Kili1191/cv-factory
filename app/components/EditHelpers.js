@@ -21,7 +21,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper,
   Coral, Purple, Magenta, Hairline,
   Gold, GoldDeep, Dark,
-  Sans, B,
+  Sans, B, CoralText,
 } from "./tokens";
 
 // [Nuvi v2] Style input/textarea Nuvi avec focus violet
@@ -44,7 +44,8 @@ const NuviLabelStyle = {
   display: "block",
   fontSize: 10,
   fontWeight: 600,
-  color: Coral,
+  // Corail de marque : 3,12:1 sur blanc, sous AA. Encre calibree.
+  color: CoralText,
   letterSpacing: "0.1em",
   textTransform: "uppercase",
   marginBottom: 6,

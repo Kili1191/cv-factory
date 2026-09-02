@@ -71,6 +71,7 @@ const SUITES = [
   ["dark mode does not darken the CV", "./dark-mode-does-not-darken-the-cv.mjs"],
   ["the document fits beside the navigation", "./the-document-fits-beside-the-navigation.mjs"],
   ["the keyboard shows where it is", "./the-keyboard-shows-where-it-is.mjs"],
+  ["the interface can be read", "./the-interface-can-be-read.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],

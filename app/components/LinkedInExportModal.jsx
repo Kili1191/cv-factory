@@ -9,7 +9,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : zone copiable.
@@ -25,7 +25,7 @@ function CopySection({ T, title, hint, content, onCopy }) {
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, fontFamily:Sans,
+            color:CoralText, fontFamily:Sans,
           }}>{title}</div>
           {hint && (
             <div style={{
@@ -231,7 +231,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:10,
+                color:CoralText, marginBottom:10,
                 fontFamily:Sans,
               }}>{T.li_section_experiences}</div>
 
@@ -269,7 +269,7 @@ export default function LinkedInExportModal({ T, cv, apiKey, loading, result, on
                       style={{
                         ...B({
                           padding:"5px 11px", borderRadius:RadiusPill,
-                          background:CoralSoft, color:Coral,
+                          background:CoralSoft, color:CoralText,
                           border:"0.5px solid "+Coral,
                           fontSize:10, fontWeight:600, fontFamily:Sans,
                           flexShrink:0,

@@ -20,8 +20,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Ink, InkMuted, Paper, Hairline, Coral, CoralSoft, Green, GreenSoft,
-  Purple, PurpleSoft, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Purple, PurpleSoft, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,  CoralText, PurpleText } from "./tokens";
 import { scanInbox } from "../../lib/gmailScan";
 import { fetchCandidateMessages, gmailLink, GmailError } from "../../lib/gmailClient";
 
@@ -146,7 +145,7 @@ export default function GmailScanPanel({
   const changes = live.filter(r => r.proposedStatus);
 
   const label = { fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
-                  textTransform: "uppercase", color: Coral, fontFamily: Sans };
+                  textTransform: "uppercase", color: CoralText, fontFamily: Sans };
 
   const primary = (extra) => ({
     ...B({
@@ -274,7 +273,7 @@ export default function GmailScanPanel({
                   )}
                   {gmailLink(r.message) && (
                     <a href={gmailLink(r.message)} target="_blank" rel="noopener noreferrer"
-                      style={{ fontSize: 11.5, color: Purple, textDecoration: "none" }}>
+                      style={{ fontSize: 11.5, color: PurpleText, textDecoration: "none" }}>
                       {t.open}
                     </a>
                   )}

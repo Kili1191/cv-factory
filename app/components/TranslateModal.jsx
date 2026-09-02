@@ -10,7 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B, Trans } from "./tokens";
+  GradPurple, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBackup, onRun, onClose }) {
@@ -75,7 +75,7 @@ export default function TranslateModal({ T, dir, setDir, loading, msgIdx, hasBac
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:10,
+            color:CoralText, marginBottom:10,
             fontFamily:Sans,
           }}>{T.tr_dir}</div>
 

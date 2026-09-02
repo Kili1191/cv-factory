@@ -114,11 +114,11 @@ import {
   Purple, PurpleSoft, Magenta, Coral, CoralSoft, Green, GreenSoft,
   Gray50, Gray100, Gray200, Gray400, Gray600, Gray900,
   Serif, Sans, Dark, Desk,
+  CoralText, GreenText, GrayText,
   RadiusSm, RadiusMd, RadiusLg, RadiusPill,
   ShadowSm, ShadowMd, ShadowLg,
   GradDark, GradGold, GradPurple, GradCoral,
-  Space, Text, Dur, Ease, Trans,
-} from "./components/tokens";
+  Space, Text, Dur, Ease, Trans,  PurpleText } from "./components/tokens";
 
 // Keyframes globales injectees une fois par branche (mobile/desktop/spinner).
 // cvfSpin existe deja en v16. cvfFadeIn et cvfSlideUp servent l'IOSSheet v17.
@@ -1296,7 +1296,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
               {eyebrow && (
                 <div style={{
                   fontSize:11, fontWeight:600, letterSpacing:"0.1em",
-                  textTransform:"uppercase", color:Coral, marginBottom:4,
+                  textTransform:"uppercase", color:CoralText, marginBottom:4,
                 }}>{eyebrow}</div>
               )}
               {title && (
@@ -1425,7 +1425,8 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.12em", textTransform:"uppercase",
-                color:Coral, marginBottom:4,
+                // 2,79:1 en corail de marque sur le creme doux du panneau.
+                color:CoralText, marginBottom:4,
               }}>{eyebrow}</div>
             )}
             <div style={{
@@ -1534,7 +1535,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const eyV17 = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.1em", textTransform:"uppercase",
-    color:Coral, marginBottom:8, marginTop:14,
+    color:CoralText, marginBottom:8, marginTop:14,
     display:"block",
   };
 
@@ -1619,7 +1620,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
               // a l'air compact, sa zone tactile ne l'est pas.
               padding:"7px 6px", minHeight:44, borderRadius:6,
               background:"transparent", border:"none",
-              color:Purple, fontSize:12.5, fontWeight:600, fontFamily:Sans,
+              color:PurpleText, fontSize:12.5, fontWeight:600, fontFamily:Sans,
               display:"inline-flex", alignItems:"center", gap:5,
               textDecoration:"underline", textUnderlineOffset:3,
               flexShrink:0,
@@ -1818,7 +1819,7 @@ function AdjustPanel({ cv, setCVFn, notify, apiKey, T, prefillInst, onPrefillCon
           width:"100%", padding:"10px 13px", borderRadius:9,
           border:"2px dashed "+Purple,
           background:impOpen?PurpleSoft:"#fff",
-          color:Purple, fontWeight:700, fontSize:13,
+          color:PurpleText, fontWeight:700, fontSize:13,
           marginBottom:impOpen?0:14,
           display:"flex", alignItems:"center", justifyContent:"space-between",
         })
@@ -2208,7 +2209,7 @@ function ColorPickerBlock({
         <span style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral, fontFamily:Sans,
+          color:CoralText, fontFamily:Sans,
         }}>{label}</span>
         {contrastWith && level && (
           <WCAGBadge ratio={ratio} level={level} T={T}/>
@@ -2397,7 +2398,7 @@ function FontCard({ font, active, onClick, sample, isBody }) {
       {isBody && font.ats && (
         <span style={{
           padding:"3px 9px", borderRadius:RadiusPill,
-          background:GreenSoft, color:Green,
+          background:GreenSoft, color:GreenText,
           fontSize:10, fontWeight:600, fontFamily:Sans,
           letterSpacing:"0.04em",
           flexShrink:0,
@@ -2422,7 +2423,7 @@ function FontSection({ T, label, fonts, value, onPick, sample, isBody }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.1em", textTransform:"uppercase",
-        color:Coral, marginBottom:10,
+        color:CoralText, marginBottom:10,
         fontFamily:Sans,
       }}>{label}</div>
       <div style={{
@@ -2491,7 +2492,7 @@ function FontUrlInput({ T, onApply }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.1em", textTransform:"uppercase",
-        color:Coral, marginBottom:10,
+        color:CoralText, marginBottom:10,
         fontFamily:Sans,
       }}>{T.cust_font_url_label}</div>
       <input
@@ -2514,7 +2515,7 @@ function FontUrlInput({ T, onApply }) {
       />
       {err && (
         <div style={{
-          fontSize:11, color:Coral,
+          fontSize:11, color:CoralText,
           marginBottom:10, fontFamily:Sans,
         }}>{err}</div>
       )}
@@ -2984,7 +2985,7 @@ function SuggestionCombo({ T, combo, onAdopt }) {
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:6,
+            color:CoralText, marginBottom:6,
           }}>{combo.target}</div>
         )}
         {combo.why && (
@@ -3154,7 +3155,7 @@ function ChoixDeGabarit({ layout, setLy, locale }) {
     <div style={{ marginTop: 22 }}>
       <div style={{
         fontSize: 11, fontWeight: 600, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: Coral, marginBottom: 10,
+        textTransform: "uppercase", color: CoralText, marginBottom: 10,
         fontFamily: Sans,
       }}>
         {locale === "en" ? "Choose your shape" : "Choisis ta mise en page"}
@@ -3215,7 +3216,7 @@ function LayoutTab({ T, layout, setLy, locale }) {
       <div style={{
         fontSize: 11, fontWeight: 600,
         letterSpacing: "0.12em", textTransform: "uppercase",
-        color: Coral, marginBottom: 14,
+        color: CoralText, marginBottom: 14,
       }}>
         {locale === "en" ? "Choose your shape" : "Choisis ta mise en page"}
       </div>
@@ -3664,7 +3665,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
         <button onClick={resetCurrent} style={{
           ...B({
             width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
-            background:CoralSoft, color:Coral,
+            background:CoralSoft, color:CoralText,
             border:"0.5px solid "+Coral,
             fontSize:13, fontWeight:500, fontFamily:Sans,
             marginTop:24,
@@ -8185,7 +8186,7 @@ export default function App() {
   const finEyebrow = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.12em", textTransform:"uppercase",
-    color:Coral, marginTop:24, marginBottom:10,
+    color:CoralText, marginTop:24, marginBottom:10,
     display:"block",
   };
   const finRow = {
@@ -8654,7 +8655,7 @@ export default function App() {
       <button onClick={doReset} style={{
         ...B({
           width:"100%", padding:"12px 16px", borderRadius:RadiusMd,
-          background:CoralSoft, color:Coral,
+          background:CoralSoft, color:CoralText,
           border:"0.5px solid "+Coral,
           fontSize:13, fontWeight:500, fontFamily:Sans,
           transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
@@ -9684,7 +9685,9 @@ export default function App() {
               <span style={{
                 fontFamily:Sans, fontSize:Text.micro, fontWeight:700,
                 letterSpacing:"0.12em", textTransform:"uppercase",
-                color:Gray400, flexShrink:0,
+                // Gray400 donnait 2,32:1 sur le creme : la sur-ligne la plus
+                // petite du produit etait aussi la moins lisible.
+                color:GrayText, flexShrink:0,
               }}>{locale === "en" ? "Editing" : "En cours"}</span>
               <span style={{
                 fontFamily:Serif, fontSize:Text.lead, fontWeight:600,
@@ -9721,7 +9724,10 @@ export default function App() {
                     // un CV qui passe quatre analyseurs sur six n'est pas une
                     // erreur, c'est un travail en cours.
                     background: lectureAts.passent === lectureAts.total ? GreenSoft : CoralSoft,
-                    color: lectureAts.passent === lectureAts.total ? Green : Coral,
+                    // Les verts et corails de marque sur leurs fonds doux
+                    // donnent 3,00:1 et 2,62:1 : sous le plancher, et c'est le
+                    // chiffre que le produit met le plus en avant.
+                    color: lectureAts.passent === lectureAts.total ? GreenText : CoralText,
                     border:"none", fontFamily:Sans, fontSize:12.5, fontWeight:600,
                   })
                 }}>
@@ -9850,7 +9856,7 @@ export default function App() {
                   <span style={{
                     position: "absolute", right: 0, top: 4,
                     fontFamily: Sans, fontSize: 10.5, fontWeight: 600,
-                    letterSpacing: ".04em", color: Coral,
+                    letterSpacing: ".04em", color: CoralText,
                     background: Desk, padding: "2px 7px", borderRadius: 4,
                     whiteSpace: "nowrap",
                   }}>
@@ -10007,7 +10013,11 @@ export default function App() {
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: "0.12em",
-                color: "#5b3df5",
+                // Ecrit en dur, donc fige pour le theme clair : 3,23:1 sur le
+                // fond sombre, sous le plancher AA. L'encre calibree bascule.
+                // Deux fois, parce que la pastille existe en mobile et en
+                // bureau : corriger la premiere seule laissait l'autre.
+                color: PurpleText,
                 border: "0.5px solid rgba(91, 61, 245, 0.15)",
               }}>
                 Coach
@@ -10568,7 +10578,11 @@ export default function App() {
                 fontSize: 10,
                 fontWeight: 700,
                 letterSpacing: "0.12em",
-                color: "#5b3df5",
+                // Ecrit en dur, donc fige pour le theme clair : 3,23:1 sur le
+                // fond sombre, sous le plancher AA. L'encre calibree bascule.
+                // Deux fois, parce que la pastille existe en mobile et en
+                // bureau : corriger la premiere seule laissait l'autre.
+                color: PurpleText,
                 border: "0.5px solid rgba(91, 61, 245, 0.15)",
               }}>
                 Coach

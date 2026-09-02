@@ -22,8 +22,7 @@
 import { useEffect, useState, useCallback } from "react";
 import {
   Ink, InkMuted, Paper, Hairline, Coral, CoralSoft, Purple,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,  CoralText, PurpleText } from "./tokens";
 import { detectPlatform, isStandalone } from "../../lib/installTarget";
 
 // La detection vit dans lib/installTarget.js, sans JSX : c'est la seule
@@ -175,7 +174,7 @@ function Step({ n, children, icon }) {
     <div style={{ display: "flex", gap: 12, alignItems: "center", padding: "11px 0" }}>
       <div style={{
         width: 24, height: 24, borderRadius: RadiusPill, flexShrink: 0,
-        background: CoralSoft, color: Coral,
+        background: CoralSoft, color: CoralText,
         fontFamily: Sans, fontSize: 12, fontWeight: 700,
         display: "flex", alignItems: "center", justifyContent: "center",
       }}>{n}</div>
@@ -272,7 +271,7 @@ export default function InstallAppSheet({ lang = "en", onClose = () => {} }) {
         }}>
           <div style={{
             fontSize: 11, fontWeight: 600, letterSpacing: "0.07em",
-            textTransform: "uppercase", color: Purple, padding: "12px 0 2px",
+            textTransform: "uppercase", color: PurpleText, padding: "12px 0 2px",
           }}>{t.iosIntro}</div>
           <Step n={1} icon={<ShareIcon/>}>{t.ios1}</Step>
           <div style={{ height: 0.5, background: Hairline }}/>

@@ -12,8 +12,7 @@ import {
   Ink, InkMuted, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft,
   Gray100, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 import {
   readActivity, groupActivityByDay, activityStats,
@@ -183,7 +182,7 @@ export default function ActivityModal({ locale = "en", onClose, notify }) {
                 <div style={{
                   fontSize: 11, fontWeight: 600,
                   letterSpacing: "0.1em", textTransform: "uppercase",
-                  color: Coral, marginBottom: 8, fontFamily: Sans,
+                  color: CoralText, marginBottom: 8, fontFamily: Sans,
                 }}>{formatDay(g.day, locale)}</div>
 
                 <div style={{
@@ -250,7 +249,7 @@ export default function ActivityModal({ locale = "en", onClose, notify }) {
               ...B({
                 flex: "1 1 160px", padding: "11px 14px",
                 borderRadius: RadiusSm, border: "0.5px solid " + Hairline,
-                background: Paper, color: Coral,
+                background: Paper, color: CoralText,
                 fontSize: 13, fontWeight: 600, fontFamily: Sans,
               })
             }}>

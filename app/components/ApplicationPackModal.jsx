@@ -10,7 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple, Trans, CoralText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : zone de texte copiable.
@@ -24,7 +24,7 @@ function Section({ T, title, content, onCopy, small }) {
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral,
+          color:CoralText,
           fontFamily:Sans,
         }}>{title}</div>
         <button onClick={()=>onCopy && onCopy(content)} style={{
@@ -163,7 +163,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           <label style={{
             display:"block", fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:8, fontFamily:Sans,
+            color:CoralText, marginBottom:8, fontFamily:Sans,
           }}>{T.pk_offer_label}</label>
           <textarea
             value={offer}
@@ -382,7 +382,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                     <div style={{
                       fontSize:10, fontWeight:600,
                       letterSpacing:"0.1em", textTransform:"uppercase",
-                      color:Coral, marginBottom:4,
+                      color:CoralText, marginBottom:4,
                       fontFamily:Sans,
                     }}>Q{i+1}</div>
                     <div style={{
@@ -402,7 +402,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                       <div style={{
                         fontSize:10, fontWeight:600,
                         letterSpacing:"0.12em", textTransform:"uppercase",
-                        color:Purple, marginBottom:4,
+                        color:PurpleText, marginBottom:4,
                         fontFamily:Sans,
                       }}>{label}</div>
                       <div style={{

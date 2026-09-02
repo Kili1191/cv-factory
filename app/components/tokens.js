@@ -30,6 +30,18 @@ export const Magenta   = "var(--nuvi-magenta)";
 export const Coral     = "var(--nuvi-coral)";
 export const CoralSoft = "var(--nuvi-coral-soft)";
 export const Green     = "var(--nuvi-green)";
+
+// LES VERSIONS POUR TEXTE
+// Les couleurs ci-dessus sont des couleurs de MARQUE : elles servent aux
+// aplats, aux degrades et aux pastilles. Posees en petit corps sur un fond
+// clair elles tombent entre 2,3:1 et 3,1:1, sous le plancher AA de 4,5:1.
+// Celles-ci sont leurs equivalents calibres pour du texte, et basculent avec
+// le theme. Regle : du texte prend la version -Text, un aplat prend l'autre.
+export const CoralText   = "var(--nuvi-coral-text)";
+export const PurpleText  = "var(--nuvi-purple-text)";
+export const MagentaText = "var(--nuvi-magenta-text)";
+export const GreenText   = "var(--nuvi-green-text)";
+export const GrayText    = "var(--nuvi-gray-text)";
 export const GreenSoft = "var(--nuvi-green-soft)";
 
 // Echelle de gris

@@ -10,7 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  KEYFRAMES_V17, B, Trans } from "./tokens";
+  KEYFRAMES_V17, B, Trans, CoralText } from "./tokens";
 
 // Format a parsed date for display.
 function fmt(d, T) {
@@ -41,7 +41,7 @@ function GapCard({ gap, T }) {
       }}>
         <span style={{
           padding:"3px 9px", borderRadius:RadiusPill,
-          background:CoralSoft, color:Coral,
+          background:CoralSoft, color:CoralText,
           fontSize:11, fontWeight:600,
           letterSpacing:"0.04em",
         }}>{fmtMonths(gap.gap.months, T)}</span>
@@ -194,7 +194,7 @@ export default function GapRepairModal({
             <div style={{
               fontSize:11, fontWeight:600,
               letterSpacing:"0.12em", textTransform:"uppercase",
-              color:Coral, marginBottom:4,
+              color:CoralText, marginBottom:4,
             }}>{T.gr_eyebrow}</div>
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -306,7 +306,7 @@ export default function GapRepairModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:10,
+                color:CoralText, marginBottom:10,
               }}>{T.gr_section_results}</div>
 
               {gaps.map((g, i) => (
@@ -316,7 +316,7 @@ export default function GapRepairModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginTop:24, marginBottom:10,
+                color:CoralText, marginTop:24, marginBottom:10,
               }}>{T.gr_section_strategies}</div>
 
               {/* Strategy 1 : year-only format */}

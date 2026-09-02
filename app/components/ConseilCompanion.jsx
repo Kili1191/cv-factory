@@ -25,7 +25,7 @@ import {
   Ink, CreamSoft, Paper, Coral, CoralSoft, Green, GreenSoft,
   Gray200, Gray600, Purple, Magenta,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  B, Trans } from "./tokens";
+  B, Trans, PurpleText, CoralText, GreenText } from "./tokens";
 
 // Les animations de ce panneau. Elles sont ecrites ici et pas dans les
 // jetons parce qu'elles ne servent qu'ici : les jetons portent ce qui est
@@ -183,7 +183,8 @@ export default function ConseilCompanion({ T, locale, ouvert, axe, onClose, onGo
           </div>
           <div style={{
             fontSize: 10, fontWeight: 700, letterSpacing: "0.14em",
-            textTransform: "uppercase", color: Purple,
+            // 3,23:1 en violet de marque sur fond sombre : encre calibree.
+            textTransform: "uppercase", color: PurpleText,
             marginTop: 10, ...entree(0),
           }}>{T.cc_eyebrow || (en ? "Nuvi explains" : "Nuvi t'explique")}</div>
           <h2 style={{
@@ -205,7 +206,7 @@ export default function ConseilCompanion({ T, locale, ouvert, axe, onClose, onGo
           }}>
             <div style={{
               fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-              textTransform: "uppercase", color: Coral, marginBottom: 7,
+              textTransform: "uppercase", color: CoralText, marginBottom: 7,
             }}>{T.cc_avant || (en ? "What you wrote" : "Ce que tu as ecrit")}</div>
             <div style={{
               fontFamily: Serif, fontStyle: "italic", fontSize: 15,
@@ -231,7 +232,7 @@ export default function ConseilCompanion({ T, locale, ouvert, axe, onClose, onGo
         }}>
           <div style={{
             fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-            textTransform: "uppercase", color: Green, marginBottom: 7,
+            textTransform: "uppercase", color: GreenText, marginBottom: 7,
           }}>{T.cc_apres || (en ? "The shape to aim for" : "La forme a viser")}</div>
           <div style={{
             fontFamily: Sans, fontSize: 13, fontWeight: 600,

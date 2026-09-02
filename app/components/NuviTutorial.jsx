@@ -14,6 +14,15 @@ const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 // ============================================================
 
 const Purple    = "#5b3df5";
+// TROISIEME COPIE DE LA PALETTE, ET ELLE A DEJA DERIVE
+//
+// tokens.js est la source unique depuis la fusion de sharedTokens.js ; ce
+// fichier-ci se declare pourtant ses propres valeurs en dur. Consequence
+// immediate : le violet de marque pose en texte donne 3,23:1 sur fond sombre,
+// sous le plancher AA, et la correction faite ailleurs ne l'atteint pas.
+// L'encre calibree passe donc par la variable CSS, qui bascule avec le theme
+// comme partout ailleurs. Le reste du fichier reste a reprendre.
+const PurpleText = "var(--nuvi-purple-text, #5b3df5)";
 const Magenta   = "#b91c8c";
 const GradPurple = `linear-gradient(135deg, ${Purple}, ${Magenta})`;
 const Sans = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -423,7 +432,7 @@ export default function NuviTutorial({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
           <span style={{
             fontSize: 10, fontWeight: 600, letterSpacing: "0.14em",
-            textTransform: "uppercase", color: Purple,
+            textTransform: "uppercase", color: PurpleText,
           }}>{step.eyebrow}</span>
           <span style={{
             fontSize: 10, fontWeight: 500,

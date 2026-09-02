@@ -28,7 +28,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Purple, PurpleSoft, Magenta,
   Hairline, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B, Trans } from "./tokens";
+  GradPurple, B, Trans, PurpleText, MagentaText, CoralText, GreenText } from "./tokens";
 
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
@@ -542,7 +542,7 @@ function CoachText({ text }) {
       {blocks.map((b, i) => b.kind === "h" ? (
         <div key={i} style={{
           fontSize: 10.5, fontWeight: 700, letterSpacing: "0.11em",
-          textTransform: "uppercase", color: Coral,
+          textTransform: "uppercase", color: CoralText,
           marginTop: i === 0 ? 0 : 2,
         }}>{b.text}</div>
       ) : (
@@ -622,7 +622,7 @@ function Bubble({ T, msg, onAdopt, onAction }) {
             display: "inline-flex", alignItems: "center", gap: 6,
             marginTop: 7, padding: "4px 10px",
             borderRadius: RadiusPill,
-            background: GreenSoft, color: Green,
+            background: GreenSoft, color: GreenText,
             fontSize: 11, fontWeight: 600, fontFamily: Sans,
           }}>
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
@@ -919,8 +919,12 @@ export default function CoachModal({
               // Texte en gradient sur fond cream opaque : le double
               // drop-shadow d'origine (glow violet + ombre noire) bavait
               // autour des lettres au lieu de les detacher.
-              color: "#b91c8c",
-              background: "linear-gradient(135deg, #7a56ff 0%, #d4359f 100%)",
+              //
+              // Les trois valeurs etaient ecrites en dur, donc figees pour le
+              // theme clair : mesure en sombre, 2,98:1, sous le plancher. Les
+              // encres calibrees basculent avec le theme, le degrade compris.
+              color: MagentaText,
+              background: "linear-gradient(135deg, " + PurpleText + " 0%, " + MagentaText + " 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
               backgroundClip: "text",
@@ -937,8 +941,10 @@ export default function CoachModal({
               {T.co_title_a}
               {" "}<em style={{
                 fontStyle: "italic",
-                color: "#b91c8c",
-                background: "linear-gradient(135deg, #8b6dff 0%, #e547bf 100%)",
+                // Fige en clair comme le bandeau au-dessus : 2,98:1 en
+                // theme sombre. Les encres calibrees basculent avec le theme.
+                color: MagentaText,
+                background: "linear-gradient(135deg, " + PurpleText + " 0%, " + MagentaText + " 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -1138,7 +1144,7 @@ export default function CoachModal({
                   {lang === "fr" ? "Lecture du fichier..." : "Reading the file..."}
                 </span>
               ) : refus ? (
-                <span style={{ color: Coral }}>{refus}</span>
+                <span style={{ color: CoralText }}>{refus}</span>
               ) : (
                 <>
                   <strong style={{ fontWeight: 600 }}>{piece.nom || "fichier"}</strong>

@@ -10,7 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur score.
@@ -86,12 +86,12 @@ export default function MultiCVStrategyModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:Coral, marginBottom:8, fontFamily:Sans,
+              color:CoralText, marginBottom:8, fontFamily:Sans,
             }}>{T.mc_offer_label}</label>
             {prefilledOffer && (
               <div style={{
                 padding:"8px 12px",
-                background:GreenSoft, color:Green,
+                background:GreenSoft, color:GreenText,
                 borderRadius:RadiusSm,
                 fontSize:11, fontWeight:500, marginBottom:8,
                 fontFamily:Sans,
@@ -213,7 +213,7 @@ export default function MultiCVStrategyModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:8, fontFamily:Sans,
+                color:CoralText, marginBottom:8, fontFamily:Sans,
               }}>{T.mc_why}</div>
               <div style={{
                 padding:"14px 16px",
@@ -256,7 +256,7 @@ export default function MultiCVStrategyModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:10, fontFamily:Sans,
+                color:CoralText, marginBottom:10, fontFamily:Sans,
               }}>{T.mc_alternatives}</div>
               {result.alternatives.map((alt, i) => {
                 const v = versionById(alt.id);

@@ -9,7 +9,7 @@ import { texteDuFichier } from "../../lib/lireUnFichier";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
   GradGold, GradPurple, Gray200, Gray400, Gray600, Ink, Paper, RadiusMd,
-  RadiusPill, RadiusSm, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
+  RadiusPill, RadiusSm, Sans, Serif, ShadowSm, B, Trans, CoralText } from "./sharedTokens";
 
 
 // LA LECTURE DES FICHIERS A DEMENAGE
@@ -156,7 +156,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:Coral, marginBottom:12,
+            color:CoralText, marginBottom:12,
           }}>{T.ob_choose}</div>
 
           {/* Cartes CTA - cote a cote sur grand ecran : deux choix cote a
@@ -262,7 +262,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           <label style={{ display:"block", marginBottom:18 }}>
             <span style={{
               display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.12em",
-              textTransform:"uppercase", color:Coral, marginBottom:8,
+              textTransform:"uppercase", color:CoralText, marginBottom:8,
             }}>{T.ob_offre_label}</span>
             <textarea
               value={offreTexte}
@@ -281,7 +281,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
           <label style={{ display:"block", marginBottom:10 }}>
             <span style={{
               display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.12em",
-              textTransform:"uppercase", color:Coral, marginBottom:8,
+              textTransform:"uppercase", color:CoralText, marginBottom:8,
             }}>{T.ob_parcours_label}</span>
             <textarea
               value={parcoursTexte}
@@ -557,7 +557,7 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         <label style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral, marginBottom:8, display:"block",
+          color:CoralText, marginBottom:8, display:"block",
         }}>{T.ob_paste_label}</label>
         <textarea value={raw} onChange={e=>setRaw(e.target.value)}
           placeholder={T.ob_paste_ph}

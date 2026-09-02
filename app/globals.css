@@ -49,6 +49,31 @@
   --nuvi-coral-soft: #fce7dd;
   --nuvi-green: #16a34a;
   --nuvi-green-soft: #dcfce7;
+
+  /* LES COULEURS DE MARQUE NE SONT PAS DES COULEURS DE TEXTE
+   *
+   * Mesure a la volee sur quatre ecrans : le corail de la marque sur blanc
+   * donne 3,12:1, le gris clair de la sur-ligne 2,32:1, le vert de la
+   * pastille 3,00:1 sur son fond vert doux. Le plancher de WCAG AA pour du
+   * texte courant est 4,5:1. Autrement dit, les libelles de navigation, tous
+   * les intitules de champ de l'editeur et la sur-ligne "Editing" etaient
+   * sous le seuil - en petit corps, ce qui est justement la taille ou ca se
+   * paie.
+   *
+   * Nuvi s'adresse a des gens qui lisent sur un telephone, souvent dehors,
+   * souvent mal eclaire. Ce n'est pas une case a cocher.
+   *
+   * On ne touche pas aux couleurs de marque : elles restent pour les aplats,
+   * les degrades et les pastilles, ou elles portent du blanc et ou le
+   * contraste se calcule autrement. On ajoute a cote leur version pour TEXTE,
+   * calibree pour tenir 4,5:1 sur les fonds du produit - y compris les fonds
+   * doux, plus exigeants que le blanc.
+   */
+  --nuvi-coral-text: #9e5740;    /* 4.53:1 sur coral-soft, 5.4:1 sur blanc */
+  --nuvi-purple-text: #5b3df5;   /* deja 6.12:1 sur blanc */
+  --nuvi-magenta-text: #b91c8c;  /* deja 5.82:1 sur blanc */
+  --nuvi-green-text: #117f3a;    /* 4.6:1 sur green-soft, 5.1:1 sur blanc */
+  --nuvi-gray-text: #716f67;     /* 5.03:1 sur blanc, 4.50:1 sur creme doux */
   
   /* Gold (RESERVE au CV preview, ne change pas en dark) */
   --nuvi-gold: #c9a96e;
@@ -74,6 +99,14 @@
   --nuvi-gray200: #3a3a3e;
   --nuvi-gray400: #6a6a72;
   --nuvi-gray600: #c4c1b8;
+
+  /* Sur fond sombre, la contrainte s'inverse : c'est en eclaircissant qu'on
+     repasse au-dessus de 4,5:1. Le corail y tient deja (4,58:1). */
+  --nuvi-coral-text: #d97757;
+  --nuvi-purple-text: #937ff8;
+  --nuvi-magenta-text: #d26eb5;
+  --nuvi-green-text: #1da64f;
+  --nuvi-gray-text: #a8a59a;
   --nuvi-gray900: #faf8f3;
   
   /* Accents adoucis pour dark (moins saturees, plus lisibles) */

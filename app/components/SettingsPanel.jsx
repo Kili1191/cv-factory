@@ -10,7 +10,7 @@ import {
   Coral, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B, Trans } from "./tokens";
+  GradPurple, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Sous-composant : une ligne de raccourci.
@@ -28,7 +28,7 @@ function KbdRow({ keys, label }) {
         {keys.map((k, i) => (
           <span key={i} style={{
             padding:"3px 9px", borderRadius:6,
-            background:CreamSoft, color:Coral,
+            background:CreamSoft, color:CoralText,
             border:"0.5px solid "+Hairline,
             fontSize:11, fontWeight:600,
             fontFamily:"ui-monospace, monospace",
@@ -83,7 +83,7 @@ export default function SettingsPanel({
           <label style={{
             display:"block", fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:8, fontFamily:Sans,
+            color:CoralText, marginBottom:8, fontFamily:Sans,
           }}>{locale === "en" ? "Account" : "Compte"}</label>
           {cloudUser ? (
             <div style={{
@@ -133,7 +133,7 @@ export default function SettingsPanel({
         <label style={{
           display:"block", fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral, marginBottom:8, fontFamily:Sans,
+          color:CoralText, marginBottom:8, fontFamily:Sans,
         }}>{T.set_lang}</label>
         <div style={{display:"flex", gap:8}}>
           <button onClick={()=>setLocale("fr")} style={{
@@ -289,7 +289,7 @@ export default function SettingsPanel({
           <div style={{
             width:36, height:36, borderRadius:10,
             display:"flex", alignItems:"center", justifyContent:"center",
-            background:PurpleSoft, color:Purple,
+            background:PurpleSoft, color:PurpleText,
             flexShrink:0,
           }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -319,7 +319,7 @@ export default function SettingsPanel({
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:10, fontFamily:Sans,
+            color:CoralText, marginBottom:10, fontFamily:Sans,
           }}>{T.set_history}</div>
           <button onClick={onOpenHistory} style={{
             ...B({
@@ -334,7 +334,7 @@ export default function SettingsPanel({
             <div style={{
               width:36, height:36, borderRadius:10,
               display:"flex", alignItems:"center", justifyContent:"center",
-              background:GreenSoft, color:Green, flexShrink:0,
+              background:GreenSoft, color:GreenText, flexShrink:0,
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2"
@@ -363,7 +363,7 @@ export default function SettingsPanel({
           <div style={{
             fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:10, fontFamily:Sans,
+            color:CoralText, marginBottom:10, fontFamily:Sans,
           }}>{T.set_cache}</div>
           <button onClick={onClearAiCache} style={{
             ...B({
@@ -378,7 +378,7 @@ export default function SettingsPanel({
             <div style={{
               width:36, height:36, borderRadius:10,
               display:"flex", alignItems:"center", justifyContent:"center",
-              background:CreamSoft, color:Coral, flexShrink:0,
+              background:CreamSoft, color:CoralText, flexShrink:0,
             }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                 stroke="currentColor" strokeWidth="2"
@@ -401,7 +401,7 @@ export default function SettingsPanel({
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral, marginBottom:10, fontFamily:Sans,
+          color:CoralText, marginBottom:10, fontFamily:Sans,
         }}>{T.set_kbd}</div>
         <div style={{
           padding:"4px 14px",

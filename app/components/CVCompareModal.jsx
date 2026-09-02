@@ -9,7 +9,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur tag pour type de changement.
@@ -85,7 +85,7 @@ export default function CVCompareModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:Coral, marginBottom:8,
+              color:CoralText, marginBottom:8,
               fontFamily:Sans,
             }}>{T.cmp_pick_a}</label>
             <select
@@ -109,7 +109,7 @@ export default function CVCompareModal({
             <label style={{
               display:"block", fontSize:11, fontWeight:600,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:Coral, marginBottom:8,
+              color:CoralText, marginBottom:8,
               fontFamily:Sans,
             }}>{T.cmp_pick_b}</label>
             <select
@@ -214,7 +214,7 @@ export default function CVCompareModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:8, fontFamily:Sans,
+                color:CoralText, marginBottom:8, fontFamily:Sans,
               }}>{T.cmp_section_summary}</div>
               <div style={{
                 padding:"12px 16px",
@@ -232,7 +232,7 @@ export default function CVCompareModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:10, fontFamily:Sans,
+                color:CoralText, marginBottom:10, fontFamily:Sans,
               }}>{T.cmp_section_diffs}</div>
               {result.diffs.map((d, i) => {
                 const badge = typeBadge(d.type);
@@ -290,7 +290,7 @@ export default function CVCompareModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:8, fontFamily:Sans,
+                color:CoralText, marginBottom:8, fontFamily:Sans,
               }}>{T.cmp_section_verdict}</div>
               <div style={{
                 padding:"14px 16px",

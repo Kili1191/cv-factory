@@ -22,7 +22,7 @@ import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple, PurpleSoft, Magenta,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradPurple, B, Trans } from "./tokens";
+  GradPurple, B, Trans, PurpleText } from "./tokens";
 import { CountUp } from "./motion";
 
 // 9 axes : id stable, label/sub viennent de T (i18n).
@@ -526,7 +526,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
               <div style={{
                 fontSize: 10, fontWeight: 700,
                 letterSpacing: "0.12em", textTransform: "uppercase",
-                color: Purple, marginBottom: 4,
+                color: PurpleText, marginBottom: 4,
                 fontFamily: Sans,
               }}>{T.sd_priority}</div>
               <div style={{

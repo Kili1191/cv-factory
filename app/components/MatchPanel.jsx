@@ -11,8 +11,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Sans, Serif, RadiusMd, RadiusPill, ShadowSm,
-  B, IN, LBL, NO_DASH,
-} from "./sharedTokens";
+  B, IN, LBL, NO_DASH, CoralText, GreenText, PurpleText } from "./sharedTokens";
 
 function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
@@ -217,7 +216,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             padding:"10px 13px", marginBottom:10,
             border:"0.5px solid "+Purple,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Purple, marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase"}}>
               Requirements cles
             </div>
             {(res.key_requirements||[]).map((r,i) => (
@@ -232,13 +231,13 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
         <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:10}}>
           {(res.keywords_matched||[]).length > 0 && (
             <div style={{background:GreenSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:Green, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+              <div style={{fontSize:9, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
                 Presents
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
                 {(res.keywords_matched||[]).map((k,i) => (
                   <span key={i} style={{
-                    background:"#dcfce7", color:Green,
+                    background:"#dcfce7", color:GreenText,
                     borderRadius:3, padding:"2px 5px", fontSize:9,
                   }}>{k}</span>
                 ))}
@@ -247,7 +246,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           )}
           {(res.keywords_to_add||[]).length > 0 && (
             <div style={{background:CoralSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:Coral, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+              <div style={{fontSize:9, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
                 Ajoutes
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
@@ -269,7 +268,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             border:"0.5px solid "+Coral,
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:5, letterSpacing:"0.06em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.06em", textTransform:"uppercase"}}>
               Accroche lettre de motivation
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.6, fontStyle:"italic", fontFamily:Serif}}>
@@ -284,7 +283,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             background:CoralSoft, border:"0.5px solid "+Coral,
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Signaux caches dans l'offre
             </div>
             {res.hidden_signals.map((s,i) => (
@@ -301,7 +300,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             background:PurpleSoft, border:"0.5px solid "+Purple,
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Purple, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Culture entreprise (decodee)
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
@@ -316,7 +315,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             background:GreenSoft, border:"0.5px solid "+Green,
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Green, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Niveau attendu (decode)
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
@@ -331,7 +330,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             background:CoralSoft, border:"0.5px solid "+Coral,
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
-            <div style={{fontSize:10, fontWeight:700, color:Coral, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
               Questions probables en entretien
             </div>
             {res.likely_interview_questions.map((q,i) => (
@@ -360,7 +359,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           <button onClick={()=>onPackRequest(offer, res)} style={{
             ...B({
               width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
-              background:Paper, color:Purple,
+              background:Paper, color:PurpleText,
               border:"0.5px solid "+Purple,
               fontWeight:600, fontSize:14, marginBottom:8,
               fontFamily:Sans,

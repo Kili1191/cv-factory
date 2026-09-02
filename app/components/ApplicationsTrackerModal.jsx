@@ -9,7 +9,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 import GmailScanPanel from "./GmailScanPanel";
 
@@ -75,7 +75,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
   const labelStyle = {
     display:"block", fontSize:11, fontWeight:600,
     letterSpacing:"0.08em", textTransform:"uppercase",
-    color:Coral, marginBottom:6, fontFamily:Sans,
+    color:CoralText, marginBottom:6, fontFamily:Sans,
   };
   const inputStyle = {
     width:"100%", padding:"10px 12px", borderRadius:RadiusSm,
@@ -142,7 +142,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
             || "Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance."}
           style={{...inputStyle, resize:"vertical", minHeight:80}}/>
         {form.offer && form.offer.trim().length > 0 && (
-          <div style={{fontSize:11, color:Green, marginTop:5}}>
+          <div style={{fontSize:11, color:GreenText, marginTop:5}}>
             {(T.ap_offer_ready || "Annonce enregistree, les actions suivantes sont debloquees")}
           </div>
         )}
@@ -320,7 +320,7 @@ function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
         )}
         {app.link && (
           <a href={app.link} target="_blank" rel="noopener noreferrer"
-            style={{color:Purple, textDecoration:"none"}}>
+            style={{color:PurpleText, textDecoration:"none"}}>
             {(() => {
               try { return new URL(app.link).host; }
               catch { return app.link.slice(0, 30); }
@@ -373,7 +373,7 @@ function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
         <button onClick={()=>onEdit(app)} style={{
           ...B({
             flex:1, padding:"7px 12px", borderRadius:RadiusPill,
-            background:CreamSoft, color:Coral,
+            background:CreamSoft, color:CoralText,
             border:"0.5px solid "+Coral,
             fontSize:11, fontWeight:600, fontFamily:Sans,
           })
@@ -381,7 +381,7 @@ function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
         <button onClick={()=>onDelete(app.id)} style={{
           ...B({
             padding:"7px 12px", borderRadius:RadiusPill,
-            background:CoralSoft, color:Coral,
+            background:CoralSoft, color:CoralText,
             border:"0.5px solid "+Coral,
             fontSize:11, fontWeight:600, fontFamily:Sans,
           })

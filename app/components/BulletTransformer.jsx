@@ -24,7 +24,7 @@ import {
   Ink, Cream, CreamSoft, Paper, Gold, GoldDeep, Purple,
   Coral, Green, Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  GradDark, KEYFRAMES_V17, B, Trans } from "./tokens";
+  GradDark, KEYFRAMES_V17, B, Trans, CoralText } from "./tokens";
 
 // LA MESURE MANQUANTE : PROPOSEE, PAS EXIGEE
 //
@@ -290,7 +290,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                         {i < tab.length - 1 && (
                           <span style={{
                             background: "rgba(255,90,54,.14)",
-                            color: Coral,
+                            color: CoralText,
                             borderRadius: 4, padding: "0 5px", fontWeight: 600,
                           }}>{valeur(c.key) || "?"}</span>
                         )}

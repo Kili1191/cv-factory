@@ -18,8 +18,7 @@ import React, { useCallback, useState } from "react";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
-  Purple, Magenta, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Purple, Magenta, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,  CoralText } from "./tokens";
 
 export default function JobSearchModal({ T, locale = "en", onTrack, onClose }) {
   const [what, setWhat] = useState("");
@@ -154,7 +153,7 @@ export default function JobSearchModal({ T, locale = "en", onTrack, onClose }) {
             fontFamily: Serif, fontSize: 15.5, fontWeight: 500,
             color: Ink, lineHeight: 1.3, letterSpacing: "-0.01em",
           }}>{job.title}</div>
-          <div style={{ fontSize: 12.5, color: Coral, fontWeight: 600, marginTop: 2 }}>
+          <div style={{ fontSize: 12.5, color: CoralText, fontWeight: 600, marginTop: 2 }}>
             {job.company}
           </div>
           <div style={{

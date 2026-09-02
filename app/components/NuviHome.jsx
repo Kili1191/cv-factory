@@ -7,7 +7,7 @@ import { Reveal, WordReveal, Magnetic, Aurora, ScrollProgress, useReducedMotion 
 // Violet etait un second nom pour Purple, sur la meme variable CSS :
 // deux noms pour une seule chose, donc deux endroits a changer le jour
 // ou la marque bouge, et un des deux oublie.
-import { Cream, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple } from "./tokens";
+import { Cream, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple, MagentaText } from "./tokens";
 /**
  * NuviHome v5 : Demarrage "avant / apres" (Direction D, verdict panel 2026-05-21)
  *
@@ -556,7 +556,7 @@ export default function NuviHome({
             <WordReveal text={T.title}/>{" "}
             <em style={{
               fontStyle: "italic",
-              color: Magenta,
+              color: MagentaText,
               background: "linear-gradient(135deg, " + Purple + " 0%, " + Magenta + " 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",

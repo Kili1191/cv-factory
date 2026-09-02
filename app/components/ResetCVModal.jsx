@@ -23,7 +23,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, CoralSoft, Purple, Magenta, PurpleSoft } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, CoralSoft, Purple, Magenta, PurpleSoft, CoralText, PurpleText } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -361,7 +361,7 @@ export default function ResetCVModal({
                 <div style={{
                   width: 36, height: 36, borderRadius: 10,
                   background: Paper,
-                  color: Purple,
+                  color: PurpleText,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                   border: "0.5px solid " + Hairline,
@@ -433,7 +433,7 @@ export default function ResetCVModal({
                 <div style={{
                   width: 32, height: 32, borderRadius: 8,
                   background: CoralSoft,
-                  color: Coral,
+                  color: CoralText,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   flexShrink: 0,
                 }}>

@@ -10,8 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,
-} from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,  CoralText, GreenText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleur tag selon le type d'issue.
@@ -90,7 +89,7 @@ export default function TruthModal({ T, result, loading, onApplyFix, onClose }) 
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:6,
+                color:CoralText, marginBottom:6,
               }}>{T.tc_verdict}</div>
               <div style={{
                 fontFamily:Serif, fontStyle:"italic",
@@ -172,7 +171,7 @@ export default function TruthModal({ T, result, loading, onApplyFix, onClose }) 
                       marginBottom: onApplyFix ? 10 : 0,
                     }}>
                       <div style={{
-                        fontSize:10, fontWeight:600, color:Green,
+                        fontSize:10, fontWeight:600, color:GreenText,
                         letterSpacing:"0.1em", textTransform:"uppercase",
                         marginBottom:4,
                       }}>{T.tc_fix}</div>

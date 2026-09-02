@@ -25,8 +25,7 @@ import {
   Hairline, InkMuted,
   Gray200, Gray600,
   Serif, Sans, RadiusPill, B,
-  KEYFRAMES_V17, Trans
-} from "./tokens";
+  KEYFRAMES_V17, Trans, CoralText } from "./tokens";
 
 // NuviLogo importe en dynamic (ssr:false) pour eviter mismatch hydratation
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
@@ -132,7 +131,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
               <div style={{
                 fontSize: 11, fontWeight: 600,
                 letterSpacing: "0.12em", textTransform: "uppercase",
-                color: Coral,
+                color: CoralText,
                 marginBottom: 4,
               }}>{eyebrow}</div>
             )}

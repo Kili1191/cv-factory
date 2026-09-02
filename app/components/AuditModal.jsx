@@ -14,7 +14,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 
 // Couleurs verdict.
@@ -148,7 +148,7 @@ export default function AuditModal({
           <label style={{
             display:"block", fontSize:11, fontWeight:600,
             letterSpacing:"0.1em", textTransform:"uppercase",
-            color:Coral, marginBottom:8,
+            color:CoralText, marginBottom:8,
             fontFamily:Sans,
           }}>{T.am_country_label}</label>
 
@@ -264,7 +264,7 @@ export default function AuditModal({
               <div style={{
                 fontSize:10, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:5,
+                color:CoralText, marginBottom:5,
               }}>{T.am_first_impression}</div>
               <div style={{
                 fontFamily:Serif, fontStyle:"italic",
@@ -304,7 +304,7 @@ export default function AuditModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Green, marginBottom:8,
+                color:GreenText, marginBottom:8,
                 fontFamily:Sans,
               }}>{T.am_strengths}</div>
               {result.forces.map((f, i) => (
@@ -324,7 +324,7 @@ export default function AuditModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:8,
+                color:CoralText, marginBottom:8,
                 fontFamily:Sans,
               }}>{T.am_weaknesses}</div>
               {result.faiblesses.map((f, i) => (
@@ -344,7 +344,7 @@ export default function AuditModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:6,
+                color:CoralText, marginBottom:6,
                 fontFamily:Sans,
               }}>{T.am_suggestions}</div>
               <div style={{
@@ -366,7 +366,7 @@ export default function AuditModal({
                       transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                     })
                   }}>
-                  <span style={{color:Purple, fontWeight:600, flexShrink:0}}>{i+1}.</span>
+                  <span style={{color:PurpleText, fontWeight:600, flexShrink:0}}>{i+1}.</span>
                   <span style={{flex:1}}>{s}</span>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                     stroke={Purple} strokeWidth="2.5"
@@ -385,7 +385,7 @@ export default function AuditModal({
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:10,
+                color:CoralText, marginBottom:10,
                 fontFamily:Sans,
               }}>{T.am_kw_missing}</div>
               <div style={{

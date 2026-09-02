@@ -7,7 +7,7 @@ import ScoreDashboard from "./ScoreDashboard";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Hairline, InkMuted, Magenta,
   Gray100, Gray200, Gray400, Gray600, Green, Ink, Paper, Purple, PurpleSoft,
-  RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans } from "./sharedTokens";
+  RadiusMd, RadiusPill, Sans, Serif, ShadowSm, B, Trans, CoralText } from "./sharedTokens";
 
 
 // Helper local : couleur de fond selon le score
@@ -181,7 +181,7 @@ function ScorePanel({ cv, apiKey, notify, layout, T, locale,
               <div style={{
                 fontSize: 11, fontWeight: 600,
                 letterSpacing: "0.1em", textTransform: "uppercase",
-                color: Coral, marginBottom: 10,
+                color: CoralText, marginBottom: 10,
                 fontFamily: Sans,
               }}>{T2.detail}</div>
               <div style={{

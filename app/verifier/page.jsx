@@ -27,8 +27,7 @@ import { verifierUnPdf } from "../../lib/verifierUnPdf.js";
 import { texteDuFichier } from "../../lib/lireUnFichier.js";
 import {
   Ink, Cream, CreamSoft, Paper, Coral, CoralSoft, Green, GreenSoft,
-  Purple, Magenta, Gray200, Gray600, Serif, Sans, GradPurple,
-} from "../components/tokens";
+  Purple, Magenta, Gray200, Gray600, Serif, Sans, GradPurple,  CoralText, PurpleText } from "../components/tokens";
 
 const Muted = Gray600;
 const Hair = Gray200;
@@ -334,7 +333,7 @@ export default function PageVerifier() {
   const montreDemo = etat === "attente" || etat === "erreur";
   const tag = {
     fontFamily: Mono, fontSize: 10.5, letterSpacing: "0.18em",
-    textTransform: "uppercase", color: Coral,
+    textTransform: "uppercase", color: CoralText,
   };
 
   return (
@@ -370,7 +369,7 @@ export default function PageVerifier() {
             letterSpacing: "-0.04em", margin: 0,
           }}>
             {t.h1a}<br />{t.h1b}<br />
-            <span style={{ fontStyle: "italic", color: Coral }}>{t.h1c}</span>
+            <span style={{ fontStyle: "italic", color: CoralText }}>{t.h1c}</span>
           </h1>
           <p className="v-rise" style={{
             "--r": 2, fontSize: 16, lineHeight: 1.62, color: Muted,
@@ -703,7 +702,7 @@ export default function PageVerifier() {
               {Object.entries(t.libelles).map(([cle, nom], i) => (
                 <div key={cle} style={{ background: Paper, padding: "20px 22px" }}>
                   <div style={{
-                    fontFamily: Mono, fontSize: 10, color: Purple,
+                    fontFamily: Mono, fontSize: 10, color: PurpleText,
                     marginBottom: 8, letterSpacing: "0.08em",
                   }}>{String(i + 1).padStart(2, "0")}</div>
                   <div style={{
@@ -716,7 +715,7 @@ export default function PageVerifier() {
               ))}
               <div style={{ background: Ink, color: Cream, padding: "20px 22px" }}>
                 <div style={{
-                  fontFamily: Mono, fontSize: 10, color: Coral,
+                  fontFamily: Mono, fontSize: 10, color: CoralText,
                   marginBottom: 8, letterSpacing: "0.08em",
                 }}>+</div>
                 <div style={{

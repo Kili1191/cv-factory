@@ -10,7 +10,7 @@ import {
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400,
   Hairline, InkMuted,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm,
-  KEYFRAMES_V17, B, Trans } from "./tokens";
+  KEYFRAMES_V17, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 
 // Couleur d'accent par categorie de question.
 function categoryAccent(cat) {
@@ -84,7 +84,7 @@ function Flashcard({ T, q }) {
           <div style={{
             fontSize:10, fontWeight:700,
             letterSpacing:"0.12em", textTransform:"uppercase",
-            color:Coral, marginBottom:4,
+            color:CoralText, marginBottom:4,
             fontFamily:Sans,
           }}>{T.iv_star_tip || "Conseil"}</div>
           <div style={{
@@ -106,7 +106,7 @@ function Flashcard({ T, q }) {
         <div style={{
           fontSize:11, fontWeight:600,
           letterSpacing:"0.1em", textTransform:"uppercase",
-          color:Coral, marginBottom:14,
+          color:CoralText, marginBottom:14,
           fontFamily:Sans,
         }}>{T.iv_star_title}</div>
 
@@ -174,7 +174,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
     <div style={{ marginTop:26 }}>
       <div style={{
         fontSize:11, fontWeight:700, letterSpacing:"0.12em",
-        textTransform:"uppercase", color:Coral, marginBottom:6, fontFamily:Sans,
+        textTransform:"uppercase", color:CoralText, marginBottom:6, fontFamily:Sans,
       }}>{T.iv_proof_eyebrow || "On va te le faire prouver"}</div>
       <div style={{
         fontFamily:Serif, fontSize:19, fontWeight:400, color:Ink,
@@ -242,7 +242,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
           }}>
             <div style={{
               fontSize:10, fontWeight:700, letterSpacing:"0.1em",
-              textTransform:"uppercase", color:Coral, marginBottom:5,
+              textTransform:"uppercase", color:CoralText, marginBottom:5,
             }}>{T.iv_proof_probe || "Ce qu'on va te demander"}</div>
             <div style={{ fontSize:13.5, color:Ink, lineHeight:1.5, fontWeight:600 }}>
               {l.probe}
@@ -252,7 +252,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
           <div style={{ marginBottom:10 }}>
             <div style={{
               fontSize:10, fontWeight:700, letterSpacing:"0.1em",
-              textTransform:"uppercase", color:Green, marginBottom:5,
+              textTransform:"uppercase", color:GreenText, marginBottom:5,
             }}>{T.iv_proof_prepare || "A avoir pret"}</div>
             <div style={{ fontSize:13, color:Ink, lineHeight:1.55 }}>{l.prepare}</div>
           </div>
@@ -332,7 +332,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:Coral, marginBottom:4, fontFamily:Sans,
+        color:CoralText, marginBottom:4, fontFamily:Sans,
       }}>{T.iv_qta_eyebrow}</div>
       <div style={{
         fontFamily:Serif, fontWeight:400, fontSize:20,
@@ -475,7 +475,7 @@ function AskRecruiterSection({ T, loading, result, hasMainResult, onRun, onCopyA
                           fontSize:11, color:InkMuted,
                           lineHeight:1.5, marginBottom:6,
                         }}>
-                          <span style={{fontWeight:600, color:Coral}}>{T.iv_qta_why}</span>
+                          <span style={{fontWeight:600, color:CoralText}}>{T.iv_qta_why}</span>
                           {" : " + q.why}
                         </div>
                       )}
@@ -530,7 +530,7 @@ function AfterContextForm({ T, afterContext, setAfterContext }) {
   const fld = {
     fontSize:11, fontWeight:600,
     letterSpacing:"0.08em", textTransform:"uppercase",
-    color:Coral, marginBottom:6, fontFamily:Sans,
+    color:CoralText, marginBottom:6, fontFamily:Sans,
   };
   const inputStyle = {
     width:"100%", padding:"9px 12px",
@@ -546,7 +546,7 @@ function AfterContextForm({ T, afterContext, setAfterContext }) {
       <div style={{
         fontSize:11, fontWeight:600,
         letterSpacing:"0.12em", textTransform:"uppercase",
-        color:Coral, marginBottom:14, fontFamily:Sans,
+        color:CoralText, marginBottom:14, fontFamily:Sans,
       }}>{T.iv_af_section_context}</div>
 
       <div style={{
@@ -729,7 +729,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
             <div style={{
               fontSize:9, fontWeight:700,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:Coral, marginBottom:3,
+              color:CoralText, marginBottom:3,
             }}>{T.iv_em_subject}</div>
             <div style={{
               fontSize:13, fontWeight:500, color:Ink,
@@ -745,7 +745,7 @@ function EmailCard({ T, loading, result, tone, setTone, recapFilled, onRun }) {
             <div style={{
               fontSize:9, fontWeight:700,
               letterSpacing:"0.1em", textTransform:"uppercase",
-              color:Coral, marginBottom:6,
+              color:CoralText, marginBottom:6,
             }}>{T.iv_em_body}</div>
             <div style={{
               fontSize:13, color:Ink, lineHeight:1.6,
@@ -910,7 +910,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:10, fontWeight:700,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:5,
+                color:CoralText, marginBottom:5,
               }}>{T.iv_db_verdict}</div>
               <div style={{
                 fontFamily:Serif, fontWeight:500, fontSize:16,
@@ -930,7 +930,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.08em", textTransform:"uppercase",
-                color:Green, marginBottom:8,
+                color:GreenText, marginBottom:8,
               }}>{T.iv_db_strengths}</div>
               {result.strengths.map((s, i) => (
                 <div key={i} style={{
@@ -940,7 +940,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                   border:"0.5px solid "+Green,
                   fontSize:12, color:Ink, lineHeight:1.5,
                 }}>
-                  <span style={{color:Green, fontWeight:700, flexShrink:0}}>+</span>
+                  <span style={{color:GreenText, fontWeight:700, flexShrink:0}}>+</span>
                   <span>{s}</span>
                 </div>
               ))}
@@ -953,7 +953,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.08em", textTransform:"uppercase",
-                color:Coral, marginBottom:8,
+                color:CoralText, marginBottom:8,
               }}>{T.iv_db_improvements}</div>
               {result.improvements.map((s, i) => (
                 <div key={i} style={{
@@ -963,7 +963,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                   border:"0.5px solid "+Coral,
                   fontSize:12, color:Ink, lineHeight:1.5,
                 }}>
-                  <span style={{color:Coral, fontWeight:700, flexShrink:0}}>!</span>
+                  <span style={{color:CoralText, fontWeight:700, flexShrink:0}}>!</span>
                   <span>{s}</span>
                 </div>
               ))}
@@ -976,7 +976,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.08em", textTransform:"uppercase",
-                color:Coral, marginBottom:8,
+                color:CoralText, marginBottom:8,
               }}>{T.iv_db_red_flags}</div>
               {result.red_flags.length === 0 ? (
                 <div style={{
@@ -994,7 +994,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                     border:"0.5px solid "+Coral,
                     fontSize:12, color:Ink, lineHeight:1.5,
                   }}>
-                    <span style={{color:Coral, fontWeight:700, flexShrink:0}}>x</span>
+                    <span style={{color:CoralText, fontWeight:700, flexShrink:0}}>x</span>
                     <span>{s}</span>
                   </div>
                 ))
@@ -1008,7 +1008,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
               <div style={{
                 fontSize:11, fontWeight:600,
                 letterSpacing:"0.08em", textTransform:"uppercase",
-                color:Purple, marginBottom:8,
+                color:PurpleText, marginBottom:8,
               }}>{T.iv_db_next_steps}</div>
               {result.next_steps.map((s, i) => (
                 <div key={i} style={{
@@ -1018,7 +1018,7 @@ function DebriefCard({ T, loading, result, recapFilled, onRun }) {
                   border:"0.5px solid "+Purple,
                   fontSize:12, color:Ink, lineHeight:1.5,
                 }}>
-                  <span style={{color:Purple, fontWeight:700, flexShrink:0}}>{i + 1}.</span>
+                  <span style={{color:PurpleText, fontWeight:700, flexShrink:0}}>{i + 1}.</span>
                   <span>{s}</span>
                 </div>
               ))}
@@ -1509,7 +1509,7 @@ export default function InterviewModal({
             <div style={{
               fontSize:11, fontWeight:600,
               letterSpacing:"0.12em", textTransform:"uppercase",
-              color:Coral, marginBottom:4,
+              color:CoralText, marginBottom:4,
             }}>{T.iv_eyebrow}</div>
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1557,7 +1557,7 @@ export default function InterviewModal({
               <div style={{
                 fontSize:10, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:6, fontFamily:Sans,
+                color:CoralText, marginBottom:6, fontFamily:Sans,
               }}>{T.iv_round_label}</div>
               <select
                 value={round || "all"}
@@ -1639,7 +1639,7 @@ export default function InterviewModal({
                     <div style={{
                       fontSize:11, fontWeight:600,
                       letterSpacing:"0.12em", textTransform:"uppercase",
-                      color:Coral, marginBottom:4, fontFamily:Sans,
+                      color:CoralText, marginBottom:4, fontFamily:Sans,
                     }}>{T.iv_during_eyebrow}</div>
                     <div style={{
                       fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1667,7 +1667,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.12em", textTransform:"uppercase",
-                    color:Coral, marginBottom:14, fontFamily:Sans,
+                    color:CoralText, marginBottom:14, fontFamily:Sans,
                   }}>{T.iv_during_section_tools}</div>
 
                   {/* Cartes pense-bete + pack PDF */}
@@ -1708,7 +1708,7 @@ export default function InterviewModal({
                     <div style={{
                       fontSize:11, fontWeight:600,
                       letterSpacing:"0.12em", textTransform:"uppercase",
-                      color:Coral, marginBottom:4, fontFamily:Sans,
+                      color:CoralText, marginBottom:4, fontFamily:Sans,
                     }}>{T.iv_after_eyebrow}</div>
                     <div style={{
                       fontFamily:Serif, fontWeight:400, fontSize:22,
@@ -1745,7 +1745,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.12em", textTransform:"uppercase",
-                    color:Coral, marginBottom:14, fontFamily:Sans,
+                    color:CoralText, marginBottom:14, fontFamily:Sans,
                   }}>{T.iv_af_section_tools}</div>
 
                   {/* Cartes email + debrief */}
@@ -1791,13 +1791,13 @@ export default function InterviewModal({
                 <div style={{
                   fontSize:11, fontWeight:600,
                   letterSpacing:"0.1em", textTransform:"uppercase",
-                  color:Coral, marginBottom:8,
+                  color:CoralText, marginBottom:8,
                   fontFamily:Sans,
                 }}>{T.iv_offer_label}</div>
                 {prefilledOffer && (
                   <div style={{
                     padding:"8px 12px",
-                    background:GreenSoft, color:Green,
+                    background:GreenSoft, color:GreenText,
                     borderRadius:RadiusSm,
                     fontSize:11, fontWeight:500, marginBottom:8,
                     fontFamily:Sans,
@@ -1836,7 +1836,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.1em", textTransform:"uppercase",
-                    color:Coral, marginBottom:8, fontFamily:Sans,
+                    color:CoralText, marginBottom:8, fontFamily:Sans,
                   }}>{T.iv_cv_label || "Preparer sur quel CV"}</div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                     {[{ id:null, name:T.iv_cv_current || "CV en cours" }]
@@ -1965,7 +1965,7 @@ export default function InterviewModal({
                 <button onClick={onRun} style={{
                   ...B({
                     padding:"6px 12px", borderRadius:RadiusPill,
-                    background:"transparent", color:Coral,
+                    background:"transparent", color:CoralText,
                     border:"0.5px solid "+Hairline,
                     fontSize:11, fontWeight:500,
                     fontFamily:Sans,
@@ -2065,7 +2065,7 @@ export default function InterviewModal({
                       color:Cream, letterSpacing:"-0.01em", marginBottom:4,
                     }}>{T.iv_done}</div>
                     <div style={{
-                      fontSize:12, color:Purple,
+                      fontSize:12, color:PurpleText,
                       lineHeight:1.5,
                     }}>{T.iv_done_sub}</div>
                   </div>

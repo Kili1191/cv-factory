@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral, Magenta, Purple, CoralText, PurpleText, MagentaText } from "./tokens";
 
 // La largeur de la barre, en un seul endroit : l'espaceur, la barre elle-meme
 // et la variable CSS que lit l'en-tete doivent dire le meme nombre, sinon le
@@ -70,6 +70,20 @@ export default function NuviSidebar({
     }
   }, []);
 
+
+  // DEUX ROLES, DEUX COULEURS
+  //
+  // itemColors sert a la fois d'encre pour le libelle et de teinte pour
+  // l'aplat de l'entree active. Ce sont deux usages differents : le corail de
+  // marque donne 3,12:1 en texte sur blanc, sous le plancher AA de 4,5:1,
+  // mais il est parfait a 8% d'opacite derriere. On garde donc la marque pour
+  // le fond et on prend la version calibree pour l'encre.
+  const encreItem = {
+    home: CoralText, coach: PurpleText, edit: CoralText, adjust: PurpleText,
+    jobs: CoralText, target: CoralText, pack: PurpleText, live: MagentaText,
+    audits: PurpleText, cvs: CoralText, design: CoralText, tracking: CoralText,
+    settings: InkMuted,
+  };
 
   const itemColors = {
     home: Coral,
@@ -218,7 +232,7 @@ export default function NuviSidebar({
     onSubSelect(parentKey, subKey);
   };
 
-  const itemStyle = (isActive, accentColor) => ({
+  const itemStyle = (isActive, accentColor, encre) => ({
     display: "flex",
     alignItems: "center",
     gap: 12,
@@ -234,7 +248,7 @@ export default function NuviSidebar({
     border: "none",
     cursor: "pointer",
     background: isActive ? accentColor + "14" : "transparent",
-    color: isActive ? accentColor : InkMuted,
+    color: isActive ? encre : InkMuted,
     transition: Trans(["background", "color"], "fast"),
     fontFamily: "'Inter', -apple-system, sans-serif",
     fontSize: 13.5,
@@ -254,11 +268,11 @@ export default function NuviSidebar({
     </svg>
   );
 
-  const survol = (accent) => ({
+  const survol = (accent, encre) => ({
     onMouseEnter: (e) => {
       if (e.currentTarget.getAttribute("data-nv-actif") === "1") return;
       e.currentTarget.style.background = accent + "0d";
-      e.currentTarget.style.color = accent;
+      e.currentTarget.style.color = encre || accent;
     },
     onMouseLeave: (e) => {
       if (e.currentTarget.getAttribute("data-nv-actif") === "1") return;
@@ -277,6 +291,7 @@ export default function NuviSidebar({
   const renderItem = (item) => {
     const isActive = active === item.key;
     const accent = itemColors[item.key] || Coral;
+    const encre = encreItem[item.key] || CoralText;
     const sousItems = subItemsMap[item.key];
     const ouvert = sectionOuverte === item.key;
 
@@ -292,8 +307,8 @@ export default function NuviSidebar({
               handleSelect(item.key);
             }
           }}
-          {...survol(accent)}
-          style={itemStyle(isActive, accent)}
+          {...survol(accent, encre)}
+          style={itemStyle(isActive, accent, encre)}
           data-nv-nav={item.key}
           data-nv-actif={isActive ? "1" : "0"}
           aria-current={isActive ? "page" : undefined}
@@ -331,7 +346,7 @@ export default function NuviSidebar({
                 key={sub.key}
                 type="button"
                 onClick={() => handleSubSelect(item.key, sub.key)}
-                {...survol(accent)}
+                {...survol(accent, encre)}
                 data-nv-sub={item.key + ":" + sub.key}
                 data-nv-actif="0"
                 style={{
@@ -355,7 +370,7 @@ export default function NuviSidebar({
                 {sub.isAI && (
                   <span aria-hidden="true" style={{
                     fontSize: 9, letterSpacing: ".06em", fontWeight: 700,
-                    color: Purple, background: Purple + "14",
+                    color: PurpleText, background: Purple + "14",
                     borderRadius: 4, padding: "2px 5px", flexShrink: 0,
                   }}>{lang === "en" ? "AI" : "IA"}</span>
                 )}
@@ -371,8 +386,8 @@ export default function NuviSidebar({
     <button
       type="button"
       onClick={onClick}
-      {...survol(InkMuted)}
-      style={itemStyle(false, InkMuted)}
+      {...survol(InkMuted, InkMuted)}
+      style={itemStyle(false, InkMuted, InkMuted)}
       data-nv-nav={key}
       data-nv-actif="0"
     >

@@ -20,7 +20,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Purple, Magenta, PurpleSoft } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Purple, Magenta, PurpleSoft, PurpleText } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -344,7 +344,7 @@ export default function ExportPDFModal({
             <div style={{
               width: 36, height: 36, borderRadius: 10,
               background: Paper,
-              color: Purple,
+              color: PurpleText,
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
               border: "0.5px solid " + Hairline,

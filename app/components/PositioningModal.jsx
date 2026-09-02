@@ -10,7 +10,7 @@ import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, CoralSoft, Green, GreenSoft, Purple, Magenta, PurpleSoft,
   Gray100, Gray200, Gray400, Gray600,
-  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans } from "./tokens";
+  Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 
 export default function PositioningModal({ T, result, loading, onAdopt, onClose }) {
@@ -82,7 +82,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
             }}>{T.pm_angle} {i+1}</span>
             {a.salary_range && (
               <span style={{
-                fontSize:10, fontWeight:600, color:Green,
+                fontSize:10, fontWeight:600, color:GreenText,
                 background:GreenSoft,
                 padding:"4px 10px", borderRadius:RadiusPill,
                 letterSpacing:"0.04em",
@@ -113,7 +113,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
               <div style={{
                 fontSize:10, fontWeight:600,
                 letterSpacing:"0.1em", textTransform:"uppercase",
-                color:Coral, marginBottom:6,
+                color:CoralText, marginBottom:6,
                 fontFamily:Sans,
               }}>{T.pm_highlight}</div>
               {a.key_points.map((p, j) => (
@@ -124,7 +124,7 @@ export default function PositioningModal({ T, result, loading, onAdopt, onClose 
                 }}>
                   <span style={{
                     position:"absolute", left:0, top:0,
-                    color:Purple, fontWeight:600,
+                    color:PurpleText, fontWeight:600,
                   }}>+</span>
                   {p}
                 </div>

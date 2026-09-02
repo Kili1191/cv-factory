@@ -13,7 +13,7 @@
 import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 
-import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Purple, Magenta, Green, GreenSoft } from "./tokens";
+import { Trans, Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Purple, Magenta, Green, GreenSoft, PurpleText } from "./tokens";
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 const NuviCompanion = dynamic(() => import("./NuviCompanion"), { ssr: false });
 
@@ -219,7 +219,7 @@ export default function AccountSoonModal({
             fontSize: 10,
             fontWeight: 700,
             letterSpacing: "0.14em",
-            color: Purple,
+            color: PurpleText,
             marginBottom: 8,
           }}>{tx.eyebrow}</div>
 
@@ -286,7 +286,7 @@ export default function AccountSoonModal({
                   lineHeight: 1.5,
                 }}>
                   <span style={{
-                    color: Purple,
+                    color: PurpleText,
                     flexShrink: 0,
                     marginTop: 2,
                   }}>
@@ -311,7 +311,7 @@ export default function AccountSoonModal({
                 fontWeight: 600,
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: Purple,
+                color: PurpleText,
                 marginBottom: 8,
               }}>
                 {tx.email_label}
