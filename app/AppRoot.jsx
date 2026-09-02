@@ -113,7 +113,7 @@ import { isCloudConfigured } from "../lib/supabaseClient.js";
 // comparables sont identiques au caractere pres a celles du theme clair. En
 // clair, ce changement ne se voit pas ; il rend seulement le sombre atteignable.
 import {
-  Ink, InkSoft, Cream, CreamSoft, Paper, Gold, GoldDeep,
+  Ink, InkSoft, InkMuted, Cream, CreamSoft, Paper, Gold, GoldDeep,
   Purple, PurpleSoft, Magenta, Coral, CoralSoft, Green, GreenSoft,
   Gray50, Gray100, Gray200, Gray400, Gray600, Gray900,
   Serif, Sans, Dark, Desk,
@@ -10378,10 +10378,17 @@ export default function App() {
         }}>
           <div style={{display:"flex", flexDirection:"column", alignItems:"flex-start", gap:2}}>
             <NuviLogo size={32} inkColor={Ink} />
+            {/* PAS D'OPACITE POUR ECLAIRCIR DU TEXTE
+                Cette ligne portait Ink a 0,65 d'opacite. La couleur declaree
+                restait un quasi-noir, donc tout controle qui compare une
+                couleur de texte a une couleur de fond y lisait 19:1, et ce
+                qui s'affichait tenait 4:1 : sous le plancher, en corps 9,5,
+                sur un verre translucide. L'encre attenuee est calibree pour
+                ce role, elle. */}
             <div style={{
-              color:Ink, fontSize:9.5,
+              color:InkMuted, fontSize:9.5,
               fontFamily:Serif, fontStyle:"italic",
-              fontWeight:400, opacity:0.65,
+              fontWeight:400,
               letterSpacing:"0.02em",
               marginLeft:1,
             }}>{T.appSub}</div>
