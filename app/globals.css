@@ -1685,3 +1685,54 @@ html {
   .nuvi-piste-doc { min-height: 0; }
   .nuvi-piste-colle { position: static; }
 }
+
+/* ============================================================
+ * L'ACCENT DU TITRE : UN TRAIT, PAS UN DEGRADE
+ *
+ * Le mot d'accent du heros etait peint par un degrade violet vers magenta.
+ * C'est la signature visuelle la plus reconnaissable d'une interface
+ * generee, et la bibliotheque de direction artistique installee dans ce
+ * depot la range explicitement parmi les rejets. La famille chaude, celle ou
+ * vit deja Nuvi, n'admet qu'une seule couleur saturee par page.
+ *
+ * Il y avait un cout mesurable en plus du cout de style : un texte peint par
+ * un degrade n'a plus de couleur de texte declaree. Aucun controle de
+ * contraste ne peut le lire, exactement comme l'opacite posee sur une encre.
+ *
+ * La phrase revient donc a l'encre, ou elle est pleinement lisible, et
+ * l'accent passe DESSOUS : un trait de corail epais qui se dessine de la
+ * gauche vers la droite. C'est le geste d'un marqueur sur une page, il
+ * appartient au registre editorial du reste de la vitrine, et il ne touche
+ * jamais a la lisibilite du texte.
+ */
+.nuvi-souligne {
+  /* Le trait vit dans un fond, pas dans une bordure : une bordure se
+     placerait sous la boite entiere, y compris sur une ligne vide quand le
+     titre se replie en deux. */
+  background-image: linear-gradient(var(--nuvi-coral), var(--nuvi-coral));
+  background-repeat: no-repeat;
+  /* Sous la ligne de base, assez bas pour ne pas toucher les jambages. */
+  background-position: 0 calc(100% - 0.06em);
+  background-size: 0% 0.09em;
+  padding-bottom: 0.06em;
+}
+
+@keyframes nuviTraitSouligne {
+  from { background-size: 0% 0.09em; }
+  to   { background-size: 100% 0.09em; }
+}
+
+/* Il se dessine a l'arrivee de la page, apres le titre lui-meme. Sans
+   animation-timeline le trait doit quand meme exister : l'etat par defaut
+   est donc le trait ABSENT, et l'animation le pose. Un navigateur sans
+   animation du tout afficherait un titre sans trait, ce qui reste un titre
+   correct, alors qu'un trait fige a mi-course serait un defaut visible. */
+@media (prefers-reduced-motion: no-preference) {
+  .nuvi-souligne {
+    animation: nuviTraitSouligne 900ms cubic-bezier(0.22, 1, 0.36, 1) 620ms both;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nuvi-souligne { background-size: 100% 0.09em; }
+}

@@ -156,8 +156,19 @@ export default function Morph({ paires, lang = "en", labels }) {
                 display: "inline-grid", justifyItems: "start",
                 alignItems: "baseline",
                 fontFamily: "'Fraunces', 'DM Serif Display', Georgia, serif",
-                fontSize: "clamp(20px, 3.1vw, 38px)",
-                lineHeight: 1.16, letterSpacing: "-0.025em",
+                // L'ECHELLE EST L'ARGUMENT
+                //
+                // Ce bloc plafonnait a 38px, la taille d'un sous-titre. C'est
+                // pourtant le seul geste original de la page : les lettres se
+                // deforment vraiment, par les axes variables de Fraunces et
+                // par un filtre de fusion, et aucun autre outil de CV ne
+                // montre ca. A 38px on le lisait comme une legende, et le
+                // titre de section a cote, lui, montait a 60.
+                //
+                // Il passe donc a l'echelle des titres. Une demonstration
+                // qu'il faut chercher des yeux n'est pas une demonstration.
+                fontSize: "var(--t-title)",
+                lineHeight: 1.08, letterSpacing: "-0.035em",
                 // Marge de securite pour que le flou du filtre ne soit pas
                 // coupe par la boite : une goutte tronquee au ras du texte
                 // se voit immediatement.

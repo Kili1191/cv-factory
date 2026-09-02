@@ -275,6 +275,8 @@ export default function Landing({ lang = "en" }) {
   const Ink = "var(--nuvi-ink, #0a0a0a)";
   const Muted = "var(--nuvi-ink-muted, #5a5a62)";
   const Hair = "var(--nuvi-hairline, #e8e3d6)";
+  // Le creme du papier, pour le texte pose sur un aplat d'encre.
+  const Cream = "var(--nuvi-cream, #faf8f3)";
   // Le chiffre des quatre temps. Terracotta, la couleur que la vitrine
   // reserve deja aux surtitres : elle marque l'ordre sans crier.
   const Accent = "var(--nuvi-coral, #d97757)";
@@ -313,10 +315,24 @@ export default function Landing({ lang = "en" }) {
         display: "inline-flex", alignItems: "center", justifyContent: "center",
         minHeight: gros ? 56 : 48, padding: gros ? "0 34px" : "0 26px",
         borderRadius: 999, textDecoration: "none",
-        background: "linear-gradient(135deg,#5b3df5,#b91c8c)", color: "#fff",
+        // UN APLAT D'ENCRE, PAS UN DEGRADE QUI BRILLE
+        //
+        // Le bouton etait un degrade violet vers magenta avec un halo de la
+        // meme couleur. Le degrade decoratif et l'ombre coloree sont les deux
+        // marques du rendu par defaut que la bibliotheque de direction
+        // artistique du depot demande d'eviter, et la famille chaude ou vit
+        // Nuvi n'admet qu'une seule couleur saturee par page. Le corail du
+        // trait sous le titre est cette couleur ; le bouton ne peut pas en
+        // etre une seconde.
+        //
+        // Il devient donc de l'encre pleine, sans ombre. La profondeur de
+        // cette page vient des filets et des ecarts de creme, jamais d'un
+        // halo. Et le blanc sur l'encre tient tres au-dessus du plancher,
+        // ce qu'un texte pose sur un degrade ne permettait meme pas de
+        // mesurer.
+        background: Ink, color: Cream,
         fontFamily: Sans, fontSize: gros ? 17 : 15, fontWeight: 600,
         letterSpacing: "-0.01em",
-        boxShadow: "0 8px 26px rgba(91,61,245,.26)",
       }}>{etiquette}</a>
       </Magnetic>
       {sousTitre && (
@@ -391,11 +407,19 @@ export default function Landing({ lang = "en" }) {
             margin: 0,
           }}>
             {t.h1a}{" "}
-            <em style={{
-              fontStyle: "italic",
-              background: "linear-gradient(135deg,#5b3df5,#b91c8c)",
-              WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-              backgroundClip: "text", paddingRight: "0.12em",
+            {/* LE DEGRADE VIOLET-MAGENTA EST PARTI, ET CE N'EST PAS UN GOUT
+                Du texte en degrade violet vers magenta est LE signe visuel
+                d'une interface generee : la bibliotheque de direction
+                artistique du depot le nomme explicitement parmi les rejets,
+                et la regle de la famille chaude ne tolere qu'une seule
+                couleur saturee sur la page.
+                Il coutait aussi le contraste : un texte peint par un degrade
+                n'a plus de couleur declaree, donc plus rien a mesurer.
+                A la place, la phrase reste a l'encre, en italique, et
+                l'accent passe sous la ligne : un trait de corail qui se
+                dessine, comme un trait de marqueur sur une page. */}
+            <em className="nuvi-souligne" style={{
+              fontStyle: "italic", paddingRight: "0.12em",
             }}>{t.h1b}</em>
           </h1>
           <div>
