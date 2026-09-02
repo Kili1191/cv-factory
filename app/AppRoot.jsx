@@ -10545,7 +10545,8 @@ export default function App() {
             setNavSection(key);
             // Wire chaque section a la modale existante (meme couverture que
             // la barre laterale : le tiroir "Plus" liste maintenant tout).
-            if (key === "jobs") ouvrirSeul(setShowJobs);
+            if (key === "pourquoi") ouvrirSeul(setShowPourquoi);
+            else if (key === "jobs") ouvrirSeul(setShowJobs);
             else if (key === "target") ouvrirSeul(setShowOffer);
             else if (key === "live") ouvrirSeul(setShowLive);
             else if (key === "pack") ouvrirSeul(setShowPack);

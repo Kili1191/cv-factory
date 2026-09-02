@@ -122,6 +122,7 @@ export default function NuviBottomNav({
       coach: "Coach",
       target: "Cibler",
       jobs: "Trouver un poste",
+      pourquoi: "Pourquoi personne ne repond",
       pack: "Pack",
       live: "Live",
       more: "Plus",
@@ -153,6 +154,7 @@ export default function NuviBottomNav({
       coach: "Coach",
       target: "Match",
       jobs: "Find a role",
+      pourquoi: "Why nobody answers",
       pack: "Pack",
       live: "Live",
       more: "More",
@@ -290,6 +292,8 @@ export default function NuviBottomNav({
   // et defile quand l'ecran est trop court.
   const drawerItems = [
     { section: L.sec_cv },
+    // Avant de chercher un poste : lequel des outils suivants ouvrir.
+    { key: "pourquoi",  label: L.pourquoi },
     { key: "jobs",      label: L.jobs },
     { key: "edit",      label: L.edit },
     { key: "adjust",    label: L.adjust },
