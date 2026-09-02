@@ -12,6 +12,7 @@ import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
 import { experiencesAVerifier, direLaFermeture } from "../lib/registresEntreprises";
+import { SCHEMA_CV, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT, SCHEMA_VERITE } from "./components/schemas";
 import { lireCommeLesAts } from "../lib/atsVendors";
 import { texteProbable } from "../lib/deuxLectures";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
@@ -922,156 +923,9 @@ function signalerNouvelleTentative(detail) {
 // est vide, alors qu'une chaine vide se lit et se corrige. C'est aussi la
 // regle que le produit tient partout ailleurs : ce qu'on ne sait pas reste
 // vide plutot que d'etre invente.
-const SCHEMA_CV = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    name: { type: "string" },
-    title: { type: "string" },
-    email: { type: "string" },
-    phone: { type: "string" },
-    location: { type: "string" },
-    linkedin: { type: "string" },
-    summary: { type: "string" },
-    experience: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          title: { type: "string" },
-          company: { type: "string" },
-          period: { type: "string" },
-          location: { type: "string" },
-          bullets: { type: "array", items: { type: "string" } },
-        },
-        required: ["title", "company", "period", "location", "bullets"],
-      },
-    },
-    education: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          degree: { type: "string" },
-          school: { type: "string" },
-          period: { type: "string" },
-        },
-        required: ["degree", "school", "period"],
-      },
-    },
-    skills: { type: "array", items: { type: "string" } },
-    languages: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: { lang: { type: "string" }, level: { type: "string" } },
-        required: ["lang", "level"],
-      },
-    },
-    certifications: { type: "array", items: { type: "string" } },
-    // CE QUE NUVI A MIS SANS QU'ON LE LUI DISE
-    //
-    // Le modele remplit tout, y compris ce que le parcours ne renseignait pas.
-    // C'est voulu : un CV a trous se fait ecarter avant d'etre lu.
-    //
-    // Mais un employeur, une date ou un diplome ne se verifient pas comme une
-    // tournure de phrase : ils se verifient par un appel. La personne doit
-    // donc savoir lesquels viennent d'elle et lesquels viennent de Nuvi, sans
-    // avoir a relire ligne a ligne un document que la machine a produit d'un
-    // bloc. Le modele liste ici le chemin de chaque champ de ce type qu'il a
-    // rempli lui-meme.
-    //
-    // Rien n'est bloque et rien n'est retire : c'est un signalement, pas une
-    // autorisation a demander.
-    deduit: { type: "array", items: { type: "string" } },
-  },
-  required: ["name", "title", "email", "phone", "location", "linkedin",
-             "summary", "experience", "education", "skills", "languages",
-             "certifications", "deduit"],
-};
-
-// LES TROIS ANALYSES ONT LEUR FORME, ELLES AUSSI
-//
-// Elles la demandaient en prose : "Reponds UNIQUEMENT en JSON valide strict,
-// sans markdown", suivi d'un exemple de sortie, et parseJSON retirait les
-// blocs de code a la main. C'est l'echafaudage d'avant les sorties
-// structurees : il tient la plupart du temps et cede exactement quand le
-// modele travaille le plus, donc sur les CV les plus fournis, donc chez les
-// gens qui ont le plus a raconter.
-//
-// Un schema ne se plaide pas, il contraint le decodage. Les exemples de
-// sortie disparaissent des prompts au passage : ils coutaient des jetons a
-// chaque appel pour decrire ce que le schema garantit.
-const SCHEMA_AUDIT = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    verdict_longueur: { type: "string" },
-    longueur_recommandation: { type: "string" },
-    forces: { type: "array", items: { type: "string" } },
-    faiblesses: { type: "array", items: { type: "string" } },
-    suggestions: { type: "array", items: { type: "string" } },
-    mots_cles_manquants: { type: "array", items: { type: "string" } },
-    premiere_impression: { type: "string" },
-    verdict_recruteur: { type: "string" },
-    raison_verdict: { type: "string" },
-  },
-  required: ["verdict_longueur", "longueur_recommandation", "forces",
-             "faiblesses", "suggestions", "mots_cles_manquants",
-             "premiere_impression", "verdict_recruteur", "raison_verdict"],
-};
-
-const SCHEMA_POSITIONNEMENT = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    angles: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          title: { type: "string" },
-          credibility: { type: "string" },
-          salary_range: { type: "string" },
-          key_points: { type: "array", items: { type: "string" } },
-          target_employers: { type: "string" },
-          new_summary: { type: "string" },
-        },
-        required: ["title", "credibility", "salary_range", "key_points",
-                   "target_employers", "new_summary"],
-      },
-    },
-  },
-  required: ["angles"],
-};
-
-const SCHEMA_VERITE = {
-  type: "object",
-  additionalProperties: false,
-  properties: {
-    issues: {
-      type: "array",
-      items: {
-        type: "object",
-        additionalProperties: false,
-        properties: {
-          type: { type: "string" },
-          quote: { type: "string" },
-          location: { type: "string" },
-          why: { type: "string" },
-          fix: { type: "string" },
-        },
-        required: ["type", "quote", "location", "why", "fix"],
-      },
-    },
-    overall_verdict: { type: "string" },
-  },
-  required: ["issues", "overall_verdict"],
-};
+// SCHEMA_CV, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT et SCHEMA_VERITE
+// vivent dans ./components/schemas : MatchPanel decrit lui aussi un CV
+// complet et doit pouvoir s'appuyer sur la meme forme.
 
 // LA FAMILLE ENTRETIEN, HUIT PROMPTS QUI IMPLORAIENT LEUR FORME
 //

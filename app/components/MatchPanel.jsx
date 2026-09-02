@@ -5,6 +5,7 @@
 // Adapte le CV a une offre d'emploi.
 
 import { useState, useMemo } from "react";
+import { SCHEMA_MATCH } from "./schemas";
 import { rapport } from "../../lib/atsMatch.js";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
@@ -116,21 +117,12 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
       +"- Garde chaque bullet sur une ligne de texte simple, avec un verbe d'action"
       +" et un chiffre quand il existe. Ni tableau, ni colonne, ni caractere"
       +" decoratif : le CV doit rester lisible par une machine.\n"
-      +'JSON uniquement: {"match_score":75,"job_title":"","company":"",'
-      +'"key_requirements":["r1","r2","r3"],"keywords_matched":["k1","k2"],'
-      +'"keywords_to_add":["k1","k2"],'
-      +'"hidden_signals":["signal cache 1 que la plupart ne voient pas","signal 2"],'
-      +'"culture_decode":"Ce que dit l offre sur la culture reelle de l entreprise en 2 phrases",'
-      +'"seniority_decode":"Niveau reellement attendu vs ce qui est ecrit",'
-      +'"likely_interview_questions":["q1","q2","q3","q4","q5"],'
-      +'"cover_letter_hook":"accroche",'
-      +'"cv_optimized":{"name":"'+cv.name+'","title":"","email":"'+cv.email+'",'
-      +'"phone":"'+cv.phone+'","location":"'+cv.location+'","linkedin":"'+cv.linkedin+'",'
-      +'"summary":"","experience":['+expJ+'],"education":['+eduJ+'],'
-      +'"skills":["s1","s2","s3","s4","s5","s6","s7","s8"],'
-      +'"languages":'+JSON.stringify(cv.languages)+',"certifications":'+JSON.stringify(cv.certifications)+'}}';
+      // Forme garantie par SCHEMA_MATCH : le gabarit qui tenait ici
+      // decrivait l'analyse ET un CV complet, recopie a la main, alors que
+      // l'API impose desormais les deux.
+      +"- Le CV optimise reprend la structure du CV source, champ pour champ.";
     try {
-      const txt = await aiCall(p);
+      const txt = await aiCall(p, { schema: SCHEMA_MATCH, task_name: "match" });
       const r = parseJSON(txt);
       setRes(r);
       setPh("done");
