@@ -173,7 +173,13 @@ export default function ScanHero({ lang = "en", labels, mode = "perte",
                   if (mot.f === 0) {
                     return (
                       <span key={mi} style={{
-                        color: "var(--nuvi-purple, #5b3df5)", fontWeight: 500,
+                        // --nuvi-purple est une couleur d'APLAT : en theme
+                        // sombre elle vaut #7c5dff, et ce mot tombe alors a
+                        // 4,03:1 sur le fond, sous le plancher AA. Trouve par
+                        // le balayage le jour ou il a couvert la vitrine, et
+                        // pas avant : cette page n'etait mesuree nulle part.
+                        // -purple-text est l'encre, et elle suit le theme.
+                        color: "var(--nuvi-purple-text, #5b3df5)", fontWeight: 500,
                         marginRight: "0.26em", display: "inline-block",
                       }}>{mot.m}</span>
                     );
@@ -230,7 +236,8 @@ export default function ScanHero({ lang = "en", labels, mode = "perte",
             valeur: resume,
             // Vert quand rien n'est perdu, violet sinon : la couleur
             // porte le verdict avant qu'on ait lu le chiffre.
-            teinte: ecartes === 0 ? "var(--nuvi-green, #16a34a)" : "var(--nuvi-purple, #5b3df5)",
+            // Meme raison : ces deux teintes servent a ecrire un verdict.
+            teinte: ecartes === 0 ? "var(--nuvi-green-text, #16a34a)" : "var(--nuvi-purple-text, #5b3df5)",
             barre: false },
           { titre: labels.dropped,
             // "1 words" sur une demonstration qui se veut soignee suffit a faire

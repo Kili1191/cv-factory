@@ -4,6 +4,7 @@ import { useInstallState } from "./InstallAppSheet";
 
 // Les jetons viennent du systeme, ils ne sont plus redeclares ici.
 import { Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral } from "./tokens";
+import { NAV_ICONS } from "./navIcons";
 /**
  * NuviBottomNav - Bottom navigation mobile (5 icônes)
  *
@@ -373,33 +374,46 @@ export default function NuviBottomNav({
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(15, 15, 18, 0.4)",
-            backdropFilter: "blur(4px)",
-            WebkitBackdropFilter: "blur(4px)",
+            // Le voile etait a 0,4 avec 4px de flou : le CV restait lisible
+            // au travers, et sa colonne noire se lisait comme un bloc etranger
+            // POSE DANS le menu. Un voile sert a effacer ce qu'il y a derriere,
+            // pas a le tamiser.
+            background: "rgba(20, 18, 16, 0.62)",
+            backdropFilter: "blur(10px)",
+            WebkitBackdropFilter: "blur(10px)",
             zIndex: 95,
             animation: "nuviDrawerFadeIn 220ms ease-out",
           }}
         >
           <div
             data-nuvi="more-drawer"
+            data-nuvi-sombre="1"
             onClick={(e) => e.stopPropagation()}
             style={{
               position: "absolute",
               bottom: 0,
               left: 0,
               right: 0,
-              background: "var(--nuvi-glass-bg, " + Paper + ")",
-              WebkitBackdropFilter: "blur(28px) saturate(160%)",
-              backdropFilter: "blur(28px) saturate(160%)",
+              // LE MENU ETAIT EN VERRE, DONC IL N'ETAIT PAS UN MENU
+              //
+              // --nuvi-glass-bg est translucide : la page se voyait a travers
+              // chaque ligne, et le texte du CV passait derriere les libelles.
+              // Un flou ne rattrape pas ca - il brouille les contours, pas le
+              // contraste - donc on lisait un menu pose sur un autre ecran, les
+              // deux en meme temps.
+              //
+              // Il devient opaque, et de la meme matiere que la barre du bas :
+              // c'est le meme objet, il doit avoir la meme surface.
+              background: Paper,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
-              borderTop: "0.5px solid rgba(255,255,255,0.7)",
+              borderTop: "1px solid rgba(246,242,232,.13)",
               paddingTop: 8,
               paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))",
               maxHeight: "78vh",
               overflowY: "auto",
               WebkitOverflowScrolling: "touch",
-              boxShadow: "inset 0 1px 1px rgba(255,255,255,0.6), 0 -8px 32px rgba(0,0,0,0.12)",
+              boxShadow: "0 -10px 40px rgba(0,0,0,0.34)",
               animation: "nuviDrawerSlideUp 280ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
@@ -450,9 +464,12 @@ export default function NuviBottomNav({
                   color: item.danger ? "#c0392b" : InkMuted,
                   flexShrink: 0,
                 }}>
-                  {Icons[item.key] || (
-                    // Puce neutre pour les entrees ajoutees au tiroir : mieux
-                    // qu'un vide, qui desalignait les libelles entre eux.
+                  {/* Les cinq icones de la barre sont dessinees plus grand ici
+                      et gardent la priorite ; tout le reste vient du module
+                      partage. Le repli rond ne sert plus qu'a une entree
+                      vraiment inconnue, ce qui n'arrive plus. */}
+                  {Icons[item.key] || NAV_ICONS[item.key]
+                    || NAV_ICONS[{ reset: "replay" }[item.key]] || (
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                       stroke="currentColor" strokeWidth="1.7" strokeLinecap="round">
                       <circle cx="12" cy="12" r="3.5"/>
