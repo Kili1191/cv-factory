@@ -594,38 +594,30 @@ body.cvf-dark.nuvi-grain::after {
 }
 
 /* ============================================================
- * LE DOCUMENT SE DEPLACE MOINS VITE QUE LE TEXTE
+ * PAS DE PARALLAXE ENTRE LES DEUX COLONNES, ET POURQUOI
  * ============================================================
  *
- * Deux colonnes qui montent exactement a la meme vitesse forment un bloc
- * plat : rien ne dit lequel est devant. Un ecart de quelques dizaines de
- * pixels sur la traversee suffit a poser une profondeur, et c est ce qui
- * separe une page qui defile d une page qui bouge.
+ * Tentee, mesuree, retiree. La regle s appliquait bien - animationName valait
+ * nuviProfondeur, animationTimeline valait view() - et le document ne bougeait
+ * pas d un pixel : translateY nulle a toutes les positions de defilement,
+ * ecart constant a -120px, qui est le decalage de mise en page et rien d autre.
  *
- * Le decalage est VOLONTAIREMENT petit. Un parallaxe qui se remarque devient
- * un effet ; celui-ci se sent sans se voir, et surtout il ne desaligne jamais
- * assez le document de son titre pour qu on les lise separement.
+ * La cause est deja documentee plus haut dans ce fichier, a propos du titre
+ * gris : la section porte overflow:hidden, ce qui en fait un CONTENEUR DE
+ * DEFILEMENT. view() se resout alors contre lui et non contre la page ; comme
+ * il ne defile jamais, l animation reste figee a un point fixe.
  *
- * Meme regle de repli que partout ici : sans animation-timeline, aucune
- * transformation, les deux colonnes restent alignees. Rien ne disparait.
+ * Cet overflow:hidden porte quelque chose : le document deborde volontairement
+ * de -14vw et se fait couper par le bord. Le retirer rendrait la page
+ * defilable horizontalement, ce que tests/the-document-fits-beside-the-
+ * navigation.mjs refuse a juste titre. clip-path:inset(0) coupe sans creer de
+ * conteneur, mais laisse le debordement compter dans la zone defilable, donc
+ * ramene le meme probleme par une autre porte.
+ *
+ * Restructurer une section pour loger un effet de quelques dizaines de pixels
+ * n est pas un echange raisonnable. La note reste pour que personne ne
+ * retente sans savoir.
  */
-@keyframes nuviProfondeur {
-  from { transform: translateY(26px); }
-  to   { transform: translateY(-26px); }
-}
-
-@supports (animation-timeline: view()) {
-  @media (prefers-reduced-motion: no-preference) and (min-width: 900px) {
-    .nuvi-duo-doc > *:last-child {
-      animation: nuviProfondeur linear both;
-      animation-timeline: view();
-      /* La traversee entiere du bloc : le decalage est continu, il ne
-         demarre ni ne s arrete au milieu de l ecran. */
-      animation-range: cover;
-      will-change: transform;
-    }
-  }
-}
 
 /* ============================================================
  * LES TITRES S ASSEMBLENT MOT A MOT
