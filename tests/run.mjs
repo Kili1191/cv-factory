@@ -67,6 +67,7 @@ const SUITES = [
   ["two jobs do not become one", "./two-jobs-do-not-become-one.mjs"],
   ["a dead employer cannot be called", "./a-dead-employer-cannot-be-called.mjs"],
   ["the promise is visible while you write", "./the-promise-is-visible-while-you-write.mjs"],
+  ["you see where the page ends", "./you-see-where-the-page-ends.mjs"],
   ["the coach reads a dropped file", "./the-coach-reads-a-file.mjs"],
   ["every feature produces output", "./every-feature-produces-output.mjs"],
   ["the phone reaches every feature", "./mobile-reaches-every-feature.mjs"],

@@ -9812,6 +9812,39 @@ export default function App() {
               }}>
                 {CVEl}
               </div>
+              {/* OU S'ARRETE LA PAGE, ET POURQUOI CA COMPTE
+                  L'export coupe a 1123px : c'est une A4 a 96 points par pouce,
+                  et c'est la valeur que cvH utilise deja pour brider l'apercu
+                  du telephone. Un CV qui la depasse de soixante pixels part
+                  donc en DEUX pages, dont la seconde ne porte que trois
+                  lignes. C'est le genre de detail qui fait ecarter une
+                  candidature, et rien a l'ecran ne le disait : on decouvrait
+                  la deuxieme page en ouvrant le PDF, apres l'avoir envoye.
+                  Le trait n'apparait que si le contenu deborde vraiment. Un
+                  CV qui tient sur une page n'a pas besoin qu'on le lui dise. */}
+              {deskNatH > 1123 && Array.from(
+                { length: Math.floor((deskNatH - 1) / 1123) },
+                (_, i) => (i + 1) * 1123
+              ).map((y, i) => (
+                <div key={y} data-nuvi-coupe-page={i + 1} style={{
+                  position: "absolute", left: 0, right: 0,
+                  top: Math.round(y * deskScale),
+                  borderTop: "1px dashed " + Coral,
+                  pointerEvents: "none",
+                }}>
+                  <span style={{
+                    position: "absolute", right: 0, top: 4,
+                    fontFamily: Sans, fontSize: 10.5, fontWeight: 600,
+                    letterSpacing: ".04em", color: Coral,
+                    background: Desk, padding: "2px 7px", borderRadius: 4,
+                    whiteSpace: "nowrap",
+                  }}>
+                    {locale === "en"
+                      ? "Page " + (i + 1) + " ends here"
+                      : "Fin de la page " + (i + 1)}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
           </div>
