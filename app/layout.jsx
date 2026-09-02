@@ -144,8 +144,22 @@ export default function RootLayout({ children }) {
             Android et iOS peignent leur propre gris au-dessus d'une page
             creme : une bande qui ne va avec rien, juste sous l'heure. */}
         <meta name="theme-color" content="#faf8f3" />
-        {/* Version servie, lisible sans ouvrir l'app : curl -s thenuvi.com | grep app-build */}
+        {/* QUELLE VERSION EST REELLEMENT EN LIGNE
+            NEXT_PUBLIC_BUILD_ID est calcule dans next.config.js, qui retombe
+            deja sur VERCEL_GIT_COMMIT_SHA : sur Vercel ce marqueur porte donc
+            le commit deploye, sans configuration.
+              curl -s https://thenuvi.com/app | grep app-build
+            Si le SHA n'est pas le dernier commit de main, ce n'est pas le code
+            qui est en retard, c'est le deploiement. */}
         <meta name="app-build" content={process.env.NEXT_PUBLIC_BUILD_ID || "unknown"} />
+        {/* LA DATE REPOND A L'AUTRE MOITIE DE LA QUESTION
+            Le SHA dit QUEL commit a ete construit. Il ne dit pas QUAND, et
+            les deux pannes ne se ressemblent pas : un SHA perime veut dire que
+            Vercel n'a pas reconstruit, un SHA juste avec une date ancienne
+            veut dire que le domaine pointe encore sur un ancien deploiement.
+            Sans la date, on ne peut pas distinguer les deux, et on cherche au
+            mauvais endroit. */}
+        <meta name="app-built-at" content={new Date().toISOString()} />
       </head>
       <body className="nuvi-grain" style={{ margin: 0, padding: 0 }}>
         {/* LE LIEN D'EVITEMENT
