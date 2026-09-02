@@ -56,3 +56,15 @@ export async function run() {
   if (!failures.length) console.log(`      ${scanned} fichiers, aucune dependance CDN a l'execution`);
   return failures;
 }
+
+// EXECUTE DIRECTEMENT, CE FICHIER DOIT VERIFIER QUELQUE CHOSE
+//
+// Comme no-em-dash, il n'exportait que run() : "node tests/no-runtime-cdn.mjs"
+// rendait 0 sans rien scanner, et ce silence passait pour un succes. Un test
+// muet est pire qu'un test absent, l'absence se remarque.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  run().then((f) => {
+    for (const l of f) console.log("ECHEC " + l);
+    process.exit(f.length ? 1 : 0);
+  });
+}

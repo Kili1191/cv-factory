@@ -85,3 +85,21 @@ export async function run() {
   }
   return failures;
 }
+
+// EXECUTE DIRECTEMENT, CE FICHIER DOIT VERIFIER QUELQUE CHOSE
+//
+// Il n'exportait que run(). "node tests/no-em-dash.mjs" ne l'appelait donc
+// jamais : la commande rendait 0 sans lire un seul fichier, et ce silence se
+// lisait comme un succes. Utilisee comme garde-fou pendant toute une session,
+// elle n'a rien garde du tout, et la regle numero un du depot s'est fait
+// enfreindre dans le fichier meme qui l'enonce.
+//
+// Un test qui se tait quand on le lance est pire qu'un test absent : l'absence
+// se remarque. Lance directement, il s'execute et sort en erreur s'il trouve
+// quelque chose.
+if (import.meta.url === `file://${process.argv[1]}`) {
+  run().then((f) => {
+    for (const l of f) console.log("ECHEC " + l);
+    process.exit(f.length ? 1 : 0);
+  });
+}

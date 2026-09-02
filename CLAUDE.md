@@ -58,6 +58,14 @@ npm test         # suite complète, précédée d'un "next build"
 npm test export  # une seule suite
 ```
 
+**`node tests/une-suite.mjs` ne vérifie rien.** Les suites exportent `run()`
+sans l'appeler : lancée ainsi, la commande rend 0 sans lire un fichier, et ce
+silence se lit comme un succès. Utilisée comme garde-fou pendant toute une
+session, elle n'a rien gardé, et la règle numéro un s'est fait enfreindre dans
+ce fichier-ci. Les deux suites qu'on lance à la main, `no-em-dash` et
+`no-runtime-cdn`, s'exécutent maintenant vraiment quand on les appelle
+directement. Les autres passent par `npm test <nom>`.
+
 `npm run lint` mérite un mot : la configuration ne porte qu'une règle. Un clic
 sur « Comparer » est parti en production en levant `lang is not defined`, le
 composant exposant `locale`. Le build passait, la page se chargeait, la
@@ -76,6 +84,83 @@ Apache Tika, plus tesseract pour lire l'image rendue. C'est délibéré. Un bug
 d'ordre de lecture n'était visible que par PDFBox, les deux autres réordonnaient
 le texte par position et le masquaient. Sur une session distante,
 `.claude/hooks/session-start.sh` installe tout ça.
+
+## Les couleurs : deux familles, et on ne les mélange pas
+
+Le 2 septembre 2026, un balayage a mesuré chaque texte visible de
+l'application : **vingt-neuf** étaient sous le plancher AA de 4,5:1. Pas une
+couleur ratée, une règle absente. La palette de marque servait d'encre.
+
+    corail sur blanc            3,12:1
+    la sur-ligne grise          2,32:1
+    le vert de la pastille      3,00:1 sur son fond vert doux
+
+Les libellés de navigation, **tous** les intitulés de champ de l'éditeur, la
+sur-ligne de chaque panneau. En corps 10 ou 11, c'est-à-dire la taille où ça se
+paie. Nuvi se lit sur un téléphone, souvent dehors, souvent mal éclairé.
+
+D'où la règle, et elle n'a qu'une ligne :
+
+> **Un texte prend le jeton `-Text`. Un aplat prend l'autre.**
+
+`--nuvi-coral` peint un fond, un dégradé, une pastille : là elle porte du blanc
+et le contraste se calcule autrement. `--nuvi-coral-text` écrit. Les deux
+basculent avec le thème, et les versions encre sont calibrées pour tenir 4,5:1
+sur les fonds du produit, y compris les fonds doux, plus exigeants que le
+blanc. Idem pour `purple`, `magenta`, `green`, et `--nuvi-gray-text` qui
+remplace `Gray400` dès qu'il s'agit d'écrire.
+
+`tests/the-interface-can-be-read.mjs` mesure tout texte visible sur la vitrine
+et trois écrans de l'application, en clair et en sombre, sur ordinateur et sur
+téléphone. Il a trouvé son premier défaut réel à sa première exécution, sur la
+vitrine, la page que personne n'avait jamais mesurée.
+
+### Une surface sombre le déclare
+
+`data-nuvi-sombre` sur un conteneur y redéclare les encres, le filet et le
+papier. Tout ce qu'on pose dedans hérite des bonnes valeurs.
+
+C'est ce qui rend une barre sombre possible sans reprendre une seule couleur à
+la main : les jetons encre y basculent vers leurs versions claires. Repeindre
+un fond **sans** cet attribut est le défaut à ne pas refaire : du texte juste,
+sur le mauvais fond, et rien qui le signale.
+
+Le rail vaut `#22201c`. Ce n'est pas un noir : le crème `#faf8f3` et le filet
+`#e8e3d6` sont tous deux à la teinte 43, le neutre chaud de Nuvi ; on garde la
+teinte, on descend la luminosité. Une première version employait `#17171a`,
+emprunté aux outils de développeur : canaux 23/23/26, le bleu domine, donc
+froide à côté d'un crème. Le signe que la bonne est la bonne : **le corail de
+marque y tient sans être délavé**, ce que le quasi-noir exigeait.
+
+### Le CV ne suit jamais le thème
+
+`[data-cvf="cv"]` redéclare les valeurs claires, dans les deux thèmes, et pose
+sa couleur de texte sur lui-même. C'est le document qui part en PDF.
+
+Une règle existait déjà pour ça et ne s'appliquait **à rien** : elle visait
+`.cv-preview-container`, chaîne absente de tout le dépôt. En sombre, le
+conteneur passait donc à `rgb(26,26,28)` et héritait du texte clair de
+`[data-cvf="app"]`. Invisible à l'écran, les enfants recouvrent le fond, mais
+l'export étire la feuille à 297 mm quand le contenu est plus court, et le fond
+réapparaît dans le PDF du recruteur.
+
+### Le focus se voit, et `:where()` ne suffisait pas
+
+Vingt-sept endroits posent `outline:"none"` en style **inline**. La règle qui
+devait les annuler était enveloppée dans `:where()`, spécificité zéro : elle
+perdait contre les vingt-sept. Elle marchait pour les boutons, qui ne le posent
+pas, et **jamais** pour un champ de saisie. Le plancher d'accessibilité est
+donc `!important`, une fois, dans `globals.css`.
+
+### Les icônes de navigation ont une seule source
+
+`app/components/navIcons.jsx`. Elles vivaient en variables locales dans la
+barre latérale, donc le tiroir « Plus » du téléphone, vingt et une entrées,
+n'en avait aucune et retombait sur une pastille ronde vide. `NAV_TEINTES` y
+range les entrées en quatre familles ; seule l'icône est colorée, le libellé
+reste neutre.
+
+---
 
 ## Comment les tests sont écrits
 
