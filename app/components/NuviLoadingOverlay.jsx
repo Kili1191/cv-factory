@@ -4,11 +4,11 @@ import NuviCompanion from "./NuviCompanion";
 import NuviLoadingMessages from "./NuviLoadingMessages";
 
 /**
- * NuviLoadingOverlay : Plein écran de chargement premium.
+ * NuviLoadingOverlay : Plein ecran de chargement premium.
  *
  * Affiche NuviCompanion (mode loading) + NuviLoadingMessages (copy psychologique)
- * au-dessus de tout pendant qu'une opération asynchrone se déroule.
- * À la fin (quand `active` passe à false), fade out élégant pour dévoiler le contenu.
+ * au-dessus de tout pendant qu'une operation asynchrone se deroule.
+ * A la fin (quand `active` passe a false), fade out elegant pour devoiler le contenu.
  *
  * Props :
  *   - active: boolean (true = overlay visible)

@@ -9,17 +9,17 @@ import React from 'react';
  * Drop this file into your app and import it: <NuviLogo size={32} />
  *
  * CYCLE (65 seconds, 11 personalities):
- *   0-7s    : Caméléon (multi-color : iris → glow → turquoise → gold)
- *   7-15s   : Œil curieux (dot grandit, sourcil violet apparait, pupille regarde)
- *   15-20s  : Clin d'œil (dot s'écrase verticalement comme un blink)
+ *   0-7s    : Cameleon (multi-color : iris -> glow -> turquoise -> gold)
+ *   7-15s   : Oeil curieux (dot grandit, sourcil violet apparait, pupille regarde)
+ *   15-20s  : Clin d'oeil (dot s'ecrase verticalement comme un blink)
  *   20-29s  : Bowling strike (la boule roule sur la baseline, renverse N/u/v/i)
- *   29-34s  : Balle qui rebondit (vrais grands bonds dégressifs)
+ *   29-34s  : Balle qui rebondit (vrais grands bonds degressifs)
  *   38-46s  : Drop & bounce (le i devient ! avec point qui tombe et rebondit)
- *   46-49s  : Météorite (le dot file en diagonale avec trail)
+ *   46-49s  : Meteorite (le dot file en diagonale avec trail)
  *   54-62s  : Pendule (oscillation horizontale lente)
  *   62-70s  : Glitch (4 ghosts en multiply : terracotta, ocean, turquoise, gold)
- *   71-76s  : Lune dormante (lune SVG à la place du dot, avec zzz)
- *   77-83s  : Étoile (5-pointed rotative à 720°)
+ *   71-76s  : Lune dormante (lune SVG a la place du dot, avec zzz)
+ *   77-83s  : Etoile (5-pointed rotative a 720 deg)
  *   85-91s  : Respiration finale (breathing scale)
  *
  * @param {number}  size           - Font size in pixels (default 32)
@@ -274,7 +274,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
   /* ===== KEYFRAMES ===== */
 
   @keyframes nuvi-dot-life {
-    /* CAMÉLÉON */
+    /* CAMELEON */
     0%   { background: #6d3fc4; transform: translateX(-50%) translate(0, 0) scale(1); border-radius: 50%; opacity: 1; }
     1.5% { background: #6d3fc4; transform: translateX(-50%) translate(0, 0) scale(1.1); }
     3%   { background: #9d7fe0; transform: translateX(-50%) translate(0, 0) scale(1); }
@@ -282,14 +282,14 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     6%   { background: #d9a44b; transform: translateX(-50%) translate(0, 0) scale(1); }
     7.7% { background: #6d3fc4; transform: translateX(-50%) translate(0, 0) scale(1); animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }
 
-    /* ŒIL CURIEUX */
+    /* OEIL CURIEUX */
     9%    { background: #6d3fc4; transform: translateX(-50%) translate(0, 0) scale(1.4); }
     11%   { transform: translateX(-50%) translate(-0.04em, 0) scale(1.4); }
     13%   { transform: translateX(-50%) translate(0.04em, 0) scale(1.4); }
     14%   { transform: translateX(-50%) translate(0, -0.03em) scale(1.4); }
     15.4% { transform: translateX(-50%) translate(0, 0) scale(1); }
 
-    /* CLIN D'ŒIL - le dot s'écrase verticalement */
+    /* CLIN D'OEIL - le dot s'ecrase verticalement */
     16% { transform: translateX(-50%) translate(0, 0) scale(1, 1); opacity: 1; }
     17% { transform: translateX(-50%) translate(0, 0) scale(1, 0.05); opacity: 1; }
     18% { transform: translateX(-50%) translate(0, 0) scale(0.5, 0.05); opacity: 0; }
@@ -304,7 +304,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     28.5% { transform: translateX(-50%) translate(0, 0) scale(0); opacity: 0; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
     29.2% { transform: translateX(-50%) translate(0, 0) scale(1); background: #6d3fc4; opacity: 1; }
 
-    /* BALLE QUI REBONDIT - vrais grands bonds dégressifs */
+    /* BALLE QUI REBONDIT - vrais grands bonds degressifs */
     29.5% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0); }
     30.5% { transform: translateX(-50%) translate(0, 0.66em) scale(1.3, 0.7); opacity: 1; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
     31.3% { transform: translateX(-50%) translate(0, -0.20em) scale(0.92, 1.15); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0); }
@@ -313,7 +313,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     33.2% { transform: translateX(-50%) translate(0, 0.66em) scale(1.1, 0.9); opacity: 1; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
     33.8% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
 
-    /* DROP & BOUNCE (i → !) */
+    /* DROP & BOUNCE (i -> !) */
     40%   { transform: translateX(-50%) translate(0, 0.55em) scale(0.92, 1.15); opacity: 1; animation-timing-function: cubic-bezier(0.55, 0, 0.85, 0); }
     41%   { transform: translateX(-50%) translate(0, 0.66em) scale(1.25, 0.78); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
     42.5% { transform: translateX(-50%) translate(0, 0.62em) scale(1); opacity: 1; }
@@ -322,7 +322,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     45.5% { transform: translateX(-50%) translate(0, -0.03em) scale(1.22, 0.80); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
     46.2% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; }
 
-    /* MÉTÉORITE */
+    /* METEORITE */
     47%   { transform: translateX(-50%) translate(0.7em, -0.7em) scale(0.3); opacity: 0; animation-timing-function: cubic-bezier(0.4, 0, 0.6, 1); }
     48%   { transform: translateX(-50%) translate(-0.7em, -0.6em) scale(0.3); opacity: 0; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
     48.6% { transform: translateX(-50%) translate(0, 0) scale(1.3); opacity: 1; }
@@ -349,7 +349,7 @@ const nuviLogoStyles = ({ inkColor, dotColor, fontFamily, animDuration }) => `
     75.9% { transform: translateX(-50%) translate(0, 0) scale(0); opacity: 0; }
     76.9% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
 
-    /* ÉTOILE */
+    /* ETOILE */
     77.9% { transform: translateX(-50%) translate(0, 0) scale(0); opacity: 0; }
     82.5% { transform: translateX(-50%) translate(0, 0) scale(0); opacity: 0; }
     83.1% { transform: translateX(-50%) translate(0, 0) scale(1); opacity: 1; animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1); }

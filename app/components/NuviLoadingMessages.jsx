@@ -1,26 +1,26 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 /**
- * NuviLoadingMessages : copy à haut impact pour le chargement
+ * NuviLoadingMessages : copy a haut impact pour le chargement
  *
  * v3 - Refonte copywriting expert (Mai 2026)
  *
- * Principes appliqués :
- *   - Apple style : phrases courtes, mots simples, émotions grandes
- *   - Mentor brutalement honnête : pas de complaisance, pas de bullshit
+ * Principes appliques :
+ *   - Apple style : phrases courtes, mots simples, emotions grandes
+ *   - Mentor brutalement honnete : pas de complaisance, pas de bullshit
  *   - Mix de 5 leviers psychologiques en rotation :
- *     1. Identité projetée
+ *     1. Identite projetee
  *     2. Loss aversion
- *     3. Spécificité concrète
+ *     3. Specificite concrete
  *     4. Vision tangible
  *     5. Validation sociale en creux
  *
  * Cycle : 15 secondes / 6 phases = 2.5s par phase
- * Pluriel correct (1 an / 5 ans, 1 année / 5 années)
+ * Pluriel correct (1 an / 5 ans, 1 annee / 5 annees)
  *
  * @param {string}  series        - "generation" | "audit" | "match" | "interview" | "generic"
  * @param {object}  user          - { nom, metier, secteur, annees } pour personnaliser
- * @param {number}  cycleDuration - Durée du cycle complet en secondes (default 15)
+ * @param {number}  cycleDuration - Duree du cycle complet en secondes (default 15)
  * @param {string}  className     - Classes additionnelles
  */
 export default function NuviLoadingMessages({
@@ -97,7 +97,7 @@ const ETIQUETTES = {
 //
 // L'ancienne version rattrapait le pluriel par une regex sur le texte deja
 // rendu : elle remplacait "1 ans" par "1 an" et s'arretait la. L'adjectif
-// restait au pluriel, et "1 an condensés." s'affichait tel quel a l'ecran.
+// restait au pluriel, et "1 an condenses." s'affichait tel quel a l'ecran.
 // Un modele ne peut pas s'accorder apres coup : on en ecrit donc deux, et
 // c'est le nombre qui choisit.
 function p(modeles, fallback, user) {
@@ -125,7 +125,7 @@ function p(modeles, fallback, user) {
 //
 // Elle n'existait qu'en francais, et le composant n'acceptait meme pas de
 // langue : quelqu'un qui avait choisi l'anglais au premier ecran voyait
-// "Génération" et "C'est ce que les meilleurs savent faire." a chaque
+// "Generation" et "C'est ce que les meilleurs savent faire." a chaque
 // attente. Un des deux appels passait deja lang, silencieusement ignore.
 //
 // L'anglais n'est pas une traduction ligne a ligne du francais. Ces phrases
@@ -139,9 +139,9 @@ function getPhases(series, user, lang) {
 
 const SERIES = {
   fr: (user) => ({
-    // ======== GÉNÉRATION ========
-    // Cible : quelqu'un qui clique pour générer son CV
-    // Émotion : excitation + appréhension du résultat
+    // ======== GENERATION ========
+    // Cible : quelqu'un qui clique pour generer son CV
+    // Emotion : excitation + apprehension du resultat
     generation: [
       { from: 0,    to: 0.18,
         line1: p({ un: "{annees} an condensé.", plusieurs: "{annees} ans condensés." },

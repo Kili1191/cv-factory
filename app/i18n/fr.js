@@ -1,6 +1,6 @@
-// Nuvi - Dictionnaire de traduction français
-// Extrait de page.jsx pour réduire le bundle First Paint
-// Si tu modifies ce fichier, vérifie la parité avec en.js
+// Nuvi - Dictionnaire de traduction francais
+// Extrait de page.jsx pour reduire le bundle First Paint
+// Si tu modifies ce fichier, verifie la parite avec en.js
 //
 // IMPORTANT : ne JAMAIS utiliser de scripts de remplacement automatique
 // sur ce fichier. Le bug "T is not defined" du rebuild v5 venait

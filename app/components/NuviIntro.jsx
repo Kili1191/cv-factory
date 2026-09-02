@@ -4,11 +4,11 @@ import NuviCompanion from "./NuviCompanion";
 
 import { Trans } from "./tokens";
 /**
- * NuviIntro : Présentation initiale du compagnon Nuvi.
- * Version béton : streaming basé sur step uniquement (pas de currentLine en deps).
+ * NuviIntro : Presentation initiale du compagnon Nuvi.
+ * Version beton : streaming base sur step uniquement (pas de currentLine en deps).
  */
 
-// Scripts STATIQUES - hors composant pour stabilité de référence
+// Scripts STATIQUES - hors composant pour stabilite de reference
 const SCRIPTS = {
   fr: [
     { text: "Bonjour, je suis Nuvi.", emoji: "👋" },
@@ -57,7 +57,7 @@ export default function NuviIntro({
   const [displayedText, setDisplayedText] = useState("");
   const [streaming, setStreaming] = useState(false);
 
-  // Refs pour éviter les race conditions
+  // Refs pour eviter les race conditions
   const stepRef = useRef(0);
   const cancelStreamRef = useRef(null);
   const cancelAdvanceRef = useRef(null);
@@ -73,8 +73,8 @@ export default function NuviIntro({
   }, [step]);
 
   // ========== STREAMING TEXT ==========
-  // Démarre le streaming pour la step actuelle.
-  // Utilise une fonction stable pour éviter les re-runs en boucle.
+  // Demarre le streaming pour la step actuelle.
+  // Utilise une fonction stable pour eviter les re-runs en boucle.
   const startStreaming = useCallback((stepIdx) => {
     // Cancel any previous stream
     if (cancelStreamRef.current) {
@@ -95,7 +95,7 @@ export default function NuviIntro({
 
     const tick = () => {
       if (cancelled) return;
-      // Vérifie qu'on est toujours sur la bonne step
+      // Verifie qu'on est toujours sur la bonne step
       if (stepRef.current !== stepIdx) {
         cancelled = true;
         return;
@@ -162,7 +162,7 @@ export default function NuviIntro({
 
   const handleNext = useCallback(() => {
     if (streaming) {
-      // Skip streaming → finir le texte immédiatement
+      // Skip streaming -> finir le texte immediatement
       if (cancelStreamRef.current) {
         cancelStreamRef.current();
         cancelStreamRef.current = null;

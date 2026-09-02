@@ -1316,7 +1316,7 @@ export function CVCompact({ cv, set, t, T, locale }) {
 // - PAS de bordure decorative sous le header
 // - PAS de photo (la plupart des ATS US/UK l'ignorent ou crashent)
 // - PAS d'emojis, icones, caracteres speciaux
-// - Bullets en caractere standard U+2022 (•)
+// - Bullets en caractere standard U+2022
 // - Sections en MAJUSCULES bold (les ATS detectent les titres)
 // - Dates a droite alignees avec flex (parse OK)
 // - Skills separes par virgules (standard) au lieu de "|"

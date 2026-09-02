@@ -6,15 +6,15 @@ import { useInstallState } from "./InstallAppSheet";
 import { Cream, CreamSoft, Paper, Ink, InkMuted, Hairline, Coral } from "./tokens";
 import { NAV_ICONS, NAV_TEINTES } from "./navIcons";
 /**
- * NuviBottomNav - Bottom navigation mobile (5 icônes)
+ * NuviBottomNav - Bottom navigation mobile (5 icones)
  *
  * Style : Apple Human Interface Guidelines
- * - Icônes 24px
+ * - Icones 24px
  * - Labels 10px en dessous
  * - Active = Coral
  * - Inactive = InkMuted
  *
- * Les 5 icônes principales (espace contraint mobile) :
+ * Les 5 icones principales (espace contraint mobile) :
  *   1. CV (home, vue principale)
  *   2. Coach (chat IA)
  *   3. Match (cibler)
@@ -182,7 +182,7 @@ export default function NuviBottomNav({
   };
   const L = labels[lang] || labels.fr;
 
-  // Icônes (réutilisé du NuviSidebar mais 22px)
+  // Icones (reutilise du NuviSidebar mais 22px)
   const Icons = {
     // Micro avec une pastille : on doit reconnaitre l'outil d'un coup d'oeil
     // dans une barre de cinq icones.

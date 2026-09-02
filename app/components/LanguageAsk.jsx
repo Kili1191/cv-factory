@@ -105,7 +105,7 @@ export default function LanguageAsk({ onChoose }) {
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 20,
         // La police du produit des la couche exterieure. Le sous-titre et
-        // tout ce qui n'est pas explicitement stylé en heritent ; sans elle
+        // tout ce qui n'est pas explicitement style en heritent ; sans elle
         // ils tombaient sur Times New Roman - mesure au navigateur - sur le
         // tout premier ecran que voit quelqu'un.
         fontFamily: "'Inter', system-ui, -apple-system, sans-serif",

@@ -348,7 +348,7 @@ export function Aurora({ children, style, className, ...rest }) {
         //
         // Ce masque eteint les bords quoi qu'il arrive. C'est une garantie
         // geometrique et non un reglage a la main : aucune position de
-        // pointeur ne peut faire reapparaitre le liseré.
+        // pointeur ne peut faire reapparaitre le lisere.
         maskImage:
           "radial-gradient(ellipse 80% 78% at 50% 50%, #000 35%, transparent 100%)",
         WebkitMaskImage:

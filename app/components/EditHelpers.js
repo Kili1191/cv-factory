@@ -11,7 +11,7 @@
 //
 // [Nuvi v2 redesign] :
 //   - FR : label en uppercase Coral (eyebrow style), border Hairline, focus violet
-//   - SaveBtn : gradient violet->magenta + check icon (cohérent CTA Nuvi)
+//   - SaveBtn : gradient violet->magenta + check icon (coherent CTA Nuvi)
 //   - E : highlight Cream/Coral au lieu de jaune classique au focus
 //   - Inputs : padding plus genereux, font-size 13, border-radius 10
 
@@ -173,7 +173,7 @@ export function FR({ label, value, onChange, multi = false, placeholder }) {
 }
 
 // Bouton "Sauvegarder" qui ferme le modal d'edition.
-// [Nuvi v2] Style gradient violet->magenta + check icon (cohérent CTA Nuvi).
+// [Nuvi v2] Style gradient violet->magenta + check icon (coherent CTA Nuvi).
 export function SaveBtn({ onClose, T }) {
   const [hovered, setHovered] = useState(false);
 

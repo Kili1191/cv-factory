@@ -14,6 +14,7 @@
 const SUITES = [
   ["no CDN dependency at runtime", "./no-runtime-cdn.mjs"],
   ["no em dash, no en dash", "./no-em-dash.mjs"],
+  ["the comments stay ASCII", "./the-comments-stay-ascii.mjs"],
   ["the design system does not drift", "./the-design-system-does-not-drift.mjs"],
   ["the request sent to the AI is well formed", "./the-ai-request-is-well-formed.mjs"],
   ["the shape is a contract, not a plea", "./the-shape-is-a-contract-not-a-plea.mjs"],

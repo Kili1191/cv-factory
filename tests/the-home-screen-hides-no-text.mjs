@@ -1,6 +1,6 @@
 // AUCUN TEXTE NE DOIT ETRE INVISIBLE
 //
-// Ce test naît d'un defaut qui est parti en production : le titre de
+// Ce test nait d'un defaut qui est parti en production : le titre de
 // l'accueil affichait "Voila ce que je fais aux ." - le mot "CV" avait
 // disparu, et rien ne le signalait. Ni erreur JavaScript, ni test rouge, ni
 // avertissement de compilation. La page se chargeait parfaitement, avec un

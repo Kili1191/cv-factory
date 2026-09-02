@@ -2,7 +2,7 @@
 
 // LiquidGlassModal v2 - tokens centralises (verdict panel 2026-05-21)
 //
-// CHANGEMENT v2 : header/footer gradients allegés (le verre vient maintenant
+// CHANGEMENT v2 : header/footer gradients alleges (le verre vient maintenant
 // du LiquidGlassPanel via --nuvi-glass-panel, plus besoin d'une couche cream
 // opaque par-dessus). Helpers GlassCard/Button/Input alignes sur les memes
 // tokens. Memes couleurs partout, niveau "panneau".

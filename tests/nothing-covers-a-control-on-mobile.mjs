@@ -1,6 +1,6 @@
 // RIEN NE DOIT RECOUVRIR UNE COMMANDE
 //
-// Ce test naît d'un defaut vu sur un vrai telephone : le compagnon flottant
+// Ce test nait d'un defaut vu sur un vrai telephone : le compagnon flottant
 // etait pose sur la moitie droite du bouton "Ajuster". Taper la ouvrait le
 // Coach. Rien ne le signalait - le bouton etait la, visible, parfaitement
 // dessine, et il ne repondait pas.
