@@ -958,9 +958,32 @@ body.cvf-dark.nuvi-grain::after {
   border-radius: 3px;
 }
 
-/* Sur un fond sombre, le violet ne ressort pas : on passe au clair. */
-:where(aside, [data-nuvi-sombre]) :where(button, a[href], [tabindex]):focus-visible {
-  outline-color: var(--nuvi-cream, #faf8f3);
+/* SUR UN FOND SOMBRE, LE VIOLET NE RESSORT PAS : ON PASSE AU CLAIR
+ *
+ * Cette regle listait `aside` sans condition, du temps ou la barre laterale
+ * etait un verre sombre. La refonte l'a rendue blanche en theme clair, et
+ * l'anneau creme s'est retrouve pose dessus : mesure, rgb(250,248,243) sur
+ * rgb(255,255,255), soit 1,05:1. Autant dire aucun anneau. Quelqu'un qui
+ * navigue au clavier ne savait plus ou il etait dans la navigation - et la
+ * navigation est justement ce qu'on parcourt au clavier.
+ *
+ * L'anneau clair n'a de sens que sur une surface sombre. On le reserve donc
+ * aux surfaces qui le sont vraiment : celles marquees data-nuvi-sombre, et la
+ * barre uniquement quand le theme sombre est actif. Ailleurs le violet
+ * reprend la main, a 6,2:1 sur blanc.
+ *
+ * ET LA COULEUR EST ECRITE EN CLAIR, PAS PRISE DANS UN JETON
+ *
+ * Elle etait var(--nuvi-cream). En theme sombre ce jeton vaut #1a1a1c : la
+ * regle censee eclaircir l'anneau le rendait donc sombre sur une barre
+ * sombre, mesure a 1,22:1. Un jeton qui bascule avec le theme ne peut pas
+ * servir a peindre quelque chose dont on sait deja qu'il se pose sur du
+ * sombre. La valeur est donc litterale, et le restera.
+ */
+:where([data-nuvi-sombre]) :where(button, a[href], [tabindex]):focus-visible,
+[data-theme="dark"] aside :where(button, a[href], [tabindex]):focus-visible,
+body.cvf-dark aside :where(button, a[href], [tabindex]):focus-visible {
+  outline-color: #faf8f3;
 }
 
 /* ============================================================
