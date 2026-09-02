@@ -993,6 +993,104 @@ const SCHEMA_CV = {
              "certifications", "deduit"],
 };
 
+// LES TROIS ANALYSES ONT LEUR FORME, ELLES AUSSI
+//
+// Elles la demandaient en prose : "Reponds UNIQUEMENT en JSON valide strict,
+// sans markdown", suivi d'un exemple de sortie, et parseJSON retirait les
+// blocs de code a la main. C'est l'echafaudage d'avant les sorties
+// structurees : il tient la plupart du temps et cede exactement quand le
+// modele travaille le plus, donc sur les CV les plus fournis, donc chez les
+// gens qui ont le plus a raconter.
+//
+// Un schema ne se plaide pas, il contraint le decodage. Les exemples de
+// sortie disparaissent des prompts au passage : ils coutaient des jetons a
+// chaque appel pour decrire ce que le schema garantit.
+const SCHEMA_AUDIT = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    verdict_longueur: { type: "string" },
+    longueur_recommandation: { type: "string" },
+    forces: { type: "array", items: { type: "string" } },
+    faiblesses: { type: "array", items: { type: "string" } },
+    suggestions: { type: "array", items: { type: "string" } },
+    mots_cles_manquants: { type: "array", items: { type: "string" } },
+    premiere_impression: { type: "string" },
+    verdict_recruteur: { type: "string" },
+    raison_verdict: { type: "string" },
+  },
+  required: ["verdict_longueur", "longueur_recommandation", "forces",
+             "faiblesses", "suggestions", "mots_cles_manquants",
+             "premiere_impression", "verdict_recruteur", "raison_verdict"],
+};
+
+const SCHEMA_POSITIONNEMENT = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    angles: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          title: { type: "string" },
+          credibility: { type: "string" },
+          salary_range: { type: "string" },
+          key_points: { type: "array", items: { type: "string" } },
+          target_employers: { type: "string" },
+          new_summary: { type: "string" },
+        },
+        required: ["title", "credibility", "salary_range", "key_points",
+                   "target_employers", "new_summary"],
+      },
+    },
+  },
+  required: ["angles"],
+};
+
+const SCHEMA_VERITE = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    issues: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          type: { type: "string" },
+          quote: { type: "string" },
+          location: { type: "string" },
+          why: { type: "string" },
+          fix: { type: "string" },
+        },
+        required: ["type", "quote", "location", "why", "fix"],
+      },
+    },
+    overall_verdict: { type: "string" },
+  },
+  required: ["issues", "overall_verdict"],
+};
+
+// TRADUIRE N'INVENTE RIEN, DONC RIEN A DECLARER
+//
+// La meme forme, moins "deduit" : ce champ sert a signaler ce que le modele a
+// rempli de lui-meme, et une traduction ne remplit rien, elle reformule ce qui
+// est deja la. L'exiger obligerait le modele a rendre un tableau vide a chaque
+// fois, et surtout laisserait croire qu'une traduction peut ajouter un
+// employeur.
+//
+// Derive de SCHEMA_CV plutot que recopie : deux formes de CV cote a cote
+// finiraient par diverger, comme la palette et les icones avant elles.
+const SCHEMA_CV_TRADUIT = {
+  type: "object",
+  additionalProperties: false,
+  properties: Object.fromEntries(
+    Object.entries(SCHEMA_CV.properties).filter(([k]) => k !== "deduit")),
+  required: SCHEMA_CV.required.filter((k) => k !== "deduit"),
+};
+
 async function aiCall(prompt, options = {}) {
   // Options: { cv, max_tokens, task_name, messages }
   // [Migration Opus 5] `temperature` a disparu : les parametres
@@ -5433,18 +5531,10 @@ export default function App() {
       + "Note globale mesuree : " + mesure.global_score + "/100. "
       + "N'invente PAS de note : elle est deja calculee et ne t'appartient pas. "
       + "Ton texte doit s'accorder avec ces mesures.\n\n"
-      + "Reponds UNIQUEMENT en JSON valide strict, sans markdown:\n"
-      + '{'
-      + '"verdict_longueur":"trop long",'
-      + '"longueur_recommandation":"Reduire de 30% - vise 1 page max pour ce profil sur le marche FR",'
-      + '"forces":["force concrete 1","force 2","force 3"],'
-      + '"faiblesses":["faiblesse precise 1 avec exemple","faiblesse 2","faiblesse 3"],'
-      + '"suggestions":["suggestion actionnable 1","suggestion 2","suggestion 3","suggestion 4","suggestion 5"],'
-      + '"mots_cles_manquants":["mot1","mot2","mot3"],'
-      + '"premiere_impression":"Ce que je pense en 5 secondes en tant que recruteur sur ce marche",'
-      + '"verdict_recruteur":"Je rappelle / Je passe / J\'hesite",'
-      + '"raison_verdict":"Pourquoi ce verdict en 1-2 phrases"'
-      + '}';
+      // La forme est passee en schema (SCHEMA_AUDIT) : l'API la garantit au
+      // lieu qu'on l'implore. Le gabarit de sortie qui suivait ici decrivait
+      // exactement ce que le schema decrit, en jetons payes a chaque appel.
+      + "Trois forces, trois faiblesses, cinq suggestions actionnables."
     
     try {
       const { value: r } = await cachedAiCall(
@@ -5452,7 +5542,7 @@ export default function App() {
         cv,
         { country: auditCountry, locale },
         async () => {
-          const txt = await aiCall(p, { cv, task_name: "audit" });
+          const txt = await aiCall(p, { cv, schema: SCHEMA_AUDIT, task_name: "audit" });
           return parseJSON(txt);
         }
       );
@@ -5681,26 +5771,15 @@ export default function App() {
       +"- Les 3 angles doivent etre VRAIMENT differents (pas 3 variantes du meme job)\n"
       +"- Chaque angle doit etre credible avec ce parcours, pas une projection irrealiste\n"
       +"- " + NO_DASH + "\n"
-      +"- Reponds UNIQUEMENT en JSON valide strict.\n\n"
-      +'{\n'
-      +'  "angles": [\n'
-      +'    {\n'
-      +'      "title": "Titre professionnel precis",\n'
-      +'      "credibility": "Pourquoi ce profil est credible pour cet angle",\n'
-      +'      "salary_range": "Fourchette realiste",\n'
-      +'      "key_points": ["point 1", "point 2", "point 3"],\n'
-      +'      "target_employers": "Type d entreprises a cibler",\n'
-      +'      "new_summary": "Accroche reecrite pour ce positionnement"\n'
-      +'    }\n'
-      +'  ]\n'
-      +'}';
+      // Forme garantie par SCHEMA_POSITIONNEMENT.
+      +"- Propose trois angles distincts, pas trois variantes du meme."
     try {
       const { value: r } = await cachedAiCall(
         "positioning",
         cv,
         { locale },
         async () => {
-          const txt = await aiCall(p, { cv, task_name: "positioning" });
+          const txt = await aiCall(p, { cv, schema: SCHEMA_POSITIONNEMENT, task_name: "positioning" });
           return parseJSON(txt);
         }
       );
@@ -5751,26 +5830,15 @@ export default function App() {
       +"- Concentre-toi sur les vrais problemes, pas du nitpicking.\n"
       +"- Maximum 8 issues, prends les plus importants.\n"
       +"- " + NO_DASH + "\n"
-      +"- JSON valide strict uniquement.\n\n"
-      +'{\n'
-      +'  "issues": [\n'
-      +'    {\n'
-      +'      "type": "vague",\n'
-      +'      "quote": "phrase exacte du CV",\n'
-      +'      "location": "EXP-2 ou Accroche etc",\n'
-      +'      "why": "raison concrete du probleme",\n'
-      +'      "fix": "reformulation proposee"\n'
-      +'    }\n'
-      +'  ],\n'
-      +'  "overall_verdict": "Verdict global en 1-2 phrases"\n'
-      +'}';
+      // Forme garantie par SCHEMA_VERITE.
+      +"- Chaque probleme cite la phrase exacte du CV, jamais une paraphrase."
     try {
       const { value: r } = await cachedAiCall(
         "truth",
         cv,
         { locale },
         async () => {
-          const txt = await aiCall(p, { cv, task_name: "truth" });
+          const txt = await aiCall(p, { cv, schema: SCHEMA_VERITE, task_name: "truth" });
           return parseJSON(txt);
         }
       );
@@ -7761,7 +7829,14 @@ export default function App() {
       + "7. For language proficiency levels: keep CEFR codes (A1, A2, B1, B2, C1, C2) as-is. Translate descriptive levels (Native, Fluent, Intermediate / Maternelle, Courant, Intermediaire).\n\n"
       + "CV to translate (JSON):\n"
       + JSON.stringify(cv) + "\n\n"
-      + "Reply with the translated CV as VALID JSON only, no markdown, no commentary, same structure exactly.";
+      // LA FORME N'EST PLUS DEMANDEE EN PROSE
+      //
+      // "VALID JSON only, no markdown" etait la formule d'avant les sorties
+      // structurees : elle marche la plupart du temps et lache exactement
+      // quand le modele travaille le plus, sur les reponses longues, donc sur
+      // les CV les plus fournis. L'echec se voit comme "reponse illisible" et
+      // la traduction ne fait simplement rien.
+      + "Translate every field. Keep the structure identical.";
 
     try {
       const { value: json } = await cachedAiCall(
@@ -7769,7 +7844,7 @@ export default function App() {
         cv,
         { dir: trDir },
         async () => {
-          const txt = await aiCall(p, { cv, task_name: "translate" });
+          const txt = await aiCall(p, { cv, schema: SCHEMA_CV_TRADUIT, task_name: "translate" });
           return parseJSON(txt);
         }
       );
