@@ -78,10 +78,28 @@ export async function run() {
         const haut = piste.getBoundingClientRect().top + window.scrollY;
         const hauteur = piste.offsetHeight;
         const out = [];
+        // LE DEFILEMENT DOIT ETRE INSTANTANE, SINON ON MESURE LE VIDE
+        //
+        // La page porte scroll-behavior: smooth. Un scrollTo(x, y) y lance
+        // une animation de plusieurs centaines de millisecondes : deux images
+        // plus tard on a avance de trois pixels, et tout se lit comme une
+        // sequence morte. Le premier passage de ce test a rapporte exactement
+        // ca, une position figee a 2300px et trois opacites a zero, alors que
+        // la sequence marchait. On demande donc un saut instantane, et on
+        // attend que la position soit vraiment atteinte avant de relever.
+        const va = async (y) => {
+          window.scrollTo({ top: y, left: 0, behavior: "instant" });
+          for (let essai = 0; essai < 30; essai++) {
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+            if (Math.abs(window.scrollY - y) <= 2) break;
+            // Un navigateur qui ignore "instant" garde le glissement : on le
+            // laisse arriver plutot que de mesurer a mi-chemin.
+            window.scrollTo({ top: y, left: 0, behavior: "instant" });
+          }
+        };
         // Du moment ou la piste arrive en haut de l'ecran jusqu'a sa sortie.
         for (let i = 0; i <= 20; i++) {
-          window.scrollTo(0, Math.round(haut + (hauteur * i) / 20));
-          await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+          await va(Math.round(haut + (hauteur * i) / 20));
           out.push({
             y: window.scrollY,
             top: Math.round(colle.getBoundingClientRect().top),
