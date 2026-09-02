@@ -105,13 +105,37 @@ export async function run() {
       // Puis ce que le visiteur constate : chaque section, amenee sous ses
       // yeux, est-elle lisible a fond de contraste ?
       const pales = await page.evaluate(async (plein) => {
+        // LE DEFILEMENT DOIT ETRE INSTANTANE, ET IL FAUT L'ATTENDRE
+        //
+        // La page porte scroll-behavior: smooth. Un scrollTo(x, y) y lance une
+        // animation dont la duree depend de la DISTANCE, et une attente fixe
+        // de 450 ms suffisait tant que la page etait courte. Elle a grandi de
+        // deux ecrans quand la section du document est devenue une piste
+        // collante : les mesures se sont mises a tomber avant l'arrivee, et
+        // trois sections parfaitement lisibles ont ete rapportees a 0.00,
+        // 0.23 et 0.72 selon la machine. Une valeur qui change d'une machine a
+        // l'autre ne decrit pas la page, elle decrit le moment ou on l'a lue.
+        //
+        // On demande donc un saut instantane et on attend que la position soit
+        // reellement atteinte. La page, elle, allait bien : verifiee a l'oeil,
+        // les sections arrivent noires apres un defilement d'humain.
         const dodo = (ms) => new Promise((r) => setTimeout(r, ms));
+        const va = async (y) => {
+          window.scrollTo({ top: y, left: 0, behavior: "instant" });
+          for (let essai = 0; essai < 30; essai++) {
+            await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+            if (Math.abs(window.scrollY - y) <= 2) break;
+            window.scrollTo({ top: y, left: 0, behavior: "instant" });
+          }
+        };
         const restants = [];
         const sections = [...document.querySelectorAll(".nuvi-scroll-in")];
         for (const s of sections) {
           const haut = s.getBoundingClientRect().top + window.scrollY;
-          window.scrollTo(0, Math.max(0, haut - 60));
-          await dodo(450);
+          await va(Math.max(0, haut - 60));
+          // Le temps que l'animation liee au defilement se recalcule une fois
+          // la position atteinte.
+          await dodo(250);
           const o = Number(getComputedStyle(s).opacity);
           if (o < plein) {
             restants.push({
