@@ -12,6 +12,8 @@ import {
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, GradPurple, Trans, CoralText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 
 // Sous-composant : zone de texte copiable.
 function Section({ T, title, content, onCopy, small }) {
@@ -168,6 +170,17 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           <textarea
             value={offer}
             onChange={(e) => setOffer(e.target.value)}
+            onPaste={(e) => {
+              const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+              if (!brut) return;
+              const propre = nettoyerLAnnonce(brut);
+              if (propre === brut) return;
+              e.preventDefault();
+              const c = e.target;
+              const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+              const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+              setOffer(c.value.slice(0, d) + propre + c.value.slice(f));
+            }}
             placeholder={T.pk_offer_ph}
             rows={9}
             style={{
@@ -178,6 +191,12 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
               resize:"vertical", marginBottom:14,
             }}
           />
+          {/* Une annonce est tres souvent un PDF ou une capture d'ecran. La
+              retaper pour un outil de seconde etape est exactement le moment
+              ou l'on renonce. */}
+          <FileDrop T={T} quoi="annonce" testId="pack-offre"
+            style={{ marginBottom:12 }}
+            onTexte={(texte)=>setOffer((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
           <button
             onClick={() => onGenerate && onGenerate(offer.trim())}
             disabled={!offer.trim() || !onGenerate}

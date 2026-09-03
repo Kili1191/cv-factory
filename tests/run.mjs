@@ -28,6 +28,7 @@ const SUITES = [
   ["the diagnosis names one cause", "./the-diagnosis-names-one-cause.mjs"],
   ["the diagnosis reaches the screen", "./the-diagnosis-reaches-the-screen.mjs"],
   ["a posting alone is enough", "./a-posting-alone-is-enough.mjs"],
+  ["every paste field takes a file", "./every-paste-field-takes-a-file.mjs"],
   ["the career record invents nothing", "./the-career-record-invents-nothing.mjs"],
   ["a job found becomes an application", "./job-search-becomes-an-application.mjs"],
   ["the extension reads a job ad", "./extension-reads-a-job-ad.mjs"],

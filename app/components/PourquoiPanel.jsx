@@ -28,6 +28,8 @@ import { useState, useMemo } from "react";
 import { SCHEMA_DIAGNOSTIC } from "./schemas";
 import { pourquoiPasDentretien, MINIMUM_ANNONCES } from "../../lib/pourquoiPasDentretien.js";
 import { dossierParcours, dossierEnTexte } from "../../lib/careerRecord.js";
+import FileDrop from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 import {
   Ink, InkMuted, Cream, Paper, Hairline,
   CoralSoft, GreenSoft, PurpleSoft,
@@ -143,6 +145,17 @@ export default function PourquoiPanel({
             data-pq-annonce={i}
             value={a}
             onChange={(e) => changer(i, e.target.value)}
+            onPaste={(e) => {
+              const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+              if (!brut) return;
+              const propre = nettoyerLAnnonce(brut);
+              if (propre === brut) return;
+              e.preventDefault();
+              const c = e.target;
+              const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+              const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+              changer(i, c.value.slice(0, d) + propre + c.value.slice(f));
+            }}
             placeholder={T.pq_placeholder + " " + (i + 1)}
             rows={3}
             style={{
@@ -155,6 +168,24 @@ export default function PourquoiPanel({
             }}/>
         ))}
       </div>
+
+      {/* TROIS ANNONCES A LA MAIN, C'EST LE PLUS GROS COUT DE FRAPPE DU
+          PRODUIT, et c'est demande sur l'ecran qui dit justement aux gens ce
+          qui ne va pas : abandonner ici coute cher. Une annonce se garde
+          souvent en PDF ou en capture d'ecran. Le fichier va donc dans le
+          premier champ libre, et en ouvre un s'ils sont tous pris. */}
+      <FileDrop T={T} quoi="annonce" testId="pourquoi-annonce"
+        style={{ marginTop: 10 }}
+        onTexte={(texte) => {
+          const propre = nettoyerLAnnonce(texte);
+          setAnnonces((liste) => {
+            const i = liste.findIndex((v) => !String(v || "").trim());
+            if (i === -1) return [...liste, propre];
+            const suite = [...liste];
+            suite[i] = propre;
+            return suite;
+          });
+        }}/>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 14 }}>
         <button

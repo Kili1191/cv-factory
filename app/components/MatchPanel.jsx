@@ -7,6 +7,8 @@
 import { useState, useMemo } from "react";
 import { SCHEMA_MATCH } from "./schemas";
 import { rapport } from "../../lib/atsMatch.js";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
@@ -408,9 +410,26 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
       )}
       <label style={LBL}>{T.mt_offer_label}</label>
       <textarea value={offer} onChange={e=>setOffer(e.target.value)}
+        onPaste={(e)=>{
+          const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+          if (!brut) return;
+          const propre = nettoyerLAnnonce(brut);
+          if (propre === brut) return;
+          e.preventDefault();
+          const c = e.target;
+          const a = c.selectionStart == null ? c.value.length : c.selectionStart;
+          const b = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+          setOffer(c.value.slice(0, a) + propre + c.value.slice(b));
+        }}
         placeholder={T.mt_offer_ph}
         rows={11}
-        style={{...IN({resize:"vertical", marginBottom:14, fontSize:12, lineHeight:1.7})}}/>
+        style={{...IN({resize:"vertical", marginBottom:10, fontSize:12, lineHeight:1.7})}}/>
+      {/* C'est le champ le plus frequente du produit : le panneau
+          d'adaptation s'ouvre depuis la barre, depuis le hub et depuis
+          l'extension. Une annonce est tres souvent un PDF ou une capture. */}
+      <FileDrop T={T} quoi="annonce" testId="match-offre"
+        style={{ marginBottom:14 }}
+        onTexte={(texte)=>setOffer((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
       {ecart && (ecart.aReformuler.length > 0 || ecart.titre.etat !== "exact" || ecart.manquantes.length > 0) && (
         <div style={{
           border:"0.5px solid "+Hairline, borderRadius:RadiusMd,

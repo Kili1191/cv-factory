@@ -25,6 +25,8 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { serializeCvForContext } from "../../lib/cvSerializer.js";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 
 const SILENCE_MS = 900;
 
@@ -429,6 +431,17 @@ export default function LiveAssistModal({
             <textarea
               value={colle}
               onChange={(e) => setColle(e.target.value)}
+              onPaste={(e) => {
+                const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+                if (!brut) return;
+                const propre = nettoyerLAnnonce(brut);
+                if (propre === brut) return;
+                e.preventDefault();
+                const c = e.target;
+                const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+                const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+                setColle(c.value.slice(0, d) + propre + c.value.slice(f));
+              }}
               placeholder={locale === "en"
                 ? "Paste the job ad here. The cues will match this role."
                 : "Colle l'annonce ici. Les reperes colleront a ce poste."}
@@ -441,6 +454,17 @@ export default function LiveAssistModal({
                 fontSize: 13.5, lineHeight: 1.45, fontFamily: "inherit",
               }}
             />
+            {/* DEUX MINUTES AVANT L'APPEL, PERSONNE NE COLLE UNE ANNONCE
+                Elle est ouverte dans un onglet, enregistree en PDF, ou
+                photographiee. Surface sombre : les encres claires viennent
+                d'ici, le composant ne devine pas son fond. */}
+            <FileDrop locale={locale} quoi="annonce" testId="direct-offre"
+              style={{ marginTop: 8 }}
+              couleurs={{
+                encre: "#ffd9cc", filet: "rgba(255,255,255,.25)",
+                papier: "rgba(0,0,0,.35)", gris: "rgba(255,255,255,.55)",
+              }}
+              onTexte={(texte)=>setColle((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
             <input
               value={posteTape}
               onChange={(e) => setPosteTape(e.target.value)}

@@ -5,6 +5,8 @@
 // L'IA retourne des questions adaptees au pays/secteur/niveau du candidat.
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 import {
   Ink, Cream, CreamSoft, Paper, Purple, Magenta, PurpleSoft,
   Coral, CoralSoft, Green, GreenSoft, Gray100, Gray200, Gray400,
@@ -1807,6 +1809,17 @@ export default function InterviewModal({
                 <textarea
                   value={offerText}
                   onChange={e => setOfferText(e.target.value)}
+                  onPaste={(e) => {
+                    const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+                    if (!brut) return;
+                    const propre = nettoyerLAnnonce(brut);
+                    if (propre === brut) return;
+                    e.preventDefault();
+                    const c = e.target;
+                    const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+                    const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+                    setOfferText(c.value.slice(0, d) + propre + c.value.slice(f));
+                  }}
                   placeholder={T.iv_offer_ph}
                   rows={4}
                   style={{
@@ -1823,6 +1836,12 @@ export default function InterviewModal({
                     boxSizing:"border-box",
                   }}
                 />
+                {/* Une annonce est tres souvent un PDF ou une capture d'ecran. La
+                    retaper pour un outil de seconde etape est exactement le moment
+                    ou l'on renonce. */}
+                <FileDrop T={T} quoi="annonce" testId="entretien-offre"
+                  style={{ marginBottom:12 }}
+                  onTexte={(texte)=>setOfferText((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
               </div>
 
               {/* SUR QUEL CV ON PREPARE

@@ -12,6 +12,8 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 import GmailScanPanel from "./GmailScanPanel";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
@@ -137,10 +139,26 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
         <textarea
           value={form.offer || ""}
           onChange={e=>u("offer")(e.target.value)}
+          onPaste={(e)=>{
+            const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+            if (!brut) return;
+            const propre = nettoyerLAnnonce(brut);
+            if (propre === brut) return;
+            e.preventDefault();
+            const c = e.target;
+            const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+            const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+            u("offer")(c.value.slice(0, d) + propre + c.value.slice(f));
+          }}
           rows={4}
           placeholder={T.ap_offer_hint
             || "Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance."}
           style={{...inputStyle, resize:"vertical", minHeight:80}}/>
+        {/* Une candidature se saisit souvent longtemps apres coup, quand
+            l'annonce n'existe plus qu'en PDF enregistre ou en capture. */}
+        <FileDrop T={T} quoi="annonce" testId="suivi-offre"
+          style={{ marginTop:8 }}
+          onTexte={(texte)=>u("offer")(joindreAuTexte(form.offer || "", nettoyerLAnnonce(texte)))}/>
         {form.offer && form.offer.trim().length > 0 && (
           <div style={{fontSize:11, color:GreenText, marginTop:5}}>
             {(T.ap_offer_ready || "Annonce enregistree, les actions suivantes sont debloquees")}

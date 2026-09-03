@@ -193,6 +193,11 @@ const FR_T = {
   ob_parcours_ph:"Trois ans en salle au Comptoir a Lyon, 80 couverts par service, je formais les nouveaux. Deux ans avant ca en boulangerie.",
   ob_parcours_aide:"Ecris-le comme tu veux, dans le desordre. Nuvi met en forme. Aucun employeur, aucune date, aucun diplome n'est ajoute en silence : ce qui ne vient pas de toi t'est signale.",
   ob_parcours_fichier:"Ou depose un fichier : PDF, Word, ou une photo de ton CV",
+  // Le depot de fichier partage (components/FileDrop.jsx), un libelle
+  // par nature de ce qu'on depose.
+  depot_annonce:"Ou depose l'annonce : PDF, Word ou une capture d'ecran",
+  depot_cv:"Ou depose ton CV : PDF, Word ou une photo",
+  depot_parcours:"Ou depose un fichier : PDF, Word, ou une photo de ton CV",
   ob_offre_cta:"Ecris mon CV pour ce poste",
   ob_offre_encours:"Nuvi ecrit ton CV...",
   ob_offre_manque:"Colle l'annonce pour commencer. Quelques lignes suffisent.",

@@ -20,6 +20,7 @@ import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
+import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
 // === LAZY MODALS ===
 // Ces modals ne sont rendus que sur action utilisateur (showXxx === true).
@@ -1884,10 +1885,20 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
         <label style={eyV17}>{T.ai_parc}</label>
         <textarea value={parc} onChange={e=>setParc(e.target.value)}
           rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+        {/* C'EST LA VOIE DE CEUX QUI PARTENT DE RIEN
+            Donc, tres souvent, de quelqu'un qui a un vieux CV en fichier et
+            aucune donnee structuree. Lui demander de le resumer a la main
+            dans trois lignes est la derniere chose a faire ici. */}
+        <FileDrop T={T} quoi="cv" testId="generer-parcours"
+          style={{ marginTop:6, marginBottom:4 }}
+          onTexte={(texte)=>setParc((avant)=>joindreAuTexte(avant, texte))}/>
 
         <label style={eyV17}>{T.ai_off}</label>
         <textarea value={offre} onChange={e=>setOffre(e.target.value)}
           rows={3} style={inV17({resize:"vertical", lineHeight:1.5})}/>
+        <FileDrop T={T} quoi="annonce" testId="generer-annonce"
+          style={{ marginTop:6 }}
+          onTexte={(texte)=>setOffre((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
 
         </div>
       )}
@@ -10327,7 +10338,14 @@ export default function App() {
   }
 
     return (
-    <>
+    // LE LECTEUR D'IMAGE DESCEND PAR CONTEXTE
+    //
+    // Le depot de fichier partage (components/FileDrop.jsx) est pose a une
+    // dizaine d'endroits, dont plusieurs a trois ou quatre composants de
+    // profondeur. Une photo est le seul fichier qui doive partir au modele
+    // pour etre lue, et cet appel-la vit ici. Le passer en prop aurait
+    // elargi dix signatures pour une valeur qui ne change jamais.
+    <ContexteLireImage.Provider value={lireImageCv}>
       <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
       {notif && <Notif msg={notif}/>}
         {pasteFlash && (
@@ -10884,6 +10902,6 @@ export default function App() {
           </div>
         )}
       </div>
-    </>
+    </ContexteLireImage.Provider>
   );
 }

@@ -194,6 +194,11 @@ const EN_T = {
   ob_parcours_ph:"Three years waiting tables at Le Comptoir in Lyon, 80 covers a night, trained the new starters. Two years before that in a bakery.",
   ob_parcours_aide:"Write it any way you like, in any order. Nuvi does the shaping. No employer, date or qualification is ever added silently: anything that did not come from you is flagged for you.",
   ob_parcours_fichier:"Or upload a file: PDF, Word, or a photo of your CV",
+  // Le depot de fichier partage (components/FileDrop.jsx), un libelle
+  // par nature de ce qu'on depose.
+  depot_annonce:"Or upload the posting: PDF, Word or a screenshot",
+  depot_cv:"Or upload your CV: PDF, Word or a photo",
+  depot_parcours:"Or upload a file: PDF, Word, or a photo of your CV",
   ob_offre_cta:"Write my CV for this job",
   ob_offre_encours:"Nuvi is writing your CV...",
   ob_offre_manque:"Paste the posting to start. A few lines are enough.",

@@ -147,7 +147,7 @@ export async function run() {
       // On donne un .txt : il traverse le meme lecteur que le reste, sans
       // dependre ni de pdf.js ni d'un appel au modele pour une image, donc
       // ce qui echoue ici est bien le cablage et pas l'extraction.
-      const depot = page.locator('[data-nuvi="offre-fichier-bouton"]');
+      const depot = page.locator('[data-nuvi-depot="offre-parcours"]');
       if (await depot.count() === 0) {
         failures.push("aucun moyen de deposer un document ou une photo sur "
           + "l'ecran de l'annonce : qui n'a pas son parcours en texte doit "
@@ -168,7 +168,7 @@ export async function run() {
           await page.waitForTimeout(1500);
           const dedans = await page.locator('[data-nuvi="offre-parcours"]').inputValue();
           if (!dedans.includes("Le Comptoir")) {
-            const err = await page.locator('[data-nuvi="offre-fichier-err"]')
+            const err = await page.locator('[data-nuvi-depot-err="offre-parcours"]')
               .innerText().catch(() => "");
             failures.push("le fichier depose n'atteint pas le champ du "
               + "parcours (il contient \"" + dedans.slice(0, 40) + "\")"

@@ -12,6 +12,8 @@ import {
   Gray100, Gray200, Gray400, Gray600,
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText } from "./tokens";
 import Sheet from "./Sheet";
+import FileDrop, { joindreAuTexte } from "./FileDrop";
+import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 
 // Couleur score.
 function scoreAccent(s) {
@@ -101,6 +103,17 @@ export default function MultiCVStrategyModal({
             <textarea
               value={offerText}
               onChange={e=>setOfferText(e.target.value)}
+              onPaste={(e) => {
+                const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+                if (!brut) return;
+                const propre = nettoyerLAnnonce(brut);
+                if (propre === brut) return;
+                e.preventDefault();
+                const c = e.target;
+                const d = c.selectionStart == null ? c.value.length : c.selectionStart;
+                const f = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+                setOfferText(c.value.slice(0, d) + propre + c.value.slice(f));
+              }}
               placeholder={T.mc_offer_ph}
               rows={6}
               style={{
@@ -117,6 +130,12 @@ export default function MultiCVStrategyModal({
                 boxSizing:"border-box",
               }}
             />
+            {/* Une annonce est tres souvent un PDF ou une capture d'ecran. La
+                retaper pour un outil de seconde etape est exactement le moment
+                ou l'on renonce. */}
+            <FileDrop T={T} quoi="annonce" testId="multi-offre"
+              style={{ marginBottom:12 }}
+              onTexte={(texte)=>setOfferText((avant)=>joindreAuTexte(avant, nettoyerLAnnonce(texte)))}/>
           </div>
 
           <button onClick={onRun} disabled={!canRun} style={{
