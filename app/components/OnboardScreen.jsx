@@ -6,6 +6,7 @@
 
 import { useState, useRef } from "react";
 import { texteDuFichier } from "../../lib/lireUnFichier";
+import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../../lib/pastedPosting";
 import {
   Coral, CoralSoft, Cream, CreamSoft, Gold, GoldDeep, GradCoral, GradDark,
   GradGold, GradPurple, Gray200, Gray400, Gray600, Ink, Paper, RadiusMd,
@@ -34,8 +35,82 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   const [parcoursTexte, setParcoursTexte] = useState("");
 
   const fileInputRef = useRef(null);
+  // Le meme depot, sur l'ecran "je pars de l'annonce". Il lui faut son propre
+  // champ : deux boutons qui declenchent le meme input reprendraient aussi le
+  // meme "value", et le second choix du meme fichier ne redeclencherait rien.
+  const parcoursFileRef = useRef(null);
   const [fileBusy, setFileBusy] = useState("");   // nom du fichier en lecture
   const [fileErr, setFileErr]   = useState("");
+
+  // LIRE UN FICHIER, D'OU QU'IL VIENNE
+  //
+  // Ecrit une fois parce que deux ecrans en ont besoin, et parce que la
+  // moitie de ce qui suit vient de pannes reelles : le worker pdf.js qui
+  // partait chercher un CDN, la photo trop lourde, l'alerte qui disparait
+  // toute seule sur mobile. Une seconde copie n'aurait eu aucun de ces
+  // garde-fous.
+  //
+  // "deposer" recoit le texte lu. C'est la seule chose qui change d'un ecran
+  // a l'autre : ici le brouillon d'import, la le champ du parcours.
+  const chargerFichier = async (file, deposer) => {
+    if (!file) return;
+    setFileErr("");
+    setFileBusy(file.name);
+    try {
+      // Le lecteur commun distingue ce qui se lit sur place (PDF, DOCX, TXT)
+      // de ce qui doit etre regarde (une image). Le texte ne sort jamais du
+      // navigateur ; une photo, elle, n'a pas de texte a extraire ici, et
+      // c'est le seul cas ou le fichier lui-meme part au modele.
+      const { lireUnFichier } = await import("../../lib/lireUnFichier");
+      const lu = await lireUnFichier(file, {
+        pdf: T.ob_file_pdf_err,
+        format: T.ob_file_format_err,
+        tropGrosse: T.ob_img_too_big,
+      });
+      let text = "";
+      if (lu.genre === "refus") {
+        setFileErr(lu.raison);
+      } else if (lu.genre === "image") {
+        if (typeof lireImageCv !== "function") {
+          setFileErr(T.ob_file_format_err);
+        } else {
+          setFileBusy(T.ob_img_reading);
+          text = await lireImageCv(lu);
+        }
+      } else {
+        text = lu.texte;
+      }
+      if (lu.genre !== "refus") {
+        if (!text || !text.trim()) setFileErr(T.ob_file_empty_err);
+        else deposer(text);
+      }
+    } catch (err) {
+      // alert() disparait tout seul sur certains mobiles : l'erreur doit
+      // rester lisible dans la page.
+      setFileErr((err && err.message) ? err.message : T.ob_file_read_err);
+    } finally {
+      setFileBusy("");
+    }
+  };
+
+  // Les types acceptes, une seule liste. iOS filtre tres mal sur les seules
+  // extensions et grise alors des fichiers valides dans l'app Fichiers : on
+  // donne aussi les types MIME. Les images comptent, et sur telephone
+  // "image/*" ouvre aussi l'appareil photo.
+  const TYPES_ACCEPTES = [
+    ".pdf", ".docx", ".txt",
+    "application/pdf",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "text/plain",
+    "image/*",
+  ].join(",");
+
+  // Un input de fichier ne doit pas etre en display:none : certains
+  // navigateurs mobiles refusent alors d'ouvrir le selecteur.
+  const INPUT_CACHE = {
+    position:"absolute", width:1, height:1,
+    opacity:0, overflow:"hidden", pointerEvents:"none",
+  };
 
   // [Nuvi] Style accent par mode :
   //  - mode "import" simple   : terracotta (Coral)
@@ -228,7 +303,21 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
   // demande en version plus sage. Ici on n'ajoute rien de plus : c'est un
   // outil, il execute.
   if (mode === "offre") {
-    const pret = offreTexte.trim().length > 40 && parcoursTexte.trim().length > 10;
+    // CE QUI SUFFIT POUR PARTIR : L'ANNONCE, ET RIEN D'AUTRE
+    //
+    // Le parcours etait exige, dix caracteres au moins. Quelqu'un collait son
+    // annonce, voyait le bouton rester gris, et n'avait aucun moyen de savoir
+    // que le champ du dessous le retenait. L'ecran ne repondait pas, donc
+    // l'outil ne marchait pas.
+    //
+    // Le parcours reste le meilleur depart et le placeholder le dit. Mais son
+    // absence n'est plus un mur : sans lui, Nuvi ecrit le CV que l'annonce
+    // reclame et marque chaque element qui ne vient pas de la personne dans
+    // "deduit", comme pour une date ou un diplome qu'elle n'a pas donnes.
+    // Elle voit ce qui est signale et decide de le garder.
+    const annonce = nettoyerLAnnonce(offreTexte);
+    const pret = annonce.length >= ANNONCE_MINIMUM;
+    const aParcours = parcoursTexte.trim().length > 10;
     return (
       <div style={{
         position:"fixed", inset:0, zIndex:500, background:CreamSoft,
@@ -264,10 +353,25 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
               display:"block", fontSize:11, fontWeight:700, letterSpacing:"0.12em",
               textTransform:"uppercase", color:CoralText, marginBottom:8,
             }}>{T.ob_offre_label}</span>
+            {/* onPaste : un collage venu d'un site d'emploi arrive avec ses
+                entites. On le nettoie a la porte plutot que de laisser
+                quelqu'un lire "&nbsp;" sur trois lignes dans son propre
+                champ, et plutot que de defendre chaque prompt en aval. */}
             <textarea
               value={offreTexte}
               data-nuvi="offre-annonce"
               onChange={(e)=>setOffreTexte(e.target.value)}
+              onPaste={(e)=>{
+                const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+                if (!brut) return;
+                const propre = nettoyerLAnnonce(brut);
+                if (propre === brut) return;
+                e.preventDefault();
+                const c = e.target;
+                const a = c.selectionStart == null ? c.value.length : c.selectionStart;
+                const b = c.selectionEnd == null ? c.value.length : c.selectionEnd;
+                setOffreTexte(c.value.slice(0, a) + propre + c.value.slice(b));
+              }}
               placeholder={T.ob_offre_ph}
               rows={8}
               style={{
@@ -296,12 +400,68 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
                 boxSizing:"border-box", outline:"none",
               }}/>
           </label>
+          {/* QUAND ON N'A RIEN A COLLER
+              Beaucoup de gens n'ont pas leur parcours sous forme de texte :
+              ils ont un vieux CV en PDF, un document Word, ou la photo d'un
+              CV imprime. Leur demander de le retaper dans une zone de texte,
+              c'est leur demander de renoncer. Le meme lecteur que l'ecran
+              d'import s'en charge, et depose le resultat dans le champ
+              ci-dessus, ou il reste modifiable avant de partir. */}
+          <input
+            type="file"
+            id="parcours-file-upload"
+            data-nuvi="offre-fichier"
+            ref={parcoursFileRef}
+            accept={TYPES_ACCEPTES}
+            style={INPUT_CACHE}
+            onChange={async (e) => {
+              const file = e.target.files?.[0];
+              await chargerFichier(file, (texte) => {
+                // On ajoute plutot qu'on ecrase : quelqu'un peut avoir deja
+                // tape deux lignes avant de penser a son ancien CV, et les
+                // perdre au moment ou il essaie d'en donner plus serait la
+                // pire facon de le recompenser.
+                setParcoursTexte((avant) => (avant.trim() ? avant.trim() + "\n\n" : "") + texte.trim());
+              });
+              e.target.value = "";
+            }}
+          />
+          <button
+            onClick={() => parcoursFileRef.current && parcoursFileRef.current.click()}
+            data-nuvi="offre-fichier-bouton"
+            disabled={!!fileBusy}
+            style={{
+              ...B({
+                display:"inline-flex", alignItems:"center", gap:8,
+                background:Paper, border:"1px dashed "+Gray200,
+                color: fileBusy ? Gray600 : CoralText,
+                borderRadius:RadiusSm, padding:"10px 14px", minHeight:44,
+                fontFamily:Sans, fontWeight:600, fontSize:13,
+                marginBottom:10,
+              })
+            }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" strokeWidth="2"
+              strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            {fileBusy ? T.ob_file_reading + " " + fileBusy : T.ob_parcours_fichier}
+          </button>
+
+          {fileErr ? (
+            <div data-nuvi="offre-fichier-err" role="alert" style={{
+              fontSize:12.5, color:CoralText, lineHeight:1.55, marginBottom:10,
+            }}>{fileErr}</div>
+          ) : null}
+
           <div style={{ fontSize:12.5, color:Gray600, lineHeight:1.55, marginBottom:24 }}>
             {T.ob_parcours_aide}
           </div>
 
           <button
-            onClick={()=>onFromOffer(offreTexte, parcoursTexte)}
+            onClick={()=>onFromOffer(annonce, parcoursTexte)}
             data-nuvi="offre-cta"
             disabled={!pret || imping}
             style={{
@@ -313,6 +473,22 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
                 fontFamily:Sans, fontWeight:600, fontSize:15,
               })
             }}>{imping ? T.ob_offre_encours : T.ob_offre_cta}</button>
+
+          {/* UN BOUTON GRIS DOIT DIRE CE QU'IL ATTEND
+              Sans cette ligne, le seul retour est l'absence de retour, et la
+              personne relit ses deux champs sans savoir lequel la retient. */}
+          {!pret && !imping ? (
+            <div data-nuvi="offre-manque" style={{
+              fontSize:12.5, color:Gray600, lineHeight:1.55,
+              marginTop:10, textAlign:"center",
+            }}>{T.ob_offre_manque}</div>
+          ) : null}
+          {pret && !aParcours && !imping ? (
+            <div data-nuvi="offre-sans-parcours" style={{
+              fontSize:12.5, color:Gray600, lineHeight:1.55,
+              marginTop:10, textAlign:"center",
+            }}>{T.ob_offre_sans_parcours}</div>
+          ) : null}
         </div>
       </div>
     );
@@ -390,73 +566,18 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         </div>
 
         <div className="nuvi-import-droite">
-        {/* Champ fichier masque.
-            accept : iOS filtre tres mal sur les seules extensions et grise
-            alors des fichiers parfaitement valides dans l'app Fichiers. On
-            donne aussi les types MIME. */}
+        {/* Champ fichier masque. Types acceptes et masquage : voir
+            TYPES_ACCEPTES et INPUT_CACHE en haut du composant. */}
         <input
           type="file"
           id="cv-file-upload"
           ref={fileInputRef}
-          // Les images comptent : beaucoup de gens n'ont pas leur CV en
-          // fichier, ils en ont une photo. Sur telephone, "image/*" ouvre
-          // aussi l'appareil photo - on peut donc photographier un CV
-          // imprime et repartir avec.
-          accept={[
-            ".pdf", ".docx", ".txt",
-            "application/pdf",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-            "text/plain",
-            "image/*",
-          ].join(",")}
-          style={{
-            // display:none empeche l'ouverture du selecteur sur certains
-            // navigateurs mobiles ; ce masquage-la reste "visible" pour eux.
-            position:"absolute", width:1, height:1,
-            opacity:0, overflow:"hidden", pointerEvents:"none",
-          }}
+          accept={TYPES_ACCEPTES}
+          style={INPUT_CACHE}
           onChange={async (e) => {
             const file = e.target.files?.[0];
-            if (!file) return;
-            setFileErr("");
-            setFileBusy(file.name);
-            try {
-              // Le lecteur commun distingue ce qui se lit sur place (PDF,
-              // DOCX, TXT) de ce qui doit etre regarde (une image). Le texte
-              // ne sort jamais du navigateur ; une photo, elle, n'a pas de
-              // texte a extraire ici, et c'est le seul cas ou le fichier
-              // lui-meme part au modele.
-              const { lireUnFichier } = await import("../../lib/lireUnFichier");
-              const lu = await lireUnFichier(file, {
-                pdf: T.ob_file_pdf_err,
-                format: T.ob_file_format_err,
-                tropGrosse: T.ob_img_too_big,
-              });
-              let text = "";
-              if (lu.genre === "refus") {
-                setFileErr(lu.raison);
-              } else if (lu.genre === "image") {
-                if (typeof lireImageCv !== "function") {
-                  setFileErr(T.ob_file_format_err);
-                } else {
-                  setFileBusy(T.ob_img_reading);
-                  text = await lireImageCv(lu);
-                }
-              } else {
-                text = lu.texte;
-              }
-              if (lu.genre !== "refus") {
-                if (!text || !text.trim()) setFileErr(T.ob_file_empty_err);
-                else setRaw(text);
-              }
-            } catch (err) {
-              // alert() disparait tout seul sur certains mobiles : l'erreur
-              // doit rester lisible dans la page.
-              setFileErr((err && err.message) ? err.message : T.ob_file_read_err);
-            } finally {
-              setFileBusy("");
-              e.target.value = '';
-            }
+            await chargerFichier(file, setRaw);
+            e.target.value = "";
           }}
         />
 

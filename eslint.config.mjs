@@ -17,6 +17,7 @@ const BROWSER_GLOBALS = [
   "FormData", "Headers", "Request", "Response", "AbortController",
   "alert", "confirm", "prompt", "atob", "btoa", "crypto", "structuredClone", "queueMicrotask",
   "CustomEvent", "Event", "KeyboardEvent", "MouseEvent", "TouchEvent", "DragEvent",
+  "ClipboardEvent", "DataTransfer",
   "DeviceOrientationEvent", "DOMParser", "XMLHttpRequest", "performance",
   "screen", "history", "location", "getComputedStyle", "matchMedia", "Intl",
   "TextEncoder", "TextDecoder", "Uint8Array", "ArrayBuffer", "DataView",

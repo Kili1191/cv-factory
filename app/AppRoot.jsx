@@ -19,6 +19,7 @@ import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
+import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 
 // === LAZY MODALS ===
 // Ces modals ne sont rendus que sur action utilisateur (showXxx === true).
@@ -4822,7 +4823,12 @@ export default function App() {
   // L'ordre de parcours du DOM correspond a l'ordre de lecture, ce qui donne
   // a l'extraction une structure coherente (nom, titre, sections, postes).
   // ============================================================
-  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm, candidateName) => {
+  // decalXMm et decalYMm : la page est un A4, l'image du CV y est posee
+  // centree et mise a l'echelle. La couche de texte doit subir exactement la
+  // meme transformation, sinon le texte invisible se retrouve a cote de ce
+  // qu'il decrit et un analyseur lit des colonnes melangees.
+  const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm, candidateName,
+                                        decalXMm = 0, decalYMm = 0) => {
     const rootRect = rootEl.getBoundingClientRect();
     if (!rootRect.width || !rootRect.height) return 0;
     const mmPerPxX = pageWidthMm / rootRect.width;
@@ -5078,7 +5084,7 @@ export default function App() {
         const sizePt = Math.max(1, Math.min(advance * 2.2, f.height * mmPerPxY * 2.2));
         try {
           pdf.setFontSize(sizePt);
-          pdf.text(f.text, marginMm, y, { renderingMode: "invisible", baseline: "alphabetic" });
+          pdf.text(f.text, marginMm + decalXMm, y + decalYMm, { renderingMode: "invisible", baseline: "alphabetic" });
           written += 1;
         } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
       }
@@ -5091,7 +5097,7 @@ export default function App() {
         const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
         try {
           pdf.setFontSize(sizePt);
-          pdf.text(f.text, xMm, yMm, { renderingMode: "invisible", baseline: "alphabetic" });
+          pdf.text(f.text, xMm + decalXMm, yMm + decalYMm, { renderingMode: "invisible", baseline: "alphabetic" });
           written += 1;
         } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
       }
@@ -5281,18 +5287,47 @@ export default function App() {
         console.log("[exportPDF] PDF dimensions:",
                     imgWidthMm.toFixed(1) + "x" + imgHeightMm.toFixed(1) + "mm");
 
-        // PDF au format EXACT de l'image (orientation auto selon ratio)
+        // LA PAGE EST UN A4, TOUJOURS, ET L'IMAGE ENTRE DEDANS
+        //
+        // Elle etait creee au format EXACT de l'image : format:
+        // [imgWidthMm, imgHeightMm]. Tant que le contenu tenait, le CSS
+        // au-dessus forcait 297mm et le rapport TOMBAIT sur celui d'un A4,
+        // ce qui masquait le probleme. Des que le CV depassait, la branche
+        // "fills page" ne s'appliquait plus et le fichier sortait a la taille
+        // de ce que l'ecran avait mesure : une page unique, tres haute, qui
+        // n'est pas un A4. A l'ouverture, le document n'est pas cadre, et a
+        // l'impression il ne tombe juste sur aucune feuille.
+        //
+        // Le commentaire de strategie, trente lignes plus haut, decrivait
+        // pourtant le bon comportement : "si contenu > 297mm : on place
+        // l'image en la faisant tenir dans 1 page A4 (scale image, pas DOM)".
+        // Cette branche n'avait jamais ete ecrite. Elle l'est ici.
+        //
+        // On garde le rapport de l'image : la reduire sans le respecter
+        // deformerait le CV, et un recruteur voit tout de suite un document
+        // ecrase. Le CV est donc pose en haut, centre horizontalement.
+        const A4_L_MM = 210;
+        const A4_H_MM = 297;
         const pdf = new jsPDFLib({
           unit: "mm",
-          format: [imgWidthMm, imgHeightMm],
-          orientation: imgHeightMm >= imgWidthMm ? "portrait" : "landscape",
+          format: "a4",
+          orientation: "portrait",
           compress: true,
         });
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        // L'image remplit EXACTEMENT la page (0,0 -> pleine taille)
-        pdf.addImage(imgData, "JPEG", 0, 0, imgWidthMm, imgHeightMm);
+        const facteur = Math.min(A4_L_MM / imgWidthMm, A4_H_MM / imgHeightMm);
+        const poseL = imgWidthMm * facteur;
+        const poseH = imgHeightMm * facteur;
+        const poseX = (A4_L_MM - poseL) / 2;
+        const poseY = 0;
+
+        console.log("[exportPDF] A4 210x297mm, image posee",
+                    poseL.toFixed(1) + "x" + poseH.toFixed(1) + "mm",
+                    "facteur", facteur.toFixed(3));
+
+        pdf.addImage(imgData, "JPEG", poseX, poseY, poseL, poseH);
 
         // [ATS] Couche de texte invisible par-dessus l'image.
         //
@@ -5304,7 +5339,7 @@ export default function App() {
         // position. C'est le principe d'un PDF scanne "cherchable" : identique
         // a l'oeil, lisible par une machine.
         try {
-          overlayTextLayer(pdf, el, imgWidthMm, imgHeightMm, cv.name);
+          overlayTextLayer(pdf, el, poseL, poseH, cv.name, poseX, poseY);
         } catch (layerErr) {
           console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
         }
@@ -6075,9 +6110,19 @@ export default function App() {
   // lettres, et rien n'est ajoute ici : c'est un outil, il execute.
   const runFromOffer = useCallback(async (offre, parcours) => {
     if (!apiKey) { notify(T.nk); return; }
-    const a = String(offre || "").trim();
+    const a = nettoyerLAnnonce(offre);
     const p0 = String(parcours || "").trim();
-    if (a.length < 40 || p0.length < 10) return;
+    // L'ANNONCE SEULE SUFFIT
+    //
+    // Le parcours etait obligatoire ici aussi, et cette porte-la etait la
+    // vraie : l'ecran pouvait bien appeler, la fonction repartait sans un
+    // mot. Rien ne s'affichait, rien n'echouait, l'outil semblait mort.
+    // Ce qui manque vraiment, c'est l'annonce : sans elle il n'y a rien a
+    // viser. Sans le parcours il reste un CV a ecrire, celui que ce poste
+    // reclame, avec tout ce qui ne vient pas de la personne signale dans
+    // "deduit" pour qu'elle le reprenne.
+    if (a.length < ANNONCE_MINIMUM) return;
+    const sansParcours = p0.length < 10;
     setObImp(true);
     try {
       const langLine = locale === "en"
@@ -6089,7 +6134,18 @@ export default function App() {
         + "Tu produis le CV qui a le plus de chances d'etre rappele POUR CETTE "
         + "ANNONCE.\n\n"
         + "ANNONCE:\n" + a + "\n\n"
-        + "PARCOURS DE LA PERSONNE, TEL QU'ELLE L'A ECRIT:\n" + p0 + "\n\n"
+        + (sansParcours
+          ? "LA PERSONNE N'A PAS ENCORE DONNE SON PARCOURS.\n"
+            + "Tu ecris donc la premiere version : le CV que CE poste "
+            + "reclame, complet, dans le vocabulaire de l'annonce, pret a "
+            + "etre repris. Chaque element qui ne peut pas venir d'elle "
+            + "puisqu'elle n'a rien donne, c'est a dire les employeurs, les "
+            + "dates, les diplomes, les chiffres et les intitules de poste "
+            + "tenus, va dans \"deduit\" avec son chemin. Elle les verra "
+            + "signales et les remplacera par les siens. Ce qui decrit le "
+            + "metier lui-meme, les taches, les competences, les langues "
+            + "attendues, se deduit de l'annonce et ne se liste pas.\n\n"
+          : "PARCOURS DE LA PERSONNE, TEL QU'ELLE L'A ECRIT:\n" + p0 + "\n\n")
         + "METHODE:\n"
         + "1. Releve dans l'annonce ce que le poste reclame vraiment : "
         + "l'intitule exact, les mots-cles du metier, les competences citees, "
@@ -6120,6 +6176,12 @@ export default function App() {
         + "Ce qui vient de son parcours ne se liste pas : reformuler ce qu'elle "
         + "a ecrit, deduire les taches de son poste, choisir les mots de "
         + "l'annonce, c'est de la redaction, et c'est la que tu donnes tout.\n\n"
+        + (sansParcours
+          ? "Rappel, puisqu'elle n'a rien donne : ici presque tout est "
+            + "deduit, et presque tout doit donc etre liste. Un CV signale "
+            + "de bout en bout reste utilisable ; un CV qui presente des "
+            + "faits inventes comme siens ne l'est pas.\n\n"
+          : "")
         + QUI_DECIDE + "\n"
         + NO_DASH + " " + langLine + "\n"
         // LA FORME N'EST PLUS DEMANDEE EN PROSE
