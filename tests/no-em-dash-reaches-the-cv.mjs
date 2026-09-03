@@ -56,7 +56,17 @@ const RELEVE = [
 // Ce qui doit traverser sans une egratignure. Un nettoyage trop zele coute
 // plus cher que le defaut : il abime le CV de tout le monde pour reparer
 // celui d'un seul.
+// LA PONCTUATION FINALE EN FAIT PARTIE, ET J'AI FAILLI LA PERDRE
+//
+// La premiere version taillait tout point final sauf dans une chaine
+// contenant une espace. "Sales." devenait "Sales" et "M.Sc." devenait
+// "M.Sc" : la longueur d'une chaine ne dit rien de la nature de son point.
+// Ces trois lignes sont la pour que le raccourci ne revienne pas.
 const INTOUCHABLES = [
+  "Sales.",
+  "M.Sc.",
+  "Node.js",
+  "C++",
   "Stenn International, London, UK",
   "Managed a portfolio of private investors through the full cycle.",
   "Kept retention above 85% across 20 to 60 accounts at any one time.",
