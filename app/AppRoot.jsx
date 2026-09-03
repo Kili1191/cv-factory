@@ -21,6 +21,8 @@ import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
+import { nettoyerUnChamp, estUneCoquille } from "../lib/nettoyerLesChamps";
+import { defautsDuCv, defautsVisuels, trierLesDefauts } from "../lib/leCvEstIlPresentable";
 import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
 // === LAZY MODALS ===
@@ -92,6 +94,7 @@ import {
   scopeUnlockNotice, scopeRefusalMessage, isScopeUnlocked,
 } from "../lib/coachScope";
 import FormatChoiceModal from "./components/FormatChoiceModal";
+const DefautsAvantExport = dynamic(() => import("./components/DefautsAvantExport"), { ssr: false });
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
 import { initCloud, queuePush, signOut, subscribe as subscribeCloud, connectGmail, getGmailToken } from "../lib/cloudSync.js";
@@ -1268,7 +1271,28 @@ function normCV(raw, base=EMPTY) {
   // [Fix 2026-05-19] Filtre les null/undefined du raw pour qu'ils
   // n'override pas les defaults vides de base via spread.
   // Sinon "name": null peut donner cvIsEmpty = true en boucle.
-  const ns = v => typeof v==="string" ? v : (v==null ? "" : String(v));
+  //
+  // LE NETTOYAGE SE FAIT ICI, PARCE QU'ICI TOUT PASSE
+  //
+  // san() retire les cadratins depuis longtemps, et sanDeep() l'applique a
+  // tout un arbre. Mais sanDeep n'etait appele que dans parseJSON, donc
+  // uniquement sur les reponses du modele. Le lecteur local lit un CV colle
+  // sans rien demander a personne : c'est le chemin le plus frequent du
+  // produit, celui que le CLAUDE.md decrit comme prioritaire parce qu'il est
+  // instantane et gratuit, et il ne passait par aucun nettoyage.
+  //
+  // Resultat, vu sur le CV de Kilian en production : "Account Manager -",
+  // avec un cadratin, dans le document que lira le recruteur. La regle
+  // numero un du depot, enfreinte a l'endroit exact qu'elle nomme. Word met
+  // ces tirets tout seul et la plupart des CV bien mis en page ecrivent
+  // "Account Manager (cadratin) Stenn International" : la porte la moins
+  // chere etait celle par laquelle ils entraient tous.
+  //
+  // normCV est le passage oblige de TOUT CV, quelle que soit la porte :
+  // lecture locale, modele, restauration depuis le compte, reprise apres
+  // mesure. Un nettoyage pose ici couvre celles d'aujourd'hui et celles que
+  // personne n'a encore ecrites.
+  const ns = v => nettoyerUnChamp(typeof v==="string" ? v : (v==null ? "" : String(v)));
   const cleanRaw = {};
   if (raw && typeof raw === "object") {
     for (const k in raw) {
@@ -1290,7 +1314,15 @@ function normCV(raw, base=EMPTY) {
     languages:(Array.isArray(cleanRaw.languages)?cleanRaw.languages:[]).map(
       l=>({lang:ns(l && l.lang), level:ns(l && l.level)})
     ),
-    certifications:(Array.isArray(cleanRaw.certifications)?cleanRaw.certifications:[]).map(ns),
+    // UNE ENTREE QUI N'EST QU'UNE DATE N'EST PAS UNE ENTREE
+    //
+    // Le CV de Kilian affichait une section CERTIFICATIONS dont l'unique
+    // element etait "2023". Le lecteur avait decoupe une ligne au mauvais
+    // endroit et garde l'annee toute seule. Un recruteur y lit de la
+    // negligence, et un analyseur y lit une certification qui s'appellerait
+    // "2023". Mieux vaut une section absente qu'une section qui ment.
+    certifications:(Array.isArray(cleanRaw.certifications)?cleanRaw.certifications:[])
+      .map(ns).filter(c => !estUneCoquille(c)),
     experience:(Array.isArray(cleanRaw.experience)?cleanRaw.experience:[]).map(
       (e,i)=>({
         ...e, id:i+1,
@@ -5198,18 +5230,59 @@ export default function App() {
   // ============================================================
   const [showFormatChoice, setShowFormatChoice] = useState(false);
 
-  const handleDownloadClick = useCallback(() => {
-    // Verifie si l'user a une preference memorisee + "always"
+  // ON NE LAISSE PAS PARTIR UN CV CASSE SANS LE DIRE
+  //
+  // Kilian a telecharge son CV et il est sorti avec "Account Manager
+  // (cadratin)" comme intitule, une section CERTIFICATIONS dont l'unique
+  // element etait "2023", et un nom d'ecole qui etait une phrase de
+  // quatre-vingt-dix caracteres. Le produit n'a rien dit : bouton, clic,
+  // fichier.
+  //
+  // C'est le pire moment pour se taire. Tout le reste se rattrape - un
+  // mauvais conseil se rejette, une reformulation ratee se reecrit. Le
+  // telechargement, non : ce qui part part, et la personne l'apprendra, si
+  // elle l'apprend, par trois semaines de silence.
+  //
+  // IL LE DIT, IL NE L'INTERDIT PAS
+  //
+  // Bloquer le bouton serait decider a sa place, et le produit ne le fait
+  // jamais. Quelqu'un peut vouloir telecharger un brouillon pour l'imprimer
+  // et le relire au crayon. Ce qu'il ne doit pas pouvoir faire, c'est le
+  // telecharger SANS LE SAVOIR. On montre ce qu'on a vu, on ne retire pas le
+  // bouton.
+  const [defautsAvantExport, setDefautsAvantExport] = useState(null);
+
+  const lancerLeFormat = useCallback(() => {
     const savedFormat = lsG("nuvi-format-pref", null);
     const alwaysUse = lsG("nuvi-format-always", false);
-    if (alwaysUse && savedFormat) {
-      // Pas de modal, on telecharge direct dans le format prefere
-      exportPDF(savedFormat);
-      return;
-    }
-    // Sinon, ouvre la modal de choix
+    if (alwaysUse && savedFormat) { exportPDF(savedFormat); return; }
     setShowFormatChoice(true);
   }, [exportPDF]);
+
+  const handleDownloadClick = useCallback(() => {
+    let vus = [];
+    try {
+      vus = defautsDuCv(cv);
+      // LA MOITIE QUI NE SE CALCULE PAS
+      //
+      // Un texte qui deborde de la feuille, un titre de section seul en bas
+      // de page, deux colonnes qui se recouvrent : aucune donnee ne les
+      // annonce, ils n'existent qu'une fois le document dessine. On mesure
+      // donc le document reel, a l'ecran, juste avant de l'imprimer.
+      if (typeof document !== "undefined") {
+        const visuels = defautsVisuels(document);
+        if (Array.isArray(visuels)) vus = vus.concat(visuels);
+      }
+    } catch (e) {
+      // Un controle qui plante ne doit jamais empecher un telechargement :
+      // la personne perdrait une fonctionnalite qui marche a cause d'une
+      // garde qui ne marche pas.
+      console.warn("[export] controle avant telechargement ignore:", e && e.message);
+      vus = [];
+    }
+    if (vus.length) { setDefautsAvantExport(trierLesDefauts(vus)); return; }
+    lancerLeFormat();
+  }, [cv, lancerLeFormat]);
 
   const handleFormatChosen = useCallback((format, alwaysUse) => {
     setShowFormatChoice(false);
@@ -8369,6 +8442,22 @@ export default function App() {
         onConfirm={handleFormatChosen}
         locale={locale}
       />
+
+      {/* CE QUI A ETE VU AVANT DE LAISSER PARTIR LE CV
+          Il se ferme de trois facons, et deux d'entre elles telechargent :
+          "corriger" renvoie au document, "telecharger quand meme" continue,
+          la croix annule. Aucun chemin ne piege la personne dans l'ecran. */}
+      {defautsAvantExport && defautsAvantExport.length ? (
+        <Suspense fallback={null}>
+          <DefautsAvantExport
+            defauts={defautsAvantExport}
+            locale={locale}
+            onCorriger={() => setDefautsAvantExport(null)}
+            onQuandMeme={() => { setDefautsAvantExport(null); lancerLeFormat(); }}
+            onClose={() => setDefautsAvantExport(null)}
+          />
+        </Suspense>
+      ) : null}
 
       {/* Verdict Nuvi (anti-doom-loop, score >= 85) */}
       <VerdictModal
