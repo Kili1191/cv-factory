@@ -5415,7 +5415,17 @@ export default function App() {
         const poseH = imgHeightMm * facteur;
         const poseX = (A4_L_MM - poseL) / 2;
         const poseY = 0;
-        const nbFeuilles = tientEnUne ? 1 : Math.ceil(poseH / A4_H_MM - 0.02);
+        // L'EPSILON NE DOIT PAS MANGER UNE LIGNE
+        //
+        // Il n'est la que pour absorber le bruit de calcul en virgule
+        // flottante, et eviter une feuille supplementaire ouverte pour un
+        // centieme de millimetre. Il valait 0,02 page, c'est a dire pres de
+        // six millimetres : plus haut qu'une ligne de CV. Un CV finissant
+        // juste sous une limite de page y aurait perdu sa derniere ligne, en
+        // silence, ce qui est exactement le genre de perte qu'un candidat ne
+        // decouvre jamais. 0,002 page fait six dixiemes de millimetre : assez
+        // pour le bruit, trop peu pour un caractere.
+        const nbFeuilles = tientEnUne ? 1 : Math.ceil(poseH / A4_H_MM - 0.002);
 
         console.log("[exportPDF] A4 210x297mm,", nbFeuilles, "feuille(s), image",
                     poseL.toFixed(1) + "x" + poseH.toFixed(1) + "mm",
