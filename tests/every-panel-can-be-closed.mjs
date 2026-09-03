@@ -49,9 +49,24 @@
 // d'un etat qu'on ne controlait pas. On ne sait pas laquelle est devant, et le
 // savoir demanderait de reimplementer l'empilement CSS dans le test.
 //
-// Deux corrections, donc. Chaque entree part d'une page NEUVE, ce qui coute
-// quelques secondes et supprime toute contamination. Et on demande l'inverse,
-// ce qui ne demande de designer personne :
+// LE QUATRIEME MENSONGE : UNE ATTENTE FIXE
+//
+// Reste que les fenetres ARRIVENT. Elles glissent depuis la droite, et 400ms
+// apres le clic la croix se trouve encore a x=2012 sur un ecran large de
+// 1440, donc hors champ ; a 700ms elle est en place. Mesurer apres une
+// attente fixe de 900ms marche presque toujours et rate quand la machine est
+// chargee : "Why nobody answers" et "Tweak" ont ete declarees infermables
+// chacune leur tour, sur un produit ou elles se ferment tres bien. Personne
+// ne clique une fenetre en train de voler.
+//
+// Le harnais documente deja ce piege pour le defilement. La reponse est la
+// meme : on n'attend pas une duree, on attend une ARRIVEE. La croix est
+// mesuree quand sa position ne bouge plus.
+//
+// Trois corrections, donc. Chaque entree part d'une page NEUVE, ce qui coute
+// quelques secondes et supprime toute contamination. On attend que la fenetre
+// se soit posee. Et on demande l'inverse, ce qui ne demande de designer
+// personne :
 //
 //   quand une fenetre est ouverte, AU MOINS UNE croix doit etre
 //   veritablement atteignable, et un clic dessus doit refermer.
@@ -124,11 +139,36 @@ async function ouvrir(page, libelle) {
       if (!t || t.length > 24 || ENTREES.includes(t)) continue;
       if (["Home", "Reset", "Download", "Edit"].includes(t)) continue;
       await sous.nth(i).click({ timeout: 3000 }).catch(() => {});
-      await page.waitForTimeout(700);
+      await page.waitForTimeout(400);
       if (await page.evaluate(A_UNE_CROIX)) break;
     }
   }
   return true;
+}
+
+// ATTENDRE L'ARRIVEE, PAS UNE DUREE
+//
+// La position de la croix, relevee jusqu'a ce qu'elle se repete. Deux mesures
+// identiques a 150ms d'intervalle : la fenetre s'est posee. Le plafond evite
+// d'attendre indefiniment une animation en boucle, et rendre la main sans
+// stabilite laisse la mesure suivante dire ce qu'elle voit.
+const POSITION = `(() => {
+  const t = [...document.querySelectorAll(
+    '[aria-label="close" i], [aria-label*="Close" i], [aria-label*="Fermer" i], [data-nuvi-close]')];
+  return t.map((b) => { const r = b.getBoundingClientRect();
+    return Math.round(r.left) + "," + Math.round(r.top); }).join("|");
+})()`;
+
+async function attendreLArrivee(page, plafondMs = 6000) {
+  let avant = null;
+  const fin = Date.now() + plafondMs;
+  while (Date.now() < fin) {
+    const maintenant = await page.evaluate(POSITION);
+    if (maintenant && maintenant === avant) return true;
+    avant = maintenant;
+    await page.waitForTimeout(150);
+  }
+  return false;
 }
 
 // Une croix visible au moment ou l'on regarde : les deux servent a savoir si
@@ -174,6 +214,7 @@ export async function run() {
       await seedApp(page, undefined, { locale: "en" });
 
       const ouvert = await ouvrir(page, libelle);
+      if (ouvert) await attendreLArrivee(page);
       const croix = ouvert ? await page.evaluate(SONDE) : [];
 
       if (croix.length) {
