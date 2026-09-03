@@ -4872,8 +4872,13 @@ export default function App() {
   // centree et mise a l'echelle. La couche de texte doit subir exactement la
   // meme transformation, sinon le texte invisible se retrouve a cote de ce
   // qu'il decrit et un analyseur lit des colonnes melangees.
+  // hauteurPageMm : quand le CV occupe plusieurs feuilles, la couche de texte
+  // doit se repartir dessus comme l'image. Sans elle, tout le texte s'ecrit
+  // sur la page 1 - y compris ce qui s'affiche visuellement page 2 - et un
+  // analyseur lit un document dont le texte ne correspond a aucune page.
+  // Zero veut dire "une seule feuille", et le calcul de page disparait.
   const overlayTextLayer = useCallback((pdf, rootEl, pageWidthMm, pageHeightMm, candidateName,
-                                        decalXMm = 0, decalYMm = 0) => {
+                                        decalXMm = 0, decalYMm = 0, hauteurPageMm = 0) => {
     const rootRect = rootEl.getBoundingClientRect();
     if (!rootRect.width || !rootRect.height) return 0;
     const mmPerPxX = pageWidthMm / rootRect.width;
@@ -5115,8 +5120,35 @@ export default function App() {
     pdf.setTextColor(0, 0, 0);
     let written = 0;
 
+    // POSER UN FRAGMENT SUR LA BONNE FEUILLE
+    //
+    // L'ordonnee calculee court sur toute la hauteur du document. La feuille,
+    // elle, s'arrete a 297mm : on en deduit la page et le reste devient
+    // l'ordonnee dans cette page. Ecrit une fois, parce que les deux branches
+    // ci-dessous en ont besoin et qu'un decalage present dans une seule
+    // produirait un PDF a moitie juste, ce qui est plus dur a voir que faux
+    // partout.
+    const nbPages = pdf.internal && pdf.internal.getNumberOfPages
+      ? pdf.internal.getNumberOfPages() : 1;
+    const poser = (texte, xMm, yMm, sizePt) => {
+      let y = yMm + decalYMm;
+      if (hauteurPageMm > 0) {
+        const page = Math.floor(y / hauteurPageMm) + 1;
+        if (page < 1 || page > nbPages) return false;
+        y -= (page - 1) * hauteurPageMm;
+        pdf.setPage(page);
+      }
+      pdf.setFontSize(sizePt);
+      pdf.text(texte, xMm + decalXMm, y, { renderingMode: "invisible", baseline: "alphabetic" });
+      return true;
+    };
+
     if (linearise) {
       const marginMm = 10;
+      // La hauteur disponible est celle de TOUT le document, pas d'une
+      // feuille : le texte deroule se repartit ensuite sur les pages. Le
+      // serrage ne sert donc plus qu'a rattraper un debordement de quelques
+      // millimetres, et non a comprimer deux pages dans une.
       const usable = Math.max(10, pageHeightMm - marginMm * 2);
       const advances = ordered.map(f => Math.max(3.2, f.height * mmPerPxY * 1.25));
       const needed = advances.reduce((a, b) => a + b, 0);
@@ -5128,9 +5160,7 @@ export default function App() {
         y += advance;
         const sizePt = Math.max(1, Math.min(advance * 2.2, f.height * mmPerPxY * 2.2));
         try {
-          pdf.setFontSize(sizePt);
-          pdf.text(f.text, marginMm + decalXMm, y + decalYMm, { renderingMode: "invisible", baseline: "alphabetic" });
-          written += 1;
+          if (poser(f.text, marginMm, y, sizePt)) written += 1;
         } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
       }
     } else {
@@ -5141,9 +5171,7 @@ export default function App() {
         const yMm = f.bottom * mmPerPxY - (f.height * mmPerPxY * 0.18);
         const sizePt = Math.max(1, f.height * mmPerPxY * 2.2);
         try {
-          pdf.setFontSize(sizePt);
-          pdf.text(f.text, xMm + decalXMm, yMm + decalYMm, { renderingMode: "invisible", baseline: "alphabetic" });
-          written += 1;
+          if (poser(f.text, xMm, yMm, sizePt)) written += 1;
         } catch (e) { /* un noeud illisible ne doit pas casser l'export */ }
       }
     }
@@ -5348,11 +5376,25 @@ export default function App() {
         // l'image en la faisant tenir dans 1 page A4 (scale image, pas DOM)".
         // Cette branche n'avait jamais ete ecrite. Elle l'est ici.
         //
-        // On garde le rapport de l'image : la reduire sans le respecter
-        // deformerait le CV, et un recruteur voit tout de suite un document
-        // ecrase. Le CV est donc pose en haut, centre horizontalement.
+        // ET UN CV PLUS LONG QU'UNE FEUILLE PREND UNE SECONDE FEUILLE
+        //
+        // La premiere version de cette correction faisait tenir l'image
+        // entiere dans une seule page. Cadre, oui, mais un CV d'une page et
+        // demie sortait a 66% : un corps 10 devient un corps 6,6, illisible a
+        // l'ecran comme a l'impression. Une candidature qu'on ne peut pas
+        // lire ne vaut pas mieux qu'une candidature mal cadree.
+        //
+        // Deux pages A4 a taille reelle sont la forme normale d'un CV, pour un
+        // recruteur comme pour un robot de tri. On pose donc le CV sur toute
+        // la largeur, a l'echelle, et on ajoute autant de feuilles qu'il en
+        // faut, chacune montrant sa tranche.
+        //
+        // La tolerance existe pour un seul cas : un CV qui depasse de trois
+        // millimetres. Une seconde feuille portant deux lignes est pire que
+        // 4% de reduction, que personne ne voit. Au-dela, on tourne la page.
         const A4_L_MM = 210;
         const A4_H_MM = 297;
+        const TOLERANCE_UNE_PAGE = 1.04;
         const pdf = new jsPDFLib({
           unit: "mm",
           format: "a4",
@@ -5362,17 +5404,32 @@ export default function App() {
 
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
-        const facteur = Math.min(A4_L_MM / imgWidthMm, A4_H_MM / imgHeightMm);
+        // A pleine largeur, la hauteur que prendrait le CV sur le papier.
+        const hauteurPleine = imgHeightMm * (A4_L_MM / imgWidthMm);
+        const tientEnUne = hauteurPleine <= A4_H_MM * TOLERANCE_UNE_PAGE;
+
+        const facteur = tientEnUne
+          ? Math.min(A4_L_MM / imgWidthMm, A4_H_MM / imgHeightMm)
+          : A4_L_MM / imgWidthMm;
         const poseL = imgWidthMm * facteur;
         const poseH = imgHeightMm * facteur;
         const poseX = (A4_L_MM - poseL) / 2;
         const poseY = 0;
+        const nbFeuilles = tientEnUne ? 1 : Math.ceil(poseH / A4_H_MM - 0.02);
 
-        console.log("[exportPDF] A4 210x297mm, image posee",
+        console.log("[exportPDF] A4 210x297mm,", nbFeuilles, "feuille(s), image",
                     poseL.toFixed(1) + "x" + poseH.toFixed(1) + "mm",
                     "facteur", facteur.toFixed(3));
 
-        pdf.addImage(imgData, "JPEG", poseX, poseY, poseL, poseH);
+        // La meme image sur chaque feuille, remontee d'une hauteur de page a
+        // chaque fois : jsPDF coupe ce qui sort de la feuille, donc chacune
+        // ne montre que sa tranche. Redecouper l'image en autant de canevas
+        // donnerait le meme resultat pour trois fois le code et une jointure
+        // a un pixel pres a chaque coupe.
+        for (let f = 0; f < nbFeuilles; f += 1) {
+          if (f > 0) pdf.addPage("a4", "portrait");
+          pdf.addImage(imgData, "JPEG", poseX, poseY - f * A4_H_MM, poseL, poseH);
+        }
 
         // [ATS] Couche de texte invisible par-dessus l'image.
         //
@@ -5384,21 +5441,19 @@ export default function App() {
         // position. C'est le principe d'un PDF scanne "cherchable" : identique
         // a l'oeil, lisible par une machine.
         try {
-          overlayTextLayer(pdf, el, poseL, poseH, cv.name, poseX, poseY);
+          overlayTextLayer(pdf, el, poseL, poseH, cv.name, poseX, poseY,
+                           nbFeuilles > 1 ? A4_H_MM : 0);
         } catch (layerErr) {
           console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
         }
 
-        // [GARANTIE BETON] Supprime toute page surnumeraire (ceinture+bretelles)
-        try {
-          const pageCount = pdf.internal.getNumberOfPages
-            ? pdf.internal.getNumberOfPages()
-            : 1;
-          for (let p = pageCount; p > 1; p--) pdf.deletePage(p);
-          console.log("[exportPDF] Pages finales: 1 (etait", pageCount + ")");
-        } catch (cleanupErr) {
-          console.warn("[exportPDF] Cleanup pages skip:", cleanupErr.message);
-        }
+        // LES PAGES SURNUMERAIRES NE SE SUPPRIMENT PLUS
+        //
+        // Une garde supprimait ici toute page au-dela de la premiere. Elle
+        // etait juste tant qu'un CV tenait forcement sur une feuille ; elle
+        // effacerait maintenant la seconde moitie d'un CV de deux pages, sans
+        // rien dire. Le nombre de feuilles est calcule plus haut et jsPDF n'en
+        // cree pas d'autres.
 
         pdf.save(fname);
 
