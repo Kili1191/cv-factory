@@ -31,6 +31,29 @@ import { join } from "node:path";
 // exactement l'endroit ou un vrai oubli finit par se cacher.
 const CADRATIN = String.fromCharCode(0x2014);
 const DEMI = String.fromCharCode(0x2013);
+
+// LE CARACTERE N'EST PAS LA SEULE FACON DE L'ECRIRE
+//
+// Un message du coach portait un cadratin ecrit "\u2014". Invisible en
+// relisant le fichier, invisible a ce balayage qui ne cherchait que le
+// caractere, et parfaitement visible dans la conversation : le navigateur
+// rend l'echappement comme le caractere. La regle porte sur ce qui s'affiche,
+// donc le balayage doit lire les deux formes.
+//
+// Cela dit, la plupart des echappements presents dans le depot sont
+// legitimes : ils servent a RECONNAITRE ces tirets pour les enlever ou pour
+// decouper une ligne de CV qui en contient un. lib/lireUnCv.js en a besoin
+// pour lire les periodes, et NO_DASH pour les remplacer. On ne peut pas
+// interdire ce qu'il faut bien nommer pour le combattre.
+//
+// La distinction se lit sur la ligne : un echappement dans une expression
+// reguliere, une classe de caracteres ou un remplacement sert a l'enlever ;
+// un echappement au milieu d'une phrase s'affiche.
+// Un commentaire ne s'affiche nulle part, et ceux qui expliquent cette regle
+// doivent bien pouvoir la nommer - a commencer par celui-ci.
+const ECHAPPE = /\\u201[34]/;
+const COMMENTAIRE = /^\s*(\/\/|\*|\/\*)/;
+const OUTIL = /(replace|split|test|match|RegExp|new Set|\[\\u|\\\\u|\/\[|\|)/;
 // POURQUOI .claude EST EXCLU
 //
 // Ce dossier ne contient aucun texte produit : ce sont des fichiers
@@ -63,11 +86,20 @@ export async function run() {
     let src;
     try { src = readFileSync(p, "utf8"); } catch { continue; }
     lus++;
-    if (!src.includes(CADRATIN) && !src.includes(DEMI)) continue;
+    const litteral = src.includes(CADRATIN) || src.includes(DEMI);
+    if (!litteral && !ECHAPPE.test(src)) continue;
     src.split("\n").forEach((ligne, i) => {
-      if (!ligne.includes(CADRATIN) && !ligne.includes(DEMI)) return;
-      const quoi = ligne.includes(CADRATIN) ? "cadratin" : "demi-cadratin";
-      trouves.push(`${p}:${i + 1} ${quoi} dans : ${ligne.trim().slice(0, 60)}`);
+      const enClair = ligne.includes(CADRATIN) || ligne.includes(DEMI);
+      // Un echappement dans une phrase, pas dans un outil qui sert a
+      // reconnaitre le caractere pour l'enlever.
+      const echappe = ECHAPPE.test(ligne)
+        && !COMMENTAIRE.test(ligne) && !OUTIL.test(ligne);
+      if (!enClair && !echappe) return;
+      const quoi = (enClair ? ligne.includes(CADRATIN) : /\\u2014/.test(ligne))
+        ? "cadratin" : "demi-cadratin";
+      trouves.push(`${p}:${i + 1} ${quoi}${echappe ? " (ecrit en echappement, "
+        + "donc invisible a la relecture mais bien affiche)" : ""} dans : `
+        + ligne.trim().slice(0, 60));
     });
   }
 
