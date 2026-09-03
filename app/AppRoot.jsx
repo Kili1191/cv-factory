@@ -1112,7 +1112,29 @@ const SCHEMA_STYLE = {
   required: ["combos"],
 };
 
-const SCHEMA_PACK = {
+// LE PACK DE CANDIDATURE PART EN TROIS APPELS, PAS EN UN
+//
+// Il en demandait neuf pieces d'un coup : une lettre de 300 mots, un message
+// LinkedIn, un email, un pitch, CINQ reponses STAR completes, une relance,
+// trois objections, quatre questions et une fourchette de negociation. Environ
+// mille sept cents mots a ecrire dans une seule reponse.
+//
+// La route a un plafond dur : `export const maxDuration = 60` (app/api/claude/
+// route.js). Ce n'est pas un reglage qu'on remonte, c'est la limite de la
+// fonction serverless. Le client coupait a 60 s lui aussi, mais meme en le
+// laissant attendre une heure la reponse n'arriverait jamais : c'est le
+// serveur qui meurt. Quelqu'un collait son annonce, patientait une minute
+// pleine et recevait une erreur. Sur la fonctionnalite qui promet le plus.
+//
+// Trois appels, chacun a peu pres le tiers du texte, partis ensemble : le
+// temps d'attente est celui du plus lent, pas la somme des trois. Et si l'un
+// echoue, les deux autres restent : la personne recoit sa lettre meme quand
+// la partie entretien a lache, au lieu de tout perdre.
+//
+// La coupure suit ce qui se tient : les ecrits qu'on envoie, la preparation
+// de l'entretien, ce qui se joue en fin d'entretien. Les reponses STAR sont
+// a elles seules le plus gros morceau, donc elles ont leur appel.
+const SCHEMA_PACK_ECRITS = {
   type: "object", additionalProperties: false,
   properties: {
     cover_letter: chaine,
@@ -1122,6 +1144,18 @@ const SCHEMA_PACK = {
       properties: { subject: chaine, body: chaine },
       required: ["subject", "body"],
     },
+    follow_up: {
+      type: "object", additionalProperties: false,
+      properties: { subject: chaine, body: chaine },
+      required: ["subject", "body"],
+    },
+  },
+  required: ["cover_letter", "linkedin_message", "application_email", "follow_up"],
+};
+
+const SCHEMA_PACK_ENTRETIEN = {
+  type: "object", additionalProperties: false,
+  properties: {
     interview_pitch: chaine,
     star_answers: {
       type: "array",
@@ -1132,11 +1166,13 @@ const SCHEMA_PACK = {
         required: ["question", "situation", "task", "action", "result"],
       },
     },
-    follow_up: {
-      type: "object", additionalProperties: false,
-      properties: { subject: chaine, body: chaine },
-      required: ["subject", "body"],
-    },
+  },
+  required: ["interview_pitch", "star_answers"],
+};
+
+const SCHEMA_PACK_DEFENSE = {
+  type: "object", additionalProperties: false,
+  properties: {
     objections: {
       type: "array",
       items: {
@@ -1152,9 +1188,7 @@ const SCHEMA_PACK = {
       required: ["range", "argument", "levers"],
     },
   },
-  required: ["cover_letter", "linkedin_message", "application_email",
-             "interview_pitch", "star_answers", "follow_up", "objections",
-             "questions_to_ask", "negotiation"],
+  required: ["objections", "questions_to_ask", "negotiation"],
 };
 
 // THE FIVE REGISTERS, AND WHY THE BULLET SHAPE IS A SECOND ONE
@@ -5784,31 +5818,79 @@ export default function App() {
     const role = (matchRes && matchRes.job_title) || "le poste";
     const interviewQs = (matchRes && matchRes.likely_interview_questions) || [];
 
-    const p = "Tu es expert en candidature. Genere une candidature complete pour ce poste.\n\n"
+    // LE SOCLE, ECRIT UNE FOIS ET REPRIS PAR LES TROIS APPELS
+    //
+    // L'annonce et le CV sont ce qui coute en entree, et les trois appels en
+    // ont besoin. Les repeter triple le cout d'entree ; c'est le prix de la
+    // decoupe, et il reste tres inferieur a celui de la sortie, qui est ce
+    // qu'on cherchait a rendre tenable.
+    const socle = "Tu es expert en candidature.\n\n"
       +"OFFRE:\n"+offer+"\n\n"
       +"CV CANDIDAT:\n"+cvSummary+"\n\n"
-      +"REGLES:\n"
+      +"REGLES COMMUNES:\n"
       +"- " + QUI_DECIDE + "\n"
       +"- Adapter le ton a la culture detectee de l'entreprise.\n"
+      +"- " + NO_DASH + "\n\n";
+
+    const pEcrits = socle
+      +"Ecris les pieces que le candidat ENVOIE.\n"
       +"- Lettre: 250-300 mots, 4 paragraphes (accroche, valeur, motivation, call-to-action).\n"
       +"- Message LinkedIn: max 90 mots, professionnel mais humain, pas de phrase bateau.\n"
       +"- Email: objet specifique (pas 'Candidature au poste de X'), corps court 150 mots max.\n"
+      +"- Relance: a envoyer 7 a 10 jours apres la candidature si aucune reponse. Courte (80 mots max), "
+      +"apporte un element NOUVEAU (une reflexion sur leur enjeu, un travail recent), ne quemande pas.\n";
+
+    const pEntretien = socle
+      +"Prepare l'entretien lui-meme.\n"
       +"- Pitch entretien: 60 secondes a l'oral (~150 mots), structure: qui je suis, ce que j'apporte, pourquoi ce poste.\n"
       +"- 5 reponses STAR aux questions probables, chacune avec Situation/Task/Action/Result concrets bases sur le CV.\n"
-      +"- Relance: a envoyer 7 a 10 jours apres la candidature si aucune reponse. Courte (80 mots max), "
-      +"apporte un element NOUVEAU (une reflexion sur leur enjeu, un travail recent), ne quemande pas.\n"
+      +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n") : "");
+
+    const pDefense = socle
+      +"Prepare ce qui se joue en fin d'entretien.\n"
       +"- Objections: les 3 doutes qu'un recruteur aura en lisant CE CV pour CE poste, "
       +"chacun avec une reponse honnete et courte. Ne pas nier une faiblesse reelle, la recadrer.\n"
       +"- Questions a poser: 4 questions que le candidat pose EN FIN d'entretien, "
       +"qui montrent qu'il a compris l'enjeu du poste. Aucune question dont la reponse est sur leur site.\n"
       +"- Negociation: fourchette realiste argumentee pour ce poste et ce marche, "
-      +"plus les deux leviers non salariaux les plus credibles a demander.\n"
-      +"- " + NO_DASH + "\n\n"
-      +(interviewQs.length ? ("Questions probables identifiees: "+interviewQs.join(" | ")+"\n\n") : "");
+      +"plus les deux leviers non salariaux les plus credibles a demander.\n";
+
+    // UN MORCEAU QUI TOMBE N'EMPORTE PAS LES AUTRES
+    //
+    // allSettled, pas all : avec all, la partie entretien qui echoue efface
+    // aussi la lettre deja ecrite et payee. La personne recoit ce qui est
+    // arrive, et on ne lui dit qu'il manque quelque chose que si c'est vrai.
+    const morceaux = [
+      { p: pEcrits, schema: SCHEMA_PACK_ECRITS, nom: "application-pack-ecrits" },
+      { p: pEntretien, schema: SCHEMA_PACK_ENTRETIEN, nom: "application-pack-entretien" },
+      { p: pDefense, schema: SCHEMA_PACK_DEFENSE, nom: "application-pack-defense" },
+    ];
+
     try {
-      const txt = await aiCall(p, { schema: SCHEMA_PACK, task_name: "application-pack" });
-      const r = parseJSON(txt);
-      setPackResult(r);
+      const sorties = await Promise.allSettled(morceaux.map(async (m) => {
+        const txt = await aiCall(m.p, { schema: m.schema, task_name: m.nom });
+        const r = parseJSON(txt);
+        if (!r || typeof r !== "object") throw new Error(m.nom + " illisible");
+        return r;
+      }));
+
+      let assemble = {};
+      let tombes = 0;
+      for (const s2 of sorties) {
+        if (s2.status === "fulfilled") assemble = { ...assemble, ...s2.value };
+        else tombes += 1;
+      }
+
+      if (tombes === morceaux.length) {
+        throw new Error(locale === "en"
+          ? "nothing came back" : "rien n'est revenu");
+      }
+      setPackResult(assemble);
+      if (tombes > 0) {
+        notify(locale === "en"
+          ? "Part of the pack did not come back. What is here is complete."
+          : "Une partie du pack n'est pas revenue. Ce qui est la est complet.");
+      }
       if (typeof nuviTrigger === 'function') nuviTrigger('feature-completed');
     } catch (err) {
       notify("Erreur candidature: " + (err.message || "inconnue"));
@@ -5816,7 +5898,7 @@ export default function App() {
     } finally {
       setPackLoading(false);
     }
-  }, [packCtx, cv, apiKey, T, notify]);
+  }, [packCtx, cv, apiKey, T, notify, locale]);
 
   useEffect(() => {
     if (showPack && packCtx && !packResult && !packLoading) {

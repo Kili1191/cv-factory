@@ -77,12 +77,21 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
 
   // Un onglet n'apparait que si le contenu existe : un pack genere avant
   // l'ajout de ces sections ne doit pas afficher d'onglets vides.
+  // UN ONGLET N'EXISTE QUE SI SA PIECE EST LA
+  //
+  // Le pack part maintenant en trois appels paralleles, et l'un peut tomber
+  // sans les autres : la personne recoit alors sa lettre et sa relance, mais
+  // pas ses reponses STAR. Les cinq premiers onglets etaient inconditionnels,
+  // donc "Pitch" et "STAR" restaient cliquables et ouvraient un panneau vide.
+  // Un onglet vide se lit comme une panne ; une piece absente, comme une
+  // piece absente.
   const tabs = [
-    ["cover",    T.pk_tab_cover],
-    ["linkedin", T.pk_tab_linkedin],
-    ["email",    T.pk_tab_email],
-    ["pitch",    T.pk_tab_pitch],
-    ["star",     T.pk_tab_star],
+    ...(pack && pack.cover_letter ? [["cover", T.pk_tab_cover]] : []),
+    ...(pack && pack.linkedin_message ? [["linkedin", T.pk_tab_linkedin]] : []),
+    ...(pack && pack.application_email ? [["email", T.pk_tab_email]] : []),
+    ...(pack && pack.interview_pitch ? [["pitch", T.pk_tab_pitch]] : []),
+    ...(pack && pack.star_answers && pack.star_answers.length
+      ? [["star", T.pk_tab_star]] : []),
     ...(pack && pack.follow_up ? [["followup", T.pk_tab_followup || "Relance"]] : []),
     ...(pack && pack.objections && pack.objections.length
       ? [["objections", T.pk_tab_objections || "Objections"]] : []),
@@ -90,6 +99,14 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
       ? [["ask", T.pk_tab_ask || "Tes questions"]] : []),
     ...(pack && pack.negotiation ? [["nego", T.pk_tab_nego || "Negocier"]] : []),
   ];
+  // Et l'onglet ouvert existe. "cover" est le defaut, mais c'est justement la
+  // lettre qui manque quand l'appel des ecrits est celui qui est tombe : sans
+  // ce repli, la modale s'ouvrirait entierement vide alors qu'elle a du
+  // contenu a montrer.
+  const ongletOuvert = tabs.some(([k]) => k === activeTab)
+    ? activeTab
+    : (tabs.length ? tabs[0][0] : activeTab);
+
   const loadingMsgs = T.pk_loading_msgs || [];
 
   // Une ligne qui dit a quoi sert la section et quand s'en servir. Sans elle,
@@ -230,11 +247,11 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
                 ...B({
                   padding:"10px 14px", borderRadius:0,
                   background:"transparent",
-                  color: activeTab === k ? Ink : InkMuted,
+                  color: ongletOuvert === k ? Ink : InkMuted,
                   fontFamily:Sans,
-                  fontWeight: activeTab === k ? 600 : 500,
+                  fontWeight: ongletOuvert === k ? 600 : 500,
                   fontSize:12, letterSpacing:"0.02em",
-                  borderBottom: activeTab === k
+                  borderBottom: ongletOuvert === k
                     ? "2.5px solid "+Purple
                     : "2.5px solid transparent",
                   whiteSpace:"nowrap", flexShrink:0,
@@ -246,7 +263,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           </div>
 
           {/* Tab : Cover letter */}
-          {activeTab === "cover" && pack.cover_letter && (
+          {ongletOuvert === "cover" && pack.cover_letter && (
             <Section T={T}
               title={T.pk_section_cover}
               content={pack.cover_letter}
@@ -255,7 +272,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           )}
 
           {/* Tab : LinkedIn */}
-          {activeTab === "linkedin" && pack.linkedin_message && (
+          {ongletOuvert === "linkedin" && pack.linkedin_message && (
             <Section T={T}
               title={T.pk_section_linkedin}
               content={pack.linkedin_message}
@@ -264,7 +281,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           )}
 
           {/* Tab : Email */}
-          {activeTab === "email" && pack.application_email && (
+          {ongletOuvert === "email" && pack.application_email && (
             <>
               {pack.application_email.subject && (
                 <Section T={T}
@@ -285,7 +302,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           )}
 
           {/* Tab : Pitch */}
-          {activeTab === "pitch" && pack.interview_pitch && (
+          {ongletOuvert === "pitch" && pack.interview_pitch && (
             <>
               <div style={{
                 fontSize:11, color:InkMuted, marginBottom:12,
@@ -300,7 +317,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
           )}
 
           {/* Tab : STAR */}
-          {activeTab === "followup" && pack.follow_up && (
+          {ongletOuvert === "followup" && pack.follow_up && (
             <>
               <p style={hintStyle}>
                 {T.pk_followup_hint
@@ -317,7 +334,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             </>
           )}
 
-          {activeTab === "objections" && pack.objections && pack.objections.length > 0 && (
+          {ongletOuvert === "objections" && pack.objections && pack.objections.length > 0 && (
             <>
               <p style={hintStyle}>
                 {T.pk_objections_hint
@@ -338,7 +355,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             </>
           )}
 
-          {activeTab === "ask" && pack.questions_to_ask && pack.questions_to_ask.length > 0 && (
+          {ongletOuvert === "ask" && pack.questions_to_ask && pack.questions_to_ask.length > 0 && (
             <>
               <p style={hintStyle}>
                 {T.pk_ask_hint
@@ -353,7 +370,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             </>
           )}
 
-          {activeTab === "nego" && pack.negotiation && (
+          {ongletOuvert === "nego" && pack.negotiation && (
             <>
               <p style={hintStyle}>
                 {T.pk_nego_hint
@@ -376,7 +393,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             </>
           )}
 
-          {activeTab === "star" && pack.star_answers && pack.star_answers.length > 0 && (
+          {ongletOuvert === "star" && pack.star_answers && pack.star_answers.length > 0 && (
             <>
               <div style={{
                 fontSize:11, color:InkMuted, marginBottom:14,

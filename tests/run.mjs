@@ -61,6 +61,7 @@ const SUITES = [
   ["the invisible layer matches the page", "./the-invisible-layer-matches-the-page.mjs"],
   ["import reads a PDF, cut worker included", "./import-reads-a-pdf.mjs"],
   ["the application pack produces a letter", "./application-pack-produces-a-letter.mjs"],
+  ["the pack fits under the ceiling", "./the-pack-fits-under-the-ceiling.mjs"],
   ["one panel at a time, in the right language", "./one-panel-at-a-time.mjs"],
   ["a photo of a CV is a CV", "./a-photo-of-a-cv-is-a-cv.mjs"],
   ["an ordinary CV costs nothing to import", "./an-ordinary-cv-costs-nothing.mjs"],
