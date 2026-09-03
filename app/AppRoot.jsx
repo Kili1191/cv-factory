@@ -95,6 +95,7 @@ import {
 } from "../lib/coachScope";
 import FormatChoiceModal from "./components/FormatChoiceModal";
 const DefautsAvantExport = dynamic(() => import("./components/DefautsAvantExport"), { ssr: false });
+const BadgeDefauts = dynamic(() => import("./components/BadgeDefauts"), { ssr: false });
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
 import { initCloud, queuePush, signOut, subscribe as subscribeCloud, connectGmail, getGmailToken } from "../lib/cloudSync.js";
@@ -3787,6 +3788,22 @@ export default function App() {
   // boite mail" : personne ne le sait avant d'avoir lu la boite, et une
   // pastille qui se trompe une fois n'est plus jamais regardee.
   const aRelancer = useMemo(() => combienARelancer(applications), [applications]);
+
+  // LE COMPAGNON VEILLE EN CONTINU, PAS SEULEMENT AU MOMENT DE PARTIR
+  //
+  // Le controle avant telechargement attrape un CV casse au dernier moment :
+  // necessaire, et tard. Quelqu'un passe une heure sur un document dont trois
+  // champs etaient coupes depuis l'import, et l'apprend en partant. Le
+  // compagnon est la depuis le debut, dans le coin de l'ecran, et il est
+  // cense veiller : c'est sa raison d'etre. Il porte donc le compte, a
+  // chaque changement du CV.
+  //
+  // Seule la moitie qui lit les DONNEES tourne ici : elle est pure et
+  // instantanee. La moitie qui mesure le document dessine coute un parcours
+  // du DOM et reste reservee au telechargement, ou elle est faite une fois.
+  const defautsEnDirect = useMemo(() => {
+    try { return trierLesDefauts(defautsDuCv(cv)); } catch { return []; }
+  }, [cv]);
   const pastilles = useMemo(
     () => (aRelancer > 0 ? { tracking: true, relances: true } : {}),
     [aRelancer]);
@@ -5251,6 +5268,11 @@ export default function App() {
   // telecharger SANS LE SAVOIR. On montre ce qu'on a vu, on ne retire pas le
   // bouton.
   const [defautsAvantExport, setDefautsAvantExport] = useState(null);
+  // D'ou la liste a ete ouverte. Depuis Telecharger, "telecharger quand
+  // meme" a un sens. Depuis le compagnon, on n'est pas en train de partir :
+  // il n'y a rien a faire quand meme, et proposer le bouton serait inviter a
+  // telecharger un document dont on vient de lister les defauts.
+  const [defautsDepuisExport, setDefautsDepuisExport] = useState(false);
 
   const lancerLeFormat = useCallback(() => {
     const savedFormat = lsG("nuvi-format-pref", null);
@@ -5280,7 +5302,11 @@ export default function App() {
       console.warn("[export] controle avant telechargement ignore:", e && e.message);
       vus = [];
     }
-    if (vus.length) { setDefautsAvantExport(trierLesDefauts(vus)); return; }
+    if (vus.length) {
+      setDefautsDepuisExport(true);
+      setDefautsAvantExport(trierLesDefauts(vus));
+      return;
+    }
     lancerLeFormat();
   }, [cv, lancerLeFormat]);
 
@@ -8453,7 +8479,9 @@ export default function App() {
             defauts={defautsAvantExport}
             locale={locale}
             onCorriger={() => setDefautsAvantExport(null)}
-            onQuandMeme={() => { setDefautsAvantExport(null); lancerLeFormat(); }}
+            onQuandMeme={defautsDepuisExport
+              ? () => { setDefautsAvantExport(null); lancerLeFormat(); }
+              : undefined}
             onClose={() => setDefautsAvantExport(null)}
           />
         </Suspense>
@@ -9722,6 +9750,13 @@ export default function App() {
             ` }} />
           </button>
         )}
+        {/* Le compte de ce qui cloche, porte par le compagnon. Frere du
+            bouton, pas enfant : voir BadgeDefauts.jsx. */}
+        {!cvIsEmpty && (
+          <BadgeDefauts compte={defautsEnDirect.length} mob={mob} coachPos={coachPos}
+            locale={locale}
+            onClick={() => { setDefautsDepuisExport(false); setDefautsAvantExport(defautsEnDirect); }}/>
+        )}
         {/* Le bouton Telecharger flottant a ete remplace par la barre d'outils
             au-dessus du document : voir le commentaire la-bas. Un bouton en
             position fixe finit toujours par se poser sur quelque chose. */}
@@ -10307,6 +10342,14 @@ export default function App() {
               </span>
             )}
          </button>
+        )}
+        {/* Le meme badge que sur ordinateur : deux arbres de rendu, deux
+            poses. En oublier un laisserait la moitie des ecrans sans
+            compagnon qui veille, sans que rien ne le signale. */}
+        {!cvIsEmpty && (
+          <BadgeDefauts compte={defautsEnDirect.length} mob={true} coachPos={coachPos}
+            locale={locale}
+            onClick={() => { setDefautsDepuisExport(false); setDefautsAvantExport(defautsEnDirect); }}/>
         )}
         <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (

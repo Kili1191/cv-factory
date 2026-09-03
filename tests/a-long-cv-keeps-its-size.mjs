@@ -86,11 +86,19 @@ const CV_LONG = {
     id: "exp" + i,
     title, company, period,
     location: "Manchester",
+    // DES PUCES DIFFERENTES A CHAQUE POSTE, ET CE N'EST PAS DU ZELE
+    //
+    // La premiere version recopiait les quatre memes lignes sous les douze
+    // postes. Le controle avant telechargement l'a attrapee : douze fois la
+    // meme puce est exactement ce a quoi ressemble un CV casse, et le panneau
+    // s'est interpose a la place du fichier. La garde avait raison,
+    // l'echantillon avait tort. On ne teste la pagination que sur un CV qui
+    // a le droit de partir.
     bullets: [
-      "Supported 14 residents with personal care, medication and daily records.",
-      "Trained 5 new starters, each independent within their first fortnight.",
-      "Kept handover notes the night team never had to phone about.",
-      "Covered 30 night shifts a year on top of the standard rota.",
+      "Supported " + (10 + i) + " residents with personal care, medication and daily records at " + company + ".",
+      "Trained " + (2 + i) + " new starters at " + company + ", each independent within a fortnight.",
+      "Kept handover notes at " + company + " the night team never had to chase.",
+      "Covered " + (20 + i * 3) + " night shifts a year on top of the standard rota.",
     ],
   })),
 };

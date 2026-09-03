@@ -114,8 +114,10 @@ export default function DefautsAvantExport({
           }}>{t.corriger}</button>
 
         {/* Lisible, atteignable, sans piege. Une sortie qu'on rend penible
-            n'est pas un choix. */}
-        <button
+            n'est pas un choix. Absente quand l'ecran s'ouvre depuis le
+            compagnon plutot que depuis le bouton Telecharger : il n'y a
+            alors rien a "faire quand meme". */}
+        {onQuandMeme ? <button
           data-nuvi="defauts-quand-meme"
           onClick={onQuandMeme}
           style={{
@@ -125,7 +127,7 @@ export default function DefautsAvantExport({
               border: "1px solid " + Hairline,
               fontFamily: Sans, fontSize: 14.5, fontWeight: 600,
             })
-          }}>{t.quandMeme}</button>
+          }}>{t.quandMeme}</button> : null}
       </div>
     </Sheet>
   );
