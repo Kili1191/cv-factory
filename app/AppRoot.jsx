@@ -9855,7 +9855,12 @@ export default function App() {
       })
     });
     return (
-      <>
+      // Le meme fournisseur que l'arbre telephone, plus bas. Il y a DEUX
+      // arbres de rendu dans ce fichier, ordinateur et telephone, et poser un
+      // contexte sur un seul est une faute qui ne se voit pas : le depot de
+      // fichier continue d'accepter les PDF et les documents Word, et refuse
+      // silencieusement les photos, sur la moitie des ecrans seulement.
+      <ContexteLireImage.Provider value={lireImageCv}>
         <style dangerouslySetInnerHTML={{ __html: KEYFRAMES_V17 }} />
         {notif && <Notif msg={notif}/>}
         {pasteFlash && (
@@ -10477,7 +10482,7 @@ export default function App() {
             ` }} />
           </div>
         )}
-      </>
+      </ContexteLireImage.Provider>
     );
   }
 
@@ -10784,9 +10789,13 @@ export default function App() {
             else if (key === "score") ouvrirSeul(setShowScore);
             else if (key === "cvs") ouvrirSeul(setShowMultiCV);
             else if (key === "design") { setCustomizeTab("colors"); ouvrirSeul(setShowCustomize); }
+            else if (key === "templates") { setCustomizeTab("layout"); ouvrirSeul(setShowCustomize); }
             else if (key === "tracking") ouvrirSeul(setShowApplications);
             else if (key === "adjust") ouvrirSeul(setShowAdjust);
             else if (key === "edit") setModal("id");
+            else if (key === "edit_exp") setModal("exp");
+            else if (key === "edit_edu") setModal("edu");
+            else if (key === "edit_sk") setModal("sk");
             else if (key === "ats") ouvrirSeul(setShowAudit);
             else if (key === "lecture") {
               if (typeof window !== "undefined") window.open("/verifier", "_blank", "noopener");

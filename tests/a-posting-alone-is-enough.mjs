@@ -182,6 +182,22 @@ export async function run() {
         }
       }
 
+      // ET LE DEPOT SAIT LIRE UNE PHOTO
+      //
+      // Une image est le seul fichier qui parte au modele, et cette lecture
+      // descend par contexte depuis AppRoot, qui a DEUX arbres de rendu :
+      // ordinateur et telephone. Poser le fournisseur sur un seul est une
+      // faute invisible - les PDF et les documents Word passent toujours, les
+      // photos sont refusees en silence, et sur la moitie des ecrans
+      // seulement. C'est arrive a la premiere pose du composant.
+      const sansImage = await page.$$eval('[data-nuvi-depot-image="0"]',
+        (n) => n.map((e) => e.getAttribute("data-nuvi-depot")));
+      if (sansImage.length) {
+        failures.push("le(s) depot(s) " + sansImage.join(", ") + " refusent "
+          + "les photos : le lecteur d'image ne leur parvient pas. Beaucoup "
+          + "de gens n'ont que la photo d'un CV imprime.");
+      }
+
       // LE PARCOURS RESTE VIDE. C'EST TOUT L'OBJET DU TEST.
       const parcours = await page.locator('[data-nuvi="offre-parcours"]').inputValue();
       if (parcours.trim()) {

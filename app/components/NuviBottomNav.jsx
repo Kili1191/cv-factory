@@ -133,9 +133,10 @@ export default function NuviBottomNav({
       settings: "Réglages",
       reset: "Reset",
       adjust: "Ajuster",
-      edit: "Editer",
+      edit: "Editer l'identite", edit_exp: "Editer les experiences",
+      edit_edu: "Editer la formation", edit_sk: "Editer les competences",
       ats: "Audit ATS",
-      lecture: "Ce que lit un robot",
+      lecture: "Ce que lit un robot", templates: "Changer de modele",
       interview: "Preparer l'entretien",
       truth: "Truth Check",
       pos: "Positionnement",
@@ -166,9 +167,10 @@ export default function NuviBottomNav({
       settings: "Settings",
       reset: "Reset",
       adjust: "Tweak",
-      edit: "Edit",
+      edit: "Edit identity", edit_exp: "Edit experience",
+      edit_edu: "Edit education", edit_sk: "Edit skills",
       ats: "ATS audit",
-      lecture: "What a robot reads",
+      lecture: "What a robot reads", templates: "Change template",
       interview: "Interview prep",
       truth: "Truth Check",
       pos: "Positioning",
@@ -297,9 +299,24 @@ export default function NuviBottomNav({
     // Avant de chercher un poste : lequel des outils suivants ouvrir.
     { key: "pourquoi",  label: L.pourquoi },
     { key: "jobs",      label: L.jobs },
+    // LES QUATRE FEUILLES D'EDITION, PAS SEULEMENT L'IDENTITE
+    //
+    // Le tiroir n'offrait que "Editer", cable en dur sur setModal("id"). Sur
+    // telephone, les experiences, la formation et les competences etaient donc
+    // inatteignables : on pouvait corriger son nom et son adresse, et rien de
+    // ce qui fait un CV. La barre laterale d'ordinateur, elle, a ses quatre
+    // entrees depuis toujours, ce qui explique que ce soit passe inapercu.
+    // Nuvi se lit et se corrige sur un telephone.
     { key: "edit",      label: L.edit },
+    { key: "edit_exp",  label: L.edit_exp },
+    { key: "edit_edu",  label: L.edit_edu },
+    { key: "edit_sk",   label: L.edit_sk },
     { key: "adjust",    label: L.adjust },
     { key: "design",    label: L.design },
+    // Le tiroir ouvrait la personnalisation sur l'onglet des couleurs, et
+    // rien n'y menait a celui des modeles : changer de gabarit de CV etait
+    // reserve a l'ordinateur. C'est pourtant le premier reglage qu'on essaie.
+    { key: "templates", label: L.templates },
     { key: "translate", label: L.translate },
     { section: L.sec_audits },
     { key: "pack",      label: L.pack },

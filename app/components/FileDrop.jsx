@@ -183,6 +183,7 @@ export default function FileDrop({
   remplace = false,     // vrai quand le champ ne peut porter qu'une chose
   testId,
 }) {
+  const lireImage = useContext(ContexteLireImage);
   const champRef = useRef(null);
   const [survole, setSurvole] = useState(false);
   const M = mots(T, locale);
@@ -225,6 +226,16 @@ export default function FileDrop({
         type="button"
         onClick={() => champRef.current && champRef.current.click()}
         data-nuvi-depot={testId || quoi}
+        // CE QUE LE BOUTON SAIT LIRE, DIT A VOIX HAUTE
+        //
+        // Une photo est le seul fichier qui parte au modele, et cette lecture
+        // descend par contexte depuis AppRoot. AppRoot a DEUX arbres de rendu,
+        // ordinateur et telephone : poser le fournisseur sur un seul est une
+        // faute invisible. Les PDF et les documents Word continuent de
+        // passer, les photos sont refusees en silence, et seulement sur la
+        // moitie des ecrans. C'est arrive des la premiere pose du composant.
+        // Un test peut maintenant le lire sans avoir a envoyer une image.
+        data-nuvi-depot-image={typeof lireImage === "function" ? "1" : "0"}
         disabled={!!busy}
         style={{
           display: "inline-flex", alignItems: "center", gap: 8,
