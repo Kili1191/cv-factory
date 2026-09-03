@@ -137,6 +137,7 @@ export default function NuviBottomNav({
       edit_edu: "Editer la formation", edit_sk: "Editer les competences",
       ats: "Audit ATS",
       lecture: "Ce que lit un robot", templates: "Changer de modele",
+      relances: "Reponses des recruteurs",
       interview: "Preparer l'entretien",
       truth: "Truth Check",
       pos: "Positionnement",
@@ -171,6 +172,7 @@ export default function NuviBottomNav({
       edit_edu: "Edit education", edit_sk: "Edit skills",
       ats: "ATS audit",
       lecture: "What a robot reads", templates: "Change template",
+      relances: "Recruiter replies",
       interview: "Interview prep",
       truth: "Truth Check",
       pos: "Positioning",
@@ -334,6 +336,9 @@ export default function NuviBottomNav({
     { key: "compare",   label: L.compare },
     { key: "linkedin",  label: L.linkedin },
     { key: "tracking",  label: L.tracking },
+    // Voir la note dans NuviSidebar : la lecture de la boite mail n'avait
+    // d'entree nulle part, sur aucun des deux appareils.
+    { key: "relances",  label: L.relances },
     { key: "activity",  label: L.activity },
     ...(install.installable ? [{ key: "install", label: L.install, isInstall: true }] : []),
     { key: "settings",  label: L.settings, isSettings: true },

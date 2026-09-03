@@ -117,6 +117,7 @@ export default function NuviSidebar({
       audits_truth: "Truth Check", audits_gap: "Lisser le parcours",
       audits_ats: "Audit ATS", audits_interview: "Preparer l'entretien",
       audits_lecture: "Ce que lit un robot",
+      relances: "Reponses des recruteurs", activite: "Historique",
       audits_live: "Assistant live",
       cvs_list: "Liste de mes CV", cvs_versions: "Versions",
       cvs_compare: "Comparer", cvs_templates: "Modeles",
@@ -136,6 +137,7 @@ export default function NuviSidebar({
       audits_truth: "Truth Check", audits_gap: "Gap repair",
       audits_ats: "ATS audit", audits_interview: "Interview prep",
       audits_lecture: "What a robot reads",
+      relances: "Recruiter replies", activite: "History",
       audits_live: "Live assist",
       cvs_list: "My CVs", cvs_versions: "Versions",
       cvs_compare: "Compare", cvs_templates: "Templates",
@@ -204,6 +206,20 @@ export default function NuviSidebar({
     { key: "cvs",      label: L.cvs,      hasSub: true  },
     { key: "design",   label: L.design,   hasSub: true  },
     { key: "tracking", label: L.tracking, hasSub: false },
+    // DEUX ECRANS QUI EXISTAIENT SANS ENTREE
+    //
+    // "Reponses des recruteurs" : la lecture de la boite mail vit en haut du
+    // tableau de suivi et rien ne disait qu'elle existait. Il fallait ouvrir
+    // "Candidatures" et la trouver, donc la connaitre deja. C'est pourtant
+    // la promesse la plus forte du produit apres le CV lui-meme, et celle
+    // qu'on ne va pas chercher : on ouvre son suivi parce qu'on pense a
+    // relancer, jamais parce qu'on se demande si un recruteur a repondu.
+    //
+    // "Historique" n'etait que dans le tiroir du telephone et dans les
+    // reglages. Sur ordinateur, il fallait ouvrir Reglages et trouver
+    // "historique" : un chemin que personne ne devine.
+    { key: "relances", label: L.relances, hasSub: false },
+    { key: "activite", label: L.activite, hasSub: false },
   ];
 
   const handleSelect = (key) => {

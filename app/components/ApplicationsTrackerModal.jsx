@@ -12,6 +12,7 @@ import {
   Serif, Sans, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B, Trans, CoralText, GreenText, PurpleText } from "./tokens";
 import Sheet from "./Sheet";
 import GmailScanPanel from "./GmailScanPanel";
+import { joursDepuis, JOURS_AVANT_RELANCE } from "../../lib/applicationFollowUp";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 
@@ -226,7 +227,7 @@ function nextAction(app, T) {
         hint: days === null ? null
           : days >= 7 ? (T.ap_do_followup_due || `Envoyee il y a ${days} jours, c'est le moment`)
           : (T.ap_do_followup_soon || `Envoyee il y a ${days} jour${days > 1 ? "s" : ""}`),
-        urgent: days !== null && days >= 7,
+        urgent: days !== null && days >= JOURS_AVANT_RELANCE,
       };
     }
     case "phone":
@@ -284,12 +285,15 @@ function health(app) {
   }
 }
 
-function daysSince(dateStr) {
-  if (!dateStr) return null;
-  const then = Date.parse(dateStr);
-  if (!Number.isFinite(then)) return null;
-  return Math.max(0, Math.floor((Date.now() - then) / 86400000));
-}
+// LE COMPTE DES JOURS VIENT D'AILLEURS, ET C'EST LE POINT
+//
+// Il vivait ici, et le seuil de sept jours avec lui. La barre de navigation
+// veut afficher une pastille sur "Candidatures" quand il y a quelque chose a
+// relancer : elle ne peut le faire qu'en partageant la MEME regle. Deux
+// definitions du meme seuil derivent, la pastille dirait trois et le tableau
+// en montrerait cinq, et plus personne ne croirait ni l'une ni l'autre.
+// lib/applicationFollowUp.js porte les deux.
+const daysSince = joursDepuis;
 
 function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
   const badge = statusBadge(app.status, T);

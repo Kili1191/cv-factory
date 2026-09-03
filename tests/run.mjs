@@ -32,6 +32,7 @@ const SUITES = [
   ["every panel can be closed", "./every-panel-can-be-closed.mjs"],
   ["no page is an orphan", "./no-page-is-an-orphan.mjs"],
   ["a phone reaches what a desktop reaches", "./a-phone-reaches-what-a-desktop-reaches.mjs"],
+  ["the dot means something", "./the-dot-means-something.mjs"],
   ["the career record invents nothing", "./the-career-record-invents-nothing.mjs"],
   ["a job found becomes an application", "./job-search-becomes-an-application.mjs"],
   ["the extension reads a job ad", "./extension-reads-a-job-ad.mjs"],

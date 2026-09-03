@@ -20,6 +20,7 @@ import { deuxLectures } from "../lib/deuxLectures.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
+import { combienARelancer } from "../lib/applicationFollowUp";
 import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
 // === LAZY MODALS ===
@@ -4052,6 +4053,26 @@ export default function App() {
   // v17 chantier 10 : Applications Tracker
   const [showApplications, setShowApplications] = useState(false);
   const [applications, setApplications] = useState([]);
+
+  // LA PASTILLE DIT UNE CHOSE VRAIE, OU RIEN
+  //
+  // Les deux barres acceptaient un objet `hasNotification` depuis le debut et
+  // savaient dessiner la pastille. Personne ne le leur passait : la
+  // fonctionnalite existait des deux cotes et ne pouvait pas se declencher.
+  //
+  // Ce qu'elle annonce vient de la meme regle que le tableau de suivi : une
+  // candidature envoyee il y a sept jours ou plus, restee sans reponse,
+  // attend une relance. C'est le seul signal du produit qui soit a la fois
+  // vrai, calculable sans rien demander a personne, et perissable - donc le
+  // seul qui merite d'attirer l'oeil.
+  //
+  // On ne pose PAS de pastille sur "il y a peut-etre des reponses dans ta
+  // boite mail" : personne ne le sait avant d'avoir lu la boite, et une
+  // pastille qui se trompe une fois n'est plus jamais regardee.
+  const aRelancer = useMemo(() => combienARelancer(applications), [applications]);
+  const pastilles = useMemo(
+    () => (aRelancer > 0 ? { tracking: true, relances: true } : {}),
+    [aRelancer]);
   // v17 chantier 11 : Multi-CV strategie
   const [showMultiCV, setShowMultiCV] = useState(false);
   const [multiCVLoading, setMultiCVLoading] = useState(false);
@@ -9926,6 +9947,7 @@ export default function App() {
           background:"var(--nuvi-bg-gradient)", overflow:"hidden",
         }}>
           <NuviSidebar
+            hasNotification={pastilles}
             panneauOuvert={panneauOuvert}
             cloudEnabled={isCloudConfigured()}
             cloudUser={cloud.user}
@@ -9962,6 +9984,19 @@ export default function App() {
                 ouvrirSeul(setShowLive);
               } else if (key === "tracking") {
                 ouvrirSeul(setShowApplications);
+              } else if (key === "relances") {
+                // ON OUVRE, ON NE LIT PAS
+                //
+                // Le panneau des reponses est en haut du tableau de suivi, et
+                // il porte son propre bouton "chercher les reponses". On ne
+                // declenche PAS la lecture ici : parcourir la boite mail de
+                // quelqu'un parce qu'il a clique une entree de menu merite un
+                // geste explicite, et pour qui n'a jamais connecte Gmail, un
+                // scan automatique afficherait "l'autorisation a expire",
+                // c'est a dire une erreur a propos d'une chose jamais faite.
+                ouvrirSeul(setShowApplications);
+              } else if (key === "activite") {
+                ouvrirSeul(setShowActivity);
               }
               // Les items avec sub-items (edit, audits, cvs, design)
               // ne font rien sur onSelect - ils ouvrent leur sub-menu via onSubSelect
@@ -10790,6 +10825,7 @@ export default function App() {
             || tab==="score" || tab==="tools") && FinalizeContent}
         </div>
         <NuviBottomNav
+          hasNotification={pastilles}
           active={navSection}
           onSelect={(key) => {
             setNavSection(key);
@@ -10805,6 +10841,8 @@ export default function App() {
             else if (key === "design") { setCustomizeTab("colors"); ouvrirSeul(setShowCustomize); }
             else if (key === "templates") { setCustomizeTab("layout"); ouvrirSeul(setShowCustomize); }
             else if (key === "tracking") ouvrirSeul(setShowApplications);
+            // Voir la note cote barre laterale : on ouvre, on ne lit pas.
+            else if (key === "relances") ouvrirSeul(setShowApplications);
             else if (key === "adjust") ouvrirSeul(setShowAdjust);
             else if (key === "edit") setModal("id");
             else if (key === "edit_exp") setModal("exp");
