@@ -189,8 +189,16 @@ export default function DefautsAvantExport({
         {/* Lisible, atteignable, sans piege. Une sortie qu'on rend penible
             n'est pas un choix. Absente quand l'ecran s'ouvre depuis le
             compagnon plutot que depuis le bouton Telecharger : il n'y a
-            alors rien a "faire quand meme". */}
-        {onQuandMeme ? <button
+            alors rien a "faire quand meme".
+
+            ABSENTE AUSSI QUAND LE CV DEBORDE D'UNE PAGE. C'est la seule
+            exception a "Nuvi ne decide pas", et elle n'est pas la mienne :
+            "tiens sur 1 page when in pdf for the recruiter", dit deux fois
+            par le proprietaire du produit. Un PDF de deux pages n'est pas un
+            choix qu'on offre, c'est un fichier que le produit ne fabrique
+            plus. La sortie reste ouverte : raccourcir, ou fermer et couper
+            soi-meme. */}
+        {onQuandMeme && !deborde ? <button
           data-nuvi="defauts-quand-meme"
           onClick={onQuandMeme}
           style={{

@@ -1,17 +1,19 @@
-// Un CV tient sur une page, et un CV qui ne peut pas y tenir ne part pas
-// coupe en silence.
+// Le PDF du recruteur fait une page. Toujours.
 //
 // LA REGLE, ET D'OU ELLE VIENT
 //
-// "Un CV doit toujours etre dans une page, et pas telecharge coupe." C'est
-// le proprietaire du produit qui le dit, apres avoir vu son CV partir sur
-// deux feuilles. Ce fichier a suivi tout le chemin de cette regle :
+// "Un CV doit toujours etre dans une page, et pas telecharge coupe." Puis,
+// une seconde fois : "tiens sur 1 page when in pdf for the recruiter." C'est
+// le proprietaire du produit qui le dit, et la seconde fois vaut decision.
+// Ce fichier a suivi tout le chemin de cette regle :
 //
 //   1. une feuille unique, tres haute, qui n'etait pas un A4 : "pas cadre" ;
 //   2. l'image entiere dans un A4, donc un CV d'une page et demie a 66%,
 //      illisible ;
 //   3. deux feuilles a taille reelle, ce qu'un recruteur lit comme un
-//      document coupe, et ce que Kilian a decrit exactement ainsi.
+//      document coupe ;
+//   4. une feuille quand c'est possible, deux feuilles "quand meme" sinon,
+//      en le disant. Refuse : deux feuilles ne sont pas un choix a offrir.
 //
 // La regle finale a trois cas, par hauteur du contenu :
 //
@@ -19,18 +21,18 @@
 //   - il deborde de moins de 18% : une feuille, image reduite jusqu'a 85%,
 //     ce que "ajuster a la page" fait dans n'importe quelle boite
 //     d'impression ;
-//   - il deborde davantage : il faut couper du texte. Le controle avant
-//     telechargement le dit et propose de raccourcir ; "telecharger quand
-//     meme" pagine, parce que deux feuilles lisibles valent mieux qu'une
-//     feuille a 60%, mais on ne l'a pas fait sans le dire.
+//   - il deborde davantage : il ne part PAS. Le controle avant
+//     telechargement le dit, n'offre pas de "quand meme", et propose de
+//     raccourcir, ce que le modele fait sans rien inventer. Une fois
+//     raccourci, il part sur une feuille.
 //
 // CE QUE CE TEST MESURE, ET COMMENT IL SAIT DANS QUEL CAS IL EST
 //
 // La hauteur du document est mesuree dans le navigateur par la MEME fonction
 // que le controle avant telechargement. Le test ne devine donc pas le cas :
-// il le lit, puis exige ce que la regle impose pour ce cas-la. Deux CV sont
-// exerces, un long et un plus court, pour toucher au moins deux cas ; leur
-// hauteur exacte depend des polices de la machine, et le test l'assume.
+// il le lit, puis exige ce que la regle impose. Le modele est remplace par
+// une reponse fixe, un CV plus court : ce qu'on prouve ici est le circuit,
+// pas la qualite du raccourci, qui a son propre test.
 
 import { mkdtempSync, readFileSync } from "fs";
 import { tmpdir } from "os";
@@ -57,10 +59,10 @@ const POSTES = [
   ["Warehouse Operative", "Northgate Depot", "2013 - 2014"],
 ];
 
-// Des puces distinctes par poste : un CV ou la meme ligne revient douze
-// fois est exactement ce qu'un CV casse ressemble, et le controle avant
-// telechargement l'attrape a raison. Le test de pagination doit porter sur
-// un CV qui a le droit de partir.
+// Des puces distinctes par poste : un CV ou la meme ligne revient douze fois
+// est exactement ce a quoi un CV casse ressemble, et le controle l'attrape a
+// raison. Le test doit porter sur un CV qui n'a que sa longueur a se
+// reprocher.
 function cvDe(nombreDePostes) {
   return {
     ...SAMPLE_CV,
@@ -81,18 +83,39 @@ function cvDe(nombreDePostes) {
   };
 }
 
+// La reponse du modele quand on lui demande de raccourcir : le meme CV a
+// quatre postes. Le circuit se prouve avec une reponse fixe.
+const RACCOURCI = cvDe(4);
+
+async function lirePdf(download) {
+  const dossier = mkdtempSync(join(tmpdir(), "cvf-page-"));
+  const chemin = join(dossier, "cv.pdf");
+  await download.saveAs(chemin);
+  const mod = await import("pdfjs-dist/legacy/build/pdf.js");
+  const pdfjs = mod.getDocument ? mod : (mod.default || {});
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(readFileSync(chemin)) }).promise;
+  const tailles = [], parPage = [];
+  for (let i = 1; i <= doc.numPages; i += 1) {
+    const p = await doc.getPage(i);
+    const v = p.getViewport({ scale: 1 });
+    tailles.push([Math.round(v.width), Math.round(v.height)]);
+    parPage.push((await p.getTextContent()).items.map((it) => it.str).join(" ").trim());
+  }
+  return { pages: doc.numPages, tailles, parPage };
+}
+
 async function exporter(browser, cv) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, acceptDownloads: true });
   const page = await ctx.newPage();
   const erreurs = [];
   page.on("pageerror", (e) => erreurs.push(e.message.split("\n")[0].slice(0, 90)));
+  await page.route("**/api/claude", (r) => r.fulfill({
+    status: 200, contentType: "application/json",
+    body: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(RACCOURCI) }] }),
+  }));
   await seedApp(page, cv);
 
-  // La hauteur telle que le controle la mesure : la meme fonction, dans la
-  // page, sur le document reel.
-  const hauteurMm = await page.evaluate(async () => {
-    const m = await import("/lib/leCvEstIlPresentable.js").catch(() => null);
-    if (m && m.hauteurDuDocumentMm) return m.hauteurDuDocumentMm(document);
+  const hauteurMm = await page.evaluate(() => {
     const el = document.getElementById("cv-print");
     const st = document.createElement("style");
     st.textContent = ".cvf-no-print{display:none !important}[data-cvf-zoom]{zoom:1 !important}";
@@ -102,48 +125,41 @@ async function exporter(browser, cv) {
     return px * 25.4 / 96;
   });
 
-  let raison = null;
-  const attente = page.waitForEvent("download", { timeout: 90_000 })
-    .catch((e) => { raison = e.message.split("\n")[0]; return null; });
+  const out = { hauteurMm, erreurs, panneau: false, quandMeme: false, raccourcir: false,
+    raccourci: false, download: false, raison: null, pdf: null };
 
-  let panneau = false;
-  try {
+  const attendreTelechargement = () => page.waitForEvent("download", { timeout: 90_000 })
+    .catch((e) => { out.raison = e.message.split("\n")[0]; return null; });
+
+  let attente = attendreTelechargement();
+  await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
+  await page.waitForTimeout(1200);
+
+  out.panneau = (await page.locator('[data-nuvi="defauts-corriger"], [data-nuvi="defauts-raccourcir"], [data-nuvi="defauts-quand-meme"]').count()) > 0;
+  out.quandMeme = (await page.locator('[data-nuvi="defauts-quand-meme"]').count()) > 0;
+  out.raccourcir = (await page.locator('[data-nuvi="defauts-raccourcir"]').count()) > 0;
+
+  if (out.raccourcir) {
+    // LE CIRCUIT DU RACCOURCI : le modele repond, le CV change, et le
+    // telechargement suivant part sur une feuille.
+    await page.locator('[data-nuvi="defauts-raccourcir"]').first().click({ timeout: 8_000 });
+    await page.waitForTimeout(2500);
+    out.raccourci = await page.evaluate(() =>
+      (document.getElementById("cv-print") || {}).innerText.includes("Hollybank")
+      && !(document.getElementById("cv-print") || {}).innerText.includes("Northgate"));
+    attente = attendreTelechargement();
     await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
     await page.waitForTimeout(1200);
-    // Le controle avant telechargement, s'il a quelque chose a dire.
-    const quandMeme = page.locator('[data-nuvi="defauts-quand-meme"]');
-    if (await quandMeme.count()) {
-      panneau = true;
-      await quandMeme.first().click({ timeout: 8_000 });
-      await page.waitForTimeout(800);
-    }
-    const confirmer = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
-    if (await confirmer.count() > 1) {
-      await confirmer.nth(1).click({ timeout: 10_000 }).catch(() => {});
-    }
-  } catch (e) {
-    raison = "le clic sur Telecharger a echoue : " + e.message.split("\n")[0];
   }
 
-  const download = await attente;
-  let pages = 0, tailles = [], parPage = [];
-  if (download) {
-    const dossier = mkdtempSync(join(tmpdir(), "cvf-long-"));
-    const chemin = join(dossier, "cv.pdf");
-    await download.saveAs(chemin);
-    const mod = await import("pdfjs-dist/legacy/build/pdf.js");
-    const pdfjs = mod.getDocument ? mod : (mod.default || {});
-    const doc = await pdfjs.getDocument({ data: new Uint8Array(readFileSync(chemin)) }).promise;
-    pages = doc.numPages;
-    for (let i = 1; i <= pages; i += 1) {
-      const p = await doc.getPage(i);
-      const v = p.getViewport({ scale: 1 });
-      tailles.push([Math.round(v.width), Math.round(v.height)]);
-      parPage.push((await p.getTextContent()).items.map((it) => it.str).join(" ").trim());
-    }
+  const confirmer = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
+  if (await confirmer.count() > 1) {
+    await confirmer.nth(1).click({ timeout: 10_000 }).catch(() => {});
   }
+  const download = await attente;
+  if (download) { out.download = true; out.pdf = await lirePdf(download); }
   await ctx.close();
-  return { hauteurMm, panneau, download: !!download, raison, pages, tailles, parPage, erreurs };
+  return out;
 }
 
 export async function run() {
@@ -156,66 +172,62 @@ export async function run() {
     for (const [nom, cv] of [["douze postes", cvDe(12)], ["quatre postes", cvDe(4)]]) {
       const r = await exporter(browser, cv);
       for (const e of r.erreurs) failures.push(nom + " : erreur JavaScript, " + e);
+      const h = Math.round(r.hauteurMm);
+      const cas = r.hauteurMm <= HAUTEUR_UNE_PAGE_MM ? "tient"
+        : r.hauteurMm <= HAUTEUR_MAX_UNE_PAGE_MM ? "reduit" : "deborde";
+      casVus.add(cas);
+
+      if (cas === "deborde") {
+        // IL DEBORDE : ON LE DIT, ON N'OFFRE PAS "QUAND MEME", ON RACCOURCIT
+        if (!r.panneau) {
+          failures.push(nom + " (" + h + "mm) : le CV deborde et le controle "
+            + "n'a rien dit. Il est parti coupe en silence.");
+        }
+        if (r.quandMeme) {
+          failures.push(nom + " (" + h + "mm) : \"telecharger quand meme\" est "
+            + "propose sur un CV qui deborde. Un PDF de deux pages n'est pas "
+            + "un choix a offrir : le produit ne le fabrique plus.");
+        }
+        if (!r.raccourcir) {
+          failures.push(nom + " (" + h + "mm) : aucun bouton pour raccourcir. "
+            + "On a ferme la porte sans en ouvrir une autre.");
+        } else if (!r.raccourci) {
+          failures.push(nom + " : apres \"Raccourcir\", le CV a l'ecran n'est "
+            + "pas celui que le modele a rendu.");
+        }
+      } else if (r.panneau) {
+        failures.push(nom + " (" + h + "mm, cas \"" + cas + "\") : le controle "
+          + "s'est interpose sur un CV qui tient. Une garde qui crie sur un "
+          + "CV correct est desactivee dans la semaine.");
+      }
+
+      // DANS TOUS LES CAS, CE QUI PART FAIT UNE PAGE A4
       if (!r.download) {
         failures.push(nom + " : aucun PDF telecharge" + (r.raison ? " (" + r.raison + ")" : ""));
         continue;
       }
-      for (const [i, [l, h]] of r.tailles.entries()) {
-        if (Math.abs(l - A4_PT.l) > MARGE_PT || Math.abs(h - A4_PT.h) > MARGE_PT) {
-          failures.push(nom + " : la page " + (i + 1) + " mesure " + l + "x" + h
+      if (r.pdf.pages !== 1) {
+        failures.push(nom + " : le PDF fait " + r.pdf.pages + " pages. Le PDF "
+          + "du recruteur en fait une, toujours.");
+      }
+      for (const [i, [l, hh]] of r.pdf.tailles.entries()) {
+        if (Math.abs(l - A4_PT.l) > MARGE_PT || Math.abs(hh - A4_PT.h) > MARGE_PT) {
+          failures.push(nom + " : la page " + (i + 1) + " mesure " + l + "x" + hh
             + " points au lieu de 595x842. Ce n'est pas un A4.");
         }
       }
-      const cas = r.hauteurMm <= HAUTEUR_UNE_PAGE_MM ? "tient"
-        : r.hauteurMm <= HAUTEUR_MAX_UNE_PAGE_MM ? "reduit" : "deborde";
-      casVus.add(cas);
-      const h = Math.round(r.hauteurMm);
-
-      if (cas !== "deborde") {
-        // UNE FEUILLE, ET RIEN NE S'EST INTERPOSE
-        if (r.pages !== 1) {
-          failures.push(nom + " (" + h + "mm, cas \"" + cas + "\") : " + r.pages
-            + " feuilles. Un CV qui tient, ou qui tient reduit a plus de "
-            + Math.round(FACTEUR_MIN * 100) + "%, sort sur UNE page.");
-        }
-        if (r.panneau) {
-          failures.push(nom + " (" + h + "mm) : le controle avant telechargement "
-            + "s'est interpose sur un CV qui tient. Une garde qui crie sur un "
-            + "CV correct est desactivee dans la semaine.");
-        }
-        if (!/Samuel\s*Carter/i.test(r.parPage[0] || "")) {
-          failures.push(nom + " : le nom n'ouvre pas le texte extrait.");
-        }
-      } else {
-        // IL DEBORDE : ON L'A DIT, ET "QUAND MEME" PAGINE SANS RIEN PERDRE
-        if (!r.panneau) {
-          failures.push(nom + " (" + h + "mm, " + (r.hauteurMm / HAUTEUR_UNE_PAGE_MM).toFixed(1)
-            + " pages) : le CV deborde et le controle avant telechargement "
-            + "n'a rien dit. Il est parti coupe en silence.");
-        }
-        if (r.pages < 2) {
-          failures.push(nom + " (" + h + "mm) : telecharge quand meme, il sort sur "
-            + r.pages + " feuille : il a ete reduit sous " + Math.round(FACTEUR_MIN * 100)
-            + "%, donc rendu illisible.");
-        }
-        const vides = r.parPage.map((t, i) => (t.length < 40 ? i + 1 : 0)).filter(Boolean);
-        if (r.pages > 1 && vides.length) {
-          failures.push(nom + " : la ou les page(s) " + vides.join(", ")
-            + " ne portent presque aucun texte : la couche lue par les "
-            + "robots de tri ne suit pas les feuilles.");
-        }
+      if (!/Samuel\s*Carter/i.test(r.pdf.parPage[0] || "")) {
+        failures.push(nom + " : le nom n'ouvre pas le texte extrait.");
       }
     }
 
     if (casVus.size < 2) {
       failures.push("les deux CV tombent dans le meme cas (" + [...casVus].join()
-        + ") : le test n'exerce qu'une branche de la regle. Ajuster le "
-        + "nombre de postes.");
+        + ") : le test n'exerce qu'une branche de la regle.");
     }
-
     if (!failures.length) {
       console.log("      cas exerces : " + [...casVus].join(" et ")
-        + " ; une page quand c'est possible, annonce sinon");
+        + " ; une page, toujours, et le trop-long se raccourcit avant de partir");
     }
   } catch (err) {
     failures.push("le test lui-meme a plante : " + (err && err.message));
@@ -223,7 +235,6 @@ export async function run() {
     await browser.close();
     await stopServer(server);
   }
-
   return failures;
 }
 

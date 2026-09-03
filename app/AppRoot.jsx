@@ -5150,11 +5150,17 @@ export default function App() {
         //     ce que "ajuster a la page" fait dans n'importe quelle boite
         //     d'impression, et que personne ne remarque ;
         //   - il deborde davantage : il n'y a plus rien a reduire sans le
-        //     rendre illisible. Il faut couper du texte. C'est une decision,
-        //     donc le controle avant telechargement l'annonce et propose de
-        //     raccourcir. Si la personne telecharge quand meme, on pagine :
-        //     deux feuilles lisibles valent mieux qu'une feuille a 60%, mais
-        //     on ne l'a pas fait sans le dire.
+        //     rendre illisible. Il faut couper du texte. Le controle avant
+        //     telechargement le dit, propose de raccourcir, et NE PROPOSE
+        //     PAS de telecharger quand meme : "tiens sur 1 page when in pdf
+        //     for the recruiter", dit deux fois par le proprietaire du
+        //     produit. C'est sa decision, pas la mienne.
+        //
+        // Cette fonction ne pagine donc plus jamais. Si un CV trop long
+        // l'atteint malgre le controle - un chemin qui ne devrait pas
+        // exister - il sort sur UNE feuille, reduit a ce qu'il faut, plutot
+        // que sur deux : l'invariant du produit est le nombre de pages, et
+        // un fichier de deux pages est precisement ce qui a ete interdit.
         //
         // FACTEUR_MIN est le meme nombre que dans lib/leCvEstIlPresentable :
         // le controle et l'export doivent decider sur la meme limite.
@@ -5174,10 +5180,16 @@ export default function App() {
         // A pleine largeur, la hauteur que prendrait le CV sur le papier.
         const hauteurPleine = imgHeightMm * (A4_L_MM / imgWidthMm);
         const tientEnUne = hauteurPleine <= A4_H_MM * TOLERANCE_UNE_PAGE;
+        if (!tientEnUne) {
+          console.warn("[exportPDF] CV plus long que le plancher de lisibilite ("
+            + hauteurPleine.toFixed(0) + "mm) : le controle avant telechargement "
+            + "aurait du l'arreter. Il sort sur une page, reduit.");
+        }
 
-        const facteur = tientEnUne
-          ? Math.min(A4_L_MM / imgWidthMm, A4_H_MM / imgHeightMm)
-          : A4_L_MM / imgWidthMm;
+        // UNE FEUILLE. L'image entre dedans, rapport conserve, en haut et
+        // centree. Sous le plancher, elle est reduite plus que l'oeil ne le
+        // voudrait ; au-dessus, personne ne le remarque.
+        const facteur = Math.min(A4_L_MM / imgWidthMm, A4_H_MM / imgHeightMm);
         const poseL = imgWidthMm * facteur;
         const poseH = imgHeightMm * facteur;
         const poseX = (A4_L_MM - poseL) / 2;
@@ -5192,21 +5204,20 @@ export default function App() {
         // silence, ce qui est exactement le genre de perte qu'un candidat ne
         // decouvre jamais. 0,002 page fait six dixiemes de millimetre : assez
         // pour le bruit, trop peu pour un caractere.
-        const nbFeuilles = tientEnUne ? 1 : Math.ceil(poseH / A4_H_MM - 0.002);
+        // L'EPSILON ET LA PAGINATION SONT PARTIS AVEC LA SECONDE FEUILLE
+        //
+        // Il y avait ici un compte de feuilles, un epsilon pour ne pas ouvrir
+        // une page pour six dixiemes de millimetre, et une boucle qui posait
+        // la meme image sur chaque feuille en la remontant d'une hauteur de
+        // page. Tout cela servait a produire un document de deux pages, ce
+        // que le produit interdit desormais. Une feuille, une image.
+        const nbFeuilles = 1;
 
-        console.log("[exportPDF] A4 210x297mm,", nbFeuilles, "feuille(s), image",
+        console.log("[exportPDF] A4 210x297mm, une feuille, image",
                     poseL.toFixed(1) + "x" + poseH.toFixed(1) + "mm",
                     "facteur", facteur.toFixed(3));
 
-        // La meme image sur chaque feuille, remontee d'une hauteur de page a
-        // chaque fois : jsPDF coupe ce qui sort de la feuille, donc chacune
-        // ne montre que sa tranche. Redecouper l'image en autant de canevas
-        // donnerait le meme resultat pour trois fois le code et une jointure
-        // a un pixel pres a chaque coupe.
-        for (let f = 0; f < nbFeuilles; f += 1) {
-          if (f > 0) pdf.addPage("a4", "portrait");
-          pdf.addImage(imgData, "JPEG", poseX, poseY - f * A4_H_MM, poseL, poseH);
-        }
+        pdf.addImage(imgData, "JPEG", poseX, poseY, poseL, poseH);
 
         // [ATS] Couche de texte invisible par-dessus l'image.
         //
@@ -5224,13 +5235,8 @@ export default function App() {
           console.warn("[exportPDF] couche texte ignoree:", layerErr && layerErr.message);
         }
 
-        // LES PAGES SURNUMERAIRES NE SE SUPPRIMENT PLUS
-        //
-        // Une garde supprimait ici toute page au-dela de la premiere. Elle
-        // etait juste tant qu'un CV tenait forcement sur une feuille ; elle
-        // effacerait maintenant la seconde moitie d'un CV de deux pages, sans
-        // rien dire. Le nombre de feuilles est calcule plus haut et jsPDF n'en
-        // cree pas d'autres.
+        // Il n'y a plus de page a supprimer ni a garder : le document est une
+        // feuille par construction, et jsPDF n'en cree pas d'autre.
 
         pdf.save(fname);
 
