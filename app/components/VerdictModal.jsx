@@ -60,7 +60,33 @@ export default function VerdictModal({
     return () => clearInterval(interval);
   }, [isOpen, score]);
 
+  // LES DEUX GESTES QU'ON FAIT AVANT DE LIRE
+  //
+  // Ce verdict s'ouvre TOUT SEUL, par-dessus le panneau de score, des que la
+  // note passe 85. Il occupe l'ecran entier a l'indice 3000, donc la croix du
+  // panneau en dessous se retrouve couverte : on la survole, le curseur reste
+  // une fleche, on clique, rien ne bouge. Signale depuis la version en
+  // production, exactement dans ces termes, sans savoir quelle fenetre etait
+  // en cause - parce que de la chaise, on ne voit pas que le voile est une
+  // seconde fenetre.
+  //
+  // Une sortie existait pourtant : le petit lien "continuer a modifier", en
+  // bas des trois choix. Elle ne repondait a aucun des deux gestes que
+  // quelqu'un fait avant de lire quoi que ce soit, Echap et le clic a cote.
+  // Les voici, plus une croix, parce qu'un ecran qu'on n'a pas demande doit
+  // se refermer par le geste qu'on connait deja.
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const fermer = typeof onClose === "function" ? onClose : onContinue;
+    if (typeof fermer !== "function") return undefined;
+    const surTouche = (e) => { if (e.key === "Escape") fermer(); };
+    window.addEventListener("keydown", surTouche);
+    return () => window.removeEventListener("keydown", surTouche);
+  }, [isOpen, onClose, onContinue]);
+
   if (!isOpen) return null;
+
+  const fermer = typeof onClose === "function" ? onClose : onContinue;
 
   const isEn = locale === "en";
   const probability = Math.min(85, score); // plafond a 85% (Caplan : rien n'est jamais sur)
@@ -145,7 +171,34 @@ export default function VerdictModal({
           padding: 24,
           overflow: "auto",
         }}
+        // Le clic a cote referme. Il ne doit se declencher que sur le voile
+        // lui-meme : sans ce test, un clic n'importe ou dans la carte
+        // remonterait jusqu'ici et fermerait au moment ou la personne lit.
+        onClick={(e) => { if (e.target === e.currentTarget && fermer) fermer(); }}
       >
+        {/* La croix. L'ecran s'ouvre sans qu'on l'ait demande : il se ferme
+            donc comme n'importe quelle fenetre, et pas seulement par le lien
+            en bas des trois choix. */}
+        <button
+          type="button"
+          onClick={fermer}
+          aria-label="close"
+          style={{
+            position: "fixed", top: 18, right: 18, zIndex: 3001,
+            width: 44, height: 44, borderRadius: "50%",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            // Sur un voile sombre : encre claire, filet clair.
+            background: "rgba(255,255,255,0.10)",
+            border: "1px solid rgba(255,255,255,0.28)",
+            color: "#f4f2ee", cursor: "pointer", fontFamily: "inherit",
+          }}>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="1.8"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
         {/* Aurora background layer (animated blobs) */}
         <div style={{
           position: "absolute", inset: 0,
