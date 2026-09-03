@@ -55,6 +55,7 @@ const SUITES = [
   ["nothing stays half faded", "./nothing-stays-half-faded.mjs"],
   ["the shared link tells the truth", "./the-shared-link-tells-the-truth.mjs"],
   ["crash test before going live", "./ready-to-launch.mjs"],
+  ["every journey reaches its end", "./every-journey-reaches-its-end.mjs"],
   ["every screen size holds", "./every-screen-size-works.mjs"],
   ["italic words are real italics", "./the-italics-are-real.mjs"],
   ["no monogram is invisible", "./no-monogram-is-invisible.mjs"],
