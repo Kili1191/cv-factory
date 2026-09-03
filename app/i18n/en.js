@@ -809,7 +809,13 @@ const EN_T = {
   set_install:"Install the app",
   set_install_desc:"An icon on your home screen. Opens full screen, no browser bar.",
   set_kbd:"Keyboard shortcuts",
-  set_tutorial:"Re-launch tutorial",
+  // LE TUTORIEL N'A JAMAIS ETE LANCE, DONC IL NE SE "RELANCE" PAS
+  // Il ne se declenche pas a la premiere visite : NuviHome a pris cette
+  // place, volontairement. Ce bouton est son unique porte, et il disait
+  // "relancer" - donc il s'adressait a quelqu'un qui avait deja fait la
+  // visite, c'est a dire a personne. La fonctionnalite etait enterree
+  // sous son propre libelle.
+  set_tutorial:"Take the guided tour",
   set_cache:"AI cache",
   set_cache_clear:"Clear AI cache",
   set_cache_hint:"Makes Nuvi re-run analyses instead of reusing a stored result.",

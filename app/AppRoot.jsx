@@ -7508,7 +7508,13 @@ export default function App() {
     setShowTutorial(false);
     lsS(SK.TU, true);
   }, []);
-  // Bouton dans Reglages : relance le tuto sans toucher au flag.
+  // Bouton dans Reglages : lance la visite sans toucher au flag.
+  //
+  // C'est son SEUL appelant. Le tutoriel ne part pas a la premiere visite,
+  // NuviHome ayant pris cette place volontairement : personne ne l'a donc
+  // jamais vu, et le bouton s'intitulait "relancer le tutoriel", ce qui
+  // s'adresse a quelqu'un qui l'aurait deja fait. Le libelle propose
+  // desormais la visite au lieu de la rejouer.
   const relaunchTutorial = useCallback(() => {
     setShowSettings(false);
     setShowTutorial(true);

@@ -808,7 +808,13 @@ const FR_T = {
   set_install:"Installer l'application",
   set_install_desc:"Une icone sur ton ecran d'accueil. Ouverture plein ecran, sans barre de navigateur.",
   set_kbd:"Raccourcis clavier",
-  set_tutorial:"Relancer le tutoriel",
+  // LE TUTORIEL N'A JAMAIS ETE LANCE, DONC IL NE SE "RELANCE" PAS
+  // Il ne se declenche pas a la premiere visite : NuviHome a pris cette
+  // place, volontairement. Ce bouton est son unique porte, et il disait
+  // "relancer" - donc il s'adressait a quelqu'un qui avait deja fait la
+  // visite, c'est a dire a personne. La fonctionnalite etait enterree
+  // sous son propre libelle.
+  set_tutorial:"Visite guidee de Nuvi",
   set_cache:"Cache IA",
   set_cache_clear:"Vider le cache IA",
   set_cache_hint:"Force Nuvi a relancer les analyses au lieu de reutiliser un resultat garde en memoire.",
