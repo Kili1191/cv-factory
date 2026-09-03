@@ -9958,6 +9958,13 @@ export default function App() {
                 else if (subKey === "truth") { runTruthCheck && runTruthCheck(); }
                 else if (subKey === "ats")   ouvrirSeul(setShowAudit);
                 else if (subKey === "interview") ouvrirSeul(setShowInterview);
+                // Un nouvel onglet : le CV en cours reste ouvert derriere, et
+                // la page se partage telle quelle a quelqu'un qui n'a pas de
+                // compte. C'est aussi la seule page du produit qu'on peut
+                // envoyer a un ami sans rien lui demander.
+                else if (subKey === "lecture") {
+                  if (typeof window !== "undefined") window.open("/verifier", "_blank", "noopener");
+                }
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
                     notify(T.gr_no_gaps_title || "Aucun trou detecte");
@@ -10781,6 +10788,9 @@ export default function App() {
             else if (key === "adjust") ouvrirSeul(setShowAdjust);
             else if (key === "edit") setModal("id");
             else if (key === "ats") ouvrirSeul(setShowAudit);
+            else if (key === "lecture") {
+              if (typeof window !== "undefined") window.open("/verifier", "_blank", "noopener");
+            }
             else if (key === "interview") ouvrirSeul(setShowInterview);
             else if (key === "truth") { runTruthCheck && runTruthCheck(); }
             else if (key === "pos") { runPositioning && runPositioning(); }

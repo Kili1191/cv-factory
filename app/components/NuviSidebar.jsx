@@ -116,6 +116,7 @@ export default function NuviSidebar({
       audits_score: "Score recruteur", audits_pos: "Positionnement",
       audits_truth: "Truth Check", audits_gap: "Lisser le parcours",
       audits_ats: "Audit ATS", audits_interview: "Preparer l'entretien",
+      audits_lecture: "Ce que lit un robot",
       audits_live: "Assistant live",
       cvs_list: "Liste de mes CV", cvs_versions: "Versions",
       cvs_compare: "Comparer", cvs_templates: "Modeles",
@@ -134,6 +135,7 @@ export default function NuviSidebar({
       audits_score: "Recruiter score", audits_pos: "Positioning",
       audits_truth: "Truth Check", audits_gap: "Gap repair",
       audits_ats: "ATS audit", audits_interview: "Interview prep",
+      audits_lecture: "What a robot reads",
       audits_live: "Live assist",
       cvs_list: "My CVs", cvs_versions: "Versions",
       cvs_compare: "Compare", cvs_templates: "Templates",
@@ -167,6 +169,11 @@ export default function NuviSidebar({
       { key: "gap",   label: L.audits_gap,   icon: SubIcons.gap,   isAI: true  },
       { key: "ats",   label: L.audits_ats,   icon: SubIcons.ats,   isAI: true  },
       { key: "interview", label: L.audits_interview, icon: SubIcons.interview, isAI: true },
+      // La page /verifier existait, marchait, etait testee, et AUCUN lien du
+      // produit n'y menait : on y arrivait en tapant l'adresse. Elle rend le
+      // service le plus direct de tout Nuvi, lire le CV comme un robot de
+      // tri, sur place et sans rien depenser. La voici dans la barre.
+      { key: "lecture", label: L.audits_lecture, icon: SubIcons.ats, isAI: false },
     ],
     cvs: [
       { key: "list",      label: L.cvs_list,      icon: SubIcons.list,      isAI: false },

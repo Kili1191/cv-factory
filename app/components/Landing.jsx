@@ -89,6 +89,7 @@ const T = {
     essaiHolder: "Hard-working team player with excellent communication skills",
     essaiReset: "Back to the example",
     essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
+    verifLien: "Run your whole CV through it, as a PDF",
     answerLead: "The same person, written so the machine can file it.",
     cvLead: "This is what comes out",
     cvTitle: "A whole CV, aimed at one job ad, in a file you can send.",
@@ -153,6 +154,7 @@ const T = {
     essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
     essaiReset: "Revenir a l'exemple",
     essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
+    verifLien: "Passe ton CV entier, en PDF",
     answerLead: "La meme personne, ecrite pour que la machine sache la ranger.",
     cvLead: "Voila ce qui en sort",
     cvTitle: "Un CV entier, vise sur une annonce, dans un fichier que tu peux envoyer.",
@@ -392,6 +394,19 @@ export default function Landing({ lang = "en" }) {
               droppedNone: t.droppedNone, keptNone: t.keptNone }}
             textes={{ lead: t.essaiLead, placeholder: t.essaiHolder,
               reset: t.essaiReset, prive: t.essaiPrive }}/>
+        </div>
+        {/* LA MEME PROMESSE, EN GRAND, ET SUR SON PROPRE CV
+            La demonstration ci-dessus tient sur une ligne tapee. /verifier
+            fait la meme chose sur le CV entier, en PDF, sur place et sans
+            compte. C'est le service le plus direct du produit, et aucun lien
+            du site n'y menait : on y arrivait en tapant l'adresse. */}
+        <div className="nuvi-arrivee" style={{ "--pose": "150ms" }}>
+          <a href="/verifier" className="nuvi-fleche" style={{
+            fontFamily: Sans, fontSize: 13.5, fontWeight: 600, color: Ink,
+            textDecoration: "underline", textUnderlineOffset: 4,
+            minHeight: 44, display: "inline-flex", alignItems: "center",
+            gap: 6, marginTop: 14,
+          }}>{t.verifLien}<span aria-hidden="true">&rarr;</span></a>
         </div>
         {/* LE TITRE ET SA SUITE, COTE A COTE
             Empiles, ils tenaient sur 26 puis 52 caracteres et laissaient plus
