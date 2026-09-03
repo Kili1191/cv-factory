@@ -251,6 +251,9 @@ export async function run() {
       failures.push("erreur JavaScript a l'ecran : " + e);
     }
 
+    // Le nettoyage lui-meme, sans navigateur : voir la note en fin de fichier.
+    failures.push(...(await verifierIdempotence()));
+
     await ctx.close();
 
     if (!failures.length) {
@@ -271,4 +274,34 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     for (const l of f) console.log("ECHEC " + l);
     process.exit(f.length ? 1 : 0);
   });
+}
+
+// LE NETTOYAGE NE DOIT S'APPLIQUER QU'UNE FOIS
+//
+// Il retire les balises ET decode les entites, dont &lt; qui redonne un
+// chevron : un second passage prendrait ce chevron pour une balise et
+// effacerait le texte autour. Une annonce contenant litteralement "&lt;b&gt;"
+// perdrait donc trois caracteres a chaque appel supplementaire, sans que rien
+// ne le signale.
+//
+// C'est une propriete de la fonction, pas de l'ecran : elle se verifie ici,
+// sans navigateur, et elle vaut avertissement pour quiconque serait tente de
+// rappeler le nettoyage "par securite" en aval.
+export async function verifierIdempotence() {
+  const { nettoyerLAnnonce } = await import("../lib/pastedPosting.js");
+  const echecs = [];
+  const CAS = [
+    "Care Assistant &ndash; Elmwood&nbsp;House",
+    "<p>Chef de rang</p><ul><li>80 couverts</li></ul>",
+    "Salaire: 12 GBP/h. Contrat: CDI. Horaires: nuit.",
+  ];
+  for (const c of CAS) {
+    const une = nettoyerLAnnonce(c);
+    const deux = nettoyerLAnnonce(une);
+    if (une !== deux) {
+      echecs.push("nettoyer deux fois change le texte : \"" + une + "\" devient \""
+        + deux + "\". Ces annonces-la doivent traverser sans perte.");
+    }
+  }
+  return echecs;
 }

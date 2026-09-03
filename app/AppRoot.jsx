@@ -6258,7 +6258,11 @@ export default function App() {
   // lettres, et rien n'est ajoute ici : c'est un outil, il execute.
   const runFromOffer = useCallback(async (offre, parcours) => {
     if (!apiKey) { notify(T.nk); return; }
-    const a = nettoyerLAnnonce(offre);
+    // Deja nettoyee par l'ecran qui l'a recue, au collage comme au depot de
+    // fichier. La repasser ici grignoterait le contenu d'une annonce qui
+    // contient litteralement du balisage echappe : voir la note dans
+    // lib/pastedPosting.js. On se contente donc de la borner.
+    const a = String(offre || "").trim();
     const p0 = String(parcours || "").trim();
     // L'ANNONCE SEULE SUFFIT
     //

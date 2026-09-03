@@ -31,23 +31,27 @@
 // voir un recouvrement. Puis un vrai clic, et on regarde si la fenetre est
 // partie.
 //
-// LA REGLE EST INVERSEE, ET C'EST CE QUI LA REND SURE
+// LA REGLE EST INVERSEE, ET CHAQUE FENETRE A SA PAGE NEUVE
 //
-// Deux versions de ce fichier ont accuse le produit de leur propre defaut.
+// Trois versions de ce fichier ont accuse le produit de leur propre defaut.
+//
 // La premiere ouvrait une seconde fenetre par-dessus la premiere en cherchant
 // un sous-menu, puis mesurait la croix du dessous : recouverte, evidemment,
-// par la fenetre du dessus. La seconde ne mesurait que la derniere croix du
+// par la fenetre du dessus. La deuxieme ne mesurait que la derniere croix du
 // document, en supposant que l'ordre du DOM donne l'ordre d'empilement. Il ne
 // le donne pas : un tiroir ferme reste dans le document, apres la fenetre
-// ouverte, et sa croix est hors de l'ecran. Message precis, convaincant, et
-// faux : "Why nobody answers", ouverte seule et regardee a la main, repond
-// parfaitement.
+// ouverte, et sa croix est hors de l'ecran. La troisieme enchainait les douze
+// entrees dans la meme page, et une fenetre mal refermee faisait accuser la
+// suivante : "Tweak" a ete declaree infermable alors que, ouverte seule et
+// regardee a la main, sa croix se trouve a 1372,16 et repond parfaitement.
 //
-// Les deux fois, l'erreur etait de designer UNE croix et de la juger. On ne
-// sait pas laquelle est devant, et le savoir demanderait de reimplementer
-// l'empilement CSS dans le test.
+// Les trois fois, l'erreur etait la meme : juger une croix designee au milieu
+// d'un etat qu'on ne controlait pas. On ne sait pas laquelle est devant, et le
+// savoir demanderait de reimplementer l'empilement CSS dans le test.
 //
-// On demande donc l'inverse, ce qui ne demande de designer personne :
+// Deux corrections, donc. Chaque entree part d'une page NEUVE, ce qui coute
+// quelques secondes et supprime toute contamination. Et on demande l'inverse,
+// ce qui ne demande de designer personne :
 //
 //   quand une fenetre est ouverte, AU MOINS UNE croix doit etre
 //   veritablement atteignable, et un clic dessus doit refermer.
@@ -136,24 +140,6 @@ export async function run() {
   const browser = await launchBrowser();
 
   try {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
-    const page = await ctx.newPage();
-    page.on("pageerror", (e) => failures.push("erreur JavaScript : " + e.message.split("\n")[0].slice(0, 90)));
-    // Aucun appel ne part : on ouvre des fenetres, on ne fait pas travailler
-    // le modele.
-    await page.route("**/api/claude", (r) => r.fulfill({
-      status: 200, contentType: "application/json",
-      body: JSON.stringify({ content: [{ type: "text", text: "{}" }] }),
-    }));
-    await seedApp(page, undefined, { locale: "en" });
-
-    // Sortir de tout ce qui est ouvert, jusqu'a ce qu'il ne reste rien. Sans
-    // cela, la fenetre suivante s'ouvre par-dessus et tout ce qu'on mesure
-    // ensuite porte sur une croix legitimement cachee.
-    // On sort par la croix, comme une personne, et Echap ne sert que de
-    // secours. Toutes les fenetres ne repondent pas a Echap, et exiger les
-    // deux ici ferait echouer le nettoyage plutot que la mesure : le message
-    // parlerait alors de la fenetre suivante, pas de la fautive.
     const CLIC_CROIX = `(() => {
       const tous = [...document.querySelectorAll(
         '[aria-label="close" i], [aria-label*="Close" i], [aria-label*="Fermer" i], [data-nuvi-close]')];
@@ -168,63 +154,62 @@ export async function run() {
       return false;
     })()`;
 
-    const toutFermer = async () => {
-      for (let i = 0; i < 8; i += 1) {
-        if (!(await page.evaluate(A_UNE_CROIX))) return true;
-        const clique = await page.evaluate(CLIC_CROIX);
-        if (!clique) await page.keyboard.press("Escape").catch(() => {});
-        await page.waitForTimeout(500);
-      }
-      return !(await page.evaluate(A_UNE_CROIX));
-    };
-
     let ouvertes = 0;
     for (const libelle of ENTREES) {
-      if (!(await toutFermer())) {
-        failures.push("avant \"" + libelle + "\", une fenetre refuse de se "
-          + "fermer meme a la touche Echap : tout ce qui suit se mesurerait "
-          + "a travers elle.");
-        break;
-      }
-      if (!(await ouvrir(page, libelle))) continue;
+      // UNE PAGE NEUVE PAR FENETRE
+      //
+      // C'est ce qui rend la mesure lisible : ce qu'on voit vient de cette
+      // entree-la et de rien d'autre. Douze contextes coutent une poignee de
+      // secondes ; une accusation fausse coute une heure a demonter.
+      const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 } });
+      const page = await ctx.newPage();
+      const erreurs = [];
+      page.on("pageerror", (e) => erreurs.push(e.message.split("\n")[0].slice(0, 90)));
+      // Aucun appel ne part : on ouvre des fenetres, on ne fait pas
+      // travailler le modele.
+      await page.route("**/api/claude", (r) => r.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ content: [{ type: "text", text: "{}" }] }),
+      }));
+      await seedApp(page, undefined, { locale: "en" });
 
-      const croix = await page.evaluate(SONDE);
-      if (!croix.length) {
-        // Toutes les entrees n'ouvrent pas une fenetre a croix : certaines
-        // basculent un panneau lateral. On ne compte que ce qu'on a vu.
-        continue;
-      }
-      ouvertes += 1;
+      const ouvert = await ouvrir(page, libelle);
+      const croix = ouvert ? await page.evaluate(SONDE) : [];
 
-      const joignables = croix.filter((c) => c.joignable);
-      if (!joignables.length) {
-        failures.push("\"" + libelle + "\" est ouverte et aucune de ses "
-          + croix.length + " croix n'est atteignable au clic : "
-          + croix.map((c) => c.dessus).join(", ") + " se trouve(nt) devant. "
-          + "De la chaise, la fenetre ne se ferme pas.");
-      }
-      for (const c of joignables) {
-        if (c.curseur !== "pointer") {
-          failures.push("\"" + libelle + "\" : la croix affiche le curseur \""
-            + c.curseur + "\" au lieu de la main. Rien ne dit qu'elle se "
-            + "clique, et c'est le premier geste que fait quelqu'un qui veut "
-            + "sortir.");
+      if (croix.length) {
+        ouvertes += 1;
+        const joignables = croix.filter((c) => c.joignable);
+        if (!joignables.length) {
+          failures.push("\"" + libelle + "\" est ouverte et aucune de ses "
+            + croix.length + " croix n'est atteignable au clic : "
+            + croix.map((c) => c.dessus).join(", ") + " se trouve(nt) devant. "
+            + "De la chaise, la fenetre ne se ferme pas.");
+        }
+        for (const c of joignables) {
+          if (c.curseur !== "pointer") {
+            failures.push("\"" + libelle + "\" : la croix affiche le curseur \""
+              + c.curseur + "\" au lieu de la main. Rien ne dit qu'elle se "
+              + "clique, et c'est le premier geste que fait quelqu'un qui veut "
+              + "sortir.");
+          }
+        }
+
+        // ET ELLE FERME VRAIMENT
+        if (joignables.length) {
+          await page.evaluate(CLIC_CROIX);
+          await page.waitForTimeout(800);
+          const apres = (await page.evaluate(SONDE)).length;
+          if (apres >= croix.length) {
+            failures.push("\"" + libelle + "\" : la croix est cliquee et la "
+              + "fenetre est toujours la.");
+          }
         }
       }
 
-      // ET ELLE FERME VRAIMENT
-      //
-      // Compte des croix avant et apres : une fenetre qui part en emmene la
-      // sienne. Le clic va sur la croix joignable, pas sur la premiere du
-      // document, qui peut etre celle d'un tiroir ferme.
-      const avant = croix.length;
-      await page.evaluate(CLIC_CROIX);
-      await page.waitForTimeout(800);
-      const apres = (await page.evaluate(SONDE)).length;
-      if (joignables.length && apres >= avant) {
-        failures.push("\"" + libelle + "\" : la croix est cliquee et la "
-          + "fenetre est toujours la.");
+      for (const e of erreurs) {
+        failures.push("\"" + libelle + "\" : erreur JavaScript a l'ecran, " + e);
       }
+      await ctx.close();
     }
 
     if (ouvertes < 5) {
@@ -236,7 +221,6 @@ export async function run() {
         + "et qui ferme");
     }
 
-    await ctx.close();
   } catch (err) {
     failures.push("le test lui-meme a plante : " + (err && err.message));
   } finally {
