@@ -39,6 +39,14 @@ const TXT = {
     corriger: "Corriger d'abord",
     quandMeme: "Telecharger quand meme",
     visuel: "A l'impression",
+    raccourcir: "Raccourcir pour tenir sur une page",
+    raccourcitEnCours: "Nuvi raccourcit...",
+    corrigeTitre: (n) => n === 1 ? "1 correction faite" : n + " corrections faites",
+    introReste: (n) => n === 1
+      ? "Il reste une chose qui demande une decision, pas un clic."
+      : "Il reste " + n + " choses qui demandent une decision, pas un clic.",
+    retire: "retire",
+    etAutres: (n) => "et " + n + " autre" + (n > 1 ? "s" : ""),
   },
   en: {
     titre: "Before you send this",
@@ -49,14 +57,31 @@ const TXT = {
     corriger: "Fix these first",
     quandMeme: "Download anyway",
     visuel: "On the page",
+    raccourcir: "Shorten to fit one page",
+    raccourcitEnCours: "Nuvi is shortening...",
+    corrigeTitre: (n) => n === 1 ? "1 fix applied" : n + " fixes applied",
+    introReste: (n) => n === 1
+      ? "One thing left that needs a decision, not a click."
+      : n + " things left that need a decision, not a click.",
+    retire: "removed",
+    etAutres: (n) => "and " + n + " more",
   },
 };
 
 export default function DefautsAvantExport({
-  defauts = [], locale = "fr", onCorriger, onQuandMeme, onClose,
+  defauts = [], corriges = [], locale = "fr",
+  onCorriger, onQuandMeme, onRaccourcir, raccourcitEnCours = false, onClose,
 }) {
   const t = TXT[locale] || TXT.fr;
   if (!defauts.length) return null;
+
+  // Ce qui se corrige d'un clic, et ce qui demande une decision. Le bouton
+  // "Corriger" ne s'affiche que s'il a quelque chose a faire : un bouton qui
+  // ne fait rien est le defaut qu'on vient de reparer.
+  const AUTOMATIQUES = new Set(["coupe", "cadratin", "placeholder", "creuse",
+    "annee_doublee", "doublon", "langue_sans_nom"]);
+  const aCorrigerSeul = defauts.some((d) => AUTOMATIQUES.has(d.cle));
+  const deborde = defauts.some((d) => d.cle === "deborde_page");
 
   return (
     <Sheet
@@ -64,10 +89,40 @@ export default function DefautsAvantExport({
       title={t.titre}
       onClose={onClose}
     >
+      {/* CE QUI VIENT D'ETRE FAIT, AVANT CE QUI RESTE
+          Apres "Corriger", la personne doit voir le travail : sinon le
+          panneau qui se rouvre avec une liste plus courte ressemble a un
+          panneau qui n'a rien fait. */}
+      {corriges.length ? (
+        <div data-nuvi="defauts-corriges" style={{
+          background: "var(--nuvi-green-soft, #edf7ee)",
+          border: "0.5px solid " + Hairline, borderRadius: RadiusMd,
+          padding: "12px 14px", marginBottom: 16, fontFamily: Sans,
+        }}>
+          <div style={{
+            fontSize: 11, fontWeight: 700, letterSpacing: "0.1em",
+            textTransform: "uppercase", marginBottom: 8,
+            color: "var(--nuvi-green-text, #1f6b3a)",
+          }}>{t.corrigeTitre(corriges.length)}</div>
+          {corriges.slice(0, 8).map((c, i) => (
+            <div key={i} style={{ fontSize: 13, lineHeight: 1.5, color: Ink }}>
+              <span style={{ color: InkMuted }}>{c.ou} : </span>
+              <span style={{ textDecoration: "line-through", color: InkMuted }}>{c.avant}</span>
+              {c.apres ? <span> {"→"} {c.apres}</span> : <span style={{ color: InkMuted }}> {t.retire}</span>}
+            </div>
+          ))}
+          {corriges.length > 8 ? (
+            <div style={{ fontSize: 12.5, color: InkMuted, marginTop: 4 }}>
+              {t.etAutres(corriges.length - 8)}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
       <p style={{
         fontSize: 14, lineHeight: 1.55, color: Ink, margin: "0 0 18px",
         maxWidth: "54ch", fontFamily: Sans,
-      }}>{t.intro(defauts.length)}</p>
+      }}>{corriges.length ? t.introReste(defauts.length) : t.intro(defauts.length)}</p>
 
       <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
         {defauts.map((d, i) => (
@@ -102,7 +157,7 @@ export default function DefautsAvantExport({
       </div>
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button
+        {aCorrigerSeul ? <button
           data-nuvi="defauts-corriger"
           onClick={onCorriger}
           style={{
@@ -111,7 +166,25 @@ export default function DefautsAvantExport({
               borderRadius: RadiusPill, background: Ink, color: Cream,
               fontFamily: Sans, fontSize: 14.5, fontWeight: 600,
             })
-          }}>{t.corriger}</button>
+          }}>{t.corriger}</button> : null}
+
+        {/* Un CV trop long ne se corrige pas d'un clic : il faut couper du
+            texte, et couper est une redaction. C'est le modele qui s'en
+            charge, sous la consigne qui compte : rien d'invente. */}
+        {deborde && onRaccourcir ? <button
+          data-nuvi="defauts-raccourcir"
+          onClick={onRaccourcir}
+          disabled={raccourcitEnCours}
+          style={{
+            ...B({
+              flex: "1 1 200px", minHeight: 48, padding: "14px 20px",
+              borderRadius: RadiusPill,
+              background: raccourcitEnCours ? Hairline : Ink,
+              color: raccourcitEnCours ? InkMuted : Cream,
+              fontFamily: Sans, fontSize: 14.5, fontWeight: 600,
+              cursor: raccourcitEnCours ? "progress" : "pointer",
+            })
+          }}>{raccourcitEnCours ? t.raccourcitEnCours : t.raccourcir}</button> : null}
 
         {/* Lisible, atteignable, sans piege. Une sortie qu'on rend penible
             n'est pas un choix. Absente quand l'ecran s'ouvre depuis le

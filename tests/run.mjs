@@ -18,6 +18,7 @@ const SUITES = [
   ["a bad reading doubts itself", "./a-bad-reading-doubts-itself.mjs"],
   ["a broken CV does not leave in silence", "./a-broken-cv-does-not-leave-in-silence.mjs"],
   ["the companion keeps watch", "./the-companion-keeps-watch.mjs"],
+  ["fix means fix", "./fix-means-fix.mjs"],
   ["the comments stay ASCII", "./the-comments-stay-ascii.mjs"],
   ["no text is dimmed by opacity", "./no-text-is-dimmed-by-opacity.mjs"],
   ["the design system does not drift", "./the-design-system-does-not-drift.mjs"],

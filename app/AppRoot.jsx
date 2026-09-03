@@ -23,6 +23,7 @@ import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
 import { nettoyerUnChamp, estUneCoquille } from "../lib/nettoyerLesChamps";
 import { defautsDuCv, defautsVisuels, trierLesDefauts } from "../lib/leCvEstIlPresentable";
+import { corrigerLesAccidents } from "../lib/corrigerLesAccidents";
 import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
 // === LAZY MODALS ===
@@ -5128,25 +5129,39 @@ export default function App() {
         // l'image en la faisant tenir dans 1 page A4 (scale image, pas DOM)".
         // Cette branche n'avait jamais ete ecrite. Elle l'est ici.
         //
-        // ET UN CV PLUS LONG QU'UNE FEUILLE PREND UNE SECONDE FEUILLE
+        // UN CV TIENT SUR UNE PAGE. C'EST LA REGLE, ET ELLE VIENT DU
+        // PROPRIETAIRE DU PRODUIT.
         //
-        // La premiere version de cette correction faisait tenir l'image
-        // entiere dans une seule page. Cadre, oui, mais un CV d'une page et
-        // demie sortait a 66% : un corps 10 devient un corps 6,6, illisible a
-        // l'ecran comme a l'impression. Une candidature qu'on ne peut pas
-        // lire ne vaut pas mieux qu'une candidature mal cadree.
+        // "Un CV doit toujours etre dans une page, et pas telecharge coupe."
+        // Ce fichier a fait le tour complet de la question. Une premiere
+        // version sortait une feuille unique, tres haute, qui n'etait pas un
+        // A4. La deuxieme faisait tenir l'image entiere dans un A4, donc un CV
+        // d'une page et demie sortait a 66%, illisible. La troisieme
+        // paginait : deux feuilles a taille reelle, ce qu'un recruteur lit
+        // comme un document coupe, et ce que Kilian a decrit exactement
+        // ainsi.
         //
-        // Deux pages A4 a taille reelle sont la forme normale d'un CV, pour un
-        // recruteur comme pour un robot de tri. On pose donc le CV sur toute
-        // la largeur, a l'echelle, et on ajoute autant de feuilles qu'il en
-        // faut, chacune montrant sa tranche.
+        // La regle finale tient en trois cas, par ordre de hauteur :
         //
-        // La tolerance existe pour un seul cas : un CV qui depasse de trois
-        // millimetres. Une seconde feuille portant deux lignes est pire que
-        // 4% de reduction, que personne ne voit. Au-dela, on tourne la page.
+        //   - le contenu tient : la feuille est remplie a 297mm par le CSS
+        //     du dessus, l'image sort a l'echelle 1 ;
+        //   - il deborde de moins de 18% : l'image est reduite pour tenir,
+        //     jusqu'a un plancher de 85%. Un corps 10 devient un corps 8,5,
+        //     ce que "ajuster a la page" fait dans n'importe quelle boite
+        //     d'impression, et que personne ne remarque ;
+        //   - il deborde davantage : il n'y a plus rien a reduire sans le
+        //     rendre illisible. Il faut couper du texte. C'est une decision,
+        //     donc le controle avant telechargement l'annonce et propose de
+        //     raccourcir. Si la personne telecharge quand meme, on pagine :
+        //     deux feuilles lisibles valent mieux qu'une feuille a 60%, mais
+        //     on ne l'a pas fait sans le dire.
+        //
+        // FACTEUR_MIN est le meme nombre que dans lib/leCvEstIlPresentable :
+        // le controle et l'export doivent decider sur la meme limite.
         const A4_L_MM = 210;
         const A4_H_MM = 297;
-        const TOLERANCE_UNE_PAGE = 1.04;
+        const FACTEUR_MIN = 0.85;
+        const TOLERANCE_UNE_PAGE = 1 / FACTEUR_MIN;
         const pdf = new jsPDFLib({
           unit: "mm",
           format: "a4",
@@ -5304,11 +5319,118 @@ export default function App() {
     }
     if (vus.length) {
       setDefautsDepuisExport(true);
+      setCorrigesAffiches([]);
       setDefautsAvantExport(trierLesDefauts(vus));
       return;
     }
     lancerLeFormat();
   }, [cv, lancerLeFormat]);
+
+  // "CORRIGER" CORRIGE
+  //
+  // Le bouton refermait le panneau et rendait la main : Kilian l'a clique,
+  // et il ne s'est rien passe. Un bouton qui s'appelle "Corriger" et ne
+  // corrige rien promet, puis laisse la personne devant le meme document en
+  // lui ayant pris un clic.
+  //
+  // Ce qui se corrige sans jugement l'est ici, d'un coup, avec un passage
+  // par l'historique pour que ce soit annulable. Ce qui reste - un nom
+  // d'ecole qui est une phrase, un poste sans ligne, un CV trop long - est
+  // affiche a nouveau, avec ce qui vient d'etre fait au-dessus, pour que la
+  // personne voie le travail et ce qu'il en reste. Si plus rien ne reste et
+  // qu'on venait de Telecharger, on telecharge : c'est ce qu'elle voulait.
+  const [corrigesAffiches, setCorrigesAffiches] = useState([]);
+
+  const corrigerMaintenant = useCallback(() => {
+    let corrige = null;
+    try { corrige = corrigerLesAccidents(cv); } catch (e) { corrige = null; }
+    if (!corrige || !corrige.corriges.length) {
+      // Rien d'automatique a faire : on rend la main sur le document, avec
+      // la liste encore visible dans la memoire de la personne.
+      setDefautsAvantExport(null);
+      return;
+    }
+    pushH();
+    const propre = normCV(corrige.cv, cv);
+    setCVFn(() => propre);
+    logActivity(ACT.EDIT || "edit", locale === "en"
+      ? corrige.corriges.length + " structural fixes applied before download"
+      : corrige.corriges.length + " corrections de structure avant telechargement");
+
+    // Ce qui reste, mesure sur le CV corrige et sur le document tel qu'il
+    // sera dessine au prochain rendu.
+    let restants = [];
+    try {
+      restants = defautsDuCv(propre);
+      if (typeof document !== "undefined") {
+        const visuels = defautsVisuels(document);
+        if (Array.isArray(visuels)) restants = restants.concat(visuels);
+      }
+    } catch { restants = []; }
+
+    if (!restants.length) {
+      setDefautsAvantExport(null);
+      setCorrigesAffiches([]);
+      if (defautsDepuisExport) lancerLeFormat();
+      return;
+    }
+    setCorrigesAffiches(corrige.corriges);
+    setDefautsAvantExport(trierLesDefauts(restants));
+  }, [cv, pushH, setCVFn, locale, defautsDepuisExport, lancerLeFormat]);
+
+  // RACCOURCIR POUR TENIR SUR UNE PAGE
+  //
+  // "Un CV doit toujours etre dans une page." Quand il deborde au-dela de ce
+  // que la reduction d'image peut absorber, il faut couper du texte, et
+  // couper est une redaction : c'est le travail du modele, avec la consigne
+  // qui compte le plus dans ce produit - rien n'est invente, rien n'est
+  // ajoute, les chiffres et les employeurs restent. Il enleve, il resserre,
+  // il ne reecrit pas le parcours.
+  const [raccourcitEnCours, setRaccourcitEnCours] = useState(false);
+  const raccourcirPourUnePage = useCallback(async () => {
+    if (!apiKey) { notify(T.nk); return; }
+    setRaccourcitEnCours(true);
+    try {
+      const langLine = locale === "en"
+        ? "Reponds STRICTEMENT en anglais." : "Reponds STRICTEMENT en francais.";
+      const p = "Ce CV deborde d'une page A4. Raccourcis-le pour qu'il tienne "
+        + "sur UNE page, en enlevant et en resserrant, jamais en inventant.\n\n"
+        + "CE QUE TU FAIS :\n"
+        + "- Chaque poste garde ses deux ou trois puces les plus fortes : celles "
+        + "qui portent un chiffre, un resultat, une responsabilite nommee. Les "
+        + "autres partent.\n"
+        + "- Chaque puce gardee est resserree : une ligne, pas deux. Meme sens, "
+        + "moins de mots.\n"
+        + "- L'accroche tient en trois lignes.\n"
+        + "- Les postes de plus de quinze ans, ou sans rapport avec l'intitule, "
+        + "perdent leurs puces et ne gardent que le titre, l'employeur et la "
+        + "periode.\n"
+        + "- Les competences se limitent aux dix plus utiles.\n\n"
+        + "CE QUE TU NE FAIS PAS :\n"
+        + "- Tu n'inventes rien : aucun mot, chiffre, employeur, date ou "
+        + "diplome qui n'est pas deja dans le CV.\n"
+        + "- Tu ne changes aucun chiffre, aucune date, aucun nom.\n"
+        + "- Tu ne supprimes aucun poste, aucune formation : tu les allege.\n"
+        + "- Tu gardes la langue du CV.\n\n"
+        + QUI_DECIDE + "\n" + NO_DASH + " " + langLine + "\n\n"
+        + "CV:\n" + JSON.stringify(cv);
+      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "shorten-to-one-page" });
+      const json = parseJSON(txt);
+      if (!json || typeof json !== "object") throw new Error("reponse illisible");
+      pushH();
+      setCVFn(() => normCV(json, cv));
+      setDefautsAvantExport(null);
+      setCorrigesAffiches([]);
+      notify(locale === "en"
+        ? "Shortened to fit one page. Read it over, then download."
+        : "Raccourci pour tenir sur une page. Relis, puis telecharge.");
+    } catch (err) {
+      notify((locale === "en" ? "Could not shorten: " : "Impossible de raccourcir : ")
+        + (err && err.message ? err.message : ""));
+    } finally {
+      setRaccourcitEnCours(false);
+    }
+  }, [apiKey, T, cv, locale, notify, pushH, setCVFn]);
 
   const handleFormatChosen = useCallback((format, alwaysUse) => {
     setShowFormatChoice(false);
@@ -8478,7 +8600,10 @@ export default function App() {
           <DefautsAvantExport
             defauts={defautsAvantExport}
             locale={locale}
-            onCorriger={() => setDefautsAvantExport(null)}
+            corriges={corrigesAffiches}
+            onCorriger={corrigerMaintenant}
+            onRaccourcir={defautsAvantExport.some((d) => d.cle === "deborde_page") ? raccourcirPourUnePage : undefined}
+            raccourcitEnCours={raccourcitEnCours}
             onQuandMeme={defautsDepuisExport
               ? () => { setDefautsAvantExport(null); lancerLeFormat(); }
               : undefined}
