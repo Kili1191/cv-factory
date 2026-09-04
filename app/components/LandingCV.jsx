@@ -131,9 +131,32 @@ const MOTS = {
 
 const LARGEUR = 794;   // une page A4 a 96 dpi
 
-export default function LandingCV({ lang = "en", echelle = 0.8 }) {
+export default function LandingCV({ lang = "en", echelle: echelleMax = 0.8 }) {
   const [proche, setProche] = useState(false);
   const cadre = useRef(null);
+
+  // L ECHELLE SUIT LA COLONNE
+  //
+  // Elle valait 0,8 quoi qu il arrive, et le document debordait de sa
+  // colonne : sur un ecran de 1440 la colonne des dates etait coupee a
+  // "2022 -", sur un telephone la moitie droite de la page manquait. Un
+  // CV coupe dans son texte se lit comme un defaut, pas comme un objet
+  // pose. La page A4 se reduit donc a la largeur disponible, jamais plus
+  // grande que 0,8.
+  const [echelle, setEchelle] = useState(echelleMax);
+  useEffect(() => {
+    const el = cadre.current;
+    if (!el || !el.parentElement || typeof ResizeObserver !== "function") return undefined;
+    const parent = el.parentElement;
+    const mesurer = () => {
+      const l = parent.clientWidth;
+      if (l > 0) setEchelle(Math.min(echelleMax, l / LARGEUR));
+    };
+    mesurer();
+    const obs = new ResizeObserver(mesurer);
+    obs.observe(parent);
+    return () => obs.disconnect();
+  }, [echelleMax]);
 
   // On ne telecharge le rendu que si la section approche : quelqu'un qui lit
   // le haut de la page et repart n'a rien paye.
@@ -169,6 +192,7 @@ export default function LandingCV({ lang = "en", echelle = 0.8 }) {
       background: "#fff",
       width: Math.round(LARGEUR * echelle),
       maxWidth: "100%",
+      transition: "height 160ms ease-out",
     }}>
       <div style={{
         width: LARGEUR, transform: "scale(" + echelle + ")",

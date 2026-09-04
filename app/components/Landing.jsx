@@ -586,10 +586,13 @@ export default function Landing({ lang = "en" }) {
                 ))}
               </ol>
             </div>
-            {/* Le document deborde volontairement du cadre : coupe par le bord,
-                il se lit comme un objet pose sur la page et non comme une
-                vignette centree dans une boite. */}
-            <div style={{ justifySelf: "start", marginRight: "-14vw" }}>
+            {/* Le document debordait volontairement du cadre, "comme un objet
+                pose sur la page". Mesure sur les captures : la coupure tombait
+                dans la colonne des dates, "2022 -", et sur un telephone la
+                moitie droite de la page manquait. Un objet pose ne perd pas
+                son texte. Il tient dans sa colonne, a l echelle qu elle
+                permet, et c est l ombre qui le pose sur la page. */}
+            <div style={{ minWidth: 0 }}>
               <LandingCV lang={lang}/>
             </div>
           </div>

@@ -494,11 +494,18 @@ body.cvf-dark.nuvi-grain::after {
 
 /* La ligne de lecture descend une fois, puis disparait : une boucle
    infinie ferait de ce moment un economiseur d ecran. */
+/* LA LIGNE DESCEND EN `top`, PAS EN `translateY`
+   Elle fait 3px de haut. Un translateY(106%) la deplacait donc de trois
+   pixels : elle restait posee sur la premiere ligne du titre pendant tout
+   le balayage, en bandeau lumineux par-dessus les mots, puis s effacait.
+   Les mots mouraient bien a leur heure, mais rien ne les traversait. `top`
+   se mesure contre le bloc qui la contient, comme le fait deja la tete
+   manuelle : la ligne parcourt le texte du haut en bas. */
 @keyframes nuviScanDescend {
-  0%   { transform: translateY(-6%); opacity: 0; }
+  0%   { top: -2%; opacity: 0; }
   6%   { opacity: 1; }
   92%  { opacity: 1; }
-  100% { transform: translateY(106%); opacity: 0; }
+  100% { top: 101%; opacity: 0; }
 }
 
 /* La mort d un mot : il palit au passage de la ligne. */

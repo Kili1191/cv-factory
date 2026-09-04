@@ -75,8 +75,15 @@ function Lettres({ texte, etat, sens }) {
         // sortante reste opaque pendant tout son ecrasement et ne s efface
         // qu une fois plate ; l entrante n apparait qu apres, quand la barre
         // est deja formee. Le milieu est donc une masse, pas deux phrases.
-        "--pas": (sens === "sort" ? i * 13 : i * 13 + 430) + "ms",
-        "--pasOp": (sens === "sort" ? i * 13 + 300 : i * 13 + 430) + "ms",
+        //
+        // SAUF POUR SE CACHER. Au repos, la version rangee est a l ecran.
+        // Quand la transformation demarre, elle doit disparaitre AVANT que
+        // la formule molle n apparaisse ; avec les memes retards que pour
+        // naitre, elle restait lisible presque une seconde par-dessus
+        // l autre : deux phrases l une sur l autre, exactement ce que ce
+        // composant existe pour ne pas montrer. Se cacher est immediat.
+        "--pas": (etat === "nuvi-morph-entre" ? 0 : sens === "sort" ? i * 13 : i * 13 + 430) + "ms",
+        "--pasOp": (etat === "nuvi-morph-entre" ? 0 : sens === "sort" ? i * 13 + 300 : i * 13 + 430) + "ms",
       }}>{c}</span>
   ));
 }

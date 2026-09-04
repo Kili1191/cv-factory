@@ -216,7 +216,9 @@ export default function ScanHero({ lang = "en", labels, mode = "perte",
                     </span>
                   );
                 })}
-                {li < lignes.length - 1 ? " " : null}
+                {/* Pas d espace entre deux groupes : chaque mot porte deja
+                    sa marge droite, et l espace en plus s ajoutait a elle.
+                    "with a  decade" se lisait avec un trou. */}
               </React.Fragment>
             );
           })}
