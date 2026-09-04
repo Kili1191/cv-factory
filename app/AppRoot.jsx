@@ -1394,6 +1394,21 @@ function Shimmer() {
 // pour que tous les Sheet*/Modals existants l'heritent automatiquement.
 // Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
 function Sheet({ title, eyebrow, onClose, children, dock = false }) {
+  // ESCAPE FERME, ICI AUSSI
+  //
+  // components/Sheet.jsx ecoute Echap pour toutes les feuilles qu'il porte.
+  // Cette copie locale, qui porte le panneau de style, l'adaptation a une
+  // annonce et quelques autres, ne l'ecoutait pas : sur telephone, le crash
+  // test des parcours a change de modele, appuye Echap, et le bouton
+  // Telecharger est reste sous la feuille. Meme garde que l'autre primitive :
+  // une feuille qui doit rester ouverte pendant un chargement la pose dans
+  // son onClose.
+  useEffect(() => {
+    if (typeof onClose !== "function") return undefined;
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
   // [Liquid Glass refonte 2026-05-20]
   // Side panel droit 480px (desktop) / fullscreen (mobile)
   // [Dock mode 2026-05-20] dock=true : centre en bas comme un dock macOS,
