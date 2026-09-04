@@ -675,11 +675,15 @@ export function CVClassic({ cv, set, t, T, locale }) {
       {/* LANGUES */}
       {S("languages", T.cv_l)}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+        {/* LE SEPARATEUR N'EXISTE QUE S'IL SEPARE QUELQUE CHOSE
+            Une langue sans niveau imprimait "Anglais ·" suivi de rien : le
+            point restait, seul, dans le PDF. Il ne s'affiche qu'avec un
+            niveau, ici et dans chaque gabarit. */}
         {cv.languages.map((l, i) => (
           <div key={i} style={{ fontSize: 11, color: t.ti }}>
             <E value={l.lang} onChange={v => ul(i, "lang", v)}
               style={{ fontWeight: 700, fontSize: 11 }}/>
-            <span style={{ color: t.ac }}> · </span>
+            {l.level ? <span style={{ color: t.ac }}> · </span> : null}
             <E value={l.level} onChange={v => ul(i, "level", v)}
               style={{ fontSize: 11 }}/>
           </div>
@@ -901,7 +905,7 @@ export function CVTimeline({ cv, set, t, T, locale }) {
               <div key={i} style={{ fontSize: 11, color: t.ti, marginBottom: 3 }}>
                 <E value={l.lang} onChange={v => ul(i, "lang", v)}
                   style={{ fontWeight: 700, fontSize: 11 }}/>
-                <span style={{ color: t.ac }}> · </span>
+                {l.level ? <span style={{ color: t.ac }}> · </span> : null}
                 <E value={l.level} onChange={v => ul(i, "level", v)}
                   style={{ fontSize: 11 }}/>
               </div>
@@ -1094,7 +1098,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
             <div key={i} style={{ fontSize: 11, color: t.ti, marginBottom: 3 }}>
               <E value={l.lang} onChange={v => ul(i, "lang", v)}
                 style={{ fontWeight: 600, fontSize: 11 }}/>
-              <span style={{ color: t.ti, opacity: 0.5 }}> · </span>
+              {l.level ? <span style={{ color: t.ti, opacity: 0.5 }}> · </span> : null}
               <E value={l.level} onChange={v => ul(i, "level", v)}
                 style={{ fontSize: 11, opacity: 0.7 }}/>
             </div>
@@ -1277,7 +1281,7 @@ export function CVCompact({ cv, set, t, T, locale }) {
             <div key={i} style={{ fontSize: 9.5, color: t.ti, marginBottom: 2 }}>
               <E value={l.lang} onChange={v => ul(i, "lang", v)}
                 style={{ fontWeight: 700, fontSize: 9.5 }}/>
-              <span style={{ color: t.ac }}> : </span>
+              {l.level ? <span style={{ color: t.ac }}> : </span> : null}
               <E value={l.level} onChange={v => ul(i, "level", v)}
                 style={{ fontSize: 9.5, opacity: 0.8 }}/>
             </div>
@@ -1499,7 +1503,7 @@ export function CVAts({ cv, set, T, locale }) {
         <div key={i} style={{ fontSize: 11, marginBottom: 2, color: "#222" }}>
           <E value={l.lang} onChange={v => ul(i, "lang", v)}
             style={{ fontWeight: 600, fontSize: 11 }}/>
-          {" : "}
+          {l.level ? " : " : null}
           <E value={l.level} onChange={v => ul(i, "level", v)}
             style={{ fontSize: 11 }}/>
         </div>

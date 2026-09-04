@@ -22,7 +22,17 @@ import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
 import { nettoyerUnChamp, estUneCoquille } from "../lib/nettoyerLesChamps";
-import { defautsDuCv, defautsVisuels, trierLesDefauts } from "../lib/leCvEstIlPresentable";
+import { defautsDuCv, defautsVisuels, trierLesDefauts, FACTEUR_MIN }
+  from "../lib/leCvEstIlPresentable";
+
+// Une page A4 a 96 points par pouce, et la hauteur au-dela de laquelle
+// l'export ne reduit plus : ce sont les deux nombres de l'export, lus par
+// l'apercu pour montrer exactement la feuille qui partira.
+const PAGE_PX = 1123;
+const PAGE_PX_MAX = PAGE_PX / FACTEUR_MIN;
+const facteurDAjustement = (hauteurPx) =>
+  hauteurPx > PAGE_PX && hauteurPx <= PAGE_PX_MAX ? PAGE_PX / hauteurPx : 1;
+const OMBRE_FEUILLE = "0 1px 2px rgba(10,10,10,.10), 0 12px 40px rgba(10,10,10,.13)";
 import { corrigerLesAccidents } from "../lib/corrigerLesAccidents";
 import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
@@ -3803,8 +3813,8 @@ export default function App() {
   // instantanee. La moitie qui mesure le document dessine coute un parcours
   // du DOM et reste reservee au telechargement, ou elle est faite une fois.
   const defautsEnDirect = useMemo(() => {
-    try { return trierLesDefauts(defautsDuCv(cv)); } catch { return []; }
-  }, [cv]);
+    try { return trierLesDefauts(defautsDuCv(cv, locale)); } catch { return []; }
+  }, [cv, locale]);
   const pastilles = useMemo(
     () => (aRelancer > 0 ? { tracking: true, relances: true } : {}),
     [aRelancer]);
@@ -3911,6 +3921,16 @@ export default function App() {
   const deskCvRef = useRef(null);
   const [deskScale, setDeskScale] = useState(1);
   const [deskNatH, setDeskNatH] = useState(0);
+  // L'ECRAN MONTRE LA FEUILLE QUI PARTIRA
+  //
+  // L'export tient toujours sur une feuille A4 : jusqu'a 297mm il pose le
+  // document tel quel, jusqu'a 297/0,85 il le reduit pour qu'il rentre, et
+  // au-dela il ne part pas avant d'etre raccourci. L'apercu suit la meme
+  // regle avec les memes nombres : un CV de 1200px se montre reduit sur une
+  // feuille de 1123, centre, comme dans le PDF, et non coupe d'un trait
+  // "Page 1 ends here" qui contredisait le fichier telecharge.
+  const deskFit = facteurDAjustement(deskNatH);
+  const deskShownH = deskFit < 1 ? PAGE_PX : deskNatH;
   // Les deux boites n'existent pas au premier rendu : l'editeur n'est monte
   // qu'apres l'accueil. Un effet qui ne dependrait que de `mob` sortirait donc
   // par sa porte de sortie et, `mob` ne changeant jamais ensuite, ne se
@@ -4005,14 +4025,22 @@ export default function App() {
   useEffect(() => {
     const savedCV = lsG(SK.CV, null);
     if (savedCV) {
-      setCV_({
+      // PAR LA MEME PORTE QUE TOUS LES AUTRES
+      //
+      // normCV retire les tirets longs et les entrees creuses de tout CV qui
+      // entre : lecture locale, modele, compte. Ce chemin-ci, le plus
+      // frequent de tous puisqu'il s'execute a chaque ouverture, le
+      // contournait. Un CV importe avant que le nettoyage existe gardait
+      // donc ses cadratins d'une session a l'autre, et le controle avant
+      // telechargement les signalait a chaque fois comme si de rien.
+      setCV_(normCV({
         ...EMPTY, ...savedCV,
         skills:         Array.isArray(savedCV.skills)         ? savedCV.skills         : EMPTY.skills,
         languages:      Array.isArray(savedCV.languages)      ? savedCV.languages      : EMPTY.languages,
         certifications: Array.isArray(savedCV.certifications) ? savedCV.certifications : EMPTY.certifications,
         experience:     Array.isArray(savedCV.experience)     ? savedCV.experience     : EMPTY.experience,
         education:      Array.isArray(savedCV.education)      ? savedCV.education      : EMPTY.education,
-      });
+      }));
     }
     const savedTh = lsG(SK.TH, "ink");
     if (savedTh !== "ink") setThN_(savedTh);
@@ -4594,7 +4622,10 @@ export default function App() {
   }, []);
 
   const scale = cvW > 0 ? Math.min(1, (cvW - 16) / 794) : 1;
-  const cvH   = Math.round(Math.min(1123, cvNatH) * scale);
+  // Voir PAGE_PX_MAX : sous ce plafond, l'export reduit et le PDF fait une
+  // page. L'apercu fait pareil, pour montrer la feuille qui partira.
+  const mobFit = facteurDAjustement(cvNatH);
+  const cvH   = Math.round(Math.min(1123, cvNatH * mobFit) * scale);
 
   const handleGen = useCallback(async p => {
     if (!apiKey) { notify(T.nk); return; }
@@ -5305,7 +5336,7 @@ export default function App() {
   const handleDownloadClick = useCallback(() => {
     let vus = [];
     try {
-      vus = defautsDuCv(cv);
+      vus = defautsDuCv(cv, locale);
       // LA MOITIE QUI NE SE CALCULE PAS
       //
       // Un texte qui deborde de la feuille, un titre de section seul en bas
@@ -5313,7 +5344,7 @@ export default function App() {
       // annonce, ils n'existent qu'une fois le document dessine. On mesure
       // donc le document reel, a l'ecran, juste avant de l'imprimer.
       if (typeof document !== "undefined") {
-        const visuels = defautsVisuels(document);
+        const visuels = defautsVisuels(document, locale);
         if (Array.isArray(visuels)) vus = vus.concat(visuels);
       }
     } catch (e) {
@@ -5330,7 +5361,7 @@ export default function App() {
       return;
     }
     lancerLeFormat();
-  }, [cv, lancerLeFormat]);
+  }, [cv, locale, lancerLeFormat]);
 
   // "CORRIGER" CORRIGE
   //
@@ -5367,9 +5398,9 @@ export default function App() {
     // sera dessine au prochain rendu.
     let restants = [];
     try {
-      restants = defautsDuCv(propre);
+      restants = defautsDuCv(propre, locale);
       if (typeof document !== "undefined") {
-        const visuels = defautsVisuels(document);
+        const visuels = defautsVisuels(document, locale);
         if (Array.isArray(visuels)) restants = restants.concat(visuels);
       }
     } catch { restants = []; }
@@ -9665,17 +9696,25 @@ export default function App() {
                 serait inatteignable. */}
             <div style={{
               width: Math.round(794 * deskScale),
-              height: deskNatH ? Math.round(deskNatH * deskScale) : undefined,
+              height: deskNatH ? Math.round(deskShownH * deskScale) : undefined,
               position: "relative",
+              // Quand le document est reduit pour tenir, la feuille A4 est
+              // cette boite-ci, et le CV en est le contenu. Le blanc autour
+              // est celui du PDF, pas un vide de l'ecran.
+              ...(deskFit < 1 ? {
+                background: "#fff", borderRadius: 3,
+                boxShadow: OMBRE_FEUILLE,
+              } : {}),
             }}>
               <div data-cvf="cv" ref={attachDeskCv} style={{
-                position: "absolute", top: 0, left: 0,
+                position: "absolute", top: 0,
+                left: deskFit < 1 ? Math.round(794 * deskScale * (1 - deskFit) / 2) : 0,
                 width:794,
-                transform: deskScale === 1 ? "none" : `scale(${deskScale})`,
+                transform: deskScale * deskFit === 1 ? "none" : `scale(${deskScale * deskFit})`,
                 transformOrigin: "top left",
                 // L'ombre porte la feuille au-dessus de la zone : franche et
                 // proche pour le contact, large et douce pour la hauteur.
-                boxShadow:"0 1px 2px rgba(10,10,10,.10), 0 12px 40px rgba(10,10,10,.13)",
+                boxShadow: deskFit < 1 ? "none" : OMBRE_FEUILLE,
                 borderRadius:3, overflow:"hidden",
               }}>
                 {CVEl}
@@ -9689,8 +9728,17 @@ export default function App() {
                   candidature, et rien a l'ecran ne le disait : on decouvrait
                   la deuxieme page en ouvrant le PDF, apres l'avoir envoye.
                   Le trait n'apparait que si le contenu deborde vraiment. Un
-                  CV qui tient sur une page n'a pas besoin qu'on le lui dise. */}
-              {deskNatH > 1123 && Array.from(
+                  CV qui tient sur une page n'a pas besoin qu'on le lui dise.
+
+                  ET "DEBORDER VRAIMENT" SE LIT COMME L'EXPORT LE LIT
+                  L'export n'a plus de deuxieme feuille : jusqu'a 18% de
+                  trop, il reduit l'image et le PDF fait une page. L'ecran
+                  disait pourtant "Page 1 ends here" sur ces CV-la, et la
+                  personne raccourcissait un document qui partait entier.
+                  Le trait ne se trace donc qu'au-dela de ce que la
+                  reduction absorbe ; en-deca, c'est la feuille reduite
+                  qu'on montre, telle qu'elle partira. */}
+              {deskNatH > PAGE_PX_MAX && Array.from(
                 { length: Math.floor((deskNatH - 1) / 1123) },
                 (_, i) => (i + 1) * 1123
               ).map((y, i) => (
@@ -10181,16 +10229,18 @@ export default function App() {
             }}>
               <div data-cvf-zoom style={{
                 width: "100%",
-                height: Math.round(cvNatH * scale),
+                height: Math.round((mobFit < 1 ? 1123 : cvNatH) * scale),
                 position: "relative",
                 overflow: "hidden",
+                background: mobFit < 1 ? "#fff" : undefined,
               }}>
                 <div
                   ref={cvInnerRef}
                   style={{
-                    position: "absolute", top: 0, left: 0,
+                    position: "absolute", top: 0,
+                    left: mobFit < 1 ? Math.round(794 * scale * (1 - mobFit) / 2) : 0,
                     width: 794,
-                    transform: `scale(${scale})`,
+                    transform: `scale(${scale * mobFit})`,
                     transformOrigin: "top left",
                   }}
                 >

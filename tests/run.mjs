@@ -87,6 +87,7 @@ const SUITES = [
   ["a dead employer cannot be called", "./a-dead-employer-cannot-be-called.mjs"],
   ["the promise is visible while you write", "./the-promise-is-visible-while-you-write.mjs"],
   ["you see where the page ends", "./you-see-where-the-page-ends.mjs"],
+  ["the screen shows the page you get", "./the-screen-shows-the-page-you-get.mjs"],
   ["dark mode does not darken the CV", "./dark-mode-does-not-darken-the-cv.mjs"],
   ["the document fits beside the navigation", "./the-document-fits-beside-the-navigation.mjs"],
   ["the keyboard shows where it is", "./the-keyboard-shows-where-it-is.mjs"],
