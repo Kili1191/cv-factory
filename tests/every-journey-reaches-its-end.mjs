@@ -363,9 +363,9 @@ const PARCOURS = [
       // barre, qui refermait le panneau au lieu de lancer l'analyse.
       if (!(await cliquerTexte(page, /Fit my CV to this ad|Adapter mon CV a cette offre/i, 3000))) { echec("etape 2 : pas de bouton d'analyse"); return; }
       if (!appels.includes("match")) { echec("etape 2 : aucun appel match"); return; }
-      if (!(await cliquerTexte(page, /Apply this tailored CV|Appliquer ce CV adapte/i, 1500))) {
-        echec("etape 3 : aucun bouton pour appliquer le CV adapte"); return;
-      }
+      // Depuis que le choix du CV est le lancement, l'adapte se pose tout
+      // seul : le bouton dit "Keep it". S'il dit encore "Apply", on l'appuie.
+      await cliquerTexte(page, /Keep it|Je le garde|Apply this tailored CV|Appliquer ce CV adapte/i, 1500);
       const apres = await texteDuCv(page);
       if (apres === avant || !/Sam Carter/.test(apres)) { echec("etape 4 : le CV a l'ecran n'est pas le CV adapte"); return; }
       await page.keyboard.press("Escape").catch(() => {}); await page.waitForTimeout(400);

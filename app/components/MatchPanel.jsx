@@ -8,7 +8,7 @@ import { useState, useMemo } from "react";
 import { SCHEMA_MATCH } from "./schemas";
 import { rapport } from "../../lib/atsMatch.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
-import { nettoyerLAnnonce } from "../../lib/pastedPosting";
+import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../../lib/pastedPosting";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
@@ -18,7 +18,7 @@ import {
 
 function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
-  aiCall, parseJSON, normCV, pushH }) {
+  aiCall, parseJSON, normCV, pushH, onCreateFromOffer, onUndo }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
   // depuis une candidature arrive avec son annonce deja collee.
   const [offer, setOffer] = useState(initialOffer || "");
@@ -55,46 +55,51 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
   //
   // Le choix ne s'affiche que si le dossier apporte reellement quelque chose.
   // Proposer une option qui rend le meme resultat decoit plus qu'elle n'aide.
-  const [source, setSource] = useState("actuel");
   const apport = useMemo(() => apportDuDossier(cv, versions), [cv, versions]);
 
-  const analyze = async () => {
+  // UN CLIC, ET LE CV EST A L'ECRAN
+  //
+  // "Coller l'annonce, choisir le CV, et Nuvi fait le meilleur CV possible."
+  // Le choix du point de depart et le lancement sont le meme geste, et le
+  // resultat s'applique tout seul : c'est le proprietaire du produit qui le
+  // demande. Ce qui reste a la personne : voir ce qui a change, et Ctrl+Z,
+  // ou le bouton "Remettre le precedent", qui ne coute rien. `applique`
+  // dit si le CV a l'ecran est deja l'adapte ; `creation` dit qu'on ecrit
+  // un CV depuis l'annonce seule plutot que d'en adapter un.
+  const [applique, setApplique] = useState(false);
+  const [creation, setCreation] = useState(false);
+
+  const lancer = async (choix, baseChoisie) => {
     if (!offer.trim()) { notify(T.off_no_offer); return; }
     if (!apiKey) { notify(T.nk); return; }
+    // Le point de depart : le CV a l'ecran, ou un CV enregistre que la
+    // personne vient de choisir. Le CV enregistre ne passe pas par l'ecran
+    // avant : on part de lui directement, et c'est le resultat qui s'y pose.
+    const base = baseChoisie || cv;
     setLoad(true);
     setPh("loading");
-    const expT = cv.experience.map(e =>
+    const expT = (base.experience || []).map(e =>
       e.title + " chez " + e.company
       + " (" + e.period + "): "
-      + e.bullets.filter(b=>b).join("; ")
+      + (e.bullets || []).filter(b=>b).join("; ")
     ).join(" | ");
-    const cvT = "Profil: " + cv.name + " - " + cv.title
-      + "\nAccroche: " + cv.summary
+    const cvT = "Profil: " + base.name + " - " + base.title
+      + "\nAccroche: " + base.summary
       + "\nExps: " + expT
-      + "\nSkills: " + cv.skills.filter(s=>s).join(", ")
-      + "\nLangues: " + cv.languages.filter(l=>l.lang)
+      + "\nSkills: " + (base.skills || []).filter(s=>s).join(", ")
+      + "\nLangues: " + (base.languages || []).filter(l=>l && l.lang)
           .map(l=>l.lang+" "+l.level).join(", ");
-    const expJ = cv.experience.map((e,i) =>
-      JSON.stringify({
-        id:i+1, title:e.title, company:e.company,
-        period:e.period, location:e.location,
-        bullets:e.bullets.filter(b=>b),
-      })
-    ).join(",");
-    const eduJ = cv.education.map((e,i) =>
-      JSON.stringify({id:i+1, degree:e.degree, school:e.school, period:e.period})
-    ).join(",");
     // Le materiau change selon le chemin. En mode "parcours", on ne donne plus
     // le seul CV a l'ecran mais tout ce que la personne a deja ecrit, et on
     // demande de CHOISIR dedans. Choisir dans ce qu'on a fait n'est pas
     // inventer : c'est ce que fait quiconque adapte son CV a la main.
-    const materiau = source === "parcours"
+    const materiau = choix === "parcours"
       ? dossierEnTexte(dossierParcours(cv, versions))
       : cvT;
 
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
       +"OFFRE:\n"+offer+"\n"
-      +(source === "parcours"
+      +(choix === "parcours"
         ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"
           + materiau + "\n"
           + "Construis le CV de CETTE offre en CHOISISSANT dans ce parcours : garde ce "
@@ -126,26 +131,67 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
     try {
       const txt = await aiCall(p, { schema: SCHEMA_MATCH, task_name: "match" });
       const r = parseJSON(txt);
+      // LE RESULTAT SE POSE TOUT SEUL, ET SE REPREND D'UN GESTE
+      // Un instantane d'abord : c'est l'action centrale du produit et elle
+      // remplace TOUT le CV. Sans lui, une adaptation moins bonne que
+      // l'original etait sans retour.
+      if (r && r.cv_optimized) {
+        if (typeof pushH === "function") pushH();
+        setCVFn(() => normCV(r.cv_optimized, base));
+        setApplique(true);
+      }
       setRes(r);
       setPh("done");
       if (onResult) onResult(r);
     } catch { notify(T.ea); setPh("input"); }
     setLoad(false);
   };
+  const analyze = () => lancer("actuel", null);
+
+  // ECRIRE LE CV DE CE POSTE, SANS RIEN D'AUTRE QUE L'ANNONCE
+  // La meme porte que l'accueil : le CV que ce poste reclame, complet, avec
+  // ce que Nuvi ne peut pas savoir de la personne signale pour qu'elle le
+  // remplace. Il se pose a l'ecran ; la feuille se ferme dessus.
+  const creer = async () => {
+    if (!offer.trim()) { notify(T.off_no_offer); return; }
+    if (typeof onCreateFromOffer !== "function") return;
+    setCreation(true);
+    setLoad(true);
+    setPh("loading");
+    try {
+      await onCreateFromOffer(offer);
+      setOffer("");
+      setRes(null);
+      setPh("input");
+      if (onApplied) onApplied();
+    } catch {
+      notify(T.ea);
+      setPh("input");
+    }
+    setLoad(false);
+    setCreation(false);
+  };
 
   const apply = () => {
     if (!res || !res.cv_optimized) return;
-    // Snapshot avant de remplacer TOUT le CV. C'est l'action centrale de
-    // l'app (coller une offre -> CV adapte) et elle ecrasait le CV de
-    // l'utilisateur sans retour possible : si la version optimisee est moins
-    // bonne, il n'y avait aucun moyen de revenir en arriere.
-    if (typeof pushH === "function") pushH();
-    setCVFn(() => normCV(res.cv_optimized, cv));
-    notify("CV adapte applique!");
+    // Rouvert depuis un resultat garde en memoire, ou remis en arriere par
+    // "Remettre le precedent" : le CV a l'ecran n'est pas l'adapte, on le
+    // pose maintenant, avec l'instantane qui permet d'y revenir.
+    if (!applique) {
+      if (typeof pushH === "function") pushH();
+      setCVFn(() => normCV(res.cv_optimized, cv));
+    }
+    notify(T.mt_applied);
     setPh("input");
     setRes(null);
     setOffer("");
+    setApplique(false);
     if (onApplied) onApplied();
+  };
+
+  const remettre = () => {
+    if (typeof onUndo === "function") onUndo();
+    setApplique(false);
   };
 
   const sc = function(s) { if (s >= 80) return "#16a34a"; if (s >= 65) return Purple; if (s >= 50) return Coral; return "#dc2626"; };
@@ -160,10 +206,10 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           animation:"cvfSpin 1s linear infinite",
         }}/>
         <div style={{fontFamily:Serif, fontSize:16, fontWeight:500, color:Ink, marginBottom:6, letterSpacing:"-0.01em"}}>
-          Analyse en cours...
+          {creation ? T.mt_create_running : T.off_running}
         </div>
         <div style={{fontSize:12, color:InkMuted}}>
-          Nuvi adapte ton CV pour matcher parfaitement.
+          {creation ? T.mt_choose_create_s : T.off_running_sub}
         </div>
       </div>
     );
@@ -172,6 +218,13 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
   if (ph === "done" && res) {
     return (
       <div style={{fontFamily:Sans}}>
+        {applique ? (
+          <div data-nuvi="match-applique" style={{
+            background:GreenSoft, border:"0.5px solid "+Green,
+            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
+            fontSize:12.5, color:GreenText, fontWeight:600, lineHeight:1.5,
+          }}>{T.mt_applied}</div>
+        ) : null}
         {/* Score Match - hero card */}
         <div style={{
           display:"flex", alignItems:"center", gap:14,
@@ -345,8 +398,17 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
-          {T.mt_apply}
+          {applique ? T.mt_keep : T.mt_apply}
         </button>
+        {applique && typeof onUndo === "function" ? (
+          <button data-nuvi="match-remettre" onClick={remettre} style={{
+            ...B({
+              width:"100%", padding:12, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
+              background:Paper, color:Ink, border:"1px solid "+Hairline,
+              fontWeight:600, fontSize:13.5, marginBottom:8, fontFamily:Sans,
+            })
+          }}>{T.mt_undo}</button>
+        ) : null}
 
         {/* Pack button - secondary CTA */}
         {onPackRequest && (
@@ -496,86 +558,91 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           </div>
         </div>
       )}
-      {apport.utile && (
+      {/* LE CHOIX EST LE LANCEMENT
+          Des que l'annonce est la, les points de depart s'affichent : le CV
+          a l'ecran, chaque CV enregistre, tout le dossier quand il apporte
+          quelque chose, et "ecrire un CV pour ce poste". Un clic sur l'un
+          d'eux fait tout : Nuvi adapte, applique, et montre le resultat. */}
+      {offer.trim().length >= ANNONCE_MINIMUM && (
         <div style={{marginBottom:14}}>
-          <div style={{
-            fontSize:9, fontWeight:700, color:InkMuted, marginBottom:8,
-            letterSpacing:"0.06em", textTransform:"uppercase",
-          }}>A partir de quoi</div>
-          <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:8}}>
+          <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:3, fontFamily:Serif}}>
+            {T.mt_choose_t}
+          </div>
+          <div style={{fontSize:11.5, color:InkMuted, lineHeight:1.5, marginBottom:10}}>
+            {T.mt_choose_s}
+          </div>
+          <div style={{display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(190px, 1fr))", gap:8}}>
             {[
-              { id:"actuel", titre:"Mon CV actuel",
-                sous:"Celui affiche a l'ecran." },
-              { id:"parcours", titre:"Tout mon parcours",
-                sous: [
-                  apport.experiences ? `${apport.experiences} experience${apport.experiences > 1 ? "s" : ""} en plus` : null,
+              (cv.name || cv.summary) ? {
+                id:"actuel", titre:T.mt_choose_current,
+                sous:[cv.name, cv.title].filter(Boolean).join(", "),
+                run:() => lancer("actuel", null) } : null,
+              ...versions.map(v => ({
+                id:"version-" + v.id, titre:v.name || T.mt_saved,
+                sous:[T.mt_saved, v.cv && v.cv.title].filter(Boolean).join(", "),
+                run:() => lancer("actuel", normCV(v.cv)) })),
+              apport.utile ? {
+                id:"parcours", titre:T.mt_choose_record,
+                sous:[
+                  apport.experiences ? `${apport.experiences} experience${apport.experiences > 1 ? "s" : ""}` : null,
                   apport.competences ? `${apport.competences} competence${apport.competences > 1 ? "s" : ""}` : null,
                   apport.formulations ? `${apport.formulations} formulation${apport.formulations > 1 ? "s" : ""}` : null,
-                ].filter(Boolean).join(", ") },
-            ].map(o => {
-              const actif = source === o.id;
-              return (
-                <button key={o.id} onClick={() => setSource(o.id)} style={{
-                  ...B({
-                    textAlign:"left", padding:"11px 13px", minHeight:44,
-                    borderRadius:RadiusMd, fontFamily:Sans, cursor:"pointer",
-                    background: actif ? PurpleSoft : Paper,
-                    border: "1px solid " + (actif ? Purple : Hairline),
-                    boxShadow: actif ? "none" : ShadowSm,
-                  })
-                }}>
-                  <div style={{fontSize:12.5, fontWeight:600, color: actif ? Purple : Ink}}>
-                    {o.titre}
-                  </div>
+                ].filter(Boolean).join(", "),
+                run:() => lancer("parcours", null) } : null,
+              typeof onCreateFromOffer === "function" ? {
+                id:"creer", titre:T.mt_choose_create, sous:T.mt_choose_create_s,
+                run:creer, accent:true } : null,
+            ].filter(Boolean).map(o => (
+              <button key={o.id} data-nuvi="match-choix" data-nuvi-choix={o.id}
+                onClick={o.run} disabled={load || !apiKey} style={{
+                ...B({
+                  textAlign:"left", padding:"11px 13px", minHeight:44,
+                  borderRadius:RadiusMd, fontFamily:Sans, cursor:"pointer",
+                  background: o.accent ? PurpleSoft : Paper,
+                  border: "1px solid " + (o.accent ? Purple : Hairline),
+                  boxShadow: o.accent ? "none" : ShadowSm,
+                })
+              }}>
+                <div style={{fontSize:12.5, fontWeight:600, color: o.accent ? PurpleText : Ink}}>
+                  {o.titre}
+                </div>
+                {o.sous ? (
                   <div style={{fontSize:10.5, color:InkMuted, marginTop:2, lineHeight:1.35}}>
                     {o.sous}
                   </div>
-                </button>
-              );
-            })}
+                ) : null}
+              </button>
+            ))}
           </div>
-          {source === "parcours" && (
-            <div style={{marginTop:8}}>
-              <div style={{fontSize:11, color:InkMuted, lineHeight:1.5}}>
-                Nuvi choisit dans ce que tu as deja ecrit, garde ce qui sert
-                l&apos;offre et ecarte le reste.
-              </div>
-              {/* CE QUE NUVI EST ALLE CHERCHER SE VOIT AVANT, PAS APRES
-                  Le bouton annoncait "3 experiences en plus" : un nombre, qui
-                  demande de faire confiance. C'est le parcours de la personne,
-                  elle doit pouvoir verifier d'un coup d'oeil ce qui va servir -
-                  et surtout reperer une version d'essai ou un poste qu'elle ne
-                  veut pas voir remonter, AVANT de depenser un appel. */}
-              {(apport.listeExperiences || []).length > 0 && (
-                <div style={{
-                  marginTop:8, padding:"9px 11px",
-                  background:CreamSoft, borderRadius:RadiusMd,
-                  border:"1px solid "+Hairline,
+          {/* CE QUE NUVI EST ALLE CHERCHER SE VOIT AVANT, PAS APRES
+              Le dossier complet est une carte comme les autres, mais son
+              contenu se verifie d'un coup d'oeil avant de cliquer : une
+              version d'essai ou un poste qu'on ne veut pas voir remonter se
+              repere ici, pas dans le CV adapte. */}
+          {apport.utile && (apport.listeExperiences || []).length > 0 && (
+            <div style={{
+              marginTop:8, padding:"9px 11px",
+              background:CreamSoft, borderRadius:RadiusMd,
+              border:"1px solid "+Hairline,
+            }}>
+              <div style={{
+                fontSize:9, fontWeight:700, color:InkMuted, marginBottom:6,
+                letterSpacing:"0.06em", textTransform:"uppercase",
+              }}>{T.mt_reach_adds}</div>
+              {apport.listeExperiences.map((e, i) => (
+                <div key={i} style={{
+                  fontSize:11.5, color:Ink, lineHeight:1.45,
+                  marginBottom: i === apport.listeExperiences.length - 1 ? 0 : 3,
                 }}>
-                  <div style={{
-                    fontSize:9, fontWeight:700, color:InkMuted, marginBottom:6,
-                    letterSpacing:"0.06em", textTransform:"uppercase",
-                  }}>{T.mt_reach_adds}</div>
-                  {apport.listeExperiences.map((e, i) => (
-                    <div key={i} style={{
-                      fontSize:11.5, color:Ink, lineHeight:1.45,
-                      marginBottom: i === apport.listeExperiences.length - 1 ? 0 : 3,
-                    }}>
-                      {e.title || "Poste sans intitule"}
-                      {e.company ? <span style={{color:InkMuted}}>{" chez " + e.company}</span> : null}
-                      {e.period ? <span style={{color:InkMuted}}>{" (" + e.period + ")"}</span> : null}
-                    </div>
-                  ))}
-                  {(apport.listeCompetences || []).length > 0 && (
-                    <div style={{
-                      fontSize:11, color:InkMuted, marginTop:6, lineHeight:1.45,
-                    }}>
-                      {"Competences : " + apport.listeCompetences.slice(0, 12).join(", ")}
-                      {apport.listeCompetences.length > 12
-                        ? ` et ${apport.listeCompetences.length - 12} autres`
-                        : ""}
-                    </div>
-                  )}
+                  {e.title || T.mt_saved}
+                  {e.company ? <span style={{color:InkMuted}}>{" / " + e.company}</span> : null}
+                  {e.period ? <span style={{color:InkMuted}}>{" (" + e.period + ")"}</span> : null}
+                </div>
+              ))}
+              {(apport.listeCompetences || []).length > 0 && (
+                <div style={{ fontSize:11, color:InkMuted, marginTop:6, lineHeight:1.45 }}>
+                  {(T.cv_s || "Skills") + " : " + apport.listeCompetences.slice(0, 12).join(", ")}
+                  {apport.listeCompetences.length > 12 ? " +" + (apport.listeCompetences.length - 12) : ""}
                 </div>
               )}
             </div>

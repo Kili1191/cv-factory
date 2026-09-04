@@ -119,13 +119,20 @@ async function inspecter(browser, ecran, versions) {
     await page.waitForTimeout(1500);
   }
 
+  // ON NE CLIQUE PLUS : LE CHOIX EST DEVENU LE LANCEMENT
+  //
+  // Une premiere version cliquait "Tout mon parcours" pour faire apparaitre
+  // la liste de ce que le dossier apporte. Depuis que choisir un point de
+  // depart lance l'adaptation d'un seul geste, ce clic partirait vers le
+  // modele. Et la liste n'a plus besoin du clic : elle se montre des que
+  // l'annonce est la, AVANT de choisir, ce qui est exactement ce que ce
+  // test reclame - reconnaitre son parcours avant de depenser un appel.
   const vu = await page.evaluate(() => {
     const boutons = [...document.querySelectorAll("button")];
     const parcours = boutons.find((b) => /tout mon parcours/i.test(b.innerText || ""));
-    if (parcours) parcours.click();
     return { present: !!parcours, zoneTrouvee: !!document.querySelector("textarea") };
   });
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(300);
   const texte = await page.evaluate(() => (document.body.innerText || "").replace(/\s+/g, " "));
   await ctx.close();
   return { ...vu, texte };

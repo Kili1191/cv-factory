@@ -2025,7 +2025,8 @@ const IconFinalize = (
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
 function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
-  initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose }) {
+  initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose,
+  onCreateFromOffer, onUndo }) {
   return (
     <Sheet
       title={
@@ -2067,6 +2068,8 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
         aiCall={aiCall}
         parseJSON={parseJSON}
         normCV={normCV}
+        onCreateFromOffer={onCreateFromOffer}
+        onUndo={onUndo}
       />
       </Suspense>    </Sheet>
   );
@@ -8588,6 +8591,8 @@ export default function App() {
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
           onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
           onPackRequest={requestPack}
+          onCreateFromOffer={(offre) => runFromOffer(offre, "")}
+          onUndo={undo}
           onClose={()=>setShowOffer(false)}
         />
       )}
