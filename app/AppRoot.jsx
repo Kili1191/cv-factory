@@ -5380,7 +5380,7 @@ export default function App() {
 
   const corrigerMaintenant = useCallback(() => {
     let corrige = null;
-    try { corrige = corrigerLesAccidents(cv); } catch (e) { corrige = null; }
+    try { corrige = corrigerLesAccidents(cv, locale); } catch (e) { corrige = null; }
     if (!corrige || !corrige.corriges.length) {
       // Rien d'automatique a faire : on rend la main sur le document, avec
       // la liste encore visible dans la memoire de la personne.
@@ -10228,7 +10228,12 @@ export default function App() {
               boxShadow:"0 4px 20px rgba(0,0,0,.15)",
             }}>
               <div data-cvf-zoom style={{
-                width: "100%",
+                // Reduite pour tenir, la feuille est cette boite : elle prend
+                // exactement la largeur de la page a l'echelle, sinon le
+                // blanc de la boite deborde de la feuille et le document
+                // n'y est plus centre.
+                width: mobFit < 1 ? Math.round(794 * scale) : "100%",
+                margin: mobFit < 1 ? "0 auto" : undefined,
                 height: Math.round((mobFit < 1 ? 1123 : cvNatH) * scale),
                 position: "relative",
                 overflow: "hidden",

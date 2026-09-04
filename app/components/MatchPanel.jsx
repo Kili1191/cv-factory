@@ -345,7 +345,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             boxShadow:"0 4px 16px rgba(91, 61, 245, 0.25)",
           })
         }}>
-          Appliquer ce CV adapte
+          {T.mt_apply}
         </button>
 
         {/* Pack button - secondary CTA */}
@@ -377,7 +377,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             border:"none", fontFamily:Sans,
           })
         }}>
-          Nouvelle offre
+          {T.off_change}
         </button>
       </div>
     );

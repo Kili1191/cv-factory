@@ -27,16 +27,24 @@ import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./li
 
 const CADRATIN = String.fromCharCode(0x2014);
 
-// Le CV de la capture, avec ses accidents de structure.
+// LES ACCIDENTS DOIVENT SURVIVRE A LA PORTE
+//
+// normCV nettoie tout CV a l'entree, y compris celui que le stockage rend a
+// l'ouverture : un tiret long ou une certification "2023" posee dans
+// localStorage a disparu avant que le compagnon regarde. Les accidents d'ici
+// sont ceux que la porte laisse passer et que "Corriger" repare : une annee
+// repetee en bout de diplome, une puce recopiee.
 const CV_CASSE = {
   ...SAMPLE_CV,
   experience: [
-    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager " + CADRATIN,
-      company: "Stenn International", bullets: ["Onboarded 60+ SME clients."] },
+    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager",
+      company: "Stenn International",
+      bullets: ["Onboarded 60+ SME clients.", "Onboarded 60+ SME clients."] },
     { ...SAMPLE_CV.experience[0], id: 2, title: "Customer Service Advisor",
       company: "La Banque Postale", bullets: [] },
   ],
-  certifications: ["2023"],
+  education: [{ id: 1, degree: "NVQ Level 3 in Health and Social Care 2020",
+    school: "Manchester College", period: "2020" }],
 };
 
 async function mesurer(browser, cv, viewport) {
@@ -82,12 +90,12 @@ export async function run() {
       const casse = await mesurer(browser, CV_CASSE, vp);
       for (const e of casse.erreurs) failures.push(nom + " : erreur JavaScript, " + e);
       if (!casse.present) {
-        failures.push(nom + " : le CV porte un intitule coupe, une "
-          + "certification creuse et un poste muet, et le compagnon ne dit "
+        failures.push(nom + " : le CV porte une annee doublee, une puce "
+          + "recopiee et un poste muet, et le compagnon ne dit "
           + "rien. Il regarde un document casse en souriant.");
       } else {
-        // Trois accidents : l'intitule coupe, la certification "2023", le
-        // poste sans puce. Le chiffre doit les compter, pas en inventer.
+        // Trois accidents : l'annee doublee, la puce recopiee, le poste
+        // sans puce. Le chiffre doit les compter, pas en inventer.
         if (casse.compte !== 3) {
           failures.push(nom + " : le compagnon affiche " + casse.compte
             + " alors que le CV a exactement 3 accidents de structure. Un "
@@ -109,7 +117,7 @@ export async function run() {
               + "propose \"telecharger quand meme\". On n'est pas en train "
               + "de partir : il n'y a rien a faire quand meme.");
           }
-          if (!casse.liste.texte.includes("Account Manager")) {
+          if (!casse.liste.texte.includes("NVQ Level 3")) {
             failures.push(nom + " : la liste ne montre pas le texte exact du "
               + "champ fautif. Quelqu'un ne corrige que ce qu'il reconnait.");
           }

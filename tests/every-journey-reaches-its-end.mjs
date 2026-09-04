@@ -84,6 +84,16 @@ const PACK = {
   },
 };
 
+// La preparation d'entretien lit `questions` (q/a) et `top_questions`.
+const ENTRETIEN = {
+  questions: [{ q: "Tell me about a difficult resident.", a: "Stay calm, name the steps.",
+    question: "Tell me about a difficult resident.", answer: "Stay calm, name the steps." }],
+  top_questions: [{ question: "Tell me about a difficult resident.", answer: "Stay calm, name the steps." }],
+  strengths: ["Calm under pressure"], improvements: ["Quantify more"], red_flags: [],
+  key_messages: ["Fourteen residents a night"], next_steps: ["Follow up in five days"],
+  checklist: ["Prepare 3 STAR examples"], level: "junior", sector: "care", country: "UK",
+};
+
 const DIAGNOSTIC = { annonces: [
   { titre: "Care Home Manager", entreprise: "Elmwood", score: 30, niveau: "dessus", manques: ["team leadership"] },
   { titre: "Deputy Manager", entreprise: "Bright Path", score: 25, niveau: "dessus", manques: ["budget"] },
@@ -95,6 +105,7 @@ function reponseDuModele(corps) {
   if (t === "cv-from-offer" || t === "cv-from-offer-reprise" || t === "import-cv"
       || t === "shorten-to-one-page" || t === "generate-cv") return CV_ECRIT;
   if (t === "match") return ANALYSE;
+  if (t === "interview-prep") return ENTRETIEN;
   if (PACK[t]) return PACK[t];
   if (t === "why-no-interview") return DIAGNOSTIC;
   return {};
@@ -113,13 +124,18 @@ const CV_BRUT = [
   "SKILLS", "Medication administration, personal care, record keeping",
 ].join("\n");
 
+// Des accidents que normCV laisse passer a l'entree et que "Corriger"
+// repare : une annee repetee en bout de diplome, une puce recopiee. Un tiret
+// long pose dans le stockage serait nettoye a l'ouverture, avant le compagnon.
 const CV_CASSE = {
   ...SAMPLE_CV,
   experience: [
-    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager " + CADRATIN,
-      company: "Stenn International", bullets: ["Onboarded 60+ SME clients."] },
+    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager",
+      company: "Stenn International",
+      bullets: ["Onboarded 60+ SME clients.", "Onboarded 60+ SME clients."] },
   ],
-  certifications: ["2023"],
+  education: [{ id: 1, degree: "NVQ Level 3 in Health and Social Care 2020",
+    school: "Manchester College", period: "2020" }],
 };
 
 // --- Outils --------------------------------------------------------------
@@ -151,11 +167,25 @@ async function cliquerTexte(page, motif, delai = 900) {
 }
 
 // Telecharger, en traversant le controle et le choix de format, puis lire.
+//
+// SUR TELEPHONE LE BOUTON N'A PAS DE TEXTE
+//
+// Il n'a qu'une icone et un aria-label, "Telecharger CV", dans les deux
+// langues. Une premiere version ne cherchait que le texte : les trois
+// parcours qui finissent sur un telephone se sont arretes sur "aucun bouton
+// Telecharger" alors qu'il etait a l'ecran. On cherche donc les deux.
+async function boutonTelecharger(page) {
+  const parLabel = page.locator('button[aria-label="Telecharger CV"]');
+  if (await parLabel.count()) return parLabel.first();
+  const parTexte = page.locator('button, [role="button"]').filter({ hasText: /^\s*(Telecharger|Download)\s*$/i });
+  return (await parTexte.count()) ? parTexte.first() : null;
+}
 async function telecharger(page, etape, echec) {
   const attente = page.waitForEvent("download", { timeout: 60_000 }).catch(() => null);
-  if (!(await cliquerTexte(page, /^\s*(Telecharger|Download)\s*$/i, 1200))) {
-    echec(etape + " : aucun bouton Telecharger"); return null;
-  }
+  const bouton = await boutonTelecharger(page);
+  if (!bouton) { echec(etape + " : aucun bouton Telecharger"); return null; }
+  await bouton.click({ timeout: 8000 }).catch(() => {});
+  await page.waitForTimeout(1200);
   const quandMeme = page.locator('[data-nuvi="defauts-quand-meme"]');
   const corriger = page.locator('[data-nuvi="defauts-corriger"]');
   if (await corriger.count()) { await corriger.first().click({ timeout: 5000 }).catch(() => {}); await page.waitForTimeout(1000); }
@@ -220,7 +250,9 @@ const PARCOURS = [
       const zone = page.locator("textarea").first();
       if (!(await zone.count())) { echec("etape 2 : pas de zone pour coller le CV"); return; }
       await zone.fill(CV_BRUT); await page.waitForTimeout(300);
-      if (!(await cliquerTexte(page, /import|structur|analy|lire|read|continue|go/i, 3000))) {
+      // Par son libelle exact : un motif large ("import|analy|go") tombait
+      // d'abord sur l'apercu d'un gabarit, dont le texte contient ces mots.
+      if (!(await cliquerTexte(page, /^\s*(Import my CV with Nuvi|Importer mon CV avec Nuvi)\s*$/i, 3000))) {
         echec("etape 2 : pas de bouton pour lancer l'import"); return;
       }
       let t = await texteDuCv(page);
@@ -228,7 +260,7 @@ const PARCOURS = [
       if (!(await cliquerTexte(page, /^\s*Match\s*$/i))) { echec("etape 4 : pas d'entree Match"); return; }
       const offre = page.locator("textarea").first();
       await offre.fill(ANNONCE); await page.waitForTimeout(300);
-      if (!(await cliquerTexte(page, /analy|match|adapt/i, 3000))) { echec("etape 4 : pas de bouton d'analyse"); return; }
+      if (!(await cliquerTexte(page, /Fit my CV to this ad|Adapter mon CV a cette offre/i, 3000))) { echec("etape 4 : pas de bouton d'analyse"); return; }
       if (!appels.includes("match")) { echec("etape 4 : aucun appel match"); return; }
       const corps = await page.locator("body").innerText();
       if (!/78/.test(corps)) { echec("etape 5 : le score de l'analyse n'est pas a l'ecran"); return; }
@@ -256,7 +288,7 @@ const PARCOURS = [
       if (!(await corriger.count())) { echec("etape 2 : la liste n'offre pas Corriger"); return; }
       await corriger.first().click({ timeout: 5000 }); await page.waitForTimeout(1200);
       const t = await texteDuCv(page);
-      if (t.includes(CADRATIN)) { echec("etape 3 : le tiret long est encore dans le CV apres Corriger"); return; }
+      if (/Social Care 2020/.test(t)) { echec("etape 3 : l'annee doublee est encore dans le CV apres Corriger"); return; }
       await page.keyboard.press("Escape").catch(() => {}); await page.waitForTimeout(400);
       if (await badge.count()) { echec("etape 4 : le compagnon compte encore apres correction"); }
       await telecharger(page, "etape 5", echec);
@@ -327,9 +359,11 @@ const PARCOURS = [
       const offre = page.locator("textarea").first();
       if (!(await offre.count())) { echec("etape 1 : pas de champ d'annonce"); return; }
       await offre.fill(ANNONCE); await page.waitForTimeout(300);
-      if (!(await cliquerTexte(page, /analy|match|adapt/i, 3000))) { echec("etape 2 : pas de bouton d'analyse"); return; }
+      // Par son libelle : "analy|match" tombait sur l'entree "Match" de la
+      // barre, qui refermait le panneau au lieu de lancer l'analyse.
+      if (!(await cliquerTexte(page, /Fit my CV to this ad|Adapter mon CV a cette offre/i, 3000))) { echec("etape 2 : pas de bouton d'analyse"); return; }
       if (!appels.includes("match")) { echec("etape 2 : aucun appel match"); return; }
-      if (!(await cliquerTexte(page, /apply|appliquer|use this|utiliser|adopt/i, 1500))) {
+      if (!(await cliquerTexte(page, /Apply this tailored CV|Appliquer ce CV adapte/i, 1500))) {
         echec("etape 3 : aucun bouton pour appliquer le CV adapte"); return;
       }
       const apres = await texteDuCv(page);
@@ -365,6 +399,9 @@ const PARCOURS = [
         body: "- Say the fourteen residents figure.\n- Name the night shifts.\n- Ask about the handover.",
       }));
       if (!(await cliquerTexte(page, /Live interview/i))) { echec("etape 4 : pas d'entree Live interview"); return; }
+      // L'assistant demande d'abord le poste. On passe outre, comme quelqu'un
+      // qui entre en entretien sans avoir colle l'annonce.
+      await cliquerTexte(page, /Continue without a role|Continuer sans poste/i, 1200);
       const question = page.locator('input[placeholder*="question" i], textarea[placeholder*="question" i]').first();
       if (!(await question.count())) { echec("etape 4 : pas de champ pour taper la question"); return; }
       await question.fill("Tell me about a difficult resident.");

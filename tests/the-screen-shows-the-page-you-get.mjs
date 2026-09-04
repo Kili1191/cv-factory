@@ -84,11 +84,12 @@ function cvDe(n) {
   };
 }
 
+// A doubled year, which the door lets through and "Fix" repairs, and a
+// school that is a sentence, which needs a decision: both kinds of label.
 const CASSE = {
   ...SAMPLE_CV,
   name: "Samuel Carter",
-  title: "Account Manager " + CADRATIN,
-  education: [{ degree: "Diploma", period: "2019",
+  education: [{ degree: "Diploma 2019", period: "2019",
     school: "Banking and Finance Training, banking products, regulatory compliance, "
       + "advisory and client onboarding across three regions" }],
   certifications: ["2023"],
@@ -235,11 +236,13 @@ export async function run() {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
     const page = await ctx.newPage();
     await seedApp(page, CASSE, { locale: "en" });
-    await page.getByRole("button", { name: /Download/i }).first().click({ timeout: 15_000 });
+    // The header button's accessible name is its aria-label, "Telecharger CV",
+    // in both languages; its visible text is not what getByRole reads.
+    await page.locator('button[aria-label="Telecharger CV"]').first().click({ timeout: 15_000 });
     await page.waitForTimeout(1200);
     const panneau = page.locator('[data-nuvi="defauts-corriger"]');
     if (!(await panneau.count())) {
-      failures.push("the check panel did not open on a CV with a cut title and a hollow certification");
+      failures.push("the check panel did not open on a CV with a doubled year and a sentence for a school");
     } else {
       // The whole screen: the CV under the panel is English, the interface
       // is English, so any French word on it comes from the panel.

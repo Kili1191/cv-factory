@@ -28,16 +28,27 @@ import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./li
 
 const CADRATIN = String.fromCharCode(0x2014);
 
+// LES ACCIDENTS DOIVENT SURVIVRE A LA PORTE
+//
+// normCV nettoie tout CV a l'entree, y compris celui que le stockage rend a
+// l'ouverture : un tiret long ou une certification "2023" posee dans
+// localStorage a disparu avant que le compagnon regarde. Les accidents d'ici
+// sont ceux que la porte laisse passer et que "Corriger" repare : une annee
+// repetee en bout de diplome, une puce recopiee.
+const DIPLOME_DOUBLE = { id: 1, degree: "NVQ Level 3 in Health and Social Care 2020",
+  school: "Manchester College", period: "2020" };
+const PUCE = "Onboarded 60+ SME clients across three regions.";
+
 // Deux accidents automatiques et une decision.
 const MIXTE = {
   ...SAMPLE_CV,
   experience: [
-    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager " + CADRATIN,
-      company: "Stenn International", bullets: ["Onboarded 60+ SME clients."] },
+    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager",
+      company: "Stenn International", bullets: [PUCE, PUCE] },
     { ...SAMPLE_CV.experience[0], id: 2, title: "Customer Service Advisor",
       company: "La Banque Postale", bullets: [] },
   ],
-  certifications: ["2023"],
+  education: [DIPLOME_DOUBLE],
 };
 
 // Uniquement des accidents automatiques : "Corriger" doit tout regler et
@@ -45,11 +56,13 @@ const MIXTE = {
 const TOUT_AUTOMATIQUE = {
   ...SAMPLE_CV,
   experience: [
-    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager " + CADRATIN,
-      company: "Stenn International", bullets: ["Onboarded 60+ SME clients."] },
+    { ...SAMPLE_CV.experience[0], id: 1, title: "Account Manager",
+      company: "Stenn International", bullets: [PUCE, PUCE] },
   ],
-  certifications: ["2023"],
+  education: [DIPLOME_DOUBLE],
 };
+
+const compter = (texte, motif) => (texte.match(new RegExp(motif.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length;
 
 async function jouer(browser, cv) {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 950 }, acceptDownloads: true });
@@ -108,28 +121,24 @@ export async function run() {
     for (const e of m.erreurs) failures.push("mixte : erreur JavaScript, " + e);
     if (!m.panneau) {
       failures.push("mixte : le controle avant telechargement ne s'affiche pas "
-        + "sur un CV avec un intitule coupe et une certification creuse.");
+        + "sur un CV avec une annee doublee et une puce recopiee.");
     } else {
       const a = m.apresCorrection;
       // 1. LE CV A CHANGE
-      if (a.document.includes(CADRATIN) || /Account Manager\s*-\s*$/m.test(a.document)) {
-        failures.push("mixte : apres \"Corriger\", l'intitule porte encore son "
-          + "separateur orphelin. Le bouton ne corrige pas.");
+      if (/Social Care 2020/.test(a.document)) {
+        failures.push("mixte : apres \"Corriger\", le diplome porte encore son "
+          + "annee doublee. Le bouton ne corrige pas.");
       }
-      if (/\b2023\b/.test(a.document) && !/2023\s*-|-\s*2023|2023\s*$/m.test(a.document)) {
-        // 2023 seul sur une ligne de certification : la coquille est restee.
-        const lignes = a.document.split("\n").map((l) => l.trim());
-        if (lignes.includes("2023")) {
-          failures.push("mixte : apres \"Corriger\", la certification \"2023\" est "
-            + "encore la.");
-        }
+      if (compter(a.document, PUCE) !== 1) {
+        failures.push("mixte : apres \"Corriger\", la puce recopiee apparait "
+          + compter(a.document, PUCE) + " fois au lieu d'une.");
       }
       // 2. LE TRAVAIL EST MONTRE
       if (!a.corriges) {
         failures.push("mixte : rien ne montre ce qui vient d'etre corrige. Le "
           + "panneau rouvert avec une liste plus courte a l'air de n'avoir "
           + "rien fait.");
-      } else if (!/Account Manager/.test(a.panneauTexte)) {
+      } else if (!/NVQ Level 3/.test(a.panneauTexte)) {
         failures.push("mixte : la liste des corrections ne montre pas le champ "
           + "corrige. Quelqu'un ne reconnait que ce qu'il lit.");
       }
@@ -144,8 +153,8 @@ export async function run() {
           + "sans ligne reste. On a laisse partir un CV en sachant.");
       }
       // 5. ANNULABLE
-      if (m.apresAnnulation && !m.apresAnnulation.includes("2023")
-          && !/Account Manager\s*-/.test(m.apresAnnulation)) {
+      if (m.apresAnnulation && !/Social Care 2020/.test(m.apresAnnulation)
+          && compter(m.apresAnnulation, PUCE) < 2) {
         failures.push("mixte : l'annulation ne ramene pas le CV d'avant. Une "
           + "correction qui ne se defait pas est une decision prise a la "
           + "place de la personne.");

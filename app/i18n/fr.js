@@ -252,6 +252,7 @@ const FR_T = {
   mt_empty_cv:"Ton CV est vide, importe ou genere un CV d'abord.",
   mt_offer_label:"Offre d'emploi",
   mt_offer_ph:"Colle l'offre d'emploi complete ici:\n- Intitule du poste\n- Missions\n- Profil recherche\n- Competences requises",
+  mt_apply:"Appliquer ce CV adapte",
   mt_cta:"Adapter mon CV a cette offre",
   mt_need_key:"Cle API requise dans Outils",
   off_paste_label:"Colle l'offre d'emploi",

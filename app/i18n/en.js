@@ -253,6 +253,7 @@ const EN_T = {
   mt_empty_cv:"Your CV is empty - import or write one first.",
   mt_offer_label:"Job ad",
   mt_offer_ph:"Paste the whole job ad here:\n- Job title\n- What the role involves\n- Who they are looking for\n- Skills required",
+  mt_apply:"Apply this tailored CV",
   mt_cta:"Fit my CV to this ad",
   mt_need_key:"API key required, in Tools",
   off_paste_label:"Paste the job posting",
