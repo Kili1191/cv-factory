@@ -12,7 +12,8 @@ import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv";
 import { diagnostiquer } from "../lib/diagnostic";
 import { mesurerLeCv, consigneDeReprise } from "../lib/mesurerLeCv";
 import { experiencesAVerifier, direLaFermeture } from "../lib/registresEntreprises";
-import { SCHEMA_CV, SCHEMA_CV_IMPORTE, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT, SCHEMA_VERITE } from "./components/schemas";
+import { SCHEMA_CV, SCHEMA_CV_IMPORTE, SCHEMA_AUDIT, SCHEMA_POSITIONNEMENT, SCHEMA_VERITE,
+  SCHEMA_REPONSE_AU_CANDIDAT } from "./components/schemas";
 import { lireCommeLesAts } from "../lib/atsVendors";
 import { texteProbable } from "../lib/deuxLectures";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
@@ -34,6 +35,8 @@ const facteurDAjustement = (hauteurPx) =>
   hauteurPx > PAGE_PX && hauteurPx <= PAGE_PX_MAX ? PAGE_PX / hauteurPx : 1;
 const OMBRE_FEUILLE = "0 1px 2px rgba(10,10,10,.10), 0 12px 40px rgba(10,10,10,.13)";
 import { corrigerLesAccidents } from "../lib/corrigerLesAccidents";
+import { promptPourExpliquer, chiffresInventes } from "../lib/parlerANuvi";
+import { differenceEntreDeuxCv } from "../lib/differenceEntreDeuxCv";
 import FileDrop, { ContexteLireImage, joindreAuTexte } from "./components/FileDrop";
 
 // === LAZY MODALS ===
@@ -5372,6 +5375,7 @@ export default function App() {
     if (vus.length) {
       setDefautsDepuisExport(true);
       setCorrigesAffiches([]);
+      setExplicationsAffichees([]);
       setDefautsAvantExport(trierLesDefauts(vus));
       return;
     }
@@ -5392,6 +5396,8 @@ export default function App() {
   // personne voie le travail et ce qu'il en reste. Si plus rien ne reste et
   // qu'on venait de Telecharger, on telecharge : c'est ce qu'elle voulait.
   const [corrigesAffiches, setCorrigesAffiches] = useState([]);
+  // Ce que Nuvi a dit avoir deplace, quand le candidat lui a parle.
+  const [explicationsAffichees, setExplicationsAffichees] = useState([]);
 
   const corrigerMaintenant = useCallback(() => {
     let corrige = null;
@@ -5473,6 +5479,7 @@ export default function App() {
       setCVFn(() => normCV(json, cv));
       setDefautsAvantExport(null);
       setCorrigesAffiches([]);
+      setExplicationsAffichees([]);
       notify(locale === "en"
         ? "Shortened to fit one page. Read it over, then download."
         : "Raccourci pour tenir sur une page. Relis, puis telecharge.");
@@ -5483,6 +5490,63 @@ export default function App() {
       setRaccourcitEnCours(false);
     }
   }, [apiKey, T, cv, locale, notify, pushH, setCVFn]);
+
+  // LE CANDIDAT PARLE, NUVI DEMANDE, PUIS RANGE
+  //
+  // "Ce n'est pas une ecole, c'est une formation que j'ai faite dans
+  // l'entreprise." Le controle avait raison de signaler la ligne, et tort
+  // sur ce qu'elle etait : seul le candidat le sait. Il le dit ici en ses
+  // mots ; Nuvi pose une question s'il lui en manque une, puis remet la
+  // chose a sa place et montre ce qu'il a deplace. Deux sources, jamais une
+  // troisieme : le CV et ce fil. Un chiffre venu d'ailleurs est refuse avant
+  // d'atteindre la page, et Ctrl+Z reprend le reste.
+  const expliquerADefaut = useCallback(async (defaut, echanges) => {
+    if (!apiKey) { notify(T.nk); throw new Error(T.nk); }
+    const p = promptPourExpliquer({
+      cv, defaut, echanges, locale, regles: QUI_DECIDE + "\n" + NO_DASH });
+    const txt = await aiCall(p, { schema: SCHEMA_REPONSE_AU_CANDIDAT, task_name: "explain-a-defect" });
+    const json = parseJSON(txt);
+    if (!json || typeof json !== "object") {
+      throw new Error(locale === "en" ? "unreadable answer" : "reponse illisible");
+    }
+    const question = String(json.question || "").trim();
+    if (question) return { question };
+
+    const propre = normCV(json.cv, cv);
+    const inventes = chiffresInventes(cv, propre, echanges);
+    if (inventes.length) {
+      throw new Error((locale === "en"
+        ? "Nuvi added a figure you did not give, so nothing was changed: "
+        : "Nuvi a ajoute un chiffre que tu n'as pas donne, donc rien n'a change : ")
+        + inventes.join(", "));
+    }
+    const corriges = differenceEntreDeuxCv(cv, propre, locale);
+    const explication = String(json.explication || "").trim();
+    pushH();
+    setCVFn(() => propre);
+
+    let restants = [];
+    try {
+      restants = defautsDuCv(propre, locale);
+      if (typeof document !== "undefined") {
+        const visuels = defautsVisuels(document, locale);
+        if (Array.isArray(visuels)) restants = restants.concat(visuels);
+      }
+    } catch { restants = []; }
+
+    if (!restants.length) {
+      setDefautsAvantExport(null);
+      setCorrigesAffiches([]);
+      setExplicationsAffichees([]);
+      notify(explication || (locale === "en" ? "Done. Read it over." : "C'est fait. Relis."));
+      if (defautsDepuisExport) lancerLeFormat();
+    } else {
+      setCorrigesAffiches((prev) => prev.concat(corriges));
+      if (explication) setExplicationsAffichees((prev) => prev.concat([explication]));
+      setDefautsAvantExport(trierLesDefauts(restants));
+    }
+    return { explication, corriges };
+  }, [apiKey, T, cv, locale, notify, pushH, setCVFn, defautsDepuisExport, lancerLeFormat]);
 
   const handleFormatChosen = useCallback((format, alwaysUse) => {
     setShowFormatChoice(false);
@@ -8653,6 +8717,8 @@ export default function App() {
             defauts={defautsAvantExport}
             locale={locale}
             corriges={corrigesAffiches}
+            explications={explicationsAffichees}
+            onExpliquer={expliquerADefaut}
             onCorriger={corrigerMaintenant}
             onRaccourcir={defautsAvantExport.some((d) => d.cle === "deborde_page") ? raccourcirPourUnePage : undefined}
             raccourcitEnCours={raccourcitEnCours}
@@ -9949,7 +10015,7 @@ export default function App() {
         {!cvIsEmpty && (
           <BadgeDefauts compte={defautsEnDirect.length} mob={mob} coachPos={coachPos}
             locale={locale}
-            onClick={() => { setDefautsDepuisExport(false); setDefautsAvantExport(defautsEnDirect); }}/>
+            onClick={() => { setDefautsDepuisExport(false); setCorrigesAffiches([]); setExplicationsAffichees([]); setDefautsAvantExport(defautsEnDirect); }}/>
         )}
         {/* Le bouton Telecharger flottant a ete remplace par la barre d'outils
             au-dessus du document : voir le commentaire la-bas. Un bouton en
@@ -10550,7 +10616,7 @@ export default function App() {
         {!cvIsEmpty && (
           <BadgeDefauts compte={defautsEnDirect.length} mob={true} coachPos={coachPos}
             locale={locale}
-            onClick={() => { setDefautsDepuisExport(false); setDefautsAvantExport(defautsEnDirect); }}/>
+            onClick={() => { setDefautsDepuisExport(false); setCorrigesAffiches([]); setExplicationsAffichees([]); setDefautsAvantExport(defautsEnDirect); }}/>
         )}
         <NuviBigLogo active={bigLogoOpen || bigLogoActive} onDismiss={() => setBigLogoOpen(false)} />
         {showIntroBubble && !showIntro && !cvIsEmpty && (

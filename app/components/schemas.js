@@ -178,6 +178,25 @@ export const SCHEMA_CV_IMPORTE = {
   required: SCHEMA_CV.required.filter((k) => k !== "deduit"),
 };
 
+// LA REPONSE DE NUVI QUAND LE CANDIDAT LUI PARLE D'UN DEFAUT
+//
+// "Ce n'est pas une ecole, c'est une formation suivie dans l'entreprise."
+// Nuvi pose une question s'il lui manque quelque chose, ou rend le CV
+// remis en ordre. Les deux issues tiennent dans une seule forme : quand
+// "question" est rempli, le CV rendu est celui d'entree, inchange, et
+// l'ecran l'ignore. Une forme a deux branches aurait demande un oneOf, que
+// l'API refuse.
+export const SCHEMA_REPONSE_AU_CANDIDAT = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    question: { type: "string" },
+    explication: { type: "string" },
+    cv: SCHEMA_CV_IMPORTE,
+  },
+  required: ["question", "explication", "cv"],
+};
+
 // L'ANALYSE D'UNE ANNONCE : LA PLUS GROSSE SORTIE DU PRODUIT
 //
 // Elle rend une lecture de l'offre ET un CV complet reecrit pour elle. Elle
