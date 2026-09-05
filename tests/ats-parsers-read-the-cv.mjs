@@ -151,8 +151,11 @@ export async function run() {
         }
         const flat = String(text).replace(/\s+/g, " ");
 
+        // Sans distinction de casse, pour la meme raison que dans
+        // export-pdf-is-machine-readable : le PDF natif dessine l'intitule
+        // en capitales, et un analyseur compare sans la casse.
         for (const [label, needle] of MUST_CONTAIN) {
-          if (!flat.includes(needle)) {
+          if (!flat.toLowerCase().includes(String(needle).toLowerCase())) {
             failures.push(`${layout} / ${engine.name} : ${label} absent du texte extrait - "${needle}"`);
           }
         }

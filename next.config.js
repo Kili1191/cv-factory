@@ -11,6 +11,10 @@ const BUILD_ID =
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Chromium and its driver are native packages: bundling them breaks the
+  // binary lookup. Next leaves them in node_modules and requires them at
+  // run time, which is what @sparticuz/chromium expects.
+  experimental: { serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"] },
   env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
   webpack: (config, { isServer }) => {
     if (!isServer) {

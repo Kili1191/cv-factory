@@ -127,8 +127,12 @@ function checkCommon(label, out, failures) {
     );
     return;
   }
-  if (!out.bytes.includes(Buffer.from("DCTDecode"))) {
-    failures.push(`${label} : l'image du rendu a disparu du PDF, le CV ne ressemblera plus a rien`);
+  // Deux fabriques, un seul contrat. Le PDF natif (app/api/pdf) porte des
+  // polices incorporees et aucune image ; la photo de secours porte une
+  // image JPEG et une couche de texte. L'un ou l'autre, jamais ni l'un ni
+  // l'autre : un PDF sans image ni police n'a rien a montrer.
+  if (!out.bytes.includes(Buffer.from("DCTDecode")) && !out.bytes.includes(Buffer.from("/FontFile"))) {
+    failures.push(`${label} : ni image ni police incorporee dans le PDF, le CV ne ressemblera a rien`);
   }
   if (out.pages !== 1) failures.push(`${label} : le CV devrait tenir sur 1 page, ${out.pages} trouvees`);
 
@@ -160,11 +164,16 @@ function checkCommon(label, out, failures) {
       `au lieu du nom du candidat`
     );
   }
+  // Le monogramme est du decor. La couche texte de la photo l'omettait ;
+  // le PDF natif ne peut pas le retirer du texte, mais il le peint APRES le
+  // nom, donc un analyseur qui prend la premiere ligne pour le nom ne le
+  // voit jamais en premier. C'est cela qui compte, et c'est cela qu'on tient.
   const initiales = CV.name.split(/\s+/).map(w => w[0]).join("").toUpperCase();
-  if (new RegExp(`(^|\\s)${initiales}(\\s|$)`).test(out.text)) {
+  const posMono = out.text.search(new RegExp(`(^|\\s)${initiales}(\\s|$)`));
+  if (posMono !== -1 && (posNom === -1 || posMono < posNom)) {
     failures.push(
-      `${label} : le monogramme "${initiales}" est present dans le texte extrait, ` +
-      `c'est du decor qui pollue le nom du candidat`
+      `${label} : le monogramme "${initiales}" arrive avant le nom dans le texte extrait, ` +
+      `un analyseur le prendra pour le nom du candidat`
     );
   }
   if (out.errors.length) {
@@ -200,8 +209,12 @@ export async function run() {
       if (out.secondes !== undefined) durees.push(`${layout} ${out.secondes}s`);
       if (out.failed) { failures.push(`modele ${layout} : ` + out.failed); continue; }
       checkCommon(`modele ${layout}`, out, failures);
+      // Sans distinction de casse : le PDF natif porte l'intitule dans les
+      // capitales ou le gabarit le dessine ("CHEF DE PRODUIT"), comme
+      // n'importe quel CV fait sous Word. Un analyseur compare sans la
+      // casse ; ce controle aussi. Les accents, eux, restent exiges.
       for (const [what, needle] of MUST_CONTAIN) {
-        if (!out.text.includes(needle)) {
+        if (!out.text.toLowerCase().includes(needle.toLowerCase())) {
           failures.push(`modele ${layout} : ${what} absent du texte du PDF - "${needle}"`);
         }
       }

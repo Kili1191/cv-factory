@@ -520,6 +520,53 @@ function ensureFontLoaded(href) {
 
 // Charge toutes les fonts referencees par un custom global + version.
 // Appele dans un useEffect sur changement du custom.
+// THE TEMPLATES THAT PRINT AS NATIVE TEXT
+//
+// One column only. A PDF's text is read by position by half the parsers
+// (poppler, PDFBox with sorting, and the harness that imitates them), and
+// on a two-column page they read both columns line by line: "COMPETENCES
+// ESSEC Business School", the e-mail glued to the employer. Measured on
+// the column, compact and Swiss templates: fidelity fell from 100% to 56%.
+// The picture export never had the problem, because it WRITES the machine
+// text itself, in one column, in reading order. So the two-column
+// templates keep it, and the single-column ones get the native PDF that
+// every parser reads the way it is drawn.
+const GABARITS_NATIFS = new Set(["classic", "timeline", "ats"]);
+
+// Asks the server for the native PDF and hands it to the browser as a
+// download. Returns false when the server has no PDF to give (no Chromium,
+// an error, a wrong content type) or when the template is not one of the
+// single-column ones: the caller then takes the picture path.
+async function exporterEnNatif({ cv, layout, theme, locale, format, fname }) {
+  if (typeof fetch !== "function") return false;
+  if (!GABARITS_NATIFS.has(layout)) return false;
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 45_000);
+  try {
+    const r = await fetch("/api/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cv, layout, theme, locale, format }),
+      signal: ctrl.signal,
+    });
+    if (!r.ok) return false;
+    if (!/application\/pdf/i.test(r.headers.get("content-type") || "")) return false;
+    const blob = await r.blob();
+    if (!blob || blob.size < 1000) return false;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fname;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    return true;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function ensureCustomFontsLoaded(globalCustom, versionCustom) {
   [globalCustom, versionCustom].forEach(cu => {
     if (!cu) return;
@@ -5083,6 +5130,23 @@ export default function App() {
 
     (async () => {
       try {
+        // LE PDF NATIF D'ABORD, LA PHOTO EN SECOURS
+        //
+        // Le serveur imprime le meme gabarit avec Chromium : texte vectoriel,
+        // vraies polices, un fichier dix fois plus leger, que n'importe quel
+        // robot de tri lit comme un export Word. S'il ne repond pas, ou mal,
+        // le chemin de la photo doublee d'une couche texte reprend, et la
+        // personne obtient son fichier dans les deux cas.
+        try {
+          const natif = await exporterEnNatif({ cv, layout, theme: effTheme, locale, format, fname });
+          if (natif) {
+            console.log("[exportPDF] PDF natif rendu par le serveur");
+            return;
+          }
+        } catch (errNatif) {
+          console.warn("[exportPDF] natif indisponible, photo en secours:", errNatif && errNatif.message);
+        }
+
         await loadLibs();
 
         // Attend que les Google Fonts custom soient chargees
@@ -5386,7 +5450,7 @@ export default function App() {
         if (tempHide) tempHide.remove();
       }
     })();
-  }, [cv.name, T, notify, overlayTextLayer]);
+  }, [cv, layout, effTheme, locale, T, notify, overlayTextLayer]);
 
   // ============================================================
   // Format download dialog : intercepte le download pour demander

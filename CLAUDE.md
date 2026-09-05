@@ -28,6 +28,22 @@ l'export PDF y cherchait html2canvas et jsPDF. Un bloqueur de contenu suffisait
 de son propre bundle. `tests/no-runtime-cdn.mjs` scanne `app/` et `lib/`. Les
 polices Google restent tolérées : décoratives, avec une pile de repli.
 
+Le PDF téléchargé est natif depuis le 5 septembre 2026 sur les gabarits à
+une colonne (classique, chronologie, ATS) : `app/api/pdf` ouvre
+`app/imprimer` dans un Chromium sans tête (`@sparticuz/chromium`, embarqué
+dans la fonction, rien de téléchargé à l'exécution) et imprime le même
+gabarit que l'écran, en texte vectoriel avec les polices incorporées. Les
+gabarits à deux colonnes gardent l'ancien export, une photo du CV doublée
+d'une couche de texte invisible écrite par Nuvi en ordre de lecture : lus par
+position, deux colonnes sortent ligne à ligne mélangées, et cette couche est
+ce qui les garde entières (mesuré : la fidélité tombait de 100 % à 56 %). Si
+la route ne répond pas, la photo revient pour tout le monde.
+`tests/the-pdf-is-real-text.mjs` tient les trois cas. Hors Vercel, la route
+emprunte le Chromium de Playwright, trouvé par `lib/chromiumLocal.js`, le
+même module que le harnais de test : la première version portait sa propre
+copie, limitée au dossier de la session distante, et répondait 503 sur la CI
+où Playwright installe ailleurs.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
@@ -42,7 +58,8 @@ produit existe dans au moins une source.
 | `app/page.jsx` | La vitrine, sur `/` |
 | `app/app/` | L'outil lui-même, sur `/app` |
 | `app/components/` | Les composants, y compris les gabarits de CV (`CVLayouts.jsx`) |
-| `app/api/` | Routes serveur : `claude/` pour l'IA, `jobs/` pour les offres |
+| `app/api/` | Routes serveur : `claude/` pour l'IA, `jobs/` pour les offres, `pdf/` qui imprime le CV |
+| `app/imprimer/` | La page que `api/pdf` ouvre dans un Chromium sans tête : le CV seul, prêt à imprimer |
 | `app/i18n/` | `fr.js`, `en.js`. La langue est demandée une fois, puis figée |
 | `lib/` | La logique métier hors React : parsing ATS, sérialisation du CV, Gmail, Supabase |
 | `extension/` | L'extension de navigateur qui lit une annonce |

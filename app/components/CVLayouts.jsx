@@ -940,6 +940,14 @@ export function CVTimeline({ cv, set, t, T, locale }) {
 // Inspiration : Dieter Rams - moins c'est plus
 // PAS d'icones, PAS de couleurs sauf 1 accent, focus contenu
 // ============================================================
+// LE GABARIT SUISSE TENAIT MOINS QUE LES AUTRES
+//
+// Mesure sur un CV ordinaire de trois postes et treize puces : 1139px en
+// classique, 1361px ici, au-dela de ce que l'export reduit. Le meme CV
+// partait donc partout sauf sur ce gabarit, ou il demandait a etre
+// raccourci. La colonne des dates prenait 120px sur la largeur du texte,
+// et chaque puce se pliait une fois de plus. Colonne, marges et
+// interlignes sont resserres d'un cran, sans toucher au dessin.
 export function CVSwiss({ cv, set, t, T, locale }) {
   const { u, ux, ub, ue, us, ul, uc } = MK(set);
 
@@ -960,11 +968,11 @@ export function CVSwiss({ cv, set, t, T, locale }) {
   return (
     <div style={{
       fontFamily: t.bf, background: t.bg, color: t.ti,
-      padding: "40px 48px", minHeight: "auto",
+      padding: "34px 44px", minHeight: "auto",
       maxWidth: 800,
     }}>
       {/* Header epure */}
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 22 }}>
         <CVPhoto cv={cv} set={set} t={t} variant="square" size={70}
           T={T} locale={locale}/>
         <div style={{ marginTop: 18 }}>
@@ -1011,8 +1019,8 @@ export function CVSwiss({ cv, set, t, T, locale }) {
       {S("experience", T.cv_el)}
       {cv.experience.map(ex => (
         <div key={ex.id} className="cv-exp-item" style={{
-          marginBottom: 18, display: "grid",
-          gridTemplateColumns: "100px 1fr", gap: 20,
+          marginBottom: 14, display: "grid",
+          gridTemplateColumns: "86px 1fr", gap: 16,
         }}>
           <div style={{
             fontSize: 10, color: t.ac, fontWeight: 600,
@@ -1039,7 +1047,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
             {ex.bullets.map((b, i) => (
               <div key={i} style={{
                 fontSize: 11, color: t.ti, opacity: 0.88,
-                marginBottom: 3, lineHeight: 1.5,
+                marginBottom: 2, lineHeight: 1.45,
               }}>
                 <E value={b} onChange={v => ub(ex.id, i, v)}
                   style={{ fontSize: 11 }}/>
@@ -1053,8 +1061,8 @@ export function CVSwiss({ cv, set, t, T, locale }) {
       {S("education", T.cv_ed)}
       {cv.education.map(ed => (
         <div key={ed.id} style={{
-          marginBottom: 10, display: "grid",
-          gridTemplateColumns: "100px 1fr", gap: 20,
+          marginBottom: 8, display: "grid",
+          gridTemplateColumns: "86px 1fr", gap: 16,
         }}>
           <div style={{
             fontSize: 10, color: t.ac, fontWeight: 600, paddingTop: 1,
@@ -1078,8 +1086,8 @@ export function CVSwiss({ cv, set, t, T, locale }) {
 
       {/* COMPETENCES + LANGUES en grid */}
       <div style={{
-        marginTop: 22, display: "grid",
-        gridTemplateColumns: "1fr 1fr", gap: 32,
+        marginTop: 16, display: "grid",
+        gridTemplateColumns: "1fr 1fr", gap: 28,
       }}>
         <div>
           {S("skills", T.cv_s)}
