@@ -1743,3 +1743,28 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .nuvi-souligne { background-size: 100% 0.09em; }
 }
+
+/* ============================================================
+ * LES ITALIQUES EN DEGRADE NE SONT PLUS COUPEES
+ * ============================================================
+ *
+ * Un mot d accent en italique est peint par un degrade pose avec
+ * background-clip: text. Le degrade ne couvre que la boite de l element ;
+ * un V ou un y italique deborde de sa boite d avance, et ce qui deborde
+ * n a pas de fond, donc pas d encre : la lettre arrive amputee. Vu sur
+ * "Here s what I do to a CV." et "Which CV for this offer?", et signale
+ * plusieurs fois.
+ *
+ * Vingt-deux endroits posent ce style en ligne. Plutot que vingt-deux
+ * rustines, une regle : tout element dont le style en ligne clippe le fond
+ * au texte recoit une boite plus large que ses lettres, et des marges
+ * negatives qui rendent la place, pour que rien ne bouge autour. Le
+ * !important est necessaire : un style en ligne gagne sinon.
+ */
+[style*="background-clip: text"] {
+  display: inline-block !important;
+  padding: 0.08em 0.24em 0.12em 0.1em !important;
+  margin: -0.08em -0.24em -0.12em -0.1em !important;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}

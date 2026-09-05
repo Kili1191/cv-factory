@@ -1360,16 +1360,29 @@ function normCV(raw, base=EMPTY) {
 }
 
 
+// LE MESSAGE DU PRODUIT, DANS LA MATIERE DU PRODUIT
+//
+// Il etait une pilule noire a texte dore en serif gras : un style que rien
+// d'autre a l'ecran ne porte, celui d'une alerte. "CV read on your device"
+// est une bonne nouvelle, et elle avait l'air d'une erreur. Les feuilles et
+// les dialogues sont en verre depoli ; le message l'est aussi, avec les
+// memes jetons, donc il suit le theme. Le texte reste encre sur fond
+// clair : 4,5:1 tient sur le verre parce que le verre est presque opaque.
 function Notif({ msg }) {
   return (
-    <div style={{
+    <div data-nuvi="notif" role="status" style={{
       position:"fixed", top:16, left:"50%",
       transform:"translateX(-50%)",
-      background:Dark, color:Gold,
-      padding:"10px 22px", borderRadius:20, zIndex:9999,
-      fontWeight:700, fontSize:13,
-      boxShadow:"0 4px 20px rgba(0,0,0,.3)",
-      whiteSpace:"nowrap", pointerEvents:"none",
+      background:"var(--nuvi-glass-card, rgba(255,255,255,0.72))",
+      backdropFilter:"var(--nuvi-glass-card-blur, blur(20px) saturate(180%))",
+      WebkitBackdropFilter:"var(--nuvi-glass-card-blur, blur(20px) saturate(180%))",
+      border:"0.5px solid rgba(255,255,255,0.6)",
+      color:"var(--nuvi-ink, #0a0a0a)",
+      padding:"11px 18px", borderRadius:999, zIndex:9999,
+      fontFamily:Sans, fontWeight:600, fontSize:13.5, letterSpacing:"-0.005em",
+      boxShadow:"0 1px 2px rgba(10,10,10,.06), 0 12px 32px rgba(10,10,10,.14)",
+      maxWidth:"min(92vw, 560px)", textAlign:"center",
+      pointerEvents:"none",
     }}>
       {msg}
     </div>
