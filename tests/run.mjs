@@ -65,6 +65,7 @@ const SUITES = [
   ["nothing covers the rail footer", "./nothing-covers-the-rail-footer.mjs"],
   ["the suggestion bar gets out of the way and knows how to leave", "./the-suggestion-bar-gets-out-of-the-way.mjs"],
   ["the exported PDF is readable by an ATS", "./export-pdf-is-machine-readable.mjs"],
+  ["the picture matches the page", "./the-picture-matches-the-page.mjs"],
   ["a long cv keeps its size", "./a-long-cv-keeps-its-size.mjs"],
   ["an empty field leaves no trace", "./an-empty-field-leaves-no-trace.mjs"],
   ["the ATS extraction engines read the CV", "./ats-parsers-read-the-cv.mjs"],

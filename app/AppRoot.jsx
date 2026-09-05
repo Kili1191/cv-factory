@@ -5131,6 +5131,18 @@ export default function App() {
         }
 
         // Capture le CV
+        // LA PHOTO SE PREND SUR LA FEUILLE, PAS SUR L'APERCU
+        //
+        // L'apercu d'ordinateur agrandit le document par un transform,
+        // jusqu'a 1,35 sur un ecran de 1440. html2canvas lit la position de
+        // chaque mot dans ce document agrandi et dessine les lettres a leur
+        // taille reelle : chaque mot partait donc a 1,35 fois sa place, les
+        // lignes debordaient a droite, les mots se retrouvaient separes par
+        // des trous, et le dernier quart du CV tombait hors de l'image. Vu
+        // sur le PDF de Kilian : "Managed    a portfolio    of private",
+        // et plus d'EDUCATION ni de SKILLS. Le telephone a le meme wrapper
+        // a l'echelle. On retire le transform dans le clone que html2canvas
+        // photographie, et seulement la : l'ecran ne bouge pas.
         const canvas = await h2c(el, {
           scale: 2,
           useCORS: true,
@@ -5140,6 +5152,12 @@ export default function App() {
           height: el.offsetHeight,
           windowWidth: el.offsetWidth,
           windowHeight: el.offsetHeight,
+          onclone: (doc) => {
+            for (const n of doc.querySelectorAll("[data-cvf-echelle]")) {
+              n.style.transform = "none";
+              n.style.left = "0";
+            }
+          },
         });
 
         console.log("[exportPDF] Canvas:", canvas.width + "x" + canvas.height + "px");
@@ -9792,7 +9810,7 @@ export default function App() {
                 boxShadow: OMBRE_FEUILLE,
               } : {}),
             }}>
-              <div data-cvf="cv" ref={attachDeskCv} style={{
+              <div data-cvf="cv" data-cvf-echelle ref={attachDeskCv} style={{
                 position: "absolute", top: 0,
                 left: deskFit < 1 ? Math.round(794 * deskScale * (1 - deskFit) / 2) : 0,
                 width:794,
@@ -10327,6 +10345,7 @@ export default function App() {
               }}>
                 <div
                   ref={cvInnerRef}
+                  data-cvf-echelle
                   style={{
                     position: "absolute", top: 0,
                     left: mobFit < 1 ? Math.round(794 * scale * (1 - mobFit) / 2) : 0,
