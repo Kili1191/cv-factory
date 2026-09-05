@@ -246,6 +246,7 @@ const FR_T = {
   mt_read_local:"Lu dans l'offre, sans appeler l'IA",
   mt_reach_adds:"Ce que Nuvi ajoute a ta portee",
   ob_img_reading:"Lecture de la photo...",
+  ob_pdf_photo_reading:"Le texte caché de ce PDF est coupé : lecture de la page elle-même...",
   ob_img_too_big:"Image trop lourde : 5 Mo maximum.",
   mt_tailored_t:"CV sur mesure pour une offre",
   mt_tailored_s:"Colle l'offre, Nuvi adapte ton CV existant. Tu gardes la main sur ce qui y figure.",

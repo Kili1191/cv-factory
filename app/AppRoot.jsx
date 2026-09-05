@@ -7670,8 +7670,9 @@ export default function App() {
         ? [{
           role: "user",
           content: [
-            { type: "image",
-              source: { type: "base64", media_type: piece.media, data: piece.base64 } },
+            ...(Array.isArray(piece.pages) && piece.pages.length ? piece.pages : [piece.base64])
+              .map((data) => ({ type: "image",
+                source: { type: "base64", media_type: piece.media, data } })),
             { type: "text", text: invite },
           ],
         }]
@@ -8349,15 +8350,17 @@ export default function App() {
         : "Garde chaque date, employeur, intitule, puce et chiffre tels quels. "
           + "N'invente rien, ne corrige rien, n'ajoute rien. Si un passage est illisible, "
           + "ecris [illisible] plutot que de deviner. Texte brut uniquement, sans commentaire.");
+    // A PDF whose hidden text was cut arrives here as its rendered pages
+    // (lib/lireUnFichier.js): one image per page, in order, so a two-page
+    // CV is transcribed as one document and not as its first page.
+    const images = (Array.isArray(piece.pages) && piece.pages.length ? piece.pages : [piece.base64])
+      .map((data) => ({ type: "image",
+        source: { type: "base64", media_type: piece.media, data } }));
     const txt = await aiCall(consigne, {
       task_name: "read_cv_image",
       messages: [{
         role: "user",
-        content: [
-          { type: "image",
-            source: { type: "base64", media_type: piece.media, data: piece.base64 } },
-          { type: "text", text: consigne },
-        ],
+        content: [...images, { type: "text", text: consigne }],
       }],
     });
     return String(txt || "").trim();

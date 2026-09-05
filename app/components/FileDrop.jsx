@@ -85,6 +85,7 @@ const REPLI = {
     depot_parcours: "Ou depose un fichier : PDF, Word, ou une photo de ton CV",
     ob_file_reading: "Lecture de",
     ob_img_reading: "Nuvi lit l'image...",
+    ob_pdf_photo_reading: "Le texte cache de ce PDF est coupe : Nuvi lit la page elle-meme...",
     ob_file_pdf_err: "Ce PDF n'a pas pu etre lu. Essaie un autre format, ou une photo.",
     ob_file_format_err: "Format non pris en charge. PDF, Word, texte ou image.",
     ob_file_empty_err: "Aucun texte n'a pu etre lu dans ce fichier.",
@@ -97,6 +98,7 @@ const REPLI = {
     depot_parcours: "Or upload a file: PDF, Word, or a photo of your CV",
     ob_file_reading: "Reading",
     ob_img_reading: "Nuvi is reading the image...",
+    ob_pdf_photo_reading: "This PDF's hidden text is cut: Nuvi is reading the page itself...",
     ob_file_pdf_err: "This PDF could not be read. Try another format, or a photo.",
     ob_file_format_err: "Unsupported format. PDF, Word, text or an image.",
     ob_file_empty_err: "No text could be read from this file.",
@@ -151,7 +153,10 @@ export function useLectureDeFichier(T, locale) {
         if (typeof lireImage !== "function") {
           setErr(M.ob_file_format_err);
         } else {
-          setBusy(M.ob_img_reading);
+          // A PDF read from its picture is not a photo someone took: say
+          // what is happening, or the wait after dropping a PDF reads as
+          // a bug.
+          setBusy(lu.origine === "pdf" ? M.ob_pdf_photo_reading : M.ob_img_reading);
           texte = await lireImage(lu);
         }
       } else {

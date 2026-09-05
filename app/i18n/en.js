@@ -247,6 +247,7 @@ const EN_T = {
   mt_read_local:"Read from the ad, with no AI call",
   mt_reach_adds:"What Nuvi adds from your record",
   ob_img_reading:"Reading the photo...",
+  ob_pdf_photo_reading:"This PDF's hidden text is cut: reading the page itself...",
   ob_img_too_big:"Image too large: 5 MB maximum.",
   mt_tailored_t:"A CV cut for one job ad",
   mt_tailored_s:"Paste the ad and Nuvi reworks the CV you already have. You stay in charge of what goes in.",

@@ -44,6 +44,17 @@ même module que le harnais de test : la première version portait sa propre
 copie, limitée au dossier de la session distante, et répondait 503 sur la CI
 où Playwright installe ailleurs.
 
+Les anciens téléchargements, la photo doublée d'une couche coupée en fin de
+ligne, existent chez les gens : quelqu'un a réimporté le sien et retrouvé
+chaque puce amputée. `lib/lireUnFichier.js` décide donc sur deux signes : la
+page est une image (l'aire dessinée de l'image à l'opérateur `Do`) et la
+couche s'arrête au milieu d'une phrase (une ligne longue sans ponctuation,
+suivie d'un nouvel élément et non d'une continuation en minuscule). Les deux
+réunis, la page est rendue et lue comme une photo. Un vrai PDF texte ne prend
+jamais ce chemin. `GET /api/pdf` dit depuis un navigateur si le Chromium de la
+fonction démarre : la photo de secours cache toute panne de la route, à qui
+télécharge comme à qui maintient. `tests/an-old-download-is-read-whole.mjs`.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la

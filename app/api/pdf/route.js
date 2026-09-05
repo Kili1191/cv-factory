@@ -37,6 +37,37 @@ async function lancerChromium() {
   });
 }
 
+// WHETHER THE PRINTER WORKS, FROM A BROWSER
+//
+// The picture fallback hides every failure of this route from the person
+// downloading, on purpose. It also hides it from whoever maintains the
+// site: the first deploy could have shipped without its Chromium and
+// nobody would have seen anything but slightly heavier PDFs. Opening
+// /api/pdf in a browser launches Chromium, prints one blank page, and says
+// what happened. No CV data is involved.
+export async function GET() {
+  const debut = Date.now();
+  let navigateur = null;
+  try {
+    navigateur = await lancerChromium();
+    if (!navigateur) {
+      return Response.json({ ok: false, chromium: null,
+        raison: "no chromium found on this machine" }, { status: 503 });
+    }
+    const page = await navigateur.newPage();
+    await page.setContent("<p>nuvi</p>");
+    const pdf = await page.pdf({ format: "A4" });
+    return Response.json({ ok: true,
+      chromium: process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME ? "bundled" : "local",
+      octets: pdf.length, ms: Date.now() - debut });
+  } catch (err) {
+    return Response.json({ ok: false, raison: String((err && err.message) || err),
+      ms: Date.now() - debut }, { status: 500 });
+  } finally {
+    if (navigateur) { try { await navigateur.close(); } catch (e) { /* already gone */ } }
+  }
+}
+
 export async function POST(req) {
   let corps;
   try { corps = await req.json(); } catch { corps = null; }
