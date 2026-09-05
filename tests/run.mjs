@@ -16,6 +16,7 @@ const SUITES = [
   ["no em dash, no en dash", "./no-em-dash.mjs"],
   ["no em dash reaches the CV", "./no-em-dash-reaches-the-cv.mjs"],
   ["a bad reading doubts itself", "./a-bad-reading-doubts-itself.mjs"],
+  ["a CV copied from a PDF is read", "./a-cv-copied-from-a-pdf-is-read.mjs"],
   ["a broken CV does not leave in silence", "./a-broken-cv-does-not-leave-in-silence.mjs"],
   ["the companion keeps watch", "./the-companion-keeps-watch.mjs"],
   ["fix means fix", "./fix-means-fix.mjs"],

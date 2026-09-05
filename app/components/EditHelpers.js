@@ -113,6 +113,7 @@ export function E({ value, onChange, multi = false, style = {} }) {
 
   return (
     <span onClick={open}
+      data-cvf-e
       style={{
         cursor: "text",
         display: multi ? "block" : "inline",

@@ -4720,18 +4720,54 @@ export default function App() {
         // ou un bloc large donnerait sinon une position fausse.
         const range = document.createRange();
         range.selectNodeContents(node);
+        const rects = [...range.getClientRects()].filter((q) => q.width > 0 && q.height > 0);
         const r = range.getBoundingClientRect();
         range.detach && range.detach();
-        if (r.width > 0 && r.height > 0) {
-          frags.push({
-            el: node.parentElement,
-            text,
-            left: r.left - rootRect.left,
-            right: r.right - rootRect.left,
-            top: r.top - rootRect.top,
-            bottom: r.bottom - rootRect.top,
-            height: r.height,
-          });
+        const pousser = (t, q) => frags.push({
+          el: node.parentElement,
+          text: t,
+          left: q.left - rootRect.left,
+          right: q.right - rootRect.left,
+          top: q.top - rootRect.top,
+          bottom: q.bottom - rootRect.top,
+          height: q.bottom - q.top,
+        });
+        if (rects.length <= 1) {
+          if (r.width > 0 && r.height > 0) pousser(text, r);
+        } else {
+          // UNE LIGNE DE TEXTE PAR LIGNE DE TEXTE
+          //
+          // Une puce qui tient sur deux lignes est UN noeud de texte. Posee
+          // d'un seul tenant a la position de sa premiere ligne, elle
+          // courait hors de la page a droite, et tout ce qui depassait
+          // n'existait pour aucun lecteur : le texte extrait du PDF de
+          // Kilian s'arretait a "cutting time-to-first-transaction by 30%
+          // by". Un robot de tri lisait des puces amputees. Chaque ligne
+          // rendue est donc posee la ou elle est, avec ses propres mots :
+          // on regroupe les caracteres par ligne en mesurant chacun.
+          const brut = node.nodeValue;
+          const lignes = [];
+          let cur = null;
+          for (let i = 0; i < brut.length; i += 1) {
+            if (/\s/.test(brut[i]) && !cur) continue;
+            const rc = document.createRange();
+            rc.setStart(node, i); rc.setEnd(node, i + 1);
+            const q = rc.getBoundingClientRect();
+            rc.detach && rc.detach();
+            if (!q.height) continue;
+            if (!cur || Math.abs(q.top - cur.top) > q.height * 0.5) {
+              cur = { top: q.top, bottom: q.bottom, left: q.left, right: q.right, texte: "" };
+              lignes.push(cur);
+            }
+            cur.texte += brut[i];
+            if (q.left < cur.left) cur.left = q.left;
+            if (q.right > cur.right) cur.right = q.right;
+            if (q.bottom > cur.bottom) cur.bottom = q.bottom;
+          }
+          for (const l of lignes) {
+            const t = l.texte.replace(/\s+/g, " ").trim();
+            if (t && l.right > l.left) pousser(t, l);
+          }
         }
       }
       node = walker.nextNode();
@@ -5156,6 +5192,14 @@ export default function App() {
             for (const n of doc.querySelectorAll("[data-cvf-echelle]")) {
               n.style.transform = "none";
               n.style.left = "0";
+            }
+            // LE SURVOL N'EST PAS DU CONTENU
+            // Chaque champ editable souligne en pointille sous la souris,
+            // par un style en ligne pose au survol. Le clone l'emporte avec
+            // lui : le PDF de Kilian portait un pointille corail en travers
+            // d'une puce, la ou son curseur etait au moment du clic.
+            for (const n of doc.querySelectorAll("[data-cvf-e]")) {
+              n.style.borderBottomColor = "transparent";
             }
           },
         });
