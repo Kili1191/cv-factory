@@ -25,6 +25,7 @@
 //      threshold, so the model reads instead of a broken CV shipping.
 
 import { lireUnCv, CONFIANCE_SUFFISANTE } from "../lib/lireUnCv.js";
+import { defautsDuCv } from "../lib/leCvEstIlPresentable.js";
 
 const COPIE = `Sam Carter
 Client Listening Manager
@@ -122,6 +123,21 @@ export async function run() {
   if (pucesLues < 10 && doute.confiance >= CONFIANCE_SUFFISANTE) {
     failures.push("without section headings the reader keeps " + pucesLues + " bullet(s) out of 13 and is still "
       + "confident (" + doute.confiance + "): a broken CV would ship without the model");
+  }
+
+  // 4. A LINE CUT MID-SENTENCE IS NAMED BEFORE IT SHIPS
+  //
+  // Text copied from a PDF whose layer was amputated arrived with "Europe
+  // an" and "by 30% by" at the end of bullets, and nothing said so.
+  const coupe = lireUnCv(COPIE.replace("Europe and Asia to capture expectations.", "Europe an")
+    .replace("by 30% by building clear playbooks.", "by 30% by")).cv;
+  const vus = defautsDuCv(coupe, "en").filter((d) => d.cle === "coupe_en_fin");
+  if (vus.length !== 2) {
+    failures.push("two bullets cut mid-sentence, " + vus.length + " flagged: " + JSON.stringify(vus.map((d) => d.extrait)));
+  }
+  const propres = defautsDuCv(cv, "en").filter((d) => d.cle === "coupe_en_fin");
+  if (propres.length) {
+    failures.push("whole bullets flagged as cut: " + JSON.stringify(propres.map((d) => d.extrait)));
   }
 
   if (!failures.length) console.log("      three jobs, thirteen bullets, the summary, whole skills and levelled languages, read on the device");
