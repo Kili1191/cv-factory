@@ -69,6 +69,12 @@ Sur le papier, les alternates contextuelles sont coupées : Inter remplace le
 Unicode dans le PDF, et pdf.js lisait « 33 6 12 34 56 78 ».
 `tests/the-pdf-is-real-text.mjs` refuse un Type 3.
 
+La CI imprime avec le même Chromium que la session distante, le build 1194
+(141) qu'installe Playwright 1.56 : la 131 de Playwright 1.49 sortait les
+polices web en Type 3 même statiques, et le texte lu tombait à 8 %. Ce
+qu'on mesure ici doit être ce que la CI exécute ; Vercel imprime en 149,
+mesuré sur un fichier téléchargé : polices incorporées, texte entier.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
