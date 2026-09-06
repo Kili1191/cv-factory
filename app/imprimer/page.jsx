@@ -46,6 +46,14 @@ const CSS = (f) => `
   html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
   body { width: ${f.largeur}mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .cvf-no-print { display: none !important; }
+  /* NO CONTEXTUAL ALTERNATES ON PAPER. Inter swaps "+" and "-" next to
+     digits for case-sensitive variants (its "calt" feature), and those
+     glyphs carry no Unicode mapping in the PDF: pdf.js read the phone as
+     "33 6 12 34 56 78" and the dates as "2021  2024". Measured on the
+     printed file; the plain glyphs come back the moment the feature is
+     off. Ligatures go for the same reason: one glyph for "ffi" is one
+     more thing an extractor can drop. */
+  #cv-print, #cv-print * { font-feature-settings: "calt" 0, "liga" 0, "clig" 0 !important; font-variant-ligatures: none !important; }
   [data-cvf-decorative] { position: relative; z-index: 1; }
   [data-cvf-layout="sidebar"] > div > div:first-child { position: relative; z-index: 1; }
 `;
@@ -132,7 +140,10 @@ export default function Imprimer() {
       const finir = () => { dessinerLesMonogrammes(el); setPret(true); };
       const prets = document.fonts && document.fonts.ready;
       if (prets && typeof prets.then === "function") {
-        Promise.race([prets, new Promise((r) => setTimeout(r, 4000))]).then(finir, finir);
+        // Eight seconds, not four: the route answers the font requests from
+        // its cache, but a cold instance fetches from Google first, and a
+        // page printed before its fonts arrive prints the fallback face.
+        Promise.race([prets, new Promise((r) => setTimeout(r, 8000))]).then(finir, finir);
       } else finir();
       return;
     }
@@ -160,6 +171,12 @@ export default function Imprimer() {
   return (
     <>
       <style>{CSS(f)}</style>
+      {/* The theme's own fonts, chosen by the person: the screen loads them
+          through ensureFontLoaded, this page through the same URLs. The route
+          answers these requests with static instances (see app/api/pdf). */}
+      {[theme.hfHref, theme.bfHref]
+        .filter((h, i, a) => typeof h === "string" && /^https:\/\/fonts\.googleapis\.com\//.test(h) && a.indexOf(h) === i)
+        .map((h) => <link key={h} rel="stylesheet" href={h} />)}
       <div id="cv-print" data-cvf="cv" data-cvf-layout={d.layout || "classic"}
         data-cvf-pret={pret ? "1" : undefined} style={{
         position: "relative", width: "210mm", boxSizing: "border-box",

@@ -1,4 +1,5 @@
 import './globals.css';
+import { POLICES_DU_SITE as FONT_HREF } from "../lib/policesDuSite";
 
 // Typographie de marque. Chargee ici, dans le <head>, et non depuis l'arbre
 // de composants : les <link> qui vivaient dans page.jsx etaient rendus dans
@@ -50,12 +51,6 @@ import './globals.css';
 // L'italique reste : il est utilise 59 fois dans le produit, et un vrai
 // italique dessine ne se remplace pas par une inclinaison mecanique - une
 // suite le verifie.
-const FONT_HREF =
-  "https://fonts.googleapis.com/css2?family=Fraunces:ital,wght,SOFT"
-  + "@0,300..900,30..100;1,300..900,30..100"
-  + "&family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800"
-  + ";1,300;1,400;1,500;1,600;1,700;1,800"
-  + "&family=DM+Serif+Display:ital@0;1&display=swap";
 
 // L'ecran d'accueil d'un iPhone ne peut poser l'application que si le
 // document declare son manifeste, son icone et son titre court. Sans ces

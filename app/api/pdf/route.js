@@ -15,6 +15,7 @@
 import puppeteer from "puppeteer-core";
 import { FORMATS, FACTEUR_MIN } from "../../../lib/formatsPdf";
 import { cheminChromium } from "../../../lib/chromiumLocal";
+import { POLICES_DU_SITE, UA_POLICES_STATIQUES } from "../../../lib/policesDuSite";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -68,6 +69,66 @@ export async function GET() {
   }
 }
 
+// THE FONTS, AS STATIC INSTANCES, INSIDE THE PAGE
+//
+// The print page must not use the variable fonts the screen uses: Chromium
+// prints those as Type 3 outlines and extractors lose lines (see
+// lib/policesDuSite.js). Google serves static instances to a legacy user
+// agent, so the route fetches the CSS itself, with that agent, then fetches
+// each font file it names and writes it into the CSS as a data: URL. The
+// page's own font requests are answered with that CSS (see the request
+// interception in POST), so the page needs no change to print right.
+//
+// Inlining, rather than leaving the gstatic URLs for Chromium to load,
+// keeps the printer off the network: the function's Chromium prints from
+// what it was handed, the test harness proves the fonts embed without a
+// browser that can reach Google, and a slow font server cannot leave a
+// half-loaded page. The files are cached in the module for the life of the
+// instance, so only the first print of an instance pays the fetch.
+//
+// Only fonts.googleapis.com URLs are fetched: the theme carries whatever a
+// person pasted as a custom font. No answer, or no network, is not a
+// failure: the page falls back to the system fonts, which embed fine.
+const POLICES_EN_CACHE = new Map();
+
+async function lireAvecDelai(url, options, ms) {
+  return fetch(url, { ...options, signal: AbortSignal.timeout(ms) });
+}
+
+async function fichierEnDataUrl(url) {
+  if (POLICES_EN_CACHE.has(url)) return POLICES_EN_CACHE.get(url);
+  let data = "";
+  try {
+    const r = await lireAvecDelai(url, {}, 6000);
+    if (r.ok) {
+      const octets = Buffer.from(await r.arrayBuffer());
+      const type = /\.woff2(\?|$)/.test(url) ? "font/woff2" : /\.woff(\?|$)/.test(url) ? "font/woff" : "font/ttf";
+      data = "data:" + type + ";base64," + octets.toString("base64");
+    }
+  } catch (e) { data = ""; }
+  if (data) POLICES_EN_CACHE.set(url, data);
+  return data;
+}
+
+async function cssDesPolices(hrefs) {
+  const liste = [...new Set(hrefs.filter((h) => typeof h === "string"
+    && /^https:\/\/fonts\.googleapis\.com\/css2?\?/.test(h)))];
+  const feuilles = await Promise.all(liste.map(async (h) => {
+    if (POLICES_EN_CACHE.has(h)) return POLICES_EN_CACHE.get(h);
+    try {
+      const r = await lireAvecDelai(h, { headers: { "user-agent": UA_POLICES_STATIQUES } }, 4000);
+      if (!r.ok) return "";
+      let css = await r.text();
+      const urls = [...new Set([...css.matchAll(/url\((https:\/\/fonts\.gstatic\.com\/[^)]+)\)/g)].map((m) => m[1]))];
+      const inline = await Promise.all(urls.map(fichierEnDataUrl));
+      urls.forEach((u, i) => { if (inline[i]) css = css.split("url(" + u + ")").join("url(" + inline[i] + ")"); });
+      POLICES_EN_CACHE.set(h, css);
+      return css;
+    } catch (e) { return ""; }
+  }));
+  return feuilles.filter(Boolean).join("\n");
+}
+
 export async function POST(req) {
   let corps;
   try { corps = await req.json(); } catch { corps = null; }
@@ -80,10 +141,14 @@ export async function POST(req) {
   }
   const format = FORMATS[corps.format] ? corps.format : "a4";
   const f = FORMATS[format];
+  const theme = corps.theme || {};
   const donnees = {
-    cv, layout: corps.layout || "classic", theme: corps.theme || {},
+    cv, layout: corps.layout || "classic", theme,
     locale: corps.locale === "en" ? "en" : "fr", format,
   };
+  // Warm the font cache before the page asks, so the interception below
+  // answers at once and the page's font wait is not spent on Google.
+  await cssDesPolices([POLICES_DU_SITE, theme.hfHref, theme.bfHref]);
   // The page to print lives on this same deployment: same build, same
   // templates, same fonts as the screen the person is looking at.
   // Behind a proxy that rewrites the URL, NUVI_ORIGINE names the public
@@ -99,6 +164,26 @@ export async function POST(req) {
     const page = await navigateur.newPage();
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument((d) => { window.__NUVI_IMPRESSION__ = d; }, donnees);
+    // THE PAGE'S OWN FONT REQUESTS, ANSWERED WITH STATIC INSTANCES
+    //
+    // The page loads its fonts the way the screen does, through <link>s to
+    // fonts.googleapis.com. Each of those requests is answered here with the
+    // CSS fetched for a legacy user agent, font files inlined. Nothing else
+    // changes on the page, nothing large travels through the script above
+    // (a 1.4 MB payload there silently left the page without its data),
+    // and the fonts arrive through the channel document.fonts.ready waits
+    // on. A request the cache cannot serve goes through untouched.
+    await page.setRequestInterception(true);
+    page.on("request", (r) => {
+      const url = r.url();
+      if (/^https:\/\/fonts\.googleapis\.com\/css2?\?/.test(url)) {
+        cssDesPolices([url]).then((css) => (css
+          ? r.respond({ status: 200, contentType: "text/css; charset=utf-8", body: css })
+          : r.continue())).catch(() => r.continue().catch(() => {}));
+        return;
+      }
+      r.continue().catch(() => {});
+    });
     // domcontentloaded, not load: "load" waits for the font stylesheets,
     // and where Google Fonts is slow or blocked that wait is the whole
     // budget. The page signals data-cvf-pret itself once fonts are in, or

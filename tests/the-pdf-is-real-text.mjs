@@ -87,6 +87,14 @@ export async function run() {
           + "). The picture path answered instead of the server.");
         continue;
       }
+      // A variable font is printed by Chromium as Type 3 outlines: no font
+      // file, and extractors lose lines (the e-mail and phone, measured on
+      // CI where Google Fonts load). The route asks for static instances;
+      // this is the check that it did.
+      if (r.bytes.includes(Buffer.from("/Type3"))) {
+        failures.push(layout + ": the PDF carries Type 3 fonts, so a variable font reached the printer. "
+          + "The route must hand the page static instances (lib/policesDuSite.js).");
+      }
       if (r.bytes.length > 250_000) {
         failures.push(layout + ": the native PDF weighs " + Math.round(r.bytes.length / 1024) + " KB, a text PDF of one page should stay under 250 KB");
       }

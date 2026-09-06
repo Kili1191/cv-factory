@@ -55,6 +55,20 @@ jamais ce chemin. `GET /api/pdf` dit depuis un navigateur si le Chromium de la
 fonction démarre : la photo de secours cache toute panne de la route, à qui
 télécharge comme à qui maintient. `tests/an-old-download-is-read-whole.mjs`.
 
+Les polices de l'impression sont des instances statiques. Chromium ne sait
+pas incorporer une police variable dans un PDF : il dessine chaque glyphe en
+contour (police « Type 3 », aucun fichier de police), et les extracteurs y
+perdent des lignes entières, mesuré sur la CI où les polices Google se
+chargent : l'e-mail et le téléphone disparaissaient du texte lu. La route
+demande donc à Google les mêmes familles avec un agent d'avant les polices
+variables (`lib/policesDuSite.js`), reçoit un fichier par graisse, les
+incorpore en `data:` dans la feuille de style et la remet à la page, qui
+remet à la page en répondant elle-même aux requêtes de polices de celle-ci.
+Sur le papier, les alternates contextuelles sont coupées : Inter remplace le
+« + » et le « - » voisins d'un chiffre par des variantes sans correspondance
+Unicode dans le PDF, et pdf.js lisait « 33 6 12 34 56 78 ».
+`tests/the-pdf-is-real-text.mjs` refuse un Type 3.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la

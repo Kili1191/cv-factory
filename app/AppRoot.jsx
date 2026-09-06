@@ -493,8 +493,11 @@ function mergeTheme(theme, globalCustom, versionCustom) {
     if (cu.bg) eff.bg = cu.bg;
     if (cu.hf) eff.hf = cu.hf;
     if (cu.bf) eff.bf = cu.bf;
-    // hfHref / bfHref ne sont pas appliques dans le theme effectif, ils servent
-    // juste a savoir quoi charger via ensureFontLoaded.
+    // The font URLs travel with the theme: the screen loads them through
+    // ensureFontLoaded, and the print route (app/api/pdf) needs them to
+    // fetch the same families as static instances for the PDF.
+    if (cu.hfHref) eff.hfHref = cu.hfHref;
+    if (cu.bfHref) eff.bfHref = cu.bfHref;
   };
   apply(globalCustom);
   apply(versionCustom);
