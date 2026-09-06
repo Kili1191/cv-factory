@@ -160,9 +160,10 @@ function peindreDansLOrdreDeLecture(el) {
     if (getComputedStyle(e).position === "static") e.style.position = "relative";
   }
   // A bare text node next to positioned siblings still paints in the
-  // in-flow phase, before them: the " · " between an employer and a city
-  // came out as "· Acme Paris". Such a node gets a positioned span of its
-  // own, so it takes its place in the same phase as its neighbours.
+  // in-flow phase, before them: the middle dot between an employer and a
+  // city came out ahead of both, as "dot Acme Paris". Such a node gets a
+  // positioned span of its own, so it takes its place in the same phase
+  // as its neighbours.
   for (const e of [el, ...tous]) {
     if (!e.children.length) continue;
     for (const n of [...e.childNodes]) {
