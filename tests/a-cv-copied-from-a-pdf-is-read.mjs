@@ -108,6 +108,17 @@ export async function run() {
   if (langues !== "French=Native, English=Professional fluency") {
     failures.push("languages read as \"" + langues + "\"");
   }
+  // A template draws the languages on one row, so the same CV read back
+  // from its own PDF, or from a photo of it, hands the reader both
+  // couples in one line. It became one language, "French", with the level
+  // "Native English: Professional fluency", and went out like that on the
+  // next download.
+  const surUneLigne = lireUnCv(COPIE.replace("French: Native\nEnglish: Professional fluency",
+    "French: Native English: Professional fluency")).cv;
+  const languesLigne = surUneLigne.languages.map((l) => l.lang + "=" + l.level).join(", ");
+  if (languesLigne !== "French=Native, English=Professional fluency") {
+    failures.push("two languages on one line read as \"" + languesLigne + "\"");
+  }
   if (!cv.education.length || cv.education[0].school !== "OTHM") {
     failures.push("education not read: " + JSON.stringify(cv.education));
   }
