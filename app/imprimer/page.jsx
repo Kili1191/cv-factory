@@ -128,6 +128,53 @@ function dessinerLesMonogrammes(racine) {
   }
 }
 
+// THE CONTENT STREAM MUST FOLLOW THE READING ORDER
+//
+// Chromium writes the PDF in paint order, and CSS paints positioned
+// elements after the in-flow text of their stacking context. The timeline
+// template positions each job entry to anchor its dot, so the whole
+// experience block landed at the END of the stream, after skills and
+// languages. Poppler and pdf.js sort glyphs by position and hid it;
+// PDFBox, the engine behind Apache Tika and a share of real ATS, reads
+// the stream as written and put the jobs after the languages: 81%
+// fidelity on CI, dates and employer counted as lost.
+//
+// If every element is positioned, all of them paint in one phase, in tree
+// order, which is the reading order of a single-column template. Relative
+// positioning without offsets moves nothing. One exception: an absolutely
+// positioned decoration is placed against its nearest positioned ancestor,
+// so the static wrappers between such a decoration and its current anchor
+// must stay static or the decoration would jump. They are collected first,
+// from the anchors as they are before anything changes.
+function peindreDansLOrdreDeLecture(el) {
+  const tous = [...el.querySelectorAll("*")];
+  const geles = new Set();
+  for (const e of tous) {
+    const pos = getComputedStyle(e).position;
+    if (pos !== "absolute" && pos !== "fixed") continue;
+    let p = e.parentElement;
+    while (p && p !== el && getComputedStyle(p).position === "static") { geles.add(p); p = p.parentElement; }
+  }
+  for (const e of tous) {
+    if (geles.has(e)) continue;
+    if (getComputedStyle(e).position === "static") e.style.position = "relative";
+  }
+  // A bare text node next to positioned siblings still paints in the
+  // in-flow phase, before them: the " · " between an employer and a city
+  // came out as "· Acme Paris". Such a node gets a positioned span of its
+  // own, so it takes its place in the same phase as its neighbours.
+  for (const e of [el, ...tous]) {
+    if (!e.children.length) continue;
+    for (const n of [...e.childNodes]) {
+      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
+      const span = document.createElement("span");
+      span.style.position = "relative";
+      e.replaceChild(span, n);
+      span.appendChild(n);
+    }
+  }
+}
+
 export default function Imprimer() {
   const [d, setD] = useState(null);
   const [pret, setPret] = useState(false);
@@ -135,6 +182,7 @@ export default function Imprimer() {
     if (!d) return;
     const el = document.getElementById("cv-print");
     if (el) {
+      peindreDansLOrdreDeLecture(el);
       resserrerLesTitres(el);
       // After the fonts, so the drawn letters are the printed face.
       const finir = () => { dessinerLesMonogrammes(el); setPret(true); };

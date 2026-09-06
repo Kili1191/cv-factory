@@ -75,6 +75,16 @@ polices web en Type 3 même statiques, et le texte lu tombait à 8 %. Ce
 qu'on mesure ici doit être ce que la CI exécute ; Vercel imprime en 149,
 mesuré sur un fichier téléchargé : polices incorporées, texte entier.
 
+Le flux du PDF suit l'ordre de lecture. Chromium écrit dans l'ordre de
+peinture, et le CSS peint les éléments positionnés après le texte en flux :
+les postes de la chronologie, positionnés pour ancrer leur point, sortaient
+en fin de flux, après les langues. Poppler et pdf.js trient par position et
+ne voyaient rien ; PDFBox, derrière Tika et une part des ATS, lit le flux tel
+quel : 81 % sur la CI. La page d'impression positionne donc tout élément, en
+ordre d'arbre, sauf les enveloppes entre une décoration absolue et son
+ancrage, et enferme les nœuds texte nus dans une portée positionnée. Tika ne
+tourne qu'avec `TIKA_JAR` : sans lui, ce défaut restait invisible en local.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
