@@ -58,7 +58,7 @@ const T = {
   en: {
     menu: "Menu", close: "Close", open: "Open the app",
     h1a: "A CV that passes", h1b: "the robots",
-    sub: "Drop your CV. Nuvi rewrites it for the job, reads it back the way screening software does, and hands you a file a recruiter's software reads whole. The ATS reads it before a human does.",
+    sub: "Drop your CV. Nuvi rewrites it for the job and hands you a file the ATS reads whole.",
     cta: "Start with my CV",
     cardTitle: "What the parsers read", cardIndex: "//06",
     f1t: "Native text, five engines", f1: "Every template is read by poppler, MuPDF and Apache Tika before it ships. Embedded fonts, one page, in reading order.",
@@ -103,7 +103,7 @@ const T = {
   fr: {
     menu: "Menu", close: "Fermer", open: "Ouvrir l'app",
     h1a: "Le CV qui passe", h1b: "les robots",
-    sub: "Depose ton CV. Nuvi le reecrit pour le poste, le relit comme le fait un logiciel de tri, et te rend un fichier que le logiciel du recruteur lit en entier. L'ATS le lit avant un humain.",
+    sub: "Depose ton CV. Nuvi le reecrit pour le poste et te rend un fichier que l'ATS lit en entier.",
     cta: "Commencer avec mon CV",
     cardTitle: "Ce que lisent les analyseurs", cardIndex: "//06",
     f1t: "Texte natif, cinq moteurs", f1: "Chaque gabarit est lu par poppler, MuPDF et Apache Tika avant de partir. Polices incorporees, une page, dans l'ordre de lecture.",
@@ -309,6 +309,10 @@ export default function Vitrine({ lang = "en", onLang }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [menu, fermer]);
   useEffect(() => () => { document.documentElement.style.overflow = ""; }, []);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (v && v.readyState >= 3) setVideoLive(true);
+  }, [videoSrc]);
 
   const choisirLangue = (l) => {
     try { localStorage.setItem("cvf_c", JSON.stringify(l)); } catch (e) { /* storage refused: the page still switches */ }
@@ -367,7 +371,7 @@ export default function Vitrine({ lang = "en", onLang }) {
             <span className="vv-burger" aria-hidden="true"><i /><i /><i /></span>
             <span className="vv-nav__label vv-nav__label--menu">{t.menu}</span>
           </button>
-          <a className="vv-logo" href="/" aria-label="Nuvi"><NuviLogo size={28} inkColor="#000" /></a>
+          <a className="vv-logo" href="/" aria-label="Nuvi"><NuviLogo size={22} inkColor="#000" /></a>
           <a className="vv-nav__item" href="/app">
             <span className="vv-nav__dot" aria-hidden="true" />
             <span className="vv-nav__label">{t.open}</span>

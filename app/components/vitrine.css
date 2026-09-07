@@ -101,7 +101,7 @@
 .vv-nav__item[aria-expanded="true"] .vv-burger i:nth-child(3) { transform: translateY(-4.25px) rotate(-45deg); }
 
 /* the logo, centred; the still mark has the animated one's geometry */
-.vv-mark-still { font-family: var(--vv-serif); font-size: 28px; line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #000; }
+.vv-mark-still { font-family: var(--vv-serif); font-size: 22px; line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #000; }
 .vv-mark-still .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
 .vv-mark-still .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: #000; border-radius: 0.018em; transform: translateX(-50%); }
 .vv-mark-still .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
