@@ -3,7 +3,7 @@
 // LA RACINE EST UNE VITRINE, PLUS UN EDITEUR
 //
 // L'application a demenage sur /app. Voir app/app/page.jsx et
-// app/components/Landing.jsx pour le pourquoi.
+// app/components/Vitrine.jsx pour le pourquoi.
 //
 // ELLE EST RENDUE PAR LE SERVEUR, ET C'ETAIT UN VRAI DEFAUT
 //
@@ -30,7 +30,7 @@
 // une langue et le navigateur une autre, ce qui casse la reprise.
 
 import { useEffect, useState } from "react";
-import Landing from "./components/Landing";
+import Vitrine from "./components/Vitrine";
 
 export default function Accueil() {
   const [lang, setLang] = useState("en");
@@ -45,5 +45,5 @@ export default function Accueil() {
     } catch { /* stockage refuse : l'anglais par defaut */ }
   }, []);
 
-  return <Landing lang={lang}/>;
+  return <Vitrine lang={lang} onLang={setLang}/>;
 }

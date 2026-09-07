@@ -1,0 +1,351 @@
+/* THE FRONT PAGE, IN THE WORLD OF THE GLASS HERO
+ *
+ * The reference Kilian chose is a single screen: an iridescent orb video
+ * on a near-white studio, black light type, a card of liquid glass that
+ * refracts the video behind it, a chamfered button, a menu that slides in.
+ * A site needs the sections below, so the page scrolls; the hero keeps its
+ * full screen and the video stays fixed behind it. Every section below is
+ * opaque, so the video costs nothing once it is out of view.
+ *
+ * The palette is the light of the video itself. The only colour the page
+ * adds is the purple of the logo's dot, and it is used for exactly that:
+ * the dot, the scan line, one word. Every ink is a solid grey, never an
+ * alpha over an unknown ground: the readability suite measures every text
+ * against the first opaque box behind it, and a translucent ink measures
+ * as its base colour, which is not what the eye gets.
+ *
+ * Every class is prefixed vv- so nothing here collides with the app's own
+ * .nav, .card or .menu. The classes the suites hold on to (nuvi-scroll-in,
+ * nuvi-titre-geant, nuvi-mots, nuvi-piste-doc, nuvi-temps) keep their names
+ * and their CSS in globals.css. */
+
+.vv {
+  --vv-ink: #000;
+  --vv-ink-2: #5f5f5f;      /* 5.9:1 on the studio ground */
+  --vv-ink-3: #6b6b6b;      /* 5.3:1 on white, body copy in cards */
+  --vv-ground: #f5f4f0;
+  --vv-white: #fff;
+  --vv-line: rgba(0, 0, 0, 0.1);
+  --vv-line-2: rgba(0, 0, 0, 0.2);
+  --vv-purple: #6d3fc4;
+  --vv-font: "Helvetica Neue", Inter, Helvetica, Arial, sans-serif;
+  --vv-serif: "DM Serif Display", Georgia, serif;
+  --vv-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: var(--vv-font);
+  font-weight: 300;
+  color: var(--vv-ink);
+  background: var(--vv-ground);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.vv *, .vv *::before, .vv *::after { box-sizing: border-box; }
+.vv .vv-icon { flex: none; }
+
+/* ---- the video: full bleed, fixed, never tinted ---------------------- */
+.vv-video {
+  position: fixed; top: 0; left: 0;
+  display: block; width: 100%; height: 100%;
+  object-fit: cover; z-index: 0; pointer-events: none;
+  /* Only ever seen before the first frame: the studio's own grey, from
+     the reference. The video fades over it once it can play. */
+  background: #c2ccd3;
+  opacity: 0; transition: opacity 900ms ease;
+}
+.vv-video.is-live { opacity: 1; }
+.vv-glass-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
+
+/* ---- hero shell ------------------------------------------------------ */
+.vv-hero {
+  position: relative; z-index: 10;
+  display: flex; flex-direction: column;
+  width: 100%; height: 100vh; height: 100dvh;
+  pointer-events: none;   /* only interactive children opt back in */
+}
+
+/* vertical rules, desktop only */
+.vv-rule { position: absolute; top: 0; bottom: 0; display: none; flex-direction: column; align-items: center; }
+.vv-rule--left  { left: 1.25rem; }
+.vv-rule--right { right: 1.25rem; }
+.vv-rule__seg { width: 1px; background: var(--vv-line-2); }
+.vv-rule__seg--end { height: 15%; }
+.vv-rule__seg--mid { flex: 1 1 0%; }
+.vv-rule__plus { font-size: 0.75rem; line-height: 1; color: var(--vv-ink-2); padding: 0.25rem 0; }
+@media (min-width: 768px) { .vv-rule { display: flex; } }
+
+/* ---- nav ------------------------------------------------------------- */
+.vv-nav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; }
+.vv-nav__item {
+  display: inline-flex; align-items: center; gap: 0.625rem; min-height: 44px;
+  color: var(--vv-ink); background: none; border: 0; font: inherit; font-weight: 300; text-decoration: none;
+  cursor: pointer; pointer-events: auto; transition: opacity 300ms;
+}
+.vv-nav__item:hover { opacity: 0.6; }
+.vv-nav__item:focus-visible, .vv-logo:focus-visible, .vv-chamfer:focus-visible,
+.vv-menu__close:focus-visible, .vv-menu__link:focus-visible, .vv-menu__mail:focus-visible,
+.vv-lang button:focus-visible, .vv-foot a:focus-visible { outline: 2px solid var(--vv-ink); outline-offset: 4px; }
+.vv-nav__label { font-size: 0.875rem; line-height: 1.25rem; letter-spacing: 0.025em; }
+.vv-nav__label--menu { display: none; }
+.vv-nav__dot { width: 8px; height: 8px; border-radius: 9999px; background: var(--vv-purple); }
+@media (min-width: 640px) { .vv-nav { padding: 1.25rem 1.5rem; } .vv-nav__label--menu { display: inline; } }
+@media (min-width: 768px) { .vv-nav { padding: 1.5rem 3rem; } }
+
+/* the hamburger becomes a cross while the menu is open */
+.vv-burger { width: 20px; height: 20px; position: relative; display: inline-block; }
+.vv-burger i { position: absolute; left: 3px; right: 3px; height: 1.5px; background: currentColor; border-radius: 1px;
+  transition: transform 420ms var(--vv-ease), opacity 200ms; }
+.vv-burger i:nth-child(1) { top: 5px; }
+.vv-burger i:nth-child(2) { top: 9.25px; }
+.vv-burger i:nth-child(3) { top: 13.5px; }
+.vv-nav__item[aria-expanded="true"] .vv-burger i:nth-child(1) { transform: translateY(4.25px) rotate(45deg); }
+.vv-nav__item[aria-expanded="true"] .vv-burger i:nth-child(2) { opacity: 0; transform: scaleX(0.2); }
+.vv-nav__item[aria-expanded="true"] .vv-burger i:nth-child(3) { transform: translateY(-4.25px) rotate(-45deg); }
+
+/* the logo, centred; the still mark has the animated one's geometry */
+.vv-mark-still { font-family: var(--vv-serif); font-size: 28px; line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #000; }
+.vv-mark-still .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
+.vv-mark-still .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: #000; border-radius: 0.018em; transform: translateX(-50%); }
+.vv-mark-still .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
+.vv-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center;
+           min-height: 44px; text-decoration: none; color: var(--vv-ink); pointer-events: auto; }
+
+/* ---- bottom row ------------------------------------------------------ */
+.vv-hero-bottom {
+  position: relative; z-index: 2; margin-top: auto;
+  display: flex; flex-direction: column; gap: 1.5rem;
+  padding: 0 1.25rem 1.5rem;
+}
+@media (min-width: 640px) { .vv-hero-bottom { padding: 0 1.5rem 2rem; } }
+@media (min-width: 768px) {
+  .vv-hero-bottom { flex: 1; margin-top: 0; flex-direction: row; align-items: stretch; justify-content: space-between; gap: 3rem; padding: 2rem 3rem 3rem; }
+  .vv-lede { align-self: flex-start; }
+  .vv-card { align-self: flex-end; }
+}
+
+/* ---- copy ------------------------------------------------------------ */
+.vv-lede { max-width: 24rem; }
+.vv-lede__title { margin: 0; font-size: 1.25rem; font-weight: 300; line-height: 1.25; letter-spacing: -0.025em; color: var(--vv-ink); }
+.vv-lede__body  { margin: 0.75rem 0 0; max-width: 280px; font-size: 0.75rem; line-height: 1.625; color: var(--vv-ink-2); }
+@media (min-width: 640px)  { .vv-lede__title { font-size: 1.5rem; }   .vv-lede__body { font-size: 0.875rem; } }
+@media (min-width: 768px)  { .vv-lede__title { font-size: 1.875rem; } .vv-lede__body { margin-top: 1rem; } }
+@media (min-width: 1024px) { .vv-lede__title { font-size: 2.25rem; } }
+
+/* the page arrives in order: nav, title, body, button, then the card */
+.vv-arrive { animation: vvArrive 700ms var(--vv-ease) both; animation-delay: var(--pose, 0ms); }
+@keyframes vvArrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+/* ---- chamfered button ------------------------------------------------ */
+.vv-chamfer {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  width: 220px; height: 44px; margin-top: 1.5rem; padding: 0 1.25rem;
+  color: var(--vv-ink); text-decoration: none; pointer-events: auto; transition: opacity 300ms;
+}
+.vv-chamfer:hover { opacity: 0.7; }
+.vv-chamfer:hover .vv-icon { transform: translateX(3px); }
+.vv-chamfer .vv-icon { position: relative; transition: transform 300ms var(--vv-ease); }
+.vv-chamfer__glass {
+  position: absolute; inset: 0;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--vv-line-2);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+.vv-chamfer__outline { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.vv-chamfer__label { position: relative; font-size: 0.75rem; letter-spacing: 0.025em; }
+@media (min-width: 640px) {
+  .vv-chamfer { width: 260px; height: 48px; padding: 0 1.5rem; }
+  .vv-chamfer__label { font-size: 0.875rem; }
+  .vv-chamfer__glass { background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; border-color: transparent; }
+}
+@media (min-width: 768px) { .vv-chamfer { margin-top: 2rem; } }
+/* on an opaque section the button keeps its outline, no glass needed */
+.vv-chamfer--plain .vv-chamfer__glass { display: none; }
+.vv-chamfer--plain { margin-top: 0; }
+
+/* ---- the liquid-glass card ------------------------------------------- */
+.vv-card {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between;
+  width: 340px; max-width: 100%; height: 460px; padding: 2rem;
+  border-radius: 48px; overflow: hidden; background: transparent;
+  border: 1px solid rgba(47, 47, 47, 0.15); pointer-events: auto;
+  animation: vvCardUp 900ms var(--vv-ease) both; animation-delay: 260ms;
+}
+@keyframes vvCardUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+.vv-dup { position: absolute; left: 0; top: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.vv-dup canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: url(#vv-liquid-glass); }
+.vv-card__frost {
+  position: absolute; inset: 0; z-index: 1; border-radius: 48px; pointer-events: none;
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.3), inset 0 -1px 2px rgba(0, 0, 0, 0.15);
+  transition: background 400ms;
+}
+.vv-card:hover .vv-card__frost { background: rgba(255, 255, 255, 0.1); }
+.vv-card__head, .vv-card__body, .vv-card__wave { position: relative; z-index: 2; }
+.vv-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--vv-line); }
+.vv-card__title { margin: 0; font-size: 1rem; font-weight: 500; letter-spacing: -0.025em; }
+.vv-card__index { font-size: 0.75rem; color: var(--vv-ink-2); font-variant-numeric: tabular-nums; }
+.vv-card__body { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+.vv-finding__title { margin: 0; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.025em; }
+.vv-finding__text { margin: 0.25rem 0 0; font-size: 0.75rem; line-height: 1.625; color: var(--vv-ink-2); }
+.vv-card__wave { display: block; width: 100%; height: auto; margin-top: 1.25rem; color: var(--vv-ink); }
+@media (min-width: 640px) { .vv-card__title { font-size: 1.125rem; } }
+@media (min-width: 768px) {
+  .vv-card__head { padding-bottom: 1rem; }
+  .vv-card__title { font-size: 1.25rem; }
+  .vv-card__body { gap: 1.25rem; margin-top: 1.25rem; }
+  .vv-finding__title { font-size: 1rem; }
+  .vv-finding__text { font-size: 0.875rem; margin-top: 0.375rem; }
+  .vv-card__wave { margin-top: 1.5rem; }
+}
+
+/* ---- the menu: opens like a drawer, closes the way it came ------------
+ * Open: the veil fades, the panel slides in on a long ease-out, the links
+ * rise one after the other, the foot last. Close: the links fall back in
+ * reverse, faster, then the panel leaves and the veil clears. The layer
+ * only goes inert once the last transition has ended, so nothing is cut
+ * mid-motion. The hamburger turns into a cross for the whole time. */
+.vv-menu { position: fixed; inset: 0; z-index: 50; visibility: hidden; pointer-events: none; }
+.vv-menu.is-open, .vv-menu.is-closing { visibility: visible; }
+.vv-menu.is-open { pointer-events: auto; }
+.vv-menu__veil { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); opacity: 0; transition: opacity 500ms; }
+.vv-menu.is-open .vv-menu__veil { opacity: 1; }
+.vv-menu.is-closing .vv-menu__veil { transition-duration: 380ms; transition-delay: 120ms; }
+.vv-menu__panel { position: absolute; top: 0; left: 0; display: flex; flex-direction: column;
+  width: 100%; height: 100%; padding: 1.5rem 2rem; background: #f5f4f0; color: var(--vv-ink);
+  transform: translateX(-100%); transition: transform 560ms var(--vv-ease); overflow-y: auto; }
+.vv-menu.is-open .vv-menu__panel { transform: translateX(0); }
+.vv-menu.is-closing .vv-menu__panel { transition: transform 420ms cubic-bezier(0.7, 0, 0.84, 0); transition-delay: 140ms; }
+@media (min-width: 640px) { .vv-menu__panel { width: 380px; padding: 1.5rem 2.5rem; } }
+.vv-menu__close { display: inline-flex; align-items: center; gap: 0.625rem; align-self: flex-start; min-height: 44px;
+  margin-bottom: 2.5rem; background: none; border: 0; font: inherit; font-weight: 300; font-size: 0.875rem;
+  color: var(--vv-ink); cursor: pointer; transition: opacity 300ms; }
+.vv-menu__close:hover { opacity: 0.6; }
+.vv-menu__nav { display: flex; flex-direction: column; }
+.vv-menu__link { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; min-height: 44px;
+  border-bottom: 1px solid var(--vv-line); color: var(--vv-ink); text-decoration: none;
+  opacity: 0; transform: translateY(20px); transition: opacity 500ms, transform 500ms var(--vv-ease); }
+.vv-menu__text { font-size: 1.5rem; font-weight: 300; letter-spacing: -0.025em; transition: transform 300ms var(--vv-ease); }
+.vv-menu__link:hover .vv-menu__text { transform: translateX(8px); }
+.vv-menu__arrow { opacity: 0; transform: translateX(8px); transition: opacity 300ms, transform 300ms; color: var(--vv-purple); }
+.vv-menu__link:hover .vv-menu__arrow { opacity: 1; transform: translateX(0); }
+@media (min-width: 640px) { .vv-menu__text { font-size: 1.875rem; } }
+.vv-menu.is-open .vv-menu__link { opacity: 1; transform: translateY(0); }
+.vv-menu.is-open .vv-menu__link:nth-child(1) { transition-delay: 150ms; }
+.vv-menu.is-open .vv-menu__link:nth-child(2) { transition-delay: 225ms; }
+.vv-menu.is-open .vv-menu__link:nth-child(3) { transition-delay: 300ms; }
+.vv-menu.is-open .vv-menu__link:nth-child(4) { transition-delay: 375ms; }
+.vv-menu.is-open .vv-menu__link:nth-child(5) { transition-delay: 450ms; }
+.vv-menu.is-closing .vv-menu__link { transition-duration: 220ms; }
+.vv-menu.is-closing .vv-menu__link:nth-child(5) { transition-delay: 0ms; }
+.vv-menu.is-closing .vv-menu__link:nth-child(4) { transition-delay: 30ms; }
+.vv-menu.is-closing .vv-menu__link:nth-child(3) { transition-delay: 60ms; }
+.vv-menu.is-closing .vv-menu__link:nth-child(2) { transition-delay: 90ms; }
+.vv-menu.is-closing .vv-menu__link:nth-child(1) { transition-delay: 120ms; }
+.vv-menu__foot { margin-top: auto; padding: 1.5rem 0 2rem; border-top: 1px solid var(--vv-line);
+  opacity: 0; transform: translateY(20px); transition: opacity 500ms, transform 500ms var(--vv-ease); }
+.vv-menu.is-open .vv-menu__foot { opacity: 1; transform: translateY(0); transition-delay: 600ms; }
+.vv-menu.is-closing .vv-menu__foot { transition-duration: 200ms; }
+.vv-menu__label { display: block; margin-bottom: 0.75rem; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.025em; color: var(--vv-ink-2); }
+.vv-menu__mail { font-size: 0.875rem; color: var(--vv-ink-3); text-decoration: none; transition: color 300ms; }
+.vv-menu__mail:hover { color: var(--vv-ink); }
+.vv-lang { display: flex; gap: 6px; margin-top: 1rem; }
+.vv-lang button { min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--vv-line-2); background: none;
+  font: inherit; font-size: 0.8rem; color: var(--vv-ink-3); cursor: pointer; transition: background 300ms, color 300ms; }
+.vv-lang button[aria-pressed="true"] { background: var(--vv-ink); color: #fff; border-color: var(--vv-ink); }
+
+/* ---- the site below the hero ----------------------------------------- */
+.vv-site { position: relative; z-index: 10; background: var(--vv-ground); }
+.vv-sec { position: relative; padding: 6rem 1.25rem; }
+@media (min-width: 640px) { .vv-sec { padding: 7rem 1.5rem; } }
+@media (min-width: 768px) { .vv-sec { padding: 9rem 3rem; } }
+.vv-sec + .vv-sec { border-top: 1px solid var(--vv-line); }
+.vv-sec--white { background: var(--vv-white); }
+.vv-sec--ink { background: #0a0a0a; color: #fff; }
+.vv-sec--ink .vv-eyebrow, .vv-sec--ink .vv-muted { color: #a3a3a3; }
+.vv-sec--ink .vv-frost { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.15); color: #fff; }
+.vv-eyebrow { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--vv-ink-2); margin-bottom: 1rem; font-weight: 400; }
+.vv-h { margin: 0; font-weight: 300; letter-spacing: -0.03em; line-height: 1.05; font-size: clamp(2rem, 5.2vw, 4.25rem); max-width: 18ch; }
+.vv-muted { color: var(--vv-ink-2); }
+.vv-lead { max-width: 46ch; font-size: 1rem; line-height: 1.6; margin: 1.25rem 0 0; }
+@media (min-width: 768px) { .vv-lead { font-size: 1.125rem; } }
+.vv-grid2 { display: grid; gap: 2.5rem; }
+@media (min-width: 900px) { .vv-grid2 { grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; } .vv-sticky { position: sticky; top: 6rem; } }
+.vv-link { color: var(--vv-ink); text-decoration: none; background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat; background-size: 100% 1px; background-position: 0 100%; transition: background-size 300ms var(--vv-ease); padding-bottom: 2px; }
+.vv-link:hover { background-size: 30% 1px; }
+.vv-link--more { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 1rem; font-size: 0.9rem; }
+
+/* frosted cards: the hero's card without the video behind it */
+.vv-frost { position: relative; border-radius: 28px; border: 1px solid rgba(47, 47, 47, 0.15); background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.08); padding: 1.75rem; }
+.vv-frost h3 { margin: 0 0 0.5rem; font-weight: 400; font-size: 1.25rem; letter-spacing: -0.02em; }
+.vv-frost p { margin: 0; line-height: 1.6; color: var(--vv-ink-3); }
+.vv-frost .vv-idx { position: absolute; right: 1.5rem; top: 1.5rem; font-size: 0.75rem; color: var(--vv-ink-2); }
+
+/* ticker of real readings */
+.vv-ticker { position: relative; z-index: 10; overflow: hidden; border-top: 1px solid var(--vv-line); border-bottom: 1px solid var(--vv-line); background: var(--vv-ground); }
+.vv-ticker__row { display: flex; width: max-content; padding: 0.9rem 0; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; animation: vvTick 40s linear infinite; }
+.vv-ticker__row span { padding: 0 1.75rem; white-space: nowrap; }
+.vv-ticker__row span i { font-style: normal; color: var(--vv-purple); }
+@keyframes vvTick { to { transform: translateX(-50%); } }
+
+/* numbered steps */
+.vv-step { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; padding: 2rem 0; border-top: 1px solid var(--vv-line); }
+.vv-step:last-child { border-bottom: 1px solid var(--vv-line); }
+.vv-step .vv-k { font-size: 0.8rem; letter-spacing: 0.06em; color: var(--vv-ink-2); padding-top: 0.35rem; }
+.vv-step h3 { margin: 0 0 0.5rem; font-weight: 400; font-size: 1.4rem; letter-spacing: -0.02em; }
+.vv-step p { margin: 0; max-width: 46ch; line-height: 1.6; color: var(--vv-ink-3); }
+
+/* templates rail */
+.vv-rail { display: flex; gap: 1.25rem; overflow-x: auto; padding: 0.5rem 0 1.5rem; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.vv-rail::-webkit-scrollbar { height: 0; }
+.vv-tpl { flex: 0 0 240px; scroll-snap-align: start; margin: 0; }
+.vv-sheet { position: relative; aspect-ratio: 1 / 1.35; background: #fff; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 6px; padding: 9% 9% 0; overflow: hidden; }
+.vv-sheet i { display: block; height: 0.5em; border-radius: 3px; background: #dcdad4; margin-bottom: 0.45em; }
+.vv-sheet i.vv-name { height: 0.9em; width: 54%; background: #111; margin-bottom: 0.7em; }
+.vv-sheet i.vv-h2 { width: 30%; background: #111; height: 0.45em; margin-top: 1em; }
+.vv-sheet.vv-two { display: grid; grid-template-columns: 34% 1fr; gap: 8%; }
+.vv-sheet.vv-two .vv-side { background: #ececea; margin: -9% 0 0 -9%; padding: 9% 6% 0; height: 130%; }
+.vv-sheet.vv-two .vv-side i { background: #cfcdc7; }
+.vv-tpl figcaption { display: flex; justify-content: space-between; margin-top: 0.9rem; font-size: 0.85rem; }
+.vv-tpl figcaption span { color: var(--vv-ink-2); }
+
+/* after the CV */
+.vv-four { display: grid; gap: 1.25rem; margin-top: 3rem; }
+@media (min-width: 640px) { .vv-four { grid-template-columns: 1fr 1fr; } }
+
+/* pricing */
+.vv-price { display: grid; gap: 2rem; }
+@media (min-width: 900px) { .vv-price { grid-template-columns: 1fr 1fr; align-items: center; } }
+.vv-price ul { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
+.vv-price li { padding-left: 1.25rem; position: relative; line-height: 1.5; color: var(--vv-ink-3); }
+.vv-price li::before { content: "+"; position: absolute; left: 0; color: var(--vv-ink-2); }
+.vv-price .vv-big { font-size: clamp(2.5rem, 6vw, 4.5rem); letter-spacing: -0.03em; line-height: 1; margin: 0; }
+.vv-price .vv-big small { display: block; font-size: 0.9rem; letter-spacing: 0; color: var(--vv-ink-3); margin-top: 0.75rem; }
+
+/* footer */
+.vv-foot { position: relative; z-index: 10; padding: 5rem 1.25rem 2.5rem; background: #0a0a0a; color: #fff; }
+@media (min-width: 768px) { .vv-foot { padding: 7rem 3rem 2.5rem; } }
+.vv-foot__mark { font-family: var(--vv-serif); font-size: clamp(5rem, 18vw, 16rem); line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #fff; text-decoration: none; }
+.vv-foot__mark .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
+.vv-foot__mark .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: #fff; border-radius: 0.018em; transform: translateX(-50%); }
+.vv-foot__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
+.vv-foot .vv-cols { display: grid; gap: 2rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.15); font-size: 0.85rem; }
+@media (min-width: 640px) { .vv-foot .vv-cols { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+.vv-foot a, .vv-foot button { display: inline-flex; align-items: center; min-height: 32px; color: #bdbdbd; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; transition: color 300ms; }
+.vv-foot a:hover, .vv-foot button:hover { color: #fff; }
+.vv-foot .vv-lbl { display: block; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #a3a3a3; margin-bottom: 0.6rem; }
+.vv-foot .vv-col > * + * { margin-top: 0.15rem; }
+.vv-foot__bottom { margin-top: 2.5rem; font-size: 0.75rem; color: #a3a3a3; }
+
+/* ---- the document track keeps globals.css rules; only its inks change ---- */
+.vv .nuvi-temps { color: var(--vv-ink); }
+.vv .nuvi-temps::before { color: var(--vv-purple); }
+
+@media (prefers-reduced-motion: reduce) {
+  .vv-arrive, .vv-card { animation: none; }
+  .vv-ticker__row { animation: none; }
+  .vv-menu__panel, .vv-menu__veil, .vv-menu__link, .vv-menu__foot, .vv-burger i { transition-duration: 0.01ms !important; transition-delay: 0ms !important; }
+  .vv-video { transition: none; }
+}

@@ -141,6 +141,24 @@ une seule ligne). `tests/a-linkedin-profile-is-a-cv.mjs` imprime une page à la
 forme de l'export au moment du test, aucun fichier personnel n'est dans le
 dépôt ; un vrai fichier reste la prochaine chose à essayer.
 
+La vitrine, sur `/`, est depuis le 7 septembre 2026 la page que Kilian a
+choisie sur motionsites, « Planetary Pulse » : une vidéo de bulle irisée sur
+un studio presque blanc, une typographie noire légère, une carte de verre
+liquide qui réfracte la vidéo derrière elle (un filtre SVG et un canvas
+redessiné à chaque image), un bouton chanfreiné, un menu qui glisse.
+`app/components/Vitrine.jsx` et `vitrine.css`, préfixe `vv-`. Une première
+version l'avait recolorée dans le crème et le corail du site et a été
+refusée : la lumière de la vidéo est la palette, et la seule couleur ajoutée
+est le violet du point du logo. Les sections en dessous vivent dans le même
+monde et gardent les classes que les suites tiennent (`nuvi-scroll-in`,
+`nuvi-titre-geant`, `nuvi-mots`, `nuvi-piste-doc`, `nuvi-temps`) : le
+mouvement au défilement reste dans `globals.css`. La vidéo est demandée
+d'abord à `/vitrine/orbe.mp4`, la copie de Nuvi, et retombe sur le fichier
+de la référence chez son hébergeur tant que cette copie n'est pas dans le
+dépôt ; sans elle, le gris du studio et tous les mots restent. Les encres
+sont des gris pleins, jamais une opacité sur un fond inconnu : la suite de
+lisibilité mesure chaque texte contre la première boîte opaque derrière lui.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
