@@ -75,8 +75,10 @@ jobs:
       # sert a autre chose : il lit l'image rendue, donc ce qu'un oeil voit,
       # et permet de verifier que la couche de texte invisible ne contient
       # rien qui ne soit pas sur la page.
-      - name: Installer poppler, MuPDF et l'OCR
-        run: sudo apt-get update && sudo apt-get install -y poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra
+      # libreoffice-writer opens the Word export and prints it: the proof
+      # that the .docx is a document, not a zip that passes a regex.
+      - name: Installer poppler, MuPDF, l'OCR et Writer
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra libreoffice-writer
 
       - name: Mettre Apache Tika en cache
         id: tika

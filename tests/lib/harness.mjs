@@ -268,8 +268,11 @@ export async function exportCvPdf(browser, cv, layout) {
   try {
     await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
     await page.waitForTimeout(1500);
-    const confirm = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
-    if (await confirm.count() > 1) { await confirm.nth(1).click({ timeout: 10_000 }).catch(() => {}); }
+    // The dialog's confirm button, by its exact name. A looser match once
+    // picked an option whose description mentioned the paper size, and the
+    // dialog stayed open with nothing downloaded.
+    const confirm = page.getByRole("button", { name: /^(Telecharger|Download)$/ });
+    if (await confirm.count() > 0) { await confirm.last().click({ timeout: 10_000 }).catch(() => {}); }
   } catch (clickErr) {
     clickErrMsg = clickErr.message.split("\n")[0];
   }

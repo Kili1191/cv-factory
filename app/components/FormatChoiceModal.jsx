@@ -9,7 +9,7 @@ import { Trans } from "./tokens";
  * Props:
  *   isOpen: boolean
  *   onClose: () => void
- *   onConfirm: (format: "a4"|"letter"|"legal", alwaysUse: boolean) => void
+ *   onConfirm: (format: "a4"|"letter"|"legal"|"docx", alwaysUse: boolean) => void
  *   locale: "fr"|"en"
  */
 export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale = "en" }) {
@@ -41,6 +41,14 @@ export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale =
       dim: "215.9 x 355.6 mm (8.5 x 14 in)",
       desc: isEn ? "Long documents, rare" : "Documents longs, rare",
     },
+    // Word is not a paper size, it is what an agency asks for when it
+    // pastes CVs into its own template. One column, real headings, real
+    // bullets: what survives an editor's cursor.
+    docx: {
+      label: "Word",
+      dim: ".docx, " + (isEn ? "one column, no table" : "une colonne, sans tableau"),
+      desc: isEn ? "For agencies and recruiters who edit your CV" : "Pour les cabinets et recruteurs qui retouchent ton CV",
+    },
     always: isEn ? "Always use this format" : "Toujours utiliser ce format",
     download: isEn ? "Download" : "Telecharger",
     cancel: isEn ? "Cancel" : "Annuler",
@@ -50,6 +58,7 @@ export default function FormatChoiceModal({ isOpen, onClose, onConfirm, locale =
     { key: "a4", ...t.a4 },
     { key: "letter", ...t.letter },
     { key: "legal", ...t.legal },
+    { key: "docx", ...t.docx },
   ];
 
   return (

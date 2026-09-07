@@ -5097,7 +5097,33 @@ export default function App() {
   // - L'lib gere TOUT : capture, accents, multi-pages
   // - Format A4 standard par defaut
   // ============================================================
+  // THE CV AS A WORD FILE
+  //
+  // Same data, one column, real headings and bullets (lib/exporterEnDocx).
+  // The library loads on demand, the file leaves through the same anchor
+  // as the PDF. A failure is said, and nothing else changes on screen.
+  const exportDocx = useCallback(async () => {
+    try {
+      const { exporterEnDocx, nomDuFichierDocx } = await import("../lib/exporterEnDocx.js");
+      const blob = await exporterEnDocx(cv, { locale, theme: effTheme });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = nomDuFichierDocx(cv);
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      notify(locale === "en" ? "Word file downloaded" : "Fichier Word telecharge");
+    } catch (e) {
+      console.error("[exportDocx] FAILED:", e);
+      signaler("docx_echec", (e && e.message) || String(e));
+      notify(locale === "en" ? "The Word file could not be made." : "Le fichier Word n'a pas pu etre fabrique.");
+    }
+  }, [cv, locale, effTheme, notify]);
+
   const exportPDF = useCallback((format = "a4") => {
+    // Word is chosen in the same dialog as the paper sizes and reaches
+    // the export by every path the sizes do: the dialog, the remembered
+    // choice, the keyboard shortcut. One branch here covers them all.
+    if (format === "docx") { exportDocx(); return; }
     const el = document.getElementById("cv-print");
     if (!el) return;
 
@@ -5460,7 +5486,7 @@ export default function App() {
         if (tempHide) tempHide.remove();
       }
     })();
-  }, [cv, layout, effTheme, locale, T, notify, overlayTextLayer]);
+  }, [cv, layout, effTheme, locale, T, notify, overlayTextLayer, exportDocx]);
 
   // ============================================================
   // Format download dialog : intercepte le download pour demander
