@@ -75,8 +75,8 @@ const T = {
     essaiLead: "Type a line from your CV", essaiHolder: "Hard-working team player with excellent communication skills",
     essaiReset: "Back to the example", essaiPrive: "Nothing leaves your phone or computer. No account, nothing sent, nothing kept.",
     verifLien: "Check my whole CV, as a PDF",
-    quiEyebrow: "Who it is for", quiTitle: "Made for the road and the floor.",
-    quiLead: "CV tools are built for engineers and consultants. Nuvi is written for drivers, waiters, cooks and receptionists: the jobs where you answer twenty ads a month and a robot reads first, every time.",
+    quiEyebrow: "Who it is for", quiTitle: "For everyone who applies.",
+    quiLead: "Whatever the job, a robot reads your CV first. Nuvi works for every CV, from a first job to a management role. These are the jobs people apply to most, where it is needed most often.",
     howEyebrow: "How it works", howTitle: "Three steps. Ten minutes.",
     howLead: "No template to fill in. You start from the CV you already have.",
     steps: [["Drop your CV", "A PDF, a Word file, a photo of it, or your LinkedIn page. Nuvi reads it in a second, for free, before you decide anything."],
@@ -124,8 +124,8 @@ const T = {
     essaiLead: "Tape une ligne de ton CV", essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
     essaiReset: "Revenir a l'exemple", essaiPrive: "Rien ne sort de ton telephone ou de ton ordinateur. Pas de compte, rien d'envoye, rien de garde.",
     verifLien: "Verifier mon CV entier, en PDF",
-    quiEyebrow: "Pour qui", quiTitle: "Fait pour la route et la salle.",
-    quiLead: "Les outils de CV sont faits pour les ingenieurs et les consultants. Nuvi est ecrit pour les chauffeurs, les serveurs, les cuisiniers et les receptionnistes : les metiers ou l'on repond a vingt annonces par mois et ou un robot lit en premier, a chaque fois.",
+    quiEyebrow: "Pour qui", quiTitle: "Pour tous ceux qui postulent.",
+    quiLead: "Quel que soit le poste, un robot lit ton CV en premier. Nuvi marche pour tous les CV, du premier emploi au poste de direction. Voici les metiers ou l'on postule le plus, la ou il sert le plus souvent.",
     howEyebrow: "Comment ca marche", howTitle: "Trois etapes. Dix minutes.",
     howLead: "Pas de modele a remplir. Tu pars du CV que tu as deja.",
     steps: [["Depose ton CV", "Un PDF, un fichier Word, une photo, ou ta page LinkedIn. Nuvi le lit en une seconde, gratuitement, avant que tu decides quoi que ce soit."],
@@ -157,15 +157,21 @@ const T = {
 
 // THE JOBS THIS PAGE SPEAKS TO
 //
-// Drivers and hospitality: the fields where people answer twenty ads a
-// month and a robot reads first every time. Other trades find work by
-// other doors. Naming them says who this is for before the first
-// sentence, and the ticker and the "for whom" section share the list.
+// The titles people apply for most, in the UK and in France: retail,
+// warehouse, delivery, care, customer service, hospitality, admin,
+// cleaning, security, and the office roles that answer ads by the dozen.
+// Nuvi is for everyone who applies; these are the people who meet the
+// sorting robot most often, so the ticker names them. The "for whom"
+// section shares the list and says the page is for every CV.
 const METIERS = {
-  en: ["Delivery driver", "Van driver", "HGV driver", "Courier", "Chauffeur", "Waiter", "Bartender", "Chef de partie",
-       "Kitchen porter", "Receptionist", "Room attendant", "Host", "Barista", "Night porter"],
-  fr: ["Chauffeur-livreur", "Chauffeur VTC", "Chauffeur poids lourd", "Coursier", "Serveur", "Barman", "Chef de partie",
-       "Plongeur", "Receptionniste", "Femme de chambre", "Hote d'accueil", "Barista", "Veilleur de nuit", "Commis de cuisine"],
+  en: ["Sales assistant", "Warehouse operative", "Delivery driver", "Customer service advisor", "Care assistant",
+       "Waiter", "Barista", "Receptionist", "Administrative assistant", "Cleaner", "Security officer", "Cashier",
+       "Kitchen porter", "Chef", "Forklift driver", "Nursery assistant", "Teaching assistant", "Call centre agent",
+       "Bartender", "Housekeeper", "Recruiter", "Account manager", "Marketing assistant", "Bus driver"],
+  fr: ["Vendeur", "Preparateur de commandes", "Chauffeur-livreur", "Conseiller clientele", "Aide-soignant",
+       "Serveur", "Barista", "Receptionniste", "Assistant administratif", "Agent d'entretien", "Agent de securite", "Caissier",
+       "Plongeur", "Cuisinier", "Cariste", "Auxiliaire de creche", "Assistant d'education", "Teleconseiller",
+       "Barman", "Femme de chambre", "Charge de recrutement", "Commercial", "Assistant marketing", "Conducteur de bus"],
 };
 
 // The same facts, filed two ways, for the Morph section. Nothing is added:
