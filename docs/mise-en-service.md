@@ -18,6 +18,19 @@ variable indispensable, et elle est configurée.
 
 ---
 
+### Le PDF, deux variables facultatives
+
+Le PDF natif est imprimé par un Chromium sans tête. Sur Vercel il est
+embarqué dans la fonction, rien à régler. Deux variables n'existent que pour
+les cas particuliers :
+
+| Variable | Quand la poser |
+| --- | --- |
+| `NUVI_ORIGINE` | Derrière un proxy qui réécrit l'adresse : l'origine publique que l'imprimante doit ouvrir, par exemple `https://thenuvi.com`. Sans elle la route n'accepte que thenuvi.com, les aperçus Vercel et localhost. |
+| `PDF_CHROMIUM_PATH` | Hors Vercel, un Chromium précis à utiliser au lieu de celui que Playwright a installé. |
+
+`GET /api/pdf` dans un navigateur dit si le Chromium de la fonction démarre.
+
 ## 2. Les comptes, Supabase : **à faire, ~10 min**
 
 | Variable | Où |

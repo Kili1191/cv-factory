@@ -43,8 +43,15 @@ export async function POST(request) {
       );
     }
 
+    // The abort controller is shared with the stream below: when the
+    // browser leaves mid-answer the reader is cancelled and the upstream
+    // request aborted, instead of draining tokens into a closed socket.
+    // The timer covers a stalled upstream.
+    const arret = new AbortController();
+    const minuterie = setTimeout(() => arret.abort(), 55_000);
     const upstream = await fetch(ANTHROPIC_URL, {
       method: "POST",
+      signal: arret.signal,
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
@@ -60,6 +67,7 @@ export async function POST(request) {
     });
 
     if (!upstream.ok || !upstream.body) {
+      clearTimeout(minuterie);
       const detail = await upstream.text().catch(() => "");
       return new Response(
         JSON.stringify({ error: { message: detail || `Anthropic ${upstream.status}` } }),
@@ -73,9 +81,10 @@ export async function POST(request) {
     const encoder = new TextEncoder();
     let buffer = "";
 
+    let reader = null;
     const stream = new ReadableStream({
       async start(controller) {
-        const reader = upstream.body.getReader();
+        reader = upstream.body.getReader();
         try {
           for (;;) {
             const { done, value } = await reader.read();
@@ -102,10 +111,17 @@ export async function POST(request) {
             }
           }
         } catch (err) {
-          controller.enqueue(encoder.encode("\n[flux interrompu]"));
+          try { controller.enqueue(encoder.encode("\n[flux interrompu]")); } catch (e) { /* reader gone */ }
         } finally {
-          controller.close();
+          clearTimeout(minuterie);
+          try { controller.close(); } catch (e) { /* already closed */ }
         }
+      },
+      // The browser went away: stop reading and tell Anthropic to stop.
+      cancel() {
+        clearTimeout(minuterie);
+        if (reader) reader.cancel().catch(() => {});
+        arret.abort();
       },
     });
 

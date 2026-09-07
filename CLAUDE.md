@@ -85,6 +85,17 @@ ordre d'arbre, sauf les enveloppes entre une décoration absolue et son
 ancrage, et enferme les nœuds texte nus dans une portée positionnée. Tika ne
 tourne qu'avec `TIKA_JAR` : sans lui, ce défaut restait invisible en local.
 
+Les routes ont un plafond. `middleware.js` compte les appels par adresse sur
+une minute (20 sur `/api/pdf`, 40 sur `/api/claude`, 30 sur les registres) et
+répond 429 avec `Retry-After`, que le client sait déjà attendre. La mémoire de
+l'instance sert de compteur : assez pour arrêter une boucle, pas un plafond
+global ; un magasin partagé viendra quand il en faudra un. Un appelant sans
+adresse est local, le harnais de test en premier, et n'est jamais limité :
+`tests/the-routes-have-a-ceiling.mjs` se fait passer pour un visiteur. Les
+appels à Anthropic s'arrêtent à 55 secondes et le flux annule l'amont quand
+le navigateur part. Les quatre règles RLS de Supabase vivent dans
+`supabase/migrations/`, plus seulement dans la documentation.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la

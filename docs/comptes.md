@@ -54,6 +54,9 @@ create policy "suppression de ses propres donnees"
 ```
 
 La securite tient entierement aux quatre regles `policy`. Ne les saute pas.
+Le meme SQL est dans `supabase/migrations/20260907000000_user_state_rls.sql` :
+`supabase db push` l'applique sans copier-coller, et une relecture du depot
+voit ce qui protege les donnees.
 
 ## 3. Poser les deux variables
 

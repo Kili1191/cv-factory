@@ -128,8 +128,12 @@ export async function POST(request) {
 
     const system = buildSystemBlocks(cvContext);
 
+    // The function dies at maxDuration whatever this call does; without a
+    // signal the upstream request outlives it and keeps generating tokens
+    // nobody will read. Fifty-five seconds leaves room to answer.
     const upstreamRes = await fetch(ANTHROPIC_URL, {
       method: "POST",
+      signal: AbortSignal.timeout(55_000),
       headers: {
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
