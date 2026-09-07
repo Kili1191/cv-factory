@@ -1708,7 +1708,7 @@ const IconFinalize = (
 // ============================================================
 function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
   initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose,
-  onCreateFromOffer, onUndo }) {
+  onCreateFromOffer, onUndo, onDownload }) {
   return (
     <Sheet
       title={
@@ -1749,6 +1749,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
         onApplied={onApplied}
         onCreateFromOffer={onCreateFromOffer}
         onUndo={onUndo}
+        onDownload={onDownload}
       />
       </Suspense>    </Sheet>
   );
@@ -3810,6 +3811,36 @@ export default function App() {
     setNotif(msg);
     setTimeout(() => setNotif(""), 3000);
   }, []);
+  // PASTE AN AD ANYWHERE
+  //
+  // Declared after notify: a hook that names it in its dependency list
+  // reads the const at render, and above its declaration that read is a
+  // temporal dead zone. The first version sat among the state hooks and
+  // took the whole app down at hydration (React 423), every screen.
+  //
+  // The gesture of someone applying for the hundredth time is Ctrl+V. A
+  // paste that lands outside any field, and reads like a job ad once
+  // cleaned, opens the fitting sheet with the ad in it: one click left.
+  // Pastes into a field belong to that field, and short pastes are not
+  // ads. Nothing is sent anywhere by the paste itself.
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const surColle = (e) => {
+      const cible = e.target;
+      const tag = cible && cible.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || (cible && cible.isContentEditable)) return;
+      const brut = e.clipboardData && e.clipboardData.getData("text/plain");
+      if (!brut) return;
+      const propre = nettoyerLAnnonce(brut);
+      if (propre.length < ANNONCE_MINIMUM) return;
+      e.preventDefault();
+      setPendingOffer(propre);
+      setShowOffer(true);
+      notify(T.colle_annonce);
+    };
+    window.addEventListener("paste", surColle);
+    return () => window.removeEventListener("paste", surColle);
+  }, [notify, T]);
 
   // UNE NOUVELLE TENTATIVE SE DIT
   //
@@ -8229,6 +8260,7 @@ export default function App() {
           onPackRequest={requestPack}
           onCreateFromOffer={(offre) => runFromOffer(offre, "")}
           onUndo={undo}
+          onDownload={() => { setShowOffer(false); handleDownloadClick(); }}
           onClose={()=>setShowOffer(false)}
         />
       )}
@@ -9345,7 +9377,7 @@ export default function App() {
                 doit s'effacer des qu'une fenetre s'ouvre. Sinon elle flotte
                 par-dessus la fenetre de choix du format - visuellement faux,
                 et deux boutons nommes "Telecharger" a l'ecran en meme temps. */}
-            {!cvIsEmpty && !(
+            {!(
               showCoach || showAudit || showTranslate || showPack
               || showPos || showTruth || showVersions
               || showOffer || showScore || showGapRepair || showInterview
@@ -9359,6 +9391,36 @@ export default function App() {
               // en le mesurant, pas en le supposant.
               || showFormatChoice
             ) && (<>
+              {/* THE SHORTCUT
+                  Someone who applies a hundred times needs one button for
+                  the ad: it opens the fitting sheet with the field
+                  focused, so "New ad", Ctrl+V, "Fit my CV" is the whole
+                  gesture. Pasting an ad anywhere on the page does the same
+                  without the button. It stays when the CV is empty: the
+                  sheet then offers to write the CV the ad asks for, which
+                  is the shortest road from nothing to a file. The letter
+                  and the download below need a CV to exist. */}
+              <button
+                data-cvf="annonce"
+                onClick={() => { setPendingOffer(""); setShowOffer(true); }}
+                aria-label={T.hd_annonce}
+                style={{
+                  display:"flex", alignItems:"center", gap:Space.sm,
+                  padding:"10px 16px", minHeight:44, boxSizing:"border-box",
+                  background:Paper, color:Ink,
+                  border:"0.5px solid "+Gray200, borderRadius:RadiusPill, cursor:"pointer",
+                  fontFamily:Sans, fontSize:Text.body, fontWeight:600, letterSpacing:0.2,
+                  transition:Trans(["background","transform"], "base"),
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 5v14"/><path d="M5 12h14"/>
+                </svg>
+                {T.hd_annonce}
+              </button>
+              {!cvIsEmpty && (<>
               {/* THE LETTER, ONE CLICK FROM THE DOWNLOAD
                   The Application Pack has written a cover letter for a
                   long time, three menus deep. Every competitor shows one
@@ -9423,6 +9485,7 @@ export default function App() {
                 </svg>
                 {locale === "en" ? "Download" : "Telecharger"}
               </button>
+              </>)}
             </>)}
             </div>
           </div>
@@ -9876,6 +9939,24 @@ export default function App() {
             }}>{T.appSub}</div>
           </div>
           <div style={{display:"flex", gap:6}}>
+            {/* Shown even on an empty CV: the sheet then writes the CV
+                the ad asks for. The letter and the download need one. */}
+            {(
+              <button data-cvf="annonce" onClick={() => { setPendingOffer(""); setShowOffer(true); }}
+                aria-label={T.hd_annonce} style={{
+                ...B({
+                  background:Paper, color:Ink,
+                  border:"0.5px solid "+Gray200, borderRadius:RadiusPill,
+                  padding:"0 12px", minHeight:44, minWidth:44, fontFamily:Sans, fontSize:12, fontWeight:600,
+                  display:"inline-flex", alignItems:"center", gap:6,
+                })
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 5v14"/><path d="M5 12h14"/>
+                </svg>
+                {T.hd_annonce}
+              </button>
+            )}
             {!cvIsEmpty && (
               <button data-cvf="lettre" onClick={() => requestPack("", offerResult)}
                 aria-label={locale === "en" ? "Cover letter" : "Lettre de motivation"} style={{

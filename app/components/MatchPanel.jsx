@@ -20,7 +20,7 @@ import {
 
 function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
-  pushH, onCreateFromOffer, onUndo }) {
+  pushH, onCreateFromOffer, onUndo, onDownload }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
   // depuis une candidature arrive avec son annonce deja collee.
   const [offer, setOffer] = useState(initialOffer || "");
@@ -406,6 +406,30 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
         }}>
           {applique ? T.mt_keep : T.mt_apply}
         </button>
+        {/* DOWNLOAD FROM HERE
+            Someone who applies a hundred times pastes, fits, downloads.
+            The fitted CV is already on screen behind the sheet; this
+            button closes the sheet and opens the format choice, so the
+            file is two clicks from the paste. */}
+        {applique && typeof onDownload === "function" ? (
+          <button data-nuvi="match-dl" onClick={() => {
+            const annonce = offer, resultat = res;
+            if (onApplied) onApplied(annonce, resultat);
+            onDownload();
+          }} style={{
+            ...B({
+              width:"100%", padding:13, minHeight:44, boxSizing:"border-box", borderRadius:RadiusPill,
+              background:Ink, color:"#fff", border:"none",
+              fontWeight:600, fontSize:14, marginBottom:8, fontFamily:Sans,
+              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+            })
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/>
+            </svg>
+            {T.mt_dl}
+          </button>
+        ) : null}
         {applique && typeof onUndo === "function" ? (
           <button data-nuvi="match-remettre" onClick={remettre} style={{
             ...B({
@@ -477,7 +501,10 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
         </div>
       )}
       <label style={LBL}>{T.mt_offer_label}</label>
+      {/* The most frequented field of the product: it takes the focus as
+          the sheet opens, so "New ad" then Ctrl+V is the whole gesture. */}
       <textarea value={offer} onChange={e=>setOffer(e.target.value)}
+        autoFocus data-nuvi="match-annonce"
         onPaste={(e)=>{
           const brut = e.clipboardData && e.clipboardData.getData("text/plain");
           if (!brut) return;
