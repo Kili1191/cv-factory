@@ -1357,6 +1357,8 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
 
 function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const [job, setJob]   = useState("");
+  const [nom, setNom]   = useState("");
+  const [ville, setVille] = useState("");
   const [sec, setSec]   = useState(0);
   const [yrs, setYrs]   = useState("");
   const [tone, setTone] = useState("p");
@@ -1439,12 +1441,11 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
     const tStr = tone==="p"
       ? "elegant percutant chiffre"
       : tone==="c" ? "creatif differenciants" : "sobre factuel";
-    let p = "Expert CV. Poste:"+job+" Secteur:"+s+" Exp:"+yrs+" Ton:"+tStr
-      +" Langue:"+(lang==="fr"?"Francais":"Anglais");
-    if(parc.trim())p+=" Parcours:"+parc;
-    if(offre.trim())p+=" Offre:"+offre;
-    p+=" 3 exps chiffrees 2 formations 8 competences. " + NO_DASH;
-    onGen(p);
+    onGen({
+      poste: job.trim(), secteur: s, annees: yrs.trim(), ton: tStr, langue: lang,
+      nom: nom.trim(), ville: ville.trim(),
+      parcours: parc, annonce: offre,
+    });
   };
 
   return (
@@ -1511,6 +1512,20 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
         autoComplete="organization-title"
         enterKeyHint="go"
         placeholder={T.ai_jph} style={inV17()}/>
+
+      {/* THE PERSON'S OWN NAME, BEFORE ANYTHING IS WRITTEN
+          The model used to put a name of its own on the CV. A name is the
+          one field that is never inferred: it is asked here, and the
+          writer keeps it whatever it produces. The city follows because
+          most ads filter on it. */}
+      <label style={eyV17}>{T.ai_name}</label>
+      <input value={nom} onChange={e=>setNom(e.target.value)}
+        autoComplete="name" enterKeyHint="next"
+        placeholder={T.ai_nph} style={inV17()}/>
+      <label style={eyV17}>{T.ai_city}</label>
+      <input value={ville} onChange={e=>setVille(e.target.value)}
+        autoComplete="address-level2" enterKeyHint="next"
+        placeholder={T.ai_cph} style={inV17()}/>
 
       {/* TOUT LE RESTE ATTEND SOUS UN REPLI
           Ces six champs ont des valeurs par defaut qui tiennent, et le
@@ -1584,11 +1599,11 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
         </div>
       )}
 
-      <button onClick={go} disabled={loading||!apiKey} style={{
+      <button onClick={go} disabled={loading||!apiKey||!job.trim()} style={{
         ...B({
           width:"100%", padding:"15px 22px", borderRadius:RadiusPill,
-          background:loading||!apiKey ? Gray200 : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
-          color:loading||!apiKey ? Gray600 : "#fff",
+          background:loading||!apiKey||!job.trim() ? Gray200 : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+          color:loading||!apiKey||!job.trim() ? Gray600 : "#fff",
           border:"none",
           fontWeight:600, fontSize:14, fontFamily:Sans,
           marginTop:22,
@@ -4092,18 +4107,6 @@ export default function App() {
   const mobFit = facteurDAjustement(cvNatH);
   const cvH   = Math.round(Math.min(1123, cvNatH * mobFit) * scale);
 
-  const handleGen = useCallback(async p => {
-    if (!apiKey) { notify(T.nk); return; }
-    pushH();
-    setLoad(true);
-    try {
-      const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "generate-cv" });
-      const json = parseJSON(txt);
-      setCVFn(() => normCV(json));
-      notify(T.ok);
-    } catch { notify(T.ea); }
-    setLoad(false);
-  }, [apiKey, T, pushH, setCVFn, notify]);
 
   // ============================================================
   // overlayTextLayer : rend le PDF exploitable par un ATS
@@ -5934,67 +5937,103 @@ export default function App() {
   //
   // Il ne fait la morale a personne. QUI_DECIDE le dit deja en toutes
   // lettres, et rien n'est ajoute ici : c'est un outil, il execute.
-  const runFromOffer = useCallback(async (offre, parcours) => {
+  // ONE WRITER, TWO DOORS
+  //
+  // "Start from the job you want" hands an ad and free-text history;
+  // "Generate with Nuvi" hands a target role, a sector, years, a tone and
+  // the person's name. Until 7 September the second door sent the model a
+  // one-line telegram ("Expert CV. Poste:X Secteur:Y 3 exps chiffrees"),
+  // with no name, no method, no flag on what it made up, and no measure:
+  // the CV came back with an invented person on it. Kilian asked several
+  // times for a CV that can be written from nothing. Both doors now go
+  // through the same method: fill everything the role implies, put in
+  // "deduit" every fact the person did not give, measure the result with
+  // the six parser profiles and keep the better of two attempts. Without
+  // an ad, the target block stands where the ad would.
+  const ecrireLeCv = useCallback(async ({ annonce, parcours, cible, tache }) => {
     if (!apiKey) { notify(T.nk); return; }
-    // Deja nettoyee par l'ecran qui l'a recue, au collage comme au depot de
-    // fichier. La repasser ici grignoterait le contenu d'une annonce qui
-    // contient litteralement du balisage echappe : voir la note dans
-    // lib/pastedPosting.js. On se contente donc de la borner.
-    const a = String(offre || "").trim();
+    // The ad is already cleaned by the screen that received it, at paste
+    // as at file drop. Cleaning it again would eat an ad that carries
+    // escaped markup: see lib/pastedPosting.js. It is only bounded here.
+    const a = String(annonce || "").trim();
     const p0 = String(parcours || "").trim();
-    // L'ANNONCE SEULE SUFFIT
-    //
-    // Le parcours etait obligatoire ici aussi, et cette porte-la etait la
-    // vraie : l'ecran pouvait bien appeler, la fonction repartait sans un
-    // mot. Rien ne s'affichait, rien n'echouait, l'outil semblait mort.
-    // Ce qui manque vraiment, c'est l'annonce : sans elle il n'y a rien a
-    // viser. Sans le parcours il reste un CV a ecrire, celui que ce poste
-    // reclame, avec tout ce qui ne vient pas de la personne signale dans
-    // "deduit" pour qu'elle le reprenne.
-    if (a.length < ANNONCE_MINIMUM) return;
+    const c = cible || null;
+    // Without an ad there must be a target; without either there is
+    // nothing to aim at and nothing is written.
+    const avecAnnonce = a.length >= ANNONCE_MINIMUM;
+    if (!avecAnnonce && !(c && String(c.poste || "").trim())) return;
     const sansParcours = p0.length < 10;
+    const langue = (c && c.langue) || locale;
     setObImp(true);
     try {
-      const langLine = locale === "en"
+      const langLine = langue === "en"
         ? "Reponds STRICTEMENT en anglais."
         : "Reponds STRICTEMENT en francais.";
+      // What the writer aims at: the ad itself, or the target the person
+      // described. The measure reads the same text for its keywords.
+      const cibleTexte = c ? [
+        "POSTE VISE: " + String(c.poste || "").trim(),
+        c.secteur ? "SECTEUR: " + c.secteur : "",
+        c.annees ? "EXPERIENCE: " + c.annees + " ans" : "",
+        c.ton ? "TON: " + c.ton : "",
+      ].filter(Boolean).join("\n") : "";
+      const viseeTexte = avecAnnonce ? a : cibleTexte;
+      const identite = c && (c.nom || c.ville) ? [
+        c.nom ? "NOM: " + String(c.nom).trim() : "",
+        c.ville ? "VILLE: " + String(c.ville).trim() : "",
+      ].filter(Boolean).join("\n") : "";
 
-      const p = "Tu es un redacteur de CV. On te donne une ANNONCE et le "
-        + "parcours d'une personne, ecrit en clair et peut-etre en desordre. "
-        + "Tu produis le CV qui a le plus de chances d'etre rappele POUR CETTE "
-        + "ANNONCE.\n\n"
-        + "ANNONCE:\n" + a + "\n\n"
+      const p = "Tu es un redacteur de CV. "
+        + (avecAnnonce
+          ? "On te donne une ANNONCE et le parcours d'une personne, ecrit en "
+            + "clair et peut-etre en desordre. Tu produis le CV qui a le plus "
+            + "de chances d'etre rappele POUR CETTE ANNONCE.\n\n"
+            + "ANNONCE:\n" + a + "\n\n"
+          : "On te donne le POSTE que vise une personne et son parcours, ecrit "
+            + "en clair et peut-etre en desordre. Tu produis le CV qui a le "
+            + "plus de chances d'etre rappele POUR CE POSTE, tel que les "
+            + "annonces de ce metier le reclament.\n\n"
+            + cibleTexte + "\n\n")
+        + (cibleTexte && avecAnnonce ? "CE QUE LA PERSONNE VISE:\n" + cibleTexte + "\n\n" : "")
+        + (identite
+          ? "LA PERSONNE (ces champs sont les siens, ecris-les tels quels, "
+            + "ils ne vont jamais dans \"deduit\"):\n" + identite + "\n\n"
+          : "LE NOM DE LA PERSONNE N'EST PAS DONNE : laisse \"name\" vide. "
+            + "Un nom ne s'invente jamais.\n\n")
         + (sansParcours
           ? "LA PERSONNE N'A PAS ENCORE DONNE SON PARCOURS.\n"
             + "Tu ecris donc la premiere version : le CV que CE poste "
-            + "reclame, complet, dans le vocabulaire de l'annonce, pret a "
+            + "reclame, complet, dans le vocabulaire du metier, pret a "
             + "etre repris. Chaque element qui ne peut pas venir d'elle "
             + "puisqu'elle n'a rien donne, c'est a dire les employeurs, les "
             + "dates, les diplomes, les chiffres et les intitules de poste "
             + "tenus, va dans \"deduit\" avec son chemin. Elle les verra "
             + "signales et les remplacera par les siens. Ce qui decrit le "
             + "metier lui-meme, les taches, les competences, les langues "
-            + "attendues, se deduit de l'annonce et ne se liste pas.\n\n"
+            + "attendues, se deduit du poste et ne se liste pas.\n\n"
           : "PARCOURS DE LA PERSONNE, TEL QU'ELLE L'A ECRIT:\n" + p0 + "\n\n")
         + "METHODE:\n"
-        + "1. Releve dans l'annonce ce que le poste reclame vraiment : "
+        + "1. Releve ce que le poste reclame vraiment : "
+        + (avecAnnonce ? "dans l'annonce, " : "dans les annonces de ce metier, ")
         + "l'intitule exact, les mots-cles du metier, les competences citees, "
         + "le niveau attendu.\n"
         + "2. Reformule le parcours de la personne pour repondre a ces points, "
-        + "dans le vocabulaire de l'annonce. Un meme fait se dit de plusieurs "
+        + "dans le vocabulaire du metier. Un meme fait se dit de plusieurs "
         + "facons : choisis celle que ce recruteur-la cherche.\n"
         + "3. REMPLIS TOUT. Un poste tenu implique un travail reel : ecris-le. "
         + "Quelqu'un qui dit \"chef de rang, 80 couverts\" a tenu un rang, "
-        + "encaisse, gere les recla­mations, forme les nouveaux, suivi les "
+        + "encaisse, gere les reclamations, forme les nouveaux, suivi les "
         + "stocks du bar. Deroule ce que ce poste comporte vraiment, dans le "
-        + "vocabulaire de l'annonce, avec le niveau de detail d'un CV ecrit par "
+        + "vocabulaire du metier, avec le niveau de detail d'un CV ecrit par "
         + "un professionnel. Trois a cinq puces par poste, aucune vague.\n"
         + "4. Les competences, les langues et le profil se deduisent du meme "
         + "materiau : un poste en salle a Lyon suppose le francais, le service, "
         + "l'encaissement, l'hygiene alimentaire. Remplis ces champs.\n"
-        + "5. L'intitule du CV reprend celui de l'annonce des que le parcours "
-        + "le justifie, meme si la personne n'a jamais porte ce titre-la : "
-        + "c'est le meme travail sous le nom que ce recruteur cherche.\n"
+        + "5. L'intitule du CV reprend celui "
+        + (avecAnnonce ? "de l'annonce" : "du poste vise")
+        + " des que le parcours le justifie, meme si la personne n'a jamais "
+        + "porte ce titre-la : c'est le meme travail sous le nom que ce "
+        + "recruteur cherche.\n"
         + "6. Aucun champ vide. Un CV a trous se fait ecarter avant d'etre lu.\n\n"
         + "LA SEULE CHOSE QUI NE S'INVENTE PAS EN SILENCE\n"
         + "Un employeur, une date, un diplome, une certification ou un chiffre "
@@ -6004,8 +6043,8 @@ export default function App() {
         + "\"education.0.degree\" ou \"experience.1.company\"). La personne "
         + "les verra signales et decidera de les garder.\n"
         + "Ce qui vient de son parcours ne se liste pas : reformuler ce qu'elle "
-        + "a ecrit, deduire les taches de son poste, choisir les mots de "
-        + "l'annonce, c'est de la redaction, et c'est la que tu donnes tout.\n\n"
+        + "a ecrit, deduire les taches de son poste, choisir les mots du "
+        + "metier, c'est de la redaction, et c'est la que tu donnes tout.\n\n"
         + (sansParcours
           ? "Rappel, puisqu'elle n'a rien donne : ici presque tout est "
             + "deduit, et presque tout doit donc etre liste. Un CV signale "
@@ -6014,50 +6053,34 @@ export default function App() {
           : "")
         + QUI_DECIDE + "\n"
         + NO_DASH + " " + langLine + "\n"
-        // LA FORME N'EST PLUS DEMANDEE EN PROSE
-        //
-        // Elle est passee en schema : l'API garantit du JSON conforme au lieu
-        // qu'on l'implore. Le prompt ne porte donc plus ni exemple de sortie
-        // ni consigne "JSON uniquement, sans markdown", qui coutaient des
-        // jetons a chaque appel et ratait exactement sur les reponses longues,
-        // c'est a dire sur les CV les plus fournis.
+        // The shape is no longer asked for in prose: it travels as a
+        // schema, and the API guarantees conforming JSON.
         + "Rends un CV complet, dense, pret a envoyer.";
 
-      const txt = await aiCall(p, { schema: SCHEMA_CV, task_name: "cv-from-offer" });
+      const txt = await aiCall(p, { schema: SCHEMA_CV, task_name: tache });
       let cvNouveau = parseJSON(txt);
       if (!cvNouveau || typeof cvNouveau !== "object") throw new Error("reponse illisible");
 
-      // ECRIRE, MESURER, CORRIGER, GARDER LE MEILLEUR
+      // WRITE, MEASURE, CORRECT, KEEP THE BETTER
       //
-      // "Le meilleur CV possible" ne veut rien dire tant que personne ne
-      // mesure. Le modele rend quelque chose de plausible et on le livre :
-      // c'est ce que faisait ce chemin, et la seule garantie offerte etait ma
-      // parole.
-      //
-      // Les trois lecteurs du produit repondent a la question sans rien
-      // couter : les six profils d'analyseur, la couverture de CETTE annonce,
-      // et le diagnostic en neuf axes. Ils tournent en local, en une
-      // milliseconde, donc ils peuvent tourner a chaque generation.
-      //
-      // La reprise ne renvoie pas "fais mieux" : elle nomme les mots de
-      // l'annonce absents du CV, les profils qui echouent et pourquoi. Une
-      // consigne vide veut dire qu'il n'y a rien de mesurable a corriger, et
-      // on ne depense pas un second appel.
-      //
-      // ON GARDE LE MEILLEUR DES DEUX, PAS LE DERNIER
-      //
-      // Une seconde passe peut degrader : le modele ajoute des mots-cles et
-      // casse une puce, ou perd une date en reformulant. Mesurer les deux et
-      // garder celui qui score le plus haut est la seule facon de ne jamais
-      // livrer pire que la premiere tentative.
-      let mesure = mesurerLeCv(normCV(cvNouveau), a, locale);
-      const consigne = consigneDeReprise(mesure, locale);
+      // "The best CV possible" means nothing until someone measures. The
+      // six parser profiles, the coverage of what is aimed at, and the
+      // nine-axis diagnosis run locally in a millisecond, so they run on
+      // every generation. The second pass gets the named failures, not
+      // "do better"; an empty instruction means nothing measurable is
+      // wrong and no second call is spent. A second pass can also make
+      // things worse (a keyword added, a date lost), so both are measured
+      // and the higher score is kept: never worse than the first attempt.
+      let mesure = mesurerLeCv(normCV(cvNouveau), viseeTexte, langue);
+      const consigne = consigneDeReprise(mesure, langue);
       if (consigne) {
         try {
-          const p2 = "Tu as ecrit ce CV pour l'annonce ci-dessous. Il a ete "
+          const p2 = "Tu as ecrit ce CV pour "
+            + (avecAnnonce ? "l'annonce" : "le poste") + " ci-dessous. Il a ete "
             + "mesure par les analyseurs qu'utilisent les recruteurs, et voici "
             + "ce qui ne passe pas. Corrige uniquement ces points, garde tout "
-            + "le reste.\n\nANNONCE:\n" + a
+            + "le reste.\n\n" + (avecAnnonce ? "ANNONCE" : "POSTE VISE") + ":\n" + viseeTexte
+            + (identite ? "\n\nLA PERSONNE:\n" + identite : "")
             + "\n\nPARCOURS DE LA PERSONNE:\n" + p0
             + "\n\nCV ACTUEL:\n" + JSON.stringify(cvNouveau)
             + "\n\nCE QUI NE PASSE PAS:\n" + consigne
@@ -6065,44 +6088,41 @@ export default function App() {
             + "silence, et tout ce qui vient de toi plutot que du parcours va "
             + "dans \"deduit\".\n"
             + QUI_DECIDE + "\n" + NO_DASH + " " + langLine;
-          const txt2 = await aiCall(p2, { schema: SCHEMA_CV, task_name: "cv-from-offer-reprise" });
+          const txt2 = await aiCall(p2, { schema: SCHEMA_CV, task_name: tache + "-reprise" });
           const cv2 = parseJSON(txt2);
           if (cv2 && typeof cv2 === "object") {
-            const mesure2 = mesurerLeCv(normCV(cv2), a, locale);
+            const mesure2 = mesurerLeCv(normCV(cv2), viseeTexte, langue);
             if (mesure2.note > mesure.note) { cvNouveau = cv2; mesure = mesure2; }
           }
         } catch (e) {
-          // Une reprise qui echoue laisse la premiere version, qui est deja
-          // complete. On ne fait pas payer a la personne un aller-retour rate.
+          // A failed second pass leaves the first, which is complete.
         }
       }
       setMesureDuCv(mesure);
-      // `deduit` n'appartient pas au CV : c'est un renseignement sur sa
-      // fabrication. On le retire avant de ranger le document, sinon il
-      // voyagerait dans les sauvegardes et les exports.
+      // "deduit" is not part of the CV: it is a note on how it was made.
+      // Removed before the document is stored, or it would travel into
+      // saves and exports.
       const deduits = Array.isArray(cvNouveau.deduit) ? cvNouveau.deduit : [];
       delete cvNouveau.deduit;
+      // The person's own name and city always win over anything written.
+      if (c && c.nom) cvNouveau.name = String(c.nom).trim();
+      if (c && c.ville && !cvNouveau.location) cvNouveau.location = String(c.ville).trim();
       const propre = normCV({ ...cvNouveau, custom: cv && cv.custom });
       pushH(propre);
       setCVFn(() => propre);
-      // L'annonce sert deux fois : elle a produit le CV, elle servira au
-      // diagnostic et a la preparation d'entretien. On la garde.
-      setInterviewOffer(a);
-      setPendingOffer(a);
+      if (avecAnnonce) {
+        // The ad serves twice: it produced the CV, it will serve the
+        // diagnosis and the interview preparation.
+        setInterviewOffer(a);
+        setPendingOffer(a);
+      }
       setObMode(null);
       setTab("ai");
-      logActivity(ACT.CV_IMPORTED,
-        locale === "en" ? "CV written from a job ad" : "CV ecrit depuis une annonce");
-      // CE QUI VIENT DE NUVI SE DIT UNE FOIS, ET NE BLOQUE RIEN
-      //
-      // Le CV est complet et pret : c'est ce qui a ete demande. Reste que
-      // certains champs ont ete remplis par le modele et pas par la personne,
-      // et que ceux-la se verifient par un appel a un ancien employeur ou a
-      // une ecole, pas a la lecture.
-      //
-      // On le dit donc en une ligne, apres coup, avec le compte. Pas de
-      // fenetre a fermer, pas de case a cocher, rien de retire du document :
-      // la personne sait ou regarder si elle veut regarder.
+      logActivity(ACT.CV_IMPORTED, avecAnnonce
+        ? (locale === "en" ? "CV written from a job ad" : "CV ecrit depuis une annonce")
+        : (locale === "en" ? "CV written from scratch" : "CV ecrit de zero"));
+      // What came from Nuvi is said once, and blocks nothing: the count of
+      // fields the model filled, the ones a recruiter checks by phone.
       setDeduitsAValider(deduits);
       notify(locale === "en" ? "Your CV is ready" : "Ton CV est pret");
     } catch (err) {
@@ -6110,6 +6130,23 @@ export default function App() {
     }
     setObImp(false);
   }, [apiKey, locale, notify, T, pushH, setCVFn, cv]);
+
+  const runFromOffer = useCallback(
+    (offre, parcours) => ecrireLeCv({ annonce: offre, parcours, tache: "cv-from-offer" }),
+    [ecrireLeCv]);
+
+  // "Generate with Nuvi": the same writer as the posting-first door,
+  // aimed at the role the person described. The panel's loading state
+  // wraps it; the writer handles the rest, flags included.
+  const handleGen = useCallback(async (cible) => {
+    if (!apiKey) { notify(T.nk); return; }
+    setLoad(true);
+    try {
+      await ecrireLeCv({ annonce: cible.annonce, parcours: cible.parcours, cible, tache: "generate-cv" });
+    } finally {
+      setLoad(false);
+    }
+  }, [apiKey, T, notify, ecrireLeCv]);
 
   // v17 chantier 5 : Gap Repair handlers (deterministes, pas d'IA).
   //
