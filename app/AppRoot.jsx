@@ -22,7 +22,7 @@ import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
-import { nettoyerUnChamp, estUneCoquille } from "../lib/nettoyerLesChamps";
+import { EMPTY, san, sanDeep, normCV, structureDuCv } from "../lib/cvSchema";
 import { defautsDuCv, defautsVisuels, trierLesDefauts, FACTEUR_MIN }
   from "../lib/leCvEstIlPresentable";
 
@@ -657,17 +657,6 @@ function wcagLevel(hex1, hex2) {
   return "FAIL";
 }
 
-const EMPTY = {
-  name:"", title:"", email:"", phone:"",
-  location:"", linkedin:"", summary:"",
-  experience:[{id:1,title:"",company:"",period:"",location:"",bullets:["",""]}],
-  education:[{id:1,degree:"",school:"",period:""}],
-  skills:["","","","","","","",""],
-  languages:[{lang:"",level:""},{lang:"",level:""}],
-  certifications:[""],
-  labels: {},
-};
-
 // === Labels par defaut pour les sections du CV (editables par l'utilisateur) ===
 const DEFAULT_LABELS_FR = {
   profile: "Profil",
@@ -810,30 +799,6 @@ const SH = (x={}) => ({
   textTransform:"uppercase", margin:"16px 0 10px",
   paddingBottom:5, borderBottom:"1px solid #eee", ...x
 });
-
-function san(t) {
-  if (typeof t !== "string") return t;
-  return t
-    .split("\u2014").join("-")  // em dash
-    .split("\u2013").join("-")  // en dash
-    .split("\u2015").join("-")  // horizontal bar
-    .split("\u2012").join("-")  // figure dash
-    .split("\u2010").join("-")  // hyphen
-    .split("\u2011").join("-"); // non-breaking hyphen
-}
-
-// Recursively sanitize all string values in an object / array tree.
-// Used to clean CV / Pack / Audit results returned from the AI.
-function sanDeep(v) {
-  if (typeof v === "string") return san(v);
-  if (Array.isArray(v)) return v.map(sanDeep);
-  if (v && typeof v === "object") {
-    const out = {};
-    for (const k of Object.keys(v)) out[k] = sanDeep(v[k]);
-    return out;
-  }
-  return v;
-}
 
 // SURCHARGE N'EST PAS PANNE
 //
@@ -1333,84 +1298,6 @@ function parseJSON(txt) {
   const parsed = JSON.parse(clean);
   return sanDeep(parsed);
 }
-
-function normCV(raw, base=EMPTY) {
-  // [Fix 2026-05-19] Filtre les null/undefined du raw pour qu'ils
-  // n'override pas les defaults vides de base via spread.
-  // Sinon "name": null peut donner cvIsEmpty = true en boucle.
-  //
-  // LE NETTOYAGE SE FAIT ICI, PARCE QU'ICI TOUT PASSE
-  //
-  // san() retire les cadratins depuis longtemps, et sanDeep() l'applique a
-  // tout un arbre. Mais sanDeep n'etait appele que dans parseJSON, donc
-  // uniquement sur les reponses du modele. Le lecteur local lit un CV colle
-  // sans rien demander a personne : c'est le chemin le plus frequent du
-  // produit, celui que le CLAUDE.md decrit comme prioritaire parce qu'il est
-  // instantane et gratuit, et il ne passait par aucun nettoyage.
-  //
-  // Resultat, vu sur le CV de Kilian en production : "Account Manager -",
-  // avec un cadratin, dans le document que lira le recruteur. La regle
-  // numero un du depot, enfreinte a l'endroit exact qu'elle nomme. Word met
-  // ces tirets tout seul et la plupart des CV bien mis en page ecrivent
-  // "Account Manager (cadratin) Stenn International" : la porte la moins
-  // chere etait celle par laquelle ils entraient tous.
-  //
-  // normCV est le passage oblige de TOUT CV, quelle que soit la porte :
-  // lecture locale, modele, restauration depuis le compte, reprise apres
-  // mesure. Un nettoyage pose ici couvre celles d'aujourd'hui et celles que
-  // personne n'a encore ecrites.
-  const ns = v => nettoyerUnChamp(typeof v==="string" ? v : (v==null ? "" : String(v)));
-  const cleanRaw = {};
-  if (raw && typeof raw === "object") {
-    for (const k in raw) {
-      // Garde uniquement les valeurs non-nulles (sauf arrays explicites)
-      if (raw[k] != null) cleanRaw[k] = raw[k];
-    }
-  }
-  return {
-    ...base, ...cleanRaw,
-    // Force tous les champs strings a etre des strings (jamais null)
-    name: ns(cleanRaw.name || base.name),
-    title: ns(cleanRaw.title || base.title),
-    summary: ns(cleanRaw.summary || base.summary),
-    email: ns(cleanRaw.email || base.email),
-    phone: ns(cleanRaw.phone || base.phone),
-    location: ns(cleanRaw.location || base.location),
-    linkedin: ns(cleanRaw.linkedin || base.linkedin),
-    skills:(Array.isArray(cleanRaw.skills)?cleanRaw.skills:[]).map(ns),
-    languages:(Array.isArray(cleanRaw.languages)?cleanRaw.languages:[]).map(
-      l=>({lang:ns(l && l.lang), level:ns(l && l.level)})
-    ),
-    // UNE ENTREE QUI N'EST QU'UNE DATE N'EST PAS UNE ENTREE
-    //
-    // Le CV de Kilian affichait une section CERTIFICATIONS dont l'unique
-    // element etait "2023". Le lecteur avait decoupe une ligne au mauvais
-    // endroit et garde l'annee toute seule. Un recruteur y lit de la
-    // negligence, et un analyseur y lit une certification qui s'appellerait
-    // "2023". Mieux vaut une section absente qu'une section qui ment.
-    certifications:(Array.isArray(cleanRaw.certifications)?cleanRaw.certifications:[])
-      .map(ns).filter(c => !estUneCoquille(c)),
-    experience:(Array.isArray(cleanRaw.experience)?cleanRaw.experience:[]).map(
-      (e,i)=>({
-        ...e, id:i+1,
-        title: ns(e && e.title),
-        company: ns(e && e.company),
-        period: ns(e && e.period),
-        location: ns(e && e.location),
-        bullets:(Array.isArray(e && e.bullets)?e.bullets:[]).map(ns),
-      })
-    ),
-    education:(Array.isArray(cleanRaw.education)?cleanRaw.education:[]).map(
-      (e,i)=>({
-        ...e, id:i+1,
-        degree: ns(e && e.degree),
-        school: ns(e && e.school),
-        period: ns(e && e.period),
-      })
-    ),
-  };
-}
-
 
 // LE MESSAGE DU PRODUIT, DANS LA MATIERE DU PRODUIT
 //
@@ -2132,7 +2019,6 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
         onApplied={onApplied}
         aiCall={aiCall}
         parseJSON={parseJSON}
-        normCV={normCV}
         onCreateFromOffer={onCreateFromOffer}
         onUndo={onUndo}
       />
@@ -8450,13 +8336,7 @@ export default function App() {
     console.log("[onImport] start, obRaw length:", brut.length);
 
     const p = "Expert parsing CV. JSON valide strict sans markdown.\n"
-      + 'STRUCTURE:{"name":"","title":"","email":"","phone":"",'
-      + '"location":"","linkedin":"","summary":"",'
-      + '"experience":[{"id":1,"title":"","company":"","period":"",'
-      + '"location":"","bullets":["",""]}],'
-      + '"education":[{"id":1,"degree":"","school":"","period":""}],'
-      + '"skills":[""],"languages":[{"lang":"","level":""}],'
-      + '"certifications":[""]}\n'
+      + "STRUCTURE:" + structureDuCv() + "\n"
       + "REGLES:toutes experiences, IDs depuis 1, vide si absent."
       + " " + NO_DASH + " UNIQUEMENT JSON.\nCV:\n" + obRaw;
 
