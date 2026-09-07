@@ -114,6 +114,7 @@ import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
 import { initCloud, queuePush, signOut, subscribe as subscribeCloud, connectGmail, getGmailToken } from "../lib/cloudSync.js";
 import { isCloudConfigured } from "../lib/supabaseClient.js";
+import { installerLaVigie, signaler, formeDuCv } from "../lib/incidents.js";
 // === V10 REBRAND : Editorial luxury, mobile-first ===
 // La typographie de marque est chargee dans app/layout.jsx (<head>), pour que
 // le navigateur la decouvre avant l'hydratation. Ne pas la re-injecter ici.
@@ -1309,6 +1310,7 @@ async function aiCall(prompt, options = {}) {
   // Inatteignable : la boucle rend ou leve a chaque tour. La ligne existe
   // pour que le jour ou quelqu'un touche aux conditions, l'echec soit une
   // exception claire et pas un `undefined` qui traverse tout l'appelant.
+  signaler("ia_echec", (derniere && derniere.message) || "no answer", { tache: String((options && options.task_name) || "") });
   throw derniere || new Error("L'IA n'a pas repondu.");
 }
 
@@ -4107,6 +4109,9 @@ export default function App() {
   // Hydrate from localStorage AFTER first render. This is the only safe
   // moment to read localStorage in a Next.js / SSR context.
   useEffect(() => {
+    // Errors and rejections the page would otherwise swallow reach the
+    // owner through /api/incident (lib/incidents.js). Installed once.
+    installerLaVigie();
     const savedCV = lsG(SK.CV, null);
     if (savedCV) {
       // PAR LA MEME PORTE QUE TOUS LES AUTRES
@@ -5148,6 +5153,7 @@ export default function App() {
           }
         } catch (errNatif) {
           console.warn("[exportPDF] natif indisponible, photo en secours:", errNatif && errNatif.message);
+          signaler("export_photo_secours", (errNatif && errNatif.message) || "native route failed", { layout });
         }
 
         await loadLibs();
@@ -5445,6 +5451,7 @@ export default function App() {
         if (typeof nuviTrigger === 'function') nuviTrigger('cv-exported');
       } catch (e) {
         console.error("[exportPDF] FAILED:", e);
+        signaler("export_echec", (e && e.message) || String(e), { layout });
         notify("Erreur export PDF : " + (e.message || "inconnue"));
         // Cleanup en cas d'erreur aussi
         const tempStyle = document.getElementById("cvf-pdf-design-fills");
@@ -9096,6 +9103,7 @@ export default function App() {
       {showSettings && (
         <Suspense fallback={null}>
         <SettingsPanel
+          formeDuCv={formeDuCv(cv)}
           T={T} locale={locale} setLocale={setLc_}
           darkMode={darkMode}
           onToggleDark={toggleDarkMode}

@@ -821,6 +821,13 @@ const EN_T = {
   set_dark_desc:"Interface in dark. The CV stays light for export.",
   set_install:"Install the app",
   set_install_desc:"An icon on your home screen. Opens full screen, no browser bar.",
+  set_report:"Report a problem",
+  set_report_desc:"What broke, in your words. Nothing from your CV is sent unless you tick the box.",
+  rp_placeholder:"What happened, and what you expected.",
+  rp_shape:"Include the shape of my CV: section names and counts, never the text",
+  rp_send:"Send",
+  rp_sent:"Sent. Thank you.",
+  rp_failed:"Could not send. Try again in a minute.",
   set_kbd:"Keyboard shortcuts",
   // LE TUTORIEL N'A JAMAIS ETE LANCE, DONC IL NE SE "RELANCE" PAS
   // Il ne se declenche pas a la premiere visite : NuviHome a pris cette

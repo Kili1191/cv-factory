@@ -27,6 +27,9 @@ const LIMITES = [
   { motif: /^\/api\/pdf/, parMinute: 20 },
   { motif: /^\/api\/claude/, parMinute: 40 },
   { motif: /^\/api\/(entreprise|jobs)/, parMinute: 30 },
+  // A page in an error loop reports once every ten seconds by itself; a
+  // script that hammers the report route gets nothing past this.
+  { motif: /^\/api\/incident/, parMinute: 10 },
 ];
 const COMPTEURS = new Map();
 const MAX_ENTREES = 5000;

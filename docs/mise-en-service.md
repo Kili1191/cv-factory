@@ -31,6 +31,14 @@ les cas particuliers :
 
 `GET /api/pdf` dans un navigateur dit si le Chromium de la fonction démarre.
 
+### Les pannes, une variable facultative
+
+Chaque erreur de la page et chaque export tombé en photo de secours est
+écrit dans les journaux de la fonction (Vercel, onglet Logs, chercher
+`[incident]`). Pour être prévenu sans regarder : `INCIDENT_WEBHOOK_URL`, une
+adresse de webhook entrant Slack ou Discord ; chaque incident y arrive en une
+ligne. Rien du CV ne voyage : un genre, un message, le build, l'appareil.
+
 ## 2. Les comptes, Supabase : **à faire, ~10 min**
 
 | Variable | Où |

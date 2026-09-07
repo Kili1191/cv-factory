@@ -96,6 +96,16 @@ appels à Anthropic s'arrêtent à 55 secondes et le flux annule l'amont quand
 le navigateur part. Les quatre règles RLS de Supabase vivent dans
 `supabase/migrations/`, plus seulement dans la documentation.
 
+Ce qui casse arrive au propriétaire avant la capture d'écran.
+`lib/incidents.js` garde les erreurs de la page, les promesses rompues, la
+photo de secours à l'export et l'IA qui renonce, et les envoie à
+`/api/incident` : genre, message coupé, chemin, build, appareil, jamais un
+mot du CV. La fonction écrit une ligne `[incident]` dans ses journaux, que
+Vercel montre, et la relaie à `INCIDENT_WEBHOOK_URL` si elle est posée (Slack,
+Discord, n'importe quel POST). Dans Réglages, « Signaler un problème » envoie
+une note et, si la case est cochée, la forme du CV : rubriques et comptes,
+pas le texte. `tests/a-breakage-reaches-the-owner.mjs`.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la

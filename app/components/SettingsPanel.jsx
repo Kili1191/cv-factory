@@ -4,7 +4,7 @@
 //
 // Panneau de reglages : lang, dark mode, relance tutoriel, raccourcis clavier.
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
   Coral, Green, GreenSoft, Purple, Magenta, PurpleSoft,
@@ -41,6 +41,7 @@ function KbdRow({ keys, label }) {
 }
 
 import { useInstallState } from "./InstallAppSheet";
+import { envoyerUnRapport } from "../../lib/incidents.js";
 
 export default function SettingsPanel({
   T, locale, setLocale,
@@ -50,7 +51,28 @@ export default function SettingsPanel({
   cloudEnabled = false, cloudUser = null,
   onSignIn = () => {}, onSignOut = () => {},
   onOpenInstall = () => {},
+  // The shape of the current CV (lib/incidents.js formeDuCv): sections and
+  // counts, no text. Sent with a report only when the person ticks the box.
+  formeDuCv = null,
 }) {
+  // REPORT A PROBLEM
+  //
+  // A breakage on the live site used to reach the maintainer as a
+  // screenshot, hours later, with no build id and no error message. This
+  // row lets the person say what broke in their own words; the last
+  // incidents this device kept travel with the note, and the CV's shape
+  // only if asked. State stays local: the row opens, sends, and says so.
+  const [rapportOuvert, setRapportOuvert] = useState(false);
+  const [note, setNote] = useState("");
+  const [avecForme, setAvecForme] = useState(false);
+  const [envoi, setEnvoi] = useState("");   // "" | "encours" | "ok" | "echec"
+  const envoyer = async () => {
+    if (envoi === "encours") return;
+    setEnvoi("encours");
+    const ok = await envoyerUnRapport({ note, forme: avecForme ? formeDuCv : null });
+    setEnvoi(ok ? "ok" : "echec");
+    if (ok) setNote("");
+  };
 
   // La ligne d'installation ne s'affiche que si elle mene quelque part :
   // deja installee, ou navigateur qui ne sait pas installer, elle disparait
@@ -413,6 +435,72 @@ export default function SettingsPanel({
           <KbdRow keys={[cmdKey, ","]} label={T.set_kbd_settings}/>
           <KbdRow keys={["Esc"]}        label={T.set_kbd_esc}/>
         </div>
+      </div>
+
+      {/* Signaler un probleme */}
+      <div style={{marginBottom:18}} data-cvf="report">
+        <button onClick={() => setRapportOuvert((v) => !v)} aria-expanded={rapportOuvert} style={{
+          ...B({
+            width:"100%",
+            display:"flex", alignItems:"center", gap:14,
+            padding:"14px 16px",
+            background:Paper,
+            border:"0.5px solid "+Hairline,
+            borderRadius:RadiusMd,
+            boxShadow:ShadowSm,
+            textAlign:"left", fontFamily:Sans,
+            transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
+          })
+        }}>
+          <div style={{flex:1, minWidth:0}}>
+            <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:2}}>
+              {T.set_report || (locale === "en" ? "Report a problem" : "Signaler un probleme")}
+            </div>
+            <div style={{fontSize:11, color:InkMuted, lineHeight:1.4}}>
+              {T.set_report_desc || (locale === "en"
+                ? "What broke, in your words. Nothing from your CV is sent unless you tick the box."
+                : "Ce qui a casse, avec tes mots. Rien de ton CV ne part sans cocher la case.")}
+            </div>
+          </div>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke={InkMuted} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+            style={{flexShrink:0, transform: rapportOuvert ? "rotate(90deg)" : "none"}}>
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+        {rapportOuvert && (
+          <div style={{
+            marginTop:8, padding:"12px 14px",
+            background:Paper, border:"0.5px solid "+Hairline, borderRadius:RadiusMd,
+            display:"flex", flexDirection:"column", gap:10,
+          }}>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4}
+              placeholder={T.rp_placeholder || ""}
+              aria-label={T.set_report || "Report a problem"}
+              style={{
+                width:"100%", boxSizing:"border-box", resize:"vertical",
+                padding:"10px 12px", fontFamily:Sans, fontSize:13, lineHeight:1.45,
+                color:Ink, background:"transparent", border:"0.5px solid "+Hairline, borderRadius:10,
+              }}/>
+            <label style={{display:"flex", alignItems:"flex-start", gap:10, fontSize:12, color:InkMuted, lineHeight:1.4, cursor:"pointer"}}>
+              <input type="checkbox" checked={avecForme} onChange={(e) => setAvecForme(e.target.checked)}
+                style={{marginTop:2, width:16, height:16, flexShrink:0}}/>
+              <span>{T.rp_shape || ""}</span>
+            </label>
+            <div style={{display:"flex", alignItems:"center", gap:12}}>
+              <button onClick={envoyer} disabled={envoi === "encours" || (!note.trim() && !avecForme)} style={{
+                ...B({
+                  padding:"10px 16px", minHeight:44, fontFamily:Sans, fontSize:13, fontWeight:600,
+                  color:Paper, background:Ink, border:"none", borderRadius:10,
+                  opacity: (envoi === "encours" || (!note.trim() && !avecForme)) ? 0.5 : 1,
+                })
+              }}>{T.rp_send || "Send"}</button>
+              <span role="status" style={{fontSize:12, color:InkMuted}}>
+                {envoi === "ok" ? (T.rp_sent || "Sent.") : envoi === "echec" ? (T.rp_failed || "Could not send.") : ""}
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Version servie. Sert a repondre a "est-ce que la mise a jour est en

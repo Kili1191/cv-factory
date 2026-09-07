@@ -820,6 +820,13 @@ const FR_T = {
   set_dark_desc:"L'interface en sombre. Le CV reste clair pour l'export.",
   set_install:"Installer l'application",
   set_install_desc:"Une icone sur ton ecran d'accueil. Ouverture plein ecran, sans barre de navigateur.",
+  set_report:"Signaler un probleme",
+  set_report_desc:"Ce qui a casse, avec tes mots. Rien de ton CV ne part sans cocher la case.",
+  rp_placeholder:"Ce qui s'est passe, et ce que tu attendais.",
+  rp_shape:"Joindre la forme de mon CV : noms des rubriques et comptes, jamais le texte",
+  rp_send:"Envoyer",
+  rp_sent:"Envoye. Merci.",
+  rp_failed:"Envoi impossible. Reessaie dans une minute.",
   set_kbd:"Raccourcis clavier",
   // LE TUTORIEL N'A JAMAIS ETE LANCE, DONC IL NE SE "RELANCE" PAS
   // Il ne se declenche pas a la premiere visite : NuviHome a pris cette
