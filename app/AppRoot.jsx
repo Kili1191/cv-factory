@@ -24,6 +24,7 @@ import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
 import { EMPTY, san, sanDeep, normCV, structureDuCv } from "../lib/cvSchema";
 import { aiCall, parseJSON } from "../lib/ai";
+import { contrastRatio, wcagLevel, distanceHex } from "../lib/contrasteCv";
 import { defautsDuCv, defautsVisuels, trierLesDefauts, FACTEUR_MIN }
   from "../lib/leCvEstIlPresentable";
 
@@ -623,68 +624,6 @@ function ensureHtml2pdfLoaded() {
   });
 }
 
-// === Helpers WCAG (luminance + ratio de contraste) ===
-function _hexToRgb(hex) {
-  if (!hex || typeof hex !== "string") return null;
-  let h = hex.replace("#","").trim();
-  if (h.length === 3) h = h.split("").map(c => c+c).join("");
-  if (h.length !== 6) return null;
-  const r = parseInt(h.slice(0,2), 16);
-  const g = parseInt(h.slice(2,4), 16);
-  const b = parseInt(h.slice(4,6), 16);
-  if ([r,g,b].some(v => Number.isNaN(v))) return null;
-  return [r,g,b];
-}
-function _relLum(rgb) {
-  const [r,g,b] = rgb.map(v => {
-    const s = v/255;
-    return s <= 0.03928 ? s/12.92 : Math.pow((s+0.055)/1.055, 2.4);
-  });
-  return 0.2126*r + 0.7152*g + 0.0722*b;
-}
-function contrastRatio(hex1, hex2) {
-  const a = _hexToRgb(hex1), b = _hexToRgb(hex2);
-  if (!a || !b) return 0;
-  const la = _relLum(a), lb = _relLum(b);
-  const hi = Math.max(la, lb), lo = Math.min(la, lb);
-  return (hi + 0.05) / (lo + 0.05);
-}
-// Retourne "AAA", "AA", ou "FAIL" pour du texte normal (>=18pt = large, sinon).
-function wcagLevel(hex1, hex2) {
-  const r = contrastRatio(hex1, hex2);
-  if (r >= 7) return "AAA";
-  if (r >= 4.5) return "AA";
-  return "FAIL";
-}
-
-// === Labels par defaut pour les sections du CV (editables par l'utilisateur) ===
-const DEFAULT_LABELS_FR = {
-  profile: "Profil",
-  experience: "Expérience",
-  education: "Formation",
-  skills: "Compétences",
-  languages: "Langues",
-  certifications: "Certifications",
-  contact: "Contact",
-  links: "Liens",
-};
-const DEFAULT_LABELS_EN = {
-  profile: "Profile",
-  experience: "Experience",
-  education: "Education",
-  skills: "Skills",
-  languages: "Languages",
-  certifications: "Certifications",
-  contact: "Contact",
-  links: "Links",
-};
-// Helper : retourne le label custom de l'utilisateur OU le defaut selon la langue
-function getLabel(cv, key, locale) {
-  const custom = cv && cv.labels && cv.labels[key];
-  if (custom && custom.trim()) return custom;
-  const defaults = locale === "en" ? DEFAULT_LABELS_EN : DEFAULT_LABELS_FR;
-  return defaults[key] || key;
-}
 // === EditableTitle : titre de section editable au double-clic ===
 
 const TEMPLATES = [
@@ -2507,18 +2446,12 @@ function resolveBodyFontId(id) {
 // Snap : si l'IA renvoie une couleur hex au lieu d'un id, on cherche le preset
 // le plus proche par distance euclidienne RGB. Garantit qu'on reste dans la
 // palette curee meme si l'IA devie.
-function _hexDistance(a, b) {
-  const ra = _hexToRgb(a), rb = _hexToRgb(b);
-  if (!ra || !rb) return Infinity;
-  const dr = ra[0] - rb[0], dg = ra[1] - rb[1], db = ra[2] - rb[2];
-  return Math.sqrt(dr*dr + dg*dg + db*db);
-}
 function snapColorToPreset(color, presets) {
   if (!color || !presets || presets.length === 0) return presets[0] || null;
   let best = presets[0];
-  let bestDist = _hexDistance(color, presets[0].color);
+  let bestDist = distanceHex(color, presets[0].color);
   for (let i = 1; i < presets.length; i++) {
-    const d = _hexDistance(color, presets[i].color);
+    const d = distanceHex(color, presets[i].color);
     if (d < bestDist) { bestDist = d; best = presets[i]; }
   }
   return best;
