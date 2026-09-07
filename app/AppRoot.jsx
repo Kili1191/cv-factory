@@ -5700,11 +5700,78 @@ export default function App() {
     }
   }, [cv, apiKey, T, pushH, setCVFn, notify, locale]);
 
+  // v17 chantier 10 : Applications Tracker. CRUD local en localStorage.
+  const addApplication = useCallback((app) => {
+    setApplications(prev => {
+      const next = [...prev, app];
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+  const updateApplication = useCallback((app) => {
+    setApplications(prev => {
+      const next = prev.map(a => a.id === app.id ? app : a);
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+  const deleteApplication = useCallback((id) => {
+    setApplications(prev => {
+      const next = prev.filter(a => a.id !== id);
+      lsS(SK.AP, next);
+      return next;
+    });
+  }, []);
+
+  // AN APPLICATION LEAVES A TRACE, WHATEVER THE DOOR
+  //
+  // Kilian, 7 September: "when I apply there is no trace of where; nothing
+  // is saved, you do not know where I apply, so there is no real
+  // accompaniment". True. A job found in the search became a tracked
+  // application; a CV adapted to a pasted ad, or a pack written for it,
+  // left nothing. The tracker now gets a row from every door: adapted CV,
+  // CV written for the ad, pack. Status "prepared", not "applied": the
+  // person marks it sent once they have sent it, and the follow-up nudge
+  // only counts what was sent. The same ad, seen twice, is one row.
+  const suivreLaCandidature = useCallback((offer, matchRes) => {
+    const texte = String(offer || "").trim();
+    if (!texte) return null;
+    const company = String((matchRes && matchRes.company) || "").trim();
+    const role = String((matchRes && matchRes.job_title) || "").trim();
+    const empreinte = texte.slice(0, 240).toLowerCase().replace(/\s+/g, " ");
+    const memeAnnonce = (a) => a && ((String(a.offer || "").slice(0, 240).toLowerCase().replace(/\s+/g, " ") === empreinte)
+      || (company && role && String(a.company || "").toLowerCase() === company.toLowerCase()
+          && String(a.role || "").toLowerCase() === role.toLowerCase()));
+    const deja = applications.find(memeAnnonce);
+    if (deja) {
+      if ((!deja.company && company) || (!deja.role && role)) {
+        updateApplication({ ...deja, company: deja.company || company, role: deja.role || role, offer: deja.offer || texte });
+      }
+      return deja;
+    }
+    const app = {
+      id: Date.now(),
+      company, role,
+      date: new Date().toISOString().slice(0, 10),
+      status: "prepared",
+      notes: T.ap_tracked_note || "",
+      link: "",
+      offer: texte,
+      created: Date.now(),
+    };
+    addApplication(app);
+    logActivity(ACT.APPLICATION_ADDED, (locale === "en" ? "Prepared: " : "Preparee : ")
+      + ([role, company].filter(Boolean).join(" - ") || texte.slice(0, 60)));
+    notify((T.ap_tracked_from_cv || "") + ([company, role].filter(Boolean).join(", ") || (locale === "en" ? "this ad" : "cette annonce")));
+    return app;
+  }, [applications, addApplication, updateApplication, T, locale, notify, logActivity]);
+
   const requestPack = useCallback((offer, matchRes) => {
+    suivreLaCandidature(offer, matchRes);
     setPackCtx({ offer, matchRes });
     setShowPack(true);
     setPackResult(null);
-  }, []);
+  }, [suivreLaCandidature]);
 
   const runPack = useCallback(async () => {
     if (!packCtx) return;
@@ -5732,7 +5799,14 @@ export default function App() {
     // ont besoin. Les repeter triple le cout d'entree ; c'est le prix de la
     // decoupe, et il reste tres inferieur a celui de la sortie, qui est ce
     // qu'on cherchait a rendre tenable.
+    // The three prompts are written in French and answered in French
+    // whatever the interface said: Kilian saw "Son doute" and French
+    // objections under an English CV. The language is the interface's.
+    const langueDuPack = locale === "en"
+      ? "Reply STRICTLY in English, every field, whatever the language of the ad or the CV.\n"
+      : "Reponds STRICTEMENT en francais, chaque champ, quelle que soit la langue de l'annonce ou du CV.\n";
     const socle = "Tu es expert en candidature.\n\n"
+      + langueDuPack + "\n"
       +"OFFRE:\n"+offer+"\n\n"
       +"CV CANDIDAT:\n"+cvSummary+"\n\n"
       +"REGLES COMMUNES:\n"
@@ -7621,29 +7695,6 @@ export default function App() {
     setCompareResult(comparerCv(va.cv, vb.cv, locale === "en" ? "en" : "fr"));
   }, [comparePickA, comparePickB, versions, locale]);
 
-  // v17 chantier 10 : Applications Tracker. CRUD local en localStorage.
-  const addApplication = useCallback((app) => {
-    setApplications(prev => {
-      const next = [...prev, app];
-      lsS(SK.AP, next);
-      return next;
-    });
-  }, []);
-  const updateApplication = useCallback((app) => {
-    setApplications(prev => {
-      const next = prev.map(a => a.id === app.id ? app : a);
-      lsS(SK.AP, next);
-      return next;
-    });
-  }, []);
-  const deleteApplication = useCallback((id) => {
-    setApplications(prev => {
-      const next = prev.filter(a => a.id !== id);
-      lsS(SK.AP, next);
-      return next;
-    });
-  }, []);
-
   // v17 chantier 12 : Tutorial close/skip handlers.
   const closeTutorial = useCallback(() => {
     setShowTutorial(false);
@@ -8386,7 +8437,7 @@ export default function App() {
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
-          onApplied={()=>{ setOfferResult(null); setShowOffer(false); }}
+          onApplied={(annonce, resultat)=>{ suivreLaCandidature(annonce, resultat || offerResult); setOfferResult(null); setShowOffer(false); }}
           onPackRequest={requestPack}
           onCreateFromOffer={(offre) => runFromOffer(offre, "")}
           onUndo={undo}

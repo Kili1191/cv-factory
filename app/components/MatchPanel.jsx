@@ -161,11 +161,12 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
     setLoad(true);
     setPh("loading");
     try {
+      const annonce = offer;
       await onCreateFromOffer(offer);
       setOffer("");
       setRes(null);
       setPh("input");
-      if (onApplied) onApplied();
+      if (onApplied) onApplied(annonce, null);
     } catch {
       notify(T.ea);
       setPh("input");
@@ -184,11 +185,14 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
       setCVFn(() => normCV(res.cv_optimized, cv));
     }
     notify(T.mt_applied);
+    const annonce = offer, resultat = res;
     setPh("input");
     setRes(null);
     setOffer("");
     setApplique(false);
-    if (onApplied) onApplied();
+    // The ad and the result travel with the gesture, so the root can keep a
+    // trace of the application without asking for the ad a second time.
+    if (onApplied) onApplied(annonce, resultat);
   };
 
   const remettre = () => {

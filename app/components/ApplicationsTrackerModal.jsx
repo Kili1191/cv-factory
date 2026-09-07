@@ -19,6 +19,7 @@ import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 // Couleur tag par status.
 function statusBadge(status, T) {
   switch (status) {
+    case "prepared":  return { fg:Purple,  bg:PurpleSoft,  label:T.ap_status_prepared };
     case "applied":   return { fg:Coral,   bg:CoralSoft,   label:T.ap_status_applied };
     case "phone":     return { fg:Purple,  bg:PurpleSoft,  label:T.ap_status_phone };
     case "interview": return { fg:Purple,  bg:PurpleSoft,  label:T.ap_status_interview };
@@ -115,6 +116,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           <label style={labelStyle}>{T.ap_field_status}</label>
           <select value={form.status} onChange={e=>u("status")(e.target.value)}
             style={inputStyle}>
+            <option value="prepared">{T.ap_status_prepared}</option>
             <option value="applied">{T.ap_status_applied}</option>
             <option value="phone">{T.ap_status_phone}</option>
             <option value="interview">{T.ap_status_interview}</option>
