@@ -24,6 +24,12 @@ const nextConfig = {
   // yet: pdf.js runs a worker from a blob, fonts come from Google, the
   // Supabase and Anthropic calls go to their own hosts, and a wrong CSP
   // kills features silently. It belongs in a report-only pass first.
+  // /verre is a preview of the next landing page hero, a static page under
+  // public/ so it runs on the real domain with its video (blocked from the
+  // development session). It goes away when the hero moves into app/page.jsx.
+  async rewrites() {
+    return [{ source: "/verre", destination: "/verre.html" }];
+  },
   async headers() {
     return [{
       source: "/(.*)",

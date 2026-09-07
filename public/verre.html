@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- PREVIEW of the glass hero, served from public/ so it can be seen on
+       the real domain with its video. Not linked from anywhere. The video is
+       still the third-party asset from the reference; before this becomes
+       the landing page, Nuvi hosts its own loop. -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Nuvi: the CV that passes the robots</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" />
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="stylesheet" href="/verre/styles.css" />
 </head>
 <body>
   <video id="bg-video" class="bg-video" aria-hidden="true"
@@ -95,7 +99,7 @@
         </svg>
         <span class="nav__label nav__label--menu">Menu</span>
       </button>
-      <a class="nav__item" href="#">
+      <a class="nav__item" href="/app">
         <span class="nav__dot" aria-hidden="true"></span>
         <span class="nav__label">Open the app</span>
       </a>
@@ -109,7 +113,7 @@
           real screening parsers, and hands you a file a recruiter&rsquo;s
           software reads whole.
         </p>
-        <a class="chamfer" href="#">
+        <a class="chamfer" href="/app">
           <span class="chamfer__glass" aria-hidden="true"></span>
           <svg class="chamfer__outline" viewBox="0 0 260 48" preserveAspectRatio="none" aria-hidden="true">
             <polygon points="14,0 260,0 260,34 246,48 0,48 0,14"
@@ -162,7 +166,7 @@
         <span>Close</span>
       </button>
       <nav class="menu__nav">
-        <a class="menu__link" href="#"><span class="menu__linkText">Product</span>
+        <a class="menu__link" href="/"><span class="menu__linkText">Product</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
         <a class="menu__link" href="#"><span class="menu__linkText">Templates</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
@@ -180,7 +184,7 @@
     </div>
   </div>
 
-  <script type="module" src="./glass-card.js"></script>
-  <script type="module" src="./ui.js"></script>
+  <script type="module" src="/verre/glass-card.js"></script>
+  <script type="module" src="/verre/ui.js"></script>
 </body>
 </html>
