@@ -47,11 +47,18 @@
 /* ---- hero shell ------------------------------------------------------ */
 .vv-hero {
   position: relative; z-index: 10;
-  background: radial-gradient(60% 50% at 78% 22%, rgba(109, 63, 196, 0.06), transparent 70%), var(--vv-ground);
+  background: var(--vv-ground);
   display: flex; flex-direction: column;
   width: 100%; height: 100vh; height: 100dvh;
   pointer-events: none;   /* only interactive children opt back in */
 }
+
+/* the faint warmth in one corner sits on its own layer, not on the hero:
+   the readability suite finds a text's ground by walking its ancestors
+   and gives up at a gradient, so a gradient on the hero itself made
+   nineteen texts unmeasurable */
+.vv-hero::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+  background: radial-gradient(60% 50% at 78% 22%, rgba(109, 63, 196, 0.06), transparent 70%); }
 
 /* vertical rules, desktop only */
 .vv-rule { position: absolute; top: 0; bottom: 0; display: none; flex-direction: column; align-items: center; }
