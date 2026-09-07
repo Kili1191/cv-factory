@@ -57,96 +57,115 @@ import RevelationDeSecours from "./RevelationDeSecours";
 const T = {
   en: {
     menu: "Menu", close: "Close", open: "Open the app",
-    h1a: "A CV that passes", h1b: "the robots",
-    sub: "Drop your CV. Nuvi rewrites it for the job and hands you a file the ATS reads whole.",
-    cta: "Start with my CV",
-    cardTitle: "Watch the software read", cardIndex: "//01",
-    readEyebrow: "The classic template, read whole", readNote: "Five engines read every template on every build: poppler, MuPDF, Apache Tika, PDFBox and pdf.js. The number is what they read back, in percent.",
-    f1t: "Native text, five engines", f1: "Every template is read by poppler, MuPDF and Apache Tika before it ships. Embedded fonts, one page, in reading order.",
-    f2t: "Nothing invented", f2: "Every line of the tailored CV exists in something you already wrote. A test refuses the merge otherwise.",
-    links: [["Product", "#how"], ["Templates", "#templates"], ["ATS check", "#check"], ["Pricing", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
+    h1a: "Your CV, read by", h1b: "a robot first",
+    sub: "Before any recruiter sees your CV, a piece of software reads it and sorts it. Nuvi writes your CV so it gets through. That software is called an ATS.",
+    cta: "Try it with my CV",
+    cardTitle: "See what the software keeps",
+    readEyebrow: "What the software looks for", readNote: "It looks for exactly this, and nothing else. What it cannot find, it throws away, and no human ever sees it.",
+    cherche: [["Your name and how to reach you", "Found, or lost. Nothing in between."],
+      ["Each job title and each employer", "A real job title. \u201cHospitality professional\u201d is not one."],
+      ["The dates", "From when to when. \u201cFor years\u201d does not count."],
+      ["What you achieved, in numbers", "\u201cTeam of 12\u201d counts. \u201cLed a large team\u201d does not."]],
+    links: [["How it works", "#how"], ["Layouts", "#templates"], ["Check my CV", "#check"], ["Price", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Get in touch", lang: "Language",
-    ticker: ["poppler", "MuPDF", "Apache Tika", "PDFBox", "pdf.js"],
-    tickerWords: ["fonts embedded", "one page", "reading order kept", "nothing invented"],
-    checkEyebrow: "01 The check", checkTitle: "What the robots read back.",
-    checkLead: "Recruiters do not read CVs first. Their software does. The line you typed above went through the same reading, on your device. The file Nuvi prints goes through five real engines before it ships.",
+    ticker: ["Read whole by the sorting software", "One page", "Nothing made up", "Free to check", "PDF and Word", "In French and English"],
+    checkEyebrow: "Why you hear nothing back", checkTitle: "A robot reads your CV before anyone does.",
+    checkLead: "You type your line above and watch it happen: some words stay, some are dropped. Your whole CV goes through the same thing at every company you apply to. Nuvi writes it so nothing gets thrown out.",
     kept: "What the software kept", dropped: "What it dropped", word: "word", words: "words", droppedNone: "nothing", keptNone: "nothing", keptAll: "all of it",
-    essaiLead: "Put a line of your own CV through it", essaiHolder: "Hard-working team player with excellent communication skills",
-    essaiReset: "Back to the example", essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
-    verifLien: "Run your whole CV through it, as a PDF",
-    howEyebrow: "02 Three moves", howTitle: "Drop it. Aim it. Send it.",
-    howLead: "The whole product in three moves, and the third one is the one the others skip.",
-    steps: [["Drop your CV", "PDF, Word, a photo, a LinkedIn export. Read on your device in under a second, for free, before you decide anything."],
-      ["Aim it at the job", "Paste the posting. Nuvi rewrites your CV for it from what you have already written, across every version you have. It picks. It never invents."],
-      ["Pass the check, then send", "Native text, embedded fonts, one page, reading order kept. Five engines read every template whole before it ships; you download it as PDF or Word."]],
-    tplEyebrow: "03 Six templates", tplTitle: "Every one of them read whole.",
-    tplLead: "Two columns are where parsers lose lines. Nuvi's two-column templates leave with a written reading layer, and the one-column ones leave as pure text. Measured on every build.",
-    tpls: [["Classic", "one column"], ["Timeline", "one column"], ["ATS", "one column"], ["Sidebar", "two columns"], ["Swiss", "two columns"], ["Compact", "dense"]],
-    ruleEyebrow: "04 The rule", ruleTitle: "The AI invents nothing.",
-    ruleLead: "Every line of a tailored CV exists in something you already wrote. A test refuses the change otherwise. Choosing from your own material is not inventing; the border holds by itself, not by vigilance.",
-    morphLead: "Watch the same facts re-file themselves",
-    morphNote: "Not one of these adds anything. The years are the same years, the work is the same work. Only the shape changed, and with it whether the software can put it anywhere.",
-    cvLead: "05 What comes out", cvTitle: "A whole CV, aimed at one job ad, in a file you can send.",
-    cvBody: "Not one sentence: every section. Paste the ad you are going for, and Nuvi writes the CV for that ad, then hands you the file.",
-    cvTemps: ["Paste the ad.", "Nuvi rewrites every section for it.", "Send the file."],
-    afterEyebrow: "06 After the CV", afterTitle: "The rest of the application, in the same file.",
-    after: [["Cover letter", "One click from Download, written from the same CV and the same posting. Same rule: nothing invented."],
-      ["A tracker that reads your inbox", "Connect Gmail and the recruiter's reply moves the application by itself. No board to fill by hand."],
-      ["Interview preparation", "Questions from the posting and your CV, and a live assistant during the call, on your phone."],
-      ["PDF and Word", "The PDF is real text with the fonts inside. The Word file is one column, real headings, real bullets, never a table."]],
-    priceEyebrow: "07 Pricing", priceTitle: "One plan. One price. Cancel in one click.",
-    priceRows: ["Your CV is read, checked and kept on your device for free, before any account.", "One plan unlocks the rewriting, the letter, the tracker and the interview prep.", "The same price for everyone. Cancel from Settings, no e-mail to write."],
+    essaiLead: "Type a line from your CV", essaiHolder: "Hard-working team player with excellent communication skills",
+    essaiReset: "Back to the example", essaiPrive: "Nothing leaves your phone or computer. No account, nothing sent, nothing kept.",
+    verifLien: "Check my whole CV, as a PDF",
+    quiEyebrow: "Who it is for", quiTitle: "Made for the road and the floor.",
+    quiLead: "CV tools are built for engineers and consultants. Nuvi is written for drivers, waiters, cooks and receptionists: the jobs where you answer twenty ads a month and a robot reads first, every time.",
+    howEyebrow: "How it works", howTitle: "Three steps. Ten minutes.",
+    howLead: "No template to fill in. You start from the CV you already have.",
+    steps: [["Drop your CV", "A PDF, a Word file, a photo of it, or your LinkedIn page. Nuvi reads it in a second, for free, before you decide anything."],
+      ["Paste the job ad", "Nuvi rewrites your CV for that job, using only what you have already done. It never makes anything up."],
+      ["Download and send", "One page, in PDF or Word, that the sorting software reads from the first line to the last."]],
+    tplEyebrow: "Six layouts", tplTitle: "Pick the one that looks like you.",
+    tplLead: "All six get through the sorting software. We check it every time we change anything.",
+    tpls: [["Classic", "one column"], ["Timeline", "one column"], ["Simple", "one column"], ["Sidebar", "two columns"], ["Swiss", "two columns"], ["Compact", "dense"]],
+    ruleEyebrow: "Our rule", ruleTitle: "Nuvi never makes anything up.",
+    ruleLead: "Ten years stay ten years. A team of twelve stays a team of twelve. Nuvi only changes how it is written, so the software finds it. If you cannot defend a line in an interview, it is not on your CV.",
+    morphLead: "Same facts, written so the software finds them",
+    morphNote: "Nothing is added here. The years are the same years, the work is the same work. Only the wording changed, and with it whether the software can file it.",
+    cvLead: "What you get", cvTitle: "A whole CV, written for one job, ready to send.",
+    cvBody: "Not one sentence: every part of it. Paste the ad, Nuvi rewrites the CV for that ad and hands you the file.",
+    cvTemps: ["Paste the ad.", "Nuvi rewrites every part for it.", "Send the file."],
+    afterEyebrow: "After the CV", afterTitle: "Nuvi stays with you until the interview.",
+    after: [["Cover letter", "One click from Download, written from the same CV and the same ad. Same rule: nothing made up."],
+      ["Follow your applications", "Connect your Gmail and every reply from a recruiter updates your list by itself."],
+      ["Prepare the interview", "The questions they will ask, from the ad and your CV, and help during the call, on your phone."],
+      ["PDF or Word", "Send the file the recruiter asks for. Both are read whole by their software."]],
+    priceEyebrow: "Price", priceTitle: "One plan. One price. Cancel in one click.",
+    priceRows: ["Checking your CV is free, no account needed.", "One plan gives you everything: the rewriting, the letter, the follow-up, the interview prep.", "Same price for everyone. Cancel from Settings, no e-mail to write."],
     priceBig: "Free to check", priceSmall: "price announced at launch",
-    footCols: [["Product", [["The check", "#check"], ["How it works", "#how"], ["Templates", "#templates"], ["Pricing", "#pricing"]]],
-      ["Nuvi", [["Open the app", "/app"], ["Check a PDF", "/verifier"], ["hello@thenuvi.com", "mailto:hello@thenuvi.com"]]]],
-    footNote: "Your CV stays on your device unless you sign in to sync it.",
+    footCols: [["Nuvi", [["How it works", "#how"], ["Layouts", "#templates"], ["Check my CV", "#check"], ["Price", "#pricing"]]],
+      ["Start", [["Open the app", "/app"], ["Check a PDF", "/verifier"], ["hello@thenuvi.com", "mailto:hello@thenuvi.com"]]]],
+    footNote: "Your CV stays on your phone or computer unless you sign in to save it online.",
   },
   fr: {
     menu: "Menu", close: "Fermer", open: "Ouvrir l'app",
-    h1a: "Le CV qui passe", h1b: "les robots",
-    sub: "Depose ton CV. Nuvi le reecrit pour le poste et te rend un fichier que l'ATS lit en entier.",
-    cta: "Commencer avec mon CV",
-    cardTitle: "Regarde le logiciel lire", cardIndex: "//01",
-    readEyebrow: "Le gabarit classique, lu en entier", readNote: "Cinq moteurs lisent chaque gabarit a chaque build : poppler, MuPDF, Apache Tika, PDFBox et pdf.js. Le chiffre est ce qu'ils relisent, en pour cent.",
-    f1t: "Texte natif, cinq moteurs", f1: "Chaque gabarit est lu par poppler, MuPDF et Apache Tika avant de partir. Polices incorporees, une page, dans l'ordre de lecture.",
-    f2t: "Rien d'invente", f2: "Chaque ligne du CV adapte existe dans quelque chose que tu as deja ecrit. Un test refuse la fusion sinon.",
-    links: [["Produit", "#how"], ["Gabarits", "#templates"], ["Verification ATS", "#check"], ["Tarif", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
+    h1a: "Ton CV, lu par", h1b: "un robot d'abord",
+    sub: "Avant qu'un recruteur voie ton CV, un logiciel le lit et le trie. Nuvi ecrit ton CV pour qu'il passe. Ce logiciel s'appelle un ATS.",
+    cta: "Essayer avec mon CV",
+    cardTitle: "Regarde ce que le logiciel garde",
+    readEyebrow: "Ce que le logiciel cherche", readNote: "Il cherche exactement ca, et rien d'autre. Ce qu'il ne trouve pas, il le jette, et aucun humain ne le voit.",
+    cherche: [["Ton nom et comment te joindre", "Trouve, ou perdu. Rien entre les deux."],
+      ["Chaque poste et chaque employeur", "Un vrai intitule de poste. \u00ab Professionnel de la restauration \u00bb n'en est pas un."],
+      ["Les dates", "De quand a quand. \u00ab Depuis des annees \u00bb ne compte pas."],
+      ["Ce que tu as accompli, en chiffres", "\u00ab Equipe de 12 \u00bb compte. \u00ab A encadre une grande equipe \u00bb non."]],
+    links: [["Comment ca marche", "#how"], ["Mises en page", "#templates"], ["Verifier mon CV", "#check"], ["Prix", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Nous ecrire", lang: "Langue",
-    ticker: ["poppler", "MuPDF", "Apache Tika", "PDFBox", "pdf.js"],
-    tickerWords: ["polices incorporees", "une page", "ordre de lecture garde", "rien d'invente"],
-    checkEyebrow: "01 La verification", checkTitle: "Ce que les robots relisent.",
-    checkLead: "Les recruteurs ne lisent pas les CV en premier. Leur logiciel, si. La ligne que tu as tapee plus haut a subi la meme lecture, sur ton appareil. Le fichier que Nuvi imprime passe par cinq vrais moteurs avant de partir.",
-    kept: "Ce que le logiciel a retenu", dropped: "Ce qu'il a ecarte", word: "mot", words: "mots", droppedNone: "rien", keptNone: "rien", keptAll: "tout",
-    essaiLead: "Passe une ligne de ton CV", essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
-    essaiReset: "Revenir a l'exemple", essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
-    verifLien: "Passe ton CV entier, en PDF",
-    howEyebrow: "02 Trois gestes", howTitle: "Depose. Vise. Envoie.",
-    howLead: "Tout le produit en trois gestes, et le troisieme est celui que les autres sautent.",
-    steps: [["Depose ton CV", "PDF, Word, une photo, un export LinkedIn. Lu sur ton appareil en moins d'une seconde, gratuitement, avant de decider quoi que ce soit."],
-      ["Vise le poste", "Colle l'annonce. Nuvi reecrit ton CV pour elle a partir de ce que tu as deja ecrit, dans toutes tes versions. Il choisit. Il n'invente jamais."],
-      ["Passe la verification, puis envoie", "Texte natif, polices incorporees, une page, ordre de lecture garde. Cinq moteurs lisent chaque gabarit en entier avant qu'il parte ; tu le telecharges en PDF ou en Word."]],
-    tplEyebrow: "03 Six gabarits", tplTitle: "Chacun lu en entier.",
-    tplLead: "Deux colonnes, c'est la que les analyseurs perdent des lignes. Les gabarits a deux colonnes partent avec une couche de lecture ecrite, ceux a une colonne en texte pur. Mesure a chaque build.",
-    tpls: [["Classique", "une colonne"], ["Chronologie", "une colonne"], ["ATS", "une colonne"], ["Sidebar", "deux colonnes"], ["Swiss", "deux colonnes"], ["Compact", "dense"]],
-    ruleEyebrow: "04 La regle", ruleTitle: "L'IA n'invente rien.",
-    ruleLead: "Chaque ligne d'un CV adapte existe dans quelque chose que tu as deja ecrit. Un test refuse le changement sinon. Choisir dans ta propre matiere n'est pas inventer ; la frontiere tient toute seule, pas par vigilance.",
-    morphLead: "Regarde les memes faits se ranger autrement",
-    morphNote: "Aucun n'ajoute quoi que ce soit. Les annees sont les memes annees, le travail est le meme travail. Seule la forme a change, et avec elle le fait que le logiciel sache ou la mettre.",
-    cvLead: "05 Ce qui en sort", cvTitle: "Un CV entier, vise sur une annonce, dans un fichier que tu peux envoyer.",
-    cvBody: "Pas une phrase : toutes les sections. Colle l'annonce que tu vises, Nuvi ecrit le CV pour elle, et te rend le fichier.",
-    cvTemps: ["Colle l'annonce.", "Nuvi reecrit chaque section pour elle.", "Envoie le fichier."],
-    afterEyebrow: "06 Apres le CV", afterTitle: "Le reste de la candidature, dans le meme fichier.",
+    ticker: ["Lu en entier par le logiciel de tri", "Une page", "Rien d'invente", "Verification gratuite", "PDF et Word", "En francais et en anglais"],
+    checkEyebrow: "Pourquoi tu n'as pas de reponse", checkTitle: "Un robot lit ton CV avant tout le monde.",
+    checkLead: "Tu tapes ta ligne au-dessus et tu le vois : des mots restent, d'autres sont ecartes. Ton CV entier subit la meme chose dans chaque entreprise ou tu postules. Nuvi l'ecrit pour que rien ne soit jete.",
+    kept: "Ce que le logiciel a garde", dropped: "Ce qu'il a ecarte", word: "mot", words: "mots", droppedNone: "rien", keptNone: "rien", keptAll: "tout",
+    essaiLead: "Tape une ligne de ton CV", essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
+    essaiReset: "Revenir a l'exemple", essaiPrive: "Rien ne sort de ton telephone ou de ton ordinateur. Pas de compte, rien d'envoye, rien de garde.",
+    verifLien: "Verifier mon CV entier, en PDF",
+    quiEyebrow: "Pour qui", quiTitle: "Fait pour la route et la salle.",
+    quiLead: "Les outils de CV sont faits pour les ingenieurs et les consultants. Nuvi est ecrit pour les chauffeurs, les serveurs, les cuisiniers et les receptionnistes : les metiers ou l'on repond a vingt annonces par mois et ou un robot lit en premier, a chaque fois.",
+    howEyebrow: "Comment ca marche", howTitle: "Trois etapes. Dix minutes.",
+    howLead: "Pas de modele a remplir. Tu pars du CV que tu as deja.",
+    steps: [["Depose ton CV", "Un PDF, un fichier Word, une photo, ou ta page LinkedIn. Nuvi le lit en une seconde, gratuitement, avant que tu decides quoi que ce soit."],
+      ["Colle l'annonce", "Nuvi reecrit ton CV pour ce poste, avec seulement ce que tu as deja fait. Il n'invente jamais rien."],
+      ["Telecharge et envoie", "Une page, en PDF ou en Word, que le logiciel de tri lit de la premiere ligne a la derniere."]],
+    tplEyebrow: "Six mises en page", tplTitle: "Choisis celle qui te ressemble.",
+    tplLead: "Les six passent le logiciel de tri. On le verifie a chaque fois qu'on change quelque chose.",
+    tpls: [["Classique", "une colonne"], ["Chronologie", "une colonne"], ["Simple", "une colonne"], ["Sidebar", "deux colonnes"], ["Swiss", "deux colonnes"], ["Compact", "dense"]],
+    ruleEyebrow: "Notre regle", ruleTitle: "Nuvi n'invente jamais rien.",
+    ruleLead: "Dix ans restent dix ans. Une equipe de douze reste une equipe de douze. Nuvi ne change que la facon de l'ecrire, pour que le logiciel le trouve. Si tu ne peux pas defendre une ligne en entretien, elle n'est pas sur ton CV.",
+    morphLead: "Les memes faits, ecrits pour que le logiciel les trouve",
+    morphNote: "Rien n'est ajoute ici. Les annees sont les memes annees, le travail est le meme travail. Seule la formulation a change, et avec elle le fait que le logiciel sache la ranger.",
+    cvLead: "Ce que tu obtiens", cvTitle: "Un CV entier, ecrit pour un poste, pret a envoyer.",
+    cvBody: "Pas une phrase : toutes ses parties. Colle l'annonce, Nuvi reecrit le CV pour elle et te rend le fichier.",
+    cvTemps: ["Colle l'annonce.", "Nuvi reecrit chaque partie pour elle.", "Envoie le fichier."],
+    afterEyebrow: "Apres le CV", afterTitle: "Nuvi reste avec toi jusqu'a l'entretien.",
     after: [["Lettre de motivation", "A un clic de Telecharger, ecrite depuis le meme CV et la meme annonce. Meme regle : rien d'invente."],
-      ["Un suivi qui lit ta boite mail", "Connecte Gmail et la reponse du recruteur deplace la candidature toute seule. Pas de tableau a remplir a la main."],
-      ["Preparation d'entretien", "Les questions tirees de l'annonce et de ton CV, et un assistant en direct pendant l'appel, sur ton telephone."],
-      ["PDF et Word", "Le PDF est du vrai texte avec les polices dedans. Le fichier Word est en une colonne, vrais titres, vraies puces, jamais de tableau."]],
-    priceEyebrow: "07 Tarif", priceTitle: "Un plan. Un prix. Resiliable en un clic.",
-    priceRows: ["Ton CV est lu, verifie et garde sur ton appareil gratuitement, avant tout compte.", "Un seul plan debloque la reecriture, la lettre, le suivi et la preparation d'entretien.", "Le meme prix pour tout le monde. Resiliation depuis Reglages, pas d'e-mail a ecrire."],
+      ["Suis tes candidatures", "Connecte ton Gmail et chaque reponse d'un recruteur met ta liste a jour toute seule."],
+      ["Prepare l'entretien", "Les questions qu'on va te poser, tirees de l'annonce et de ton CV, et de l'aide pendant l'appel, sur ton telephone."],
+      ["PDF ou Word", "Envoie le fichier que le recruteur demande. Les deux sont lus en entier par son logiciel."]],
+    priceEyebrow: "Prix", priceTitle: "Un plan. Un prix. Resiliable en un clic.",
+    priceRows: ["Verifier ton CV est gratuit, sans compte.", "Un seul plan te donne tout : la reecriture, la lettre, le suivi, la preparation d'entretien.", "Le meme prix pour tout le monde. Resiliation depuis Reglages, pas d'e-mail a ecrire."],
     priceBig: "Verification gratuite", priceSmall: "prix annonce au lancement",
-    footCols: [["Produit", [["La verification", "#check"], ["Comment ca marche", "#how"], ["Gabarits", "#templates"], ["Tarif", "#pricing"]]],
-      ["Nuvi", [["Ouvrir l'app", "/app"], ["Verifier un PDF", "/verifier"], ["hello@thenuvi.com", "mailto:hello@thenuvi.com"]]]],
-    footNote: "Ton CV reste sur ton appareil, sauf si tu te connectes pour le synchroniser.",
+    footCols: [["Nuvi", [["Comment ca marche", "#how"], ["Mises en page", "#templates"], ["Verifier mon CV", "#check"], ["Prix", "#pricing"]]],
+      ["Commencer", [["Ouvrir l'app", "/app"], ["Verifier un PDF", "/verifier"], ["hello@thenuvi.com", "mailto:hello@thenuvi.com"]]]],
+    footNote: "Ton CV reste sur ton telephone ou ton ordinateur, sauf si tu te connectes pour le garder en ligne.",
   },
+};
+
+// THE JOBS THIS PAGE SPEAKS TO
+//
+// Drivers and hospitality: the fields where people answer twenty ads a
+// month and a robot reads first every time. Other trades find work by
+// other doors. Naming them says who this is for before the first
+// sentence, and the ticker and the "for whom" section share the list.
+const METIERS = {
+  en: ["Delivery driver", "Van driver", "HGV driver", "Courier", "Chauffeur", "Waiter", "Bartender", "Chef de partie",
+       "Kitchen porter", "Receptionist", "Room attendant", "Host", "Barista", "Night porter"],
+  fr: ["Chauffeur-livreur", "Chauffeur VTC", "Chauffeur poids lourd", "Coursier", "Serveur", "Barman", "Chef de partie",
+       "Plongeur", "Receptionniste", "Femme de chambre", "Hote d'accueil", "Barista", "Veilleur de nuit", "Commis de cuisine"],
 };
 
 // The same facts, filed two ways, for the Morph section. Nothing is added:
@@ -326,7 +345,6 @@ export default function Vitrine({ lang = "en", onLang }) {
             <div className="vv-card__frost" aria-hidden="true" />
             <div className="vv-card__head">
               <h2 className="vv-card__title">{t.cardTitle}</h2>
-              <span className="vv-card__index">{t.cardIndex}</span>
             </div>
             <div className="vv-card__body">
               <ScanEssai lang={lang} labels={scanLabels} textes={scanTextes} />
@@ -369,8 +387,7 @@ export default function Vitrine({ lang = "en", onLang }) {
         <div className="vv-ticker__row">
           {[0, 1].map((copie) => (
             <React.Fragment key={copie}>
-              {t.ticker.map((e) => <span key={copie + e}>{e} <i>100</i></span>)}
-              {t.tickerWords.map((w) => <span key={copie + w}>{w}</span>)}
+              {(METIERS[lang] || METIERS.en).map((m) => <span key={copie + m}>{m}<i aria-hidden="true" /></span>)}
             </React.Fragment>
           ))}
         </div>
@@ -389,17 +406,31 @@ export default function Vitrine({ lang = "en", onLang }) {
             </div>
             <div className="vv-frost">
               <span className="vv-eyebrow">{t.readEyebrow}</span>
-              <div className="vv-engines">
-                {t.ticker.map((e) => (
-                  <div key={e} className="vv-engines__r"><span>{e}</span><div className="vv-engines__bar"><i /></div><span className="vv-engines__n">100</span></div>
+              <div className="vv-cherche">
+                {t.cherche.map(([quoi, comment]) => (
+                  <div key={quoi} className="vv-cherche__r"><b>{quoi}</b><span>{comment}</span></div>
                 ))}
               </div>
               <p className="vv-note">{t.readNote}</p>            </div>
           </div>
         </section>
 
+        {/* FOR WHOM: the jobs, in large type */}
+        <section className="vv-sec nuvi-scroll-in" id="qui">
+          <div className="vv-grid2">
+            <div className="vv-sticky">
+              <span className="vv-eyebrow">{t.quiEyebrow}</span>
+              <h2 className="vv-h nuvi-titre-geant"><Mots>{t.quiTitle}</Mots></h2>
+              <p className="vv-lead vv-muted">{t.quiLead}</p>
+            </div>
+            <ul className="vv-metiers">
+              {(METIERS[lang] || METIERS.en).map((m) => <li key={m}>{m}</li>)}
+            </ul>
+          </div>
+        </section>
+
         {/* 02 THREE MOVES */}
-        <section className="vv-sec nuvi-scroll-in" id="how">
+        <section className="vv-sec vv-sec--white nuvi-scroll-in" id="how">
           <div className="vv-grid2">
             <div className="vv-sticky">
               <span className="vv-eyebrow">{t.howEyebrow}</span>
@@ -418,7 +449,7 @@ export default function Vitrine({ lang = "en", onLang }) {
         </section>
 
         {/* 03 SIX TEMPLATES */}
-        <section className="vv-sec vv-sec--white nuvi-scroll-in" id="templates">
+        <section className="vv-sec nuvi-scroll-in" id="templates">
           <span className="vv-eyebrow">{t.tplEyebrow}</span>
           <h2 className="vv-h nuvi-titre-geant"><Mots>{t.tplTitle}</Mots></h2>
           <p className="vv-lead vv-muted">{t.tplLead}</p>
@@ -473,8 +504,8 @@ export default function Vitrine({ lang = "en", onLang }) {
           <span className="vv-eyebrow">{t.afterEyebrow}</span>
           <h2 className="vv-h nuvi-titre-geant"><Mots>{t.afterTitle}</Mots></h2>
           <div className="vv-four">
-            {t.after.map(([titre, corps], i) => (
-              <div key={titre} className="vv-frost"><span className="vv-idx">//0{i + 1}</span><h3>{titre}</h3><p>{corps}</p></div>
+            {t.after.map(([titre, corps]) => (
+              <div key={titre} className="vv-frost"><h3>{titre}</h3><p>{corps}</p></div>
             ))}
           </div>
         </section>

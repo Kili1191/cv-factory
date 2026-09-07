@@ -34,6 +34,19 @@
   --vv-display: Fraunces, Georgia, "Times New Roman", serif;
   --vv-serif: "DM Serif Display", Georgia, serif;
   --vv-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  /* The page is light in both themes. The reading demo, the Morph and
+     the document paint with the app's tokens, which the dark theme flips
+     to light inks: on this white ground they measured 2.4:1. The tokens
+     are pinned here to their light values, whatever the theme. */
+  --nuvi-ink: #000;
+  --nuvi-ink-muted: #5f5f5f;
+  --nuvi-paper: #fff;
+  --nuvi-cream: #fbfbf9;
+  --nuvi-hair: rgba(0, 0, 0, 0.12);
+  --nuvi-hairline: rgba(0, 0, 0, 0.1);
+  --nuvi-purple: #6d3fc4;
+  --nuvi-purple-text: #5b34a8;
+  --nuvi-coral-text: #9e5740;
   font-family: var(--vv-font);
   font-weight: 400;
   color: var(--vv-ink);
@@ -188,6 +201,11 @@
   box-shadow: 0 30px 80px rgba(20, 20, 15, 0.08); }
 .vv-card--reading .vv-card__frost { border-radius: 32px; }
 @media (min-width: 768px) { .vv-card--reading { padding: 2rem 2.25rem; } }
+.vv-cherche { display: grid; gap: 0; margin-top: 0.25rem; }
+.vv-cherche__r { display: grid; gap: 0.2rem; padding: 0.9rem 0; border-top: 1px solid var(--vv-line); }
+.vv-cherche__r:first-child { border-top: 0; padding-top: 0.25rem; }
+.vv-cherche__r b { font-weight: 600; font-size: 0.95rem; letter-spacing: -0.01em; }
+.vv-cherche__r span { font-size: 0.85rem; color: var(--vv-ink-3); line-height: 1.5; }
 .vv-engines { display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem; margin-top: 0.5rem; }
 .vv-engines__r { display: grid; grid-template-columns: 96px 1fr 44px; gap: 12px; align-items: center; }
 .vv-engines__bar { height: 2px; background: rgba(0, 0, 0, 0.12); }
@@ -301,7 +319,12 @@
 .vv-ticker { position: relative; z-index: 10; overflow: hidden; border-top: 1px solid var(--vv-line); border-bottom: 1px solid var(--vv-line); background: var(--vv-ground); }
 .vv-ticker__row { display: flex; width: max-content; padding: 0.9rem 0; font-size: 0.8rem; letter-spacing: 0.06em; text-transform: uppercase; animation: vvTick 40s linear infinite; }
 .vv-ticker__row span { padding: 0 1.75rem; white-space: nowrap; }
-.vv-ticker__row span i { font-style: normal; color: var(--vv-purple); }
+.vv-ticker__row span { display: inline-flex; align-items: center; gap: 1.75rem; }
+.vv-ticker__row span i { width: 5px; height: 5px; border-radius: 50%; background: var(--vv-purple); opacity: 0.6; }
+.vv-metiers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; font-family: var(--vv-display); font-size: clamp(1.5rem, 3.2vw, 2.5rem); letter-spacing: -0.02em; line-height: 1.25; }
+.vv-metiers li { display: inline-flex; align-items: center; gap: 1.25rem; }
+.vv-metiers li::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--vv-purple); opacity: 0.5; }
+.vv-metiers li:last-child::after { display: none; }
 @keyframes vvTick { to { transform: translateX(-50%); } }
 
 /* numbered steps */
