@@ -14,6 +14,27 @@ const nextConfig = {
   // Chromium and its driver are native packages: bundling them breaks the
   // binary lookup. Next leaves them in node_modules and requires them at
   // run time, which is what @sparticuz/chromium expects.
+  // SECURITY HEADERS
+  //
+  // The site renders text people paste from anywhere and job ads copied
+  // from any page. Nothing here restricts what the app itself does; these
+  // stop the page from being framed by another site, stop browsers from
+  // sniffing a response into a different type, and keep the referrer
+  // short when the app links out. A Content-Security-Policy is not here
+  // yet: pdf.js runs a worker from a blob, fonts come from Google, the
+  // Supabase and Anthropic calls go to their own hosts, and a wrong CSP
+  // kills features silently. It belongs in a report-only pass first.
+  async headers() {
+    return [{
+      source: "/(.*)",
+      headers: [
+        { key: "X-Content-Type-Options", value: "nosniff" },
+        { key: "X-Frame-Options", value: "SAMEORIGIN" },
+        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        { key: "Permissions-Policy", value: "camera=(), geolocation=(), payment=()" },
+      ],
+    }];
+  },
   experimental: {
     serverComponentsExternalPackages: ["@sparticuz/chromium", "puppeteer-core"],
     // The Chromium that prints the PDF ships as brotli files in the

@@ -56,7 +56,7 @@ const GLYPHES = [
 const DEMI = String.fromCharCode(0x2013);
 
 const cv = (puce) => [
-  "Kilian Maisonnette",
+  "Camille Marchetti",
   "Client Advisor",
   "k@exemple.com",
   "+971 502237756",

@@ -32,7 +32,7 @@ import { diagnostiquer } from "../lib/diagnostic.js";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite.js";
 
 const CV = (puces) => ({
-  name: "Kilian Maisonnette", title: "Bar Manager",
+  name: "Camille Marchetti", title: "Bar Manager",
   email: "k@example.com", phone: "07000", location: "London",
   experience: [{ id: 1, title: "Bar Manager", company: "Taj Exotica",
                  period: "2025 - 2026", bullets: puces }],

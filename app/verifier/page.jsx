@@ -210,7 +210,7 @@ const T = {
 };
 
 const DEMO = [
-  { t: "Kilian Maisonnette", gros: true },
+  { t: "Camille Marchetti", gros: true },
   { t: "Bar Manager" },
   { t: "CONTACT", faible: true },
   { t: "k@exemple.com" },
@@ -417,7 +417,7 @@ export default function PageVerifier() {
             marginTop: 18, paddingTop: 14, borderTop: "1px dashed " + Hair,
             fontFamily: Mono, fontSize: 11, color: Muted, lineHeight: 1.7,
           }}>
-            Kilian Maisonnette / Bar Manager / k@exemple.com /<br />
+            Camille Marchetti / Bar Manager / k@exemple.com /<br />
             Bar Manager, Taj Exotica / 2021-2024
           </div>
           <div style={{ ...tag, fontSize: 10, marginTop: 8 }}>{t.demoReste}</div>

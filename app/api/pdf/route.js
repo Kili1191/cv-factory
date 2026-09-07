@@ -129,6 +129,46 @@ async function cssDesPolices(hrefs) {
   return feuilles.filter(Boolean).join("\n");
 }
 
+// WHAT THE PRINTER ACCEPTS FROM THE BROWSER
+//
+// The body comes from anyone who can reach the route. The CV is data the
+// templates render as text; the theme is not: its values land in CSS
+// (background, a gradient in the sidebar template, font families), and a
+// value like "red) url(http://10.0.0.1/...)" would make the function's
+// Chromium fetch whatever it names. Only colours, font family names and
+// Google Fonts URLs survive; anything else is dropped, and the template
+// falls back to its defaults.
+const COULEUR = /^(#[0-9a-f]{3,8}|rgba?\([\d\s.,%]{1,40}\)|hsla?\([\d\s.,%deg]{1,40}\)|transparent|[a-z]{3,20})$/i;
+const FAMILLE = /^[\w\s,'"-]{1,120}$/;
+const HREF_POLICE = /^https:\/\/fonts\.googleapis\.com\/css2?\?[\w%+.,;:@&=-]{1,600}$/;
+
+function themeSur(t) {
+  const out = {};
+  if (!t || typeof t !== "object") return out;
+  for (const [k, v] of Object.entries(t)) {
+    if (typeof v !== "string" || !/^[a-zA-Z]{1,12}$/.test(k)) continue;
+    if (/Href$/.test(k)) { if (HREF_POLICE.test(v)) out[k] = v; }
+    else if (k === "hf" || k === "bf" || k === "tf") { if (FAMILLE.test(v)) out[k] = v; }
+    else if (COULEUR.test(v)) out[k] = v;
+  }
+  return out;
+}
+
+// The page to print lives on this same deployment: same build, same
+// templates, same fonts as the screen. The origin is taken from the
+// request, and only when it is one of ours: the host header is written by
+// the caller, and a printer told to open an arbitrary host would fetch it
+// and hand the result back as a PDF. NUVI_ORIGINE overrides behind a
+// proxy that rewrites the URL.
+const ORIGINES_SURES = /^(https?:\/\/(localhost|127\.0\.0\.1)(:\d{2,5})?|https:\/\/([a-z0-9-]+\.)*thenuvi\.com|https:\/\/[a-z0-9-]+\.vercel\.app)$/i;
+
+function origineDImpression(req) {
+  if (process.env.NUVI_ORIGINE) return process.env.NUVI_ORIGINE;
+  let o = "";
+  try { o = new URL(req.url).origin; } catch (e) { o = ""; }
+  return ORIGINES_SURES.test(o) ? o : null;
+}
+
 export async function POST(req) {
   let corps;
   try { corps = await req.json(); } catch { corps = null; }
@@ -141,7 +181,7 @@ export async function POST(req) {
   }
   const format = FORMATS[corps.format] ? corps.format : "a4";
   const f = FORMATS[format];
-  const theme = corps.theme || {};
+  const theme = themeSur(corps.theme);
   const donnees = {
     cv, layout: corps.layout || "classic", theme,
     locale: corps.locale === "en" ? "en" : "fr", format,
@@ -149,11 +189,8 @@ export async function POST(req) {
   // Warm the font cache before the page asks, so the interception below
   // answers at once and the page's font wait is not spent on Google.
   await cssDesPolices([POLICES_DU_SITE, theme.hfHref, theme.bfHref]);
-  // The page to print lives on this same deployment: same build, same
-  // templates, same fonts as the screen the person is looking at.
-  // Behind a proxy that rewrites the URL, NUVI_ORIGINE names the public
-  // address the printer must open instead.
-  const origine = process.env.NUVI_ORIGINE || new URL(req.url).origin;
+  const origine = origineDImpression(req);
+  if (!origine) return Response.json({ error: "origin not allowed" }, { status: 400 });
 
   let navigateur = null;
   try {
@@ -182,7 +219,15 @@ export async function POST(req) {
           : r.continue())).catch(() => r.continue().catch(() => {}));
         return;
       }
-      r.continue().catch(() => {});
+      // The printer talks to this deployment, to Google's font hosts, and
+      // to nothing else. A CSS value or a template bug that names another
+      // host gets an aborted request, not a fetch from inside the function.
+      if (url.startsWith(origine + "/") || url === origine
+        || url.startsWith("https://fonts.gstatic.com/") || url.startsWith("data:")) {
+        r.continue().catch(() => {});
+        return;
+      }
+      r.abort().catch(() => {});
     });
     // domcontentloaded, not load: "load" waits for the font stylesheets,
     // and where Google Fonts is slow or blocked that wait is the whole

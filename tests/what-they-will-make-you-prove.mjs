@@ -49,7 +49,7 @@ const PREUVES = {
 };
 
 const CV = {
-  name: "Kilian Maisonnette", title: "Bar Manager",
+  name: "Camille Marchetti", title: "Bar Manager",
   email: "k@example.com", phone: "07 00 00 00 00", location: "London",
   summary: "Bar manager, six ans en hotellerie.",
   experience: [{

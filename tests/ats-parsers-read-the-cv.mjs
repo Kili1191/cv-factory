@@ -190,8 +190,11 @@ export async function run() {
       console.log(`      fidelite : ${summary.join("  ")}`);
     }
     if (missing.length) {
-      // Pas un echec : un manque de couverture, dit a voix haute.
+      // Pas un echec en local : un manque de couverture, dit a voix haute.
+      // On CI every engine is installed by the workflow, so one missing
+      // there is a broken runner, not a smaller machine.
       console.log(`      moteur non execute sur cette machine : ${missing.join(", ")}`);
+      if (process.env.CI) failures.push("engine missing on CI: " + missing.join(", "));
     }
   } finally {
     await browser.close();

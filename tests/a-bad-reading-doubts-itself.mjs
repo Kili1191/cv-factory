@@ -39,7 +39,7 @@ import { lireUnCv, CONFIANCE_SUFFISANTE, signesDeDoute } from "../lib/lireUnCv.j
 
 // Le CV tel que le lecteur l'avait range, reconstitue depuis les captures.
 const MAL_LU = {
-  name: "Kilian Maisonnette",
+  name: "Camille Marchetti",
   experience: [
     { title: "Account Manager " + String.fromCharCode(0x2014), company: "Stenn International", period: "2016 - 2023", bullets: ["x"] },
   ],
@@ -52,7 +52,7 @@ const MAL_LU = {
 };
 
 const BIEN_LU = {
-  name: "Kilian Maisonnette",
+  name: "Camille Marchetti",
   experience: [
     { title: "Account Manager", company: "Stenn International", period: "2016 - 2023", bullets: ["x"] },
   ],
@@ -125,9 +125,9 @@ export async function run() {
     // sans regarder le score laisserait passer un bareme ou ils ne pesent
     // rien.
     const brutFautif = [
-      "Kilian Maisonnette",
+      "Camille Marchetti",
       "Account Manager",
-      "kilian@gmail.com | 07383686858",
+      "camille@example.com | 07700900123",
       "",
       "EXPERIENCE",
       "Account Manager " + String.fromCharCode(0x2014),

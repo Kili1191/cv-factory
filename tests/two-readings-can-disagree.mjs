@@ -31,8 +31,8 @@
 import { deuxLectures, texteProbable } from "../lib/deuxLectures.js";
 
 const SOLIDE = {
-  name: "Kilian Maisonnette", title: "Bar and Events Manager",
-  email: "k@example.com", phone: "07383686858", location: "London SW11",
+  name: "Camille Marchetti", title: "Bar and Events Manager",
+  email: "k@example.com", phone: "07700900123", location: "London SW11",
   summary: "Hospitality manager, ten years across premium bars and events.",
   experience: [
     { title: "Bar and Events Manager", company: "Taj Exotica", location: "Dubai",

@@ -36,9 +36,9 @@ const CADRATIN = String.fromCharCode(0x2014);
 
 // Le CV de la capture, reconstitue champ par champ.
 const CV_CASSE = {
-  name: "Kilian Maisonnette",
-  email: "kilian.maisonnette@gmail.com",
-  phone: "07383686858",
+  name: "Camille Marchetti",
+  email: "camille.marchetti@example.com",
+  phone: "07700900123",
   experience: [
     { title: "Client Relationship Manager", company: "Private Clients " + CADRATIN,
       period: "2023 - 2026", bullets: ["Managed a portfolio of private investors."] },
@@ -60,9 +60,9 @@ const CV_CASSE = {
 // Le meme CV, tel qu'il aurait du sortir. Rien d'exceptionnel : un CV
 // ordinaire, correctement decoupe.
 const CV_PROPRE = {
-  name: "Kilian Maisonnette",
-  email: "kilian.maisonnette@gmail.com",
-  phone: "07383686858",
+  name: "Camille Marchetti",
+  email: "camille.marchetti@example.com",
+  phone: "07700900123",
   experience: [
     { title: "Client Relationship Manager", company: "Private Clients",
       location: "UAE", period: "2023 - 2026",

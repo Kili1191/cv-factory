@@ -740,12 +740,12 @@ const TEMPLATES = [
     id:"sales", label:"Trade Finance", 
     theme:"clay", layout:"sidebar",
     cv:{
-      name:"Kilian Maisonnette",
+      name:"Camille Marchetti",
       title:"Senior Trade Finance Consultant",
-      email:"k.maisonnette@email.com",
+      email:"camille.marchetti@example.com",
       phone:"+33 6 78 90 12 34",
       location:"Lyon, France",
-      linkedin:"linkedin.com/in/kilianm",
+      linkedin:"linkedin.com/in/camillem",
       summary:"Consultant Senior Trade Finance 12 ans dont 7 ans chez Stenn " +
         "(Fintech UK, 600M+ debt funding). Expert affacturage et BFR.",
       experience:[

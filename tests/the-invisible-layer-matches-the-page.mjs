@@ -93,6 +93,10 @@ export async function run() {
     // Non execute, dit a voix haute : un controle qui n'a pas tourne ne
     // prouve rien, et le taire donnerait une fausse assurance.
     console.log(`      NON EXECUTE : ${missing.join(", ")} absent(s) de cette machine`);
+    // On CI the engines are installed by the workflow: their absence there
+    // is a broken runner, and a green run with nothing measured would hide
+    // it. Locally a missing engine stays a loud skip.
+    if (process.env.CI) return ["engines missing on CI: " + missing.join(", ")];
     return [];
   }
 

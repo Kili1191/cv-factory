@@ -95,7 +95,7 @@ export async function run() {
     // --- LA BARRE NE MANGE PAS LE NOM DU DOCUMENT ---------------------
     //
     // Elle se posait AU-DESSUS du contenu quand elle s'ouvrait : sur une
-    // capture d'utilisateur, "Kilian Maisonnette" se lisait "ette". Elle est
+    // capture d'utilisateur, "Camille Marchetti" se lisait "etti". Elle est
     // maintenant dans le flux, donc le nom doit commencer a sa droite.
     const pos = await page.evaluate(() => {
       const rail = document.querySelector("aside");

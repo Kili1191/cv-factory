@@ -129,7 +129,7 @@ export async function run() {
 
     // 5. L'ARBRE ENTIER, PAS SEULEMENT LES CHAINES DU DESSUS
     const cv = nettoyerLesChamps({
-      name: "Kilian Maisonnette",
+      name: "Camille Marchetti",
       experience: [{
         id: 2,
         title: "Account Manager " + CADRATIN,
