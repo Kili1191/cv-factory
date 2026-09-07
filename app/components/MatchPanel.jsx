@@ -8,6 +8,7 @@ import { useState, useMemo } from "react";
 import { SCHEMA_MATCH } from "./schemas";
 import { rapport } from "../../lib/atsMatch.js";
 import { normCV } from "../../lib/cvSchema.js";
+import { aiCall, parseJSON } from "../../lib/ai.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../../lib/pastedPosting";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
@@ -19,7 +20,7 @@ import {
 
 function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
-  aiCall, parseJSON, pushH, onCreateFromOffer, onUndo }) {
+  pushH, onCreateFromOffer, onUndo }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
   // depuis une candidature arrive avec son annonce deja collee.
   const [offer, setOffer] = useState(initialOffer || "");
