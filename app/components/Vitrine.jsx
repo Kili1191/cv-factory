@@ -220,7 +220,16 @@ function Feuille({ lignes, deux }) {
 export default function Vitrine({ lang = "en", onLang }) {
   const t = T[lang] || T.en;
   const [menu, setMenu] = useState("closed"); // closed | open | closing
-  const [videoSrc, setVideoSrc] = useState(VIDEO_LOCAL);
+  // THE SOURCE IS CHOSEN AFTER MOUNT, NOT IN THE HTML
+  //
+  // The first version rendered the local path in the server HTML and fell
+  // back to the reference on the element's error event. On a fast
+  // connection the 404 fired before React had attached the handler, so
+  // the fallback never happened and the page showed the studio grey with
+  // no orb at all: seen live on 7 September. The element now starts with
+  // no source; once mounted, one HEAD request says whether Nuvi's copy
+  // exists, and only then is a source set, with every handler in place.
+  const [videoSrc, setVideoSrc] = useState(null);
   const [videoLive, setVideoLive] = useState(false);
   const videoRef = useRef(null);
   const cardRef = useRef(null);
@@ -310,6 +319,19 @@ export default function Vitrine({ lang = "en", onLang }) {
   }, [menu, fermer]);
   useEffect(() => () => { document.documentElement.style.overflow = ""; }, []);
   useEffect(() => {
+    let vivant = true;
+    const ctrl = typeof AbortController === "function" ? new AbortController() : null;
+    const minuterie = setTimeout(() => ctrl && ctrl.abort(), 4000);
+    fetch(VIDEO_LOCAL, { method: "HEAD", signal: ctrl ? ctrl.signal : undefined })
+      .then((r) => {
+        const type = (r.headers.get("content-type") || "");
+        if (vivant) setVideoSrc(r.ok && /video/i.test(type) ? VIDEO_LOCAL : VIDEO_REFERENCE);
+      })
+      .catch(() => { if (vivant) setVideoSrc(VIDEO_REFERENCE); })
+      .finally(() => clearTimeout(minuterie));
+    return () => { vivant = false; clearTimeout(minuterie); };
+  }, []);
+  useEffect(() => {
     const v = videoRef.current;
     if (v && v.readyState >= 3) setVideoLive(true);
   }, [videoSrc]);
@@ -327,9 +349,9 @@ export default function Vitrine({ lang = "en", onLang }) {
       <RevelationDeSecours />
 
       <video ref={videoRef} className={"vv-video" + (videoLive ? " is-live" : "")} aria-hidden="true"
-        autoPlay muted loop playsInline preload="auto" src={videoSrc}
+        autoPlay muted loop playsInline preload="auto" src={videoSrc || undefined}
         onCanPlay={() => setVideoLive(true)}
-        onError={() => { if (videoSrc !== VIDEO_REFERENCE) setVideoSrc(VIDEO_REFERENCE); }} />
+        onError={() => { if (videoSrc && videoSrc !== VIDEO_REFERENCE) setVideoSrc(VIDEO_REFERENCE); }} />
 
       {/* The liquid glass: a static fractal noise field, masked to the
           card's rim by a blurred and inverted alpha, displaces the source
