@@ -126,6 +126,21 @@ casse sous son curseur. La CI ouvre le fichier avec LibreOffice Writer et
 l'imprime : la preuve que c'est un document, pas un zip qui passe une
 expression régulière. `tests/the-cv-leaves-as-word.mjs`.
 
+Un profil LinkedIn enregistré en PDF est un CV. Le fichier place une colonne
+étroite (Contact, Top Skills, Languages, Certifications) à côté du profil, et
+`lib/lireUnFichier.js` reconstruisait les lignes par leur hauteur seule : chaque
+ligne prenait un morceau des deux colonnes. `enColonnes` cherche donc une bande
+verticale qu'aucun fragment ne traverse sous le quart supérieur de la page, et
+lit la colonne large d'abord, l'étroite ensuite ; sur un CV à une colonne,
+chaque puce court jusqu'à la marge et traverse toute bande candidate, donc rien
+n'est coupé, quoi que fassent les dates à droite. `lib/lireUnCv.js` connaît les
+formes de l'export : ses intitulés, la durée entre parenthèses après la
+période, l'école au-dessus du diplôme, le pied de page, et la phrase que la
+page a coupée (une ligne longue sans ponctuation suivie d'une minuscule est
+une seule ligne). `tests/a-linkedin-profile-is-a-cv.mjs` imprime une page à la
+forme de l'export au moment du test, aucun fichier personnel n'est dans le
+dépôt ; un vrai fichier reste la prochaine chose à essayer.
+
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
 piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
