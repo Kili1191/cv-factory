@@ -38,7 +38,7 @@ function urlsDuDepot() {
   const found = new Set();
   // lib/policesDuSite.js holds the URL app/layout.jsx used to carry, so the
   // print route can ask Google for the same families as static instances.
-  for (const f of ["lib/policesDuSite.js", "app/layout.jsx", "app/AppRoot.jsx", "app/components/Landing.jsx"]) {
+  for (const f of ["lib/policesDuSite.js", "app/layout.jsx", "app/AppRoot.jsx", "app/components/Vitrine.jsx"]) {
     const src = readFileSync(f, "utf8");
     const utile = src
       // Les lignes de commentaire contiennent des URL d'EXEMPLE, qui ne sont
