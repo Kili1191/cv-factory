@@ -220,6 +220,13 @@ function Feuille({ lignes, deux }) {
 export default function Vitrine({ lang = "en", onLang }) {
   const t = T[lang] || T.en;
   const [menu, setMenu] = useState("closed"); // closed | open | closing
+  // THE INTRO PLAYS ONCE PER SESSION
+  //
+  // Rendered by the server too, so the first paint is the wordmark and
+  // not a flash of the hero. Once mounted: already seen this session, or
+  // less motion asked for, and it goes at once; otherwise it lifts after
+  // its own animation and the hero arrives underneath.
+  const [intro, setIntro] = useState(true);
   // THE SOURCE IS CHOSEN AFTER MOUNT, NOT IN THE HTML
   //
   // The first version rendered the local path in the server HTML and fell
@@ -238,6 +245,18 @@ export default function Vitrine({ lang = "en", onLang }) {
   const openBtn = useRef(null);
   const closeBtn = useRef(null);
   const closing = useRef(null);
+
+  useEffect(() => {
+    let vu = false;
+    try { vu = window.sessionStorage.getItem("nuvi_intro") === "1"; } catch (e) { /* storage refused: play it */ }
+    const calme = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (vu || calme) { setIntro(false); return undefined; }
+    const t = setTimeout(() => {
+      setIntro(false);
+      try { window.sessionStorage.setItem("nuvi_intro", "1"); } catch (e) { /* nothing to remember with */ }
+    }, 2600);
+    return () => clearTimeout(t);
+  }, []);
 
   // A sign-in return lands here because the provider only knows the root
   // of the domain. Relay it to the app before painting anything.
@@ -345,8 +364,14 @@ export default function Vitrine({ lang = "en", onLang }) {
   const scanTextes = { lead: t.essaiLead, placeholder: t.essaiHolder, reset: t.essaiReset, prive: t.essaiPrive };
 
   return (
-    <div className="vv nuvi-page">
+    <div className="vv nuvi-page" style={{ "--intro": intro ? "1900ms" : "0ms" }}>
       <RevelationDeSecours />
+      {intro ? (
+        <div className="vv-intro" aria-hidden="true">
+          <span className="vv-intro__mark"><span>Nuv</span><span className="vv-i" /></span>
+          <span className="vv-intro__line">{t.h1a} {t.h1b}</span>
+        </div>
+      ) : null}
 
       <video ref={videoRef} className={"vv-video" + (videoLive ? " is-live" : "")} aria-hidden="true"
         autoPlay muted loop playsInline preload="auto" src={videoSrc || undefined}

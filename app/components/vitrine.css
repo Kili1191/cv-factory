@@ -23,16 +23,19 @@
   --vv-ink: #000;
   --vv-ink-2: #5f5f5f;      /* 5.9:1 on the studio ground */
   --vv-ink-3: #6b6b6b;      /* 5.3:1 on white, body copy in cards */
-  --vv-ground: #f5f4f0;
+  --vv-ground: #fbfbf9;
   --vv-white: #fff;
   --vv-line: rgba(0, 0, 0, 0.1);
   --vv-line-2: rgba(0, 0, 0, 0.2);
   --vv-purple: #6d3fc4;
-  --vv-font: "Helvetica Neue", Inter, Helvetica, Arial, sans-serif;
+  /* The site's own faces, chosen long before this page: Fraunces for what
+     is said, Inter for what is read, DM Serif Display for the wordmark. */
+  --vv-font: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --vv-display: Fraunces, Georgia, "Times New Roman", serif;
   --vv-serif: "DM Serif Display", Georgia, serif;
   --vv-ease: cubic-bezier(0.16, 1, 0.3, 1);
   font-family: var(--vv-font);
-  font-weight: 300;
+  font-weight: 400;
   color: var(--vv-ink);
   background: var(--vv-ground);
   -webkit-font-smoothing: antialiased;
@@ -48,7 +51,11 @@
   object-fit: cover; z-index: 0; pointer-events: none;
   /* Only ever seen before the first frame: the studio's own grey, from
      the reference. The video fades over it once it can play. */
-  background: #c2ccd3;
+  background: #eef2f5;
+  /* The reference's studio is a cool grey. Kilian does not want a grey
+     page, and the file cannot be re-shot from here: the same frames,
+     lifted, so the studio reads near white and the orb keeps its light. */
+  filter: brightness(1.18) saturate(1.05);
   opacity: 0; transition: opacity 900ms ease;
 }
 .vv-video.is-live { opacity: 1; }
@@ -76,7 +83,7 @@
 .vv-nav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; padding: 1.25rem; }
 .vv-nav__item {
   display: inline-flex; align-items: center; gap: 0.625rem; min-height: 44px;
-  color: var(--vv-ink); background: none; border: 0; font: inherit; font-weight: 300; text-decoration: none;
+  color: var(--vv-ink); background: none; border: 0; font: inherit; font-weight: 400; text-decoration: none;
   cursor: pointer; pointer-events: auto; transition: opacity 300ms;
 }
 .vv-nav__item:hover { opacity: 0.6; }
@@ -123,14 +130,14 @@
 
 /* ---- copy ------------------------------------------------------------ */
 .vv-lede { max-width: 24rem; }
-.vv-lede__title { margin: 0; font-size: 1.25rem; font-weight: 300; line-height: 1.25; letter-spacing: -0.025em; color: var(--vv-ink); }
+.vv-lede__title { margin: 0; font-family: var(--vv-display); font-size: 1.5rem; font-weight: 400; line-height: 1.12; letter-spacing: -0.03em; color: var(--vv-ink); }
 .vv-lede__body  { margin: 0.75rem 0 0; max-width: 280px; font-size: 0.75rem; line-height: 1.625; color: var(--vv-ink-2); }
-@media (min-width: 640px)  { .vv-lede__title { font-size: 1.5rem; }   .vv-lede__body { font-size: 0.875rem; } }
-@media (min-width: 768px)  { .vv-lede__title { font-size: 1.875rem; } .vv-lede__body { margin-top: 1rem; } }
-@media (min-width: 1024px) { .vv-lede__title { font-size: 2.25rem; } }
+@media (min-width: 640px)  { .vv-lede__title { font-size: 1.875rem; } .vv-lede__body { font-size: 0.875rem; } }
+@media (min-width: 768px)  { .vv-lede__title { font-size: 2.375rem; } .vv-lede__body { margin-top: 1rem; } }
+@media (min-width: 1024px) { .vv-lede__title { font-size: 2.875rem; } }
 
 /* the page arrives in order: nav, title, body, button, then the card */
-.vv-arrive { animation: vvArrive 700ms var(--vv-ease) both; animation-delay: var(--pose, 0ms); }
+.vv-arrive { animation: vvArrive 700ms var(--vv-ease) both; animation-delay: calc(var(--pose, 0ms) + var(--intro, 0ms)); }
 @keyframes vvArrive { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
 
 /* ---- chamfered button ------------------------------------------------ */
@@ -167,11 +174,11 @@
   width: 340px; max-width: 100%; height: 460px; padding: 2rem;
   border-radius: 48px; overflow: hidden; background: transparent;
   border: 1px solid rgba(47, 47, 47, 0.15); pointer-events: auto;
-  animation: vvCardUp 900ms var(--vv-ease) both; animation-delay: 260ms;
+  animation: vvCardUp 900ms var(--vv-ease) both; animation-delay: calc(260ms + var(--intro, 0ms));
 }
 @keyframes vvCardUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
 .vv-dup { position: absolute; left: 0; top: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.vv-dup canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: url(#vv-liquid-glass); }
+.vv-dup canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: brightness(1.18) saturate(1.05) url(#vv-liquid-glass); }
 .vv-card__frost {
   position: absolute; inset: 0; z-index: 1; border-radius: 48px; pointer-events: none;
   background: rgba(255, 255, 255, 0.05);
@@ -181,7 +188,7 @@
 .vv-card:hover .vv-card__frost { background: rgba(255, 255, 255, 0.1); }
 .vv-card__head, .vv-card__body, .vv-card__wave { position: relative; z-index: 2; }
 .vv-card__head { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--vv-line); }
-.vv-card__title { margin: 0; font-size: 1rem; font-weight: 500; letter-spacing: -0.025em; }
+.vv-card__title { margin: 0; font-family: var(--vv-display); font-size: 1.125rem; font-weight: 500; letter-spacing: -0.02em; }
 .vv-card__index { font-size: 0.75rem; color: var(--vv-ink-2); font-variant-numeric: tabular-nums; }
 .vv-card__body { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .vv-finding__title { margin: 0; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.025em; }
@@ -211,20 +218,20 @@
 .vv-menu.is-open .vv-menu__veil { opacity: 1; }
 .vv-menu.is-closing .vv-menu__veil { transition-duration: 380ms; transition-delay: 120ms; }
 .vv-menu__panel { position: absolute; top: 0; left: 0; display: flex; flex-direction: column;
-  width: 100%; height: 100%; padding: 1.5rem 2rem; background: #f5f4f0; color: var(--vv-ink);
+  width: 100%; height: 100%; padding: 1.5rem 2rem; background: #fbfbf9; color: var(--vv-ink);
   transform: translateX(-100%); transition: transform 560ms var(--vv-ease); overflow-y: auto; }
 .vv-menu.is-open .vv-menu__panel { transform: translateX(0); }
 .vv-menu.is-closing .vv-menu__panel { transition: transform 420ms cubic-bezier(0.7, 0, 0.84, 0); transition-delay: 140ms; }
 @media (min-width: 640px) { .vv-menu__panel { width: 380px; padding: 1.5rem 2.5rem; } }
 .vv-menu__close { display: inline-flex; align-items: center; gap: 0.625rem; align-self: flex-start; min-height: 44px;
-  margin-bottom: 2.5rem; background: none; border: 0; font: inherit; font-weight: 300; font-size: 0.875rem;
+  margin-bottom: 2.5rem; background: none; border: 0; font: inherit; font-weight: 400; font-size: 0.875rem;
   color: var(--vv-ink); cursor: pointer; transition: opacity 300ms; }
 .vv-menu__close:hover { opacity: 0.6; }
 .vv-menu__nav { display: flex; flex-direction: column; }
 .vv-menu__link { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; min-height: 44px;
   border-bottom: 1px solid var(--vv-line); color: var(--vv-ink); text-decoration: none;
   opacity: 0; transform: translateY(20px); transition: opacity 500ms, transform 500ms var(--vv-ease); }
-.vv-menu__text { font-size: 1.5rem; font-weight: 300; letter-spacing: -0.025em; transition: transform 300ms var(--vv-ease); }
+.vv-menu__text { font-family: var(--vv-display); font-size: 1.5rem; font-weight: 400; letter-spacing: -0.02em; transition: transform 300ms var(--vv-ease); }
 .vv-menu__link:hover .vv-menu__text { transform: translateX(8px); }
 .vv-menu__arrow { opacity: 0; transform: translateX(8px); transition: opacity 300ms, transform 300ms; color: var(--vv-purple); }
 .vv-menu__link:hover .vv-menu__arrow { opacity: 1; transform: translateX(0); }
@@ -264,7 +271,7 @@
 .vv-sec--ink .vv-eyebrow, .vv-sec--ink .vv-muted { color: #a3a3a3; }
 .vv-sec--ink .vv-frost { background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.15); color: #fff; }
 .vv-eyebrow { display: block; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--vv-ink-2); margin-bottom: 1rem; font-weight: 400; }
-.vv-h { margin: 0; font-weight: 300; letter-spacing: -0.03em; line-height: 1.05; font-size: clamp(2rem, 5.2vw, 4.25rem); max-width: 18ch; }
+.vv-h { margin: 0; font-family: var(--vv-display); font-weight: 400; letter-spacing: -0.03em; line-height: 1.05; font-size: clamp(2rem, 5.2vw, 4.25rem); max-width: 18ch; }
 .vv-muted { color: var(--vv-ink-2); }
 .vv-lead { max-width: 46ch; font-size: 1rem; line-height: 1.6; margin: 1.25rem 0 0; }
 @media (min-width: 768px) { .vv-lead { font-size: 1.125rem; } }
@@ -279,7 +286,7 @@
 .vv-frost { position: relative; border-radius: 28px; border: 1px solid rgba(47, 47, 47, 0.15); background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   box-shadow: inset 0 1.5px 2px rgba(255, 255, 255, 0.6), inset 0 -1px 2px rgba(0, 0, 0, 0.08); padding: 1.75rem; }
-.vv-frost h3 { margin: 0 0 0.5rem; font-weight: 400; font-size: 1.25rem; letter-spacing: -0.02em; }
+.vv-frost h3 { margin: 0 0 0.5rem; font-family: var(--vv-display); font-weight: 400; font-size: 1.25rem; letter-spacing: -0.02em; }
 .vv-frost p { margin: 0; line-height: 1.6; color: var(--vv-ink-3); }
 .vv-frost .vv-idx { position: absolute; right: 1.5rem; top: 1.5rem; font-size: 0.75rem; color: var(--vv-ink-2); }
 
@@ -294,7 +301,7 @@
 .vv-step { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; padding: 2rem 0; border-top: 1px solid var(--vv-line); }
 .vv-step:last-child { border-bottom: 1px solid var(--vv-line); }
 .vv-step .vv-k { font-size: 0.8rem; letter-spacing: 0.06em; color: var(--vv-ink-2); padding-top: 0.35rem; }
-.vv-step h3 { margin: 0 0 0.5rem; font-weight: 400; font-size: 1.4rem; letter-spacing: -0.02em; }
+.vv-step h3 { margin: 0 0 0.5rem; font-family: var(--vv-display); font-weight: 400; font-size: 1.4rem; letter-spacing: -0.02em; }
 .vv-step p { margin: 0; max-width: 46ch; line-height: 1.6; color: var(--vv-ink-3); }
 
 /* templates rail */
@@ -321,7 +328,7 @@
 .vv-price ul { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: 0.6rem; }
 .vv-price li { padding-left: 1.25rem; position: relative; line-height: 1.5; color: var(--vv-ink-3); }
 .vv-price li::before { content: "+"; position: absolute; left: 0; color: var(--vv-ink-2); }
-.vv-price .vv-big { font-size: clamp(2.5rem, 6vw, 4.5rem); letter-spacing: -0.03em; line-height: 1; margin: 0; }
+.vv-price .vv-big { font-family: var(--vv-display); font-size: clamp(2.5rem, 6vw, 4.5rem); letter-spacing: -0.03em; line-height: 1; margin: 0; }
 .vv-price .vv-big small { display: block; font-size: 0.9rem; letter-spacing: 0; color: var(--vv-ink-3); margin-top: 0.75rem; }
 
 /* footer */
@@ -349,3 +356,24 @@
   .vv-menu__panel, .vv-menu__veil, .vv-menu__link, .vv-menu__foot, .vv-burger i { transition-duration: 0.01ms !important; transition-delay: 0ms !important; }
   .vv-video { transition: none; }
 }
+
+/* ---- the intro: Nuvi says its name before the hero arrives ------------
+ * First visit only, once per browser session, never with reduced motion.
+ * A curtain in the page's own ground carries the wordmark and one line,
+ * then lifts, and the hero arrives underneath in its usual order. The
+ * curtain lifts by CSS on its own clock as well, so a page whose script
+ * never ran still opens. */
+.vv-intro { position: fixed; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 0.75rem; background: var(--vv-ground); color: var(--vv-ink); pointer-events: none;
+  animation: vvCurtain 800ms cubic-bezier(0.7, 0, 0.2, 1) 1700ms both; }
+.vv-intro__mark { font-family: var(--vv-serif); font-size: clamp(4rem, 14vw, 11rem); line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline;
+  clip-path: inset(0 0 0 0); animation: vvMarkIn 900ms var(--vv-ease) 120ms both; }
+.vv-intro__mark .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
+.vv-intro__mark .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: currentColor; border-radius: 0.018em; transform: translateX(-50%); }
+.vv-intro__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%);
+  animation: vvDot 700ms var(--vv-ease) 700ms both; }
+.vv-intro__line { font-family: var(--vv-display); font-size: clamp(1rem, 2.2vw, 1.375rem); color: var(--vv-ink-2); letter-spacing: -0.01em; animation: vvArrive 700ms var(--vv-ease) 900ms both; }
+@keyframes vvMarkIn { from { opacity: 0; transform: translateY(0.25em); } to { opacity: 1; transform: none; } }
+@keyframes vvDot { from { transform: translate(-50%, -1.2em) scale(0.4); opacity: 0; } 60% { transform: translate(-50%, 0.08em) scale(1.05); opacity: 1; } to { transform: translateX(-50%) scale(1); opacity: 1; } }
+@keyframes vvCurtain { to { transform: translateY(-100%); } }
+@media (prefers-reduced-motion: reduce) { .vv-intro { display: none; } }
