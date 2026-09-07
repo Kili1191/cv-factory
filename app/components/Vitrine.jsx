@@ -24,13 +24,16 @@
  * nuvi-temps): they carry the scroll-driven motion in globals.css and the
  * tests that prove a section is never left half-faded.
  *
- * THE VIDEO
+ * THE ORB LEFT ON 7 SEPTEMBER
  *
- * The page asks for /vitrine/orbe.mp4 first, Nuvi's own copy of the loop,
- * and falls back to the reference's file on its host while that copy is
- * not in the repo. Decorative: without it the studio grey shows and every
- * word still reads. The rule against runtime CDNs is about what the app
- * needs to work; this is what it wears.
+ * The reference's video, an iridescent orb on a grey studio, filled the
+ * screen and said nothing about the product. Kilian: too big, no use,
+ * and the grey stayed whatever the filter. The hero keeps the
+ * reference's structure (copy top left, a glass card bottom right, the
+ * chamfered button, the rules with their plus marks) on the page's own
+ * white, and the card now holds the only thing on this page that is not
+ * an assertion: the visitor's line of CV under the reading line, kept or
+ * dropped word by word, on the device.
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -51,24 +54,22 @@ import LandingCV from "./LandingCV";
 import Morph from "./Morph";
 import RevelationDeSecours from "./RevelationDeSecours";
 
-const VIDEO_LOCAL = "/vitrine/orbe.mp4";
-const VIDEO_REFERENCE = "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260816_125506_3a597378-ec85-4ebd-bd22-03b45508ac62.mp4";
-
 const T = {
   en: {
     menu: "Menu", close: "Close", open: "Open the app",
     h1a: "A CV that passes", h1b: "the robots",
     sub: "Drop your CV. Nuvi rewrites it for the job and hands you a file the ATS reads whole.",
     cta: "Start with my CV",
-    cardTitle: "What the parsers read", cardIndex: "//06",
+    cardTitle: "Watch the software read", cardIndex: "//01",
+    readEyebrow: "The classic template, read whole", readNote: "Five engines read every template on every build: poppler, MuPDF, Apache Tika, PDFBox and pdf.js. The number is what they read back, in percent.",
     f1t: "Native text, five engines", f1: "Every template is read by poppler, MuPDF and Apache Tika before it ships. Embedded fonts, one page, in reading order.",
     f2t: "Nothing invented", f2: "Every line of the tailored CV exists in something you already wrote. A test refuses the merge otherwise.",
     links: [["Product", "#how"], ["Templates", "#templates"], ["ATS check", "#check"], ["Pricing", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Get in touch", lang: "Language",
     ticker: ["poppler", "MuPDF", "Apache Tika", "PDFBox", "pdf.js"],
     tickerWords: ["fonts embedded", "one page", "reading order kept", "nothing invented"],
-    checkEyebrow: "01 The check", checkTitle: "Watch the robots read your CV.",
-    checkLead: "Recruiters do not read CVs first. Their software does. Nuvi runs the same reading on your line, on your device, and shows what it keeps and what it drops. Nothing is sent anywhere.",
+    checkEyebrow: "01 The check", checkTitle: "What the robots read back.",
+    checkLead: "Recruiters do not read CVs first. Their software does. The line you typed above went through the same reading, on your device. The file Nuvi prints goes through five real engines before it ships.",
     kept: "What the software kept", dropped: "What it dropped", word: "word", words: "words", droppedNone: "nothing", keptNone: "nothing", keptAll: "all of it",
     essaiLead: "Put a line of your own CV through it", essaiHolder: "Hard-working team player with excellent communication skills",
     essaiReset: "Back to the example", essaiPrive: "Nothing leaves your browser. No account, no upload, nothing stored.",
@@ -105,15 +106,16 @@ const T = {
     h1a: "Le CV qui passe", h1b: "les robots",
     sub: "Depose ton CV. Nuvi le reecrit pour le poste et te rend un fichier que l'ATS lit en entier.",
     cta: "Commencer avec mon CV",
-    cardTitle: "Ce que lisent les analyseurs", cardIndex: "//06",
+    cardTitle: "Regarde le logiciel lire", cardIndex: "//01",
+    readEyebrow: "Le gabarit classique, lu en entier", readNote: "Cinq moteurs lisent chaque gabarit a chaque build : poppler, MuPDF, Apache Tika, PDFBox et pdf.js. Le chiffre est ce qu'ils relisent, en pour cent.",
     f1t: "Texte natif, cinq moteurs", f1: "Chaque gabarit est lu par poppler, MuPDF et Apache Tika avant de partir. Polices incorporees, une page, dans l'ordre de lecture.",
     f2t: "Rien d'invente", f2: "Chaque ligne du CV adapte existe dans quelque chose que tu as deja ecrit. Un test refuse la fusion sinon.",
     links: [["Produit", "#how"], ["Gabarits", "#templates"], ["Verification ATS", "#check"], ["Tarif", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Nous ecrire", lang: "Langue",
     ticker: ["poppler", "MuPDF", "Apache Tika", "PDFBox", "pdf.js"],
     tickerWords: ["polices incorporees", "une page", "ordre de lecture garde", "rien d'invente"],
-    checkEyebrow: "01 La verification", checkTitle: "Regarde les robots lire ton CV.",
-    checkLead: "Les recruteurs ne lisent pas les CV en premier. Leur logiciel, si. Nuvi fait la meme lecture sur ta ligne, sur ton appareil, et montre ce qu'il garde et ce qu'il ecarte. Rien n'est envoye nulle part.",
+    checkEyebrow: "01 La verification", checkTitle: "Ce que les robots relisent.",
+    checkLead: "Les recruteurs ne lisent pas les CV en premier. Leur logiciel, si. La ligne que tu as tapee plus haut a subi la meme lecture, sur ton appareil. Le fichier que Nuvi imprime passe par cinq vrais moteurs avant de partir.",
     kept: "Ce que le logiciel a retenu", dropped: "Ce qu'il a ecarte", word: "mot", words: "mots", droppedNone: "rien", keptNone: "rien", keptAll: "tout",
     essaiLead: "Passe une ligne de ton CV", essaiHolder: "Serieux et motive, dote d'un excellent relationnel",
     essaiReset: "Revenir a l'exemple", essaiPrive: "Rien ne sort de ton navigateur. Pas de compte, pas d'envoi, rien d'enregistre.",
@@ -227,21 +229,6 @@ export default function Vitrine({ lang = "en", onLang }) {
   // less motion asked for, and it goes at once; otherwise it lifts after
   // its own animation and the hero arrives underneath.
   const [intro, setIntro] = useState(true);
-  // THE SOURCE IS CHOSEN AFTER MOUNT, NOT IN THE HTML
-  //
-  // The first version rendered the local path in the server HTML and fell
-  // back to the reference on the element's error event. On a fast
-  // connection the 404 fired before React had attached the handler, so
-  // the fallback never happened and the page showed the studio grey with
-  // no orb at all: seen live on 7 September. The element now starts with
-  // no source; once mounted, one HEAD request says whether Nuvi's copy
-  // exists, and only then is a source set, with every handler in place.
-  const [videoSrc, setVideoSrc] = useState(null);
-  const [videoLive, setVideoLive] = useState(false);
-  const videoRef = useRef(null);
-  const cardRef = useRef(null);
-  const dupRef = useRef(null);
-  const canvasRef = useRef(null);
   const openBtn = useRef(null);
   const closeBtn = useRef(null);
   const closing = useRef(null);
@@ -267,55 +254,6 @@ export default function Vitrine({ lang = "en", onLang }) {
     if (dest) window.location.replace(dest);
   }, []);
 
-  // THE CARD IS A WINDOW ONTO A REFRACTED DUPLICATE OF THE VIDEO
-  //
-  // Every frame the current video frame is drawn into a canvas positioned
-  // so its pixels sit exactly where the real video's pixels sit behind the
-  // card; the card's radius clips it and CSS applies the SVG refraction.
-  // The duplicate is sized to the viewport plus a margin on every side:
-  // the filter shifts each channel by up to 65px, so a duplicate that
-  // stopped at the viewport edge showed its own hard channel-split edge
-  // inside a card sitting 20px from the edge on a phone. Beyond the
-  // margin the source rectangle leaves the video and drawImage paints
-  // nothing there, so the real video shows through unrefracted instead of
-  // a band. The duplicate stays at 1x on retina: the filter's cost scales
-  // with pixel count and buys nothing on a soft refraction.
-  useEffect(() => {
-    const video = videoRef.current, card = cardRef.current, dup = dupRef.current, canvas = canvasRef.current;
-    if (!video || !card || !dup || !canvas) return undefined;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return undefined;
-    const PAD = 120;
-    let raf = 0, lastW = 0, lastH = 0, stopped = false;
-    const still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const frame = () => {
-      if (stopped) return;
-      raf = requestAnimationFrame(frame);
-      // Out of view, nothing to refract: the loop idles at no cost.
-      const rect = card.getBoundingClientRect();
-      if (rect.width === 0 || rect.height === 0 || rect.bottom < 0) return;
-      if (!video.videoWidth || !video.videoHeight) return;
-      const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
-      const W = vw + 2 * PAD, H = vh + 2 * PAD;
-      dup.style.left = (-rect.left - PAD) + "px";
-      dup.style.top = (-rect.top - PAD) + "px";
-      dup.style.width = W + "px";
-      dup.style.height = H + "px";
-      if (W !== lastW || H !== lastH) { canvas.width = W; canvas.height = H; lastW = W; lastH = H; }
-      const cover = Math.max(vw / video.videoWidth, vh / video.videoHeight);
-      const sw = vw / cover, sh = vh / cover;
-      const sx = (video.videoWidth - sw) / 2, sy = (video.videoHeight - sh) / 2;
-      const m = PAD / cover;
-      try {
-        ctx.clearRect(0, 0, W, H);
-        ctx.drawImage(video, sx - m, sy - m, sw + 2 * m, sh + 2 * m, 0, 0, W, H);
-      } catch (e) { /* a frame may not be decodable yet; the next one will be */ }
-      if (still && video.paused) { stopped = true; cancelAnimationFrame(raf); }
-    };
-    raf = requestAnimationFrame(frame);
-    return () => { stopped = true; cancelAnimationFrame(raf); };
-  }, [videoSrc]);
-
   // The menu opens like a drawer and closes the way it came. "closing" is
   // a real state so the reverse stagger has time to play before the layer
   // goes inert; Escape only acts while open; focus goes where the eye goes.
@@ -337,24 +275,6 @@ export default function Vitrine({ lang = "en", onLang }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [menu, fermer]);
   useEffect(() => () => { document.documentElement.style.overflow = ""; }, []);
-  useEffect(() => {
-    let vivant = true;
-    const ctrl = typeof AbortController === "function" ? new AbortController() : null;
-    const minuterie = setTimeout(() => ctrl && ctrl.abort(), 4000);
-    fetch(VIDEO_LOCAL, { method: "HEAD", signal: ctrl ? ctrl.signal : undefined })
-      .then((r) => {
-        const type = (r.headers.get("content-type") || "");
-        if (vivant) setVideoSrc(r.ok && /video/i.test(type) ? VIDEO_LOCAL : VIDEO_REFERENCE);
-      })
-      .catch(() => { if (vivant) setVideoSrc(VIDEO_REFERENCE); })
-      .finally(() => clearTimeout(minuterie));
-    return () => { vivant = false; clearTimeout(minuterie); };
-  }, []);
-  useEffect(() => {
-    const v = videoRef.current;
-    if (v && v.readyState >= 3) setVideoLive(true);
-  }, [videoSrc]);
-
   const choisirLangue = (l) => {
     try { localStorage.setItem("cvf_c", JSON.stringify(l)); } catch (e) { /* storage refused: the page still switches */ }
     if (onLang) onLang(l);
@@ -372,36 +292,6 @@ export default function Vitrine({ lang = "en", onLang }) {
           <span className="vv-intro__line">{t.h1a} {t.h1b}</span>
         </div>
       ) : null}
-
-      <video ref={videoRef} className={"vv-video" + (videoLive ? " is-live" : "")} aria-hidden="true"
-        autoPlay muted loop playsInline preload="auto" src={videoSrc || undefined}
-        onCanPlay={() => setVideoLive(true)}
-        onError={() => { if (videoSrc && videoSrc !== VIDEO_REFERENCE) setVideoSrc(VIDEO_REFERENCE); }} />
-
-      {/* The liquid glass: a static fractal noise field, masked to the
-          card's rim by a blurred and inverted alpha, displaces the source
-          three times at 65 / 56 / 47, one colour channel each, recombined
-          with screen blends. The per-channel spread is the fringing. The
-          values are tuned; keep them exact. */}
-      <svg className="vv-glass-defs" width="0" height="0" aria-hidden="true" focusable="false">
-        <defs>
-          <filter id="vv-liquid-glass" x="-30%" y="-30%" width="160%" height="160%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.015" numOctaves="3" result="noise" />
-            <feColorMatrix in="SourceAlpha" type="matrix" result="boosted_alpha" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 100 0" />
-            <feGaussianBlur in="boosted_alpha" stdDeviation="45" result="blurred_alpha" />
-            <feComponentTransfer in="blurred_alpha" result="edge_mask"><feFuncA type="linear" slope="-1.3" intercept="1" /></feComponentTransfer>
-            <feComposite in="noise" in2="edge_mask" operator="arithmetic" k1="1" k2="0" k3="0" k4="0" result="masked_noise" />
-            <feDisplacementMap in="SourceGraphic" in2="masked_noise" scale="65" xChannelSelector="R" yChannelSelector="G" result="red_displaced" />
-            <feColorMatrix in="red_displaced" type="matrix" result="red" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
-            <feDisplacementMap in="SourceGraphic" in2="masked_noise" scale="56" xChannelSelector="R" yChannelSelector="G" result="green_displaced" />
-            <feColorMatrix in="green_displaced" type="matrix" result="green" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" />
-            <feDisplacementMap in="SourceGraphic" in2="masked_noise" scale="47" xChannelSelector="R" yChannelSelector="G" result="blue_displaced" />
-            <feColorMatrix in="blue_displaced" type="matrix" result="blue" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" />
-            <feBlend in="red" in2="green" mode="screen" result="rg" />
-            <feBlend in="rg" in2="blue" mode="screen" result="chromatic_dispersion" />
-          </filter>
-        </defs>
-      </svg>
 
       <main className="vv-hero">
         {["left", "right"].map((cote) => (
@@ -432,21 +322,15 @@ export default function Vitrine({ lang = "en", onLang }) {
             <div className="vv-arrive" style={{ "--pose": "320ms" }}><Chamfer href="/app">{t.cta}</Chamfer></div>
           </div>
 
-          <aside ref={cardRef} className="vv-card">
-            <div ref={dupRef} className="vv-dup"><canvas ref={canvasRef} /></div>
+          <aside className="vv-card vv-card--reading">
             <div className="vv-card__frost" aria-hidden="true" />
             <div className="vv-card__head">
               <h2 className="vv-card__title">{t.cardTitle}</h2>
               <span className="vv-card__index">{t.cardIndex}</span>
             </div>
             <div className="vv-card__body">
-              <div><h3 className="vv-finding__title">{t.f1t}</h3><p className="vv-finding__text">{t.f1}</p></div>
-              <div><h3 className="vv-finding__title">{t.f2t}</h3><p className="vv-finding__text">{t.f2}</p></div>
+              <ScanEssai lang={lang} labels={scanLabels} textes={scanTextes} />
             </div>
-            <svg className="vv-card__wave" viewBox="0 0 220 50" fill="none" aria-hidden="true">
-              <path d="M0 30 C10 30 12 45 18 45 C24 45 26 10 34 10 C42 10 44 40 52 40 C60 40 62 5 70 5 C78 5 80 42 88 42 C96 42 98 15 106 15 C114 15 116 38 124 38 C132 38 134 20 142 20 C150 20 152 35 160 35 C168 35 170 22 178 22 C186 22 188 32 196 32 C204 32 210 28 220 28"
-                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" fill="none" />
-            </svg>
           </aside>
         </div>
       </main>
@@ -504,8 +388,13 @@ export default function Vitrine({ lang = "en", onLang }) {
               <a href="/verifier" className="vv-link vv-link--more">{t.verifLien}<Fleche size={14} /></a>
             </div>
             <div className="vv-frost">
-              <ScanEssai lang={lang} labels={scanLabels} textes={scanTextes} />
-            </div>
+              <span className="vv-eyebrow">{t.readEyebrow}</span>
+              <div className="vv-engines">
+                {t.ticker.map((e) => (
+                  <div key={e} className="vv-engines__r"><span>{e}</span><div className="vv-engines__bar"><i /></div><span className="vv-engines__n">100</span></div>
+                ))}
+              </div>
+              <p className="vv-note">{t.readNote}</p>            </div>
           </div>
         </section>
 

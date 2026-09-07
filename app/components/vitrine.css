@@ -44,26 +44,10 @@
 .vv *, .vv *::before, .vv *::after { box-sizing: border-box; }
 .vv .vv-icon { flex: none; }
 
-/* ---- the video: full bleed, fixed, never tinted ---------------------- */
-.vv-video {
-  position: fixed; top: 0; left: 0;
-  display: block; width: 100%; height: 100%;
-  object-fit: cover; z-index: 0; pointer-events: none;
-  /* Only ever seen before the first frame: the studio's own grey, from
-     the reference. The video fades over it once it can play. */
-  background: #eef2f5;
-  /* The reference's studio is a cool grey. Kilian does not want a grey
-     page, and the file cannot be re-shot from here: the same frames,
-     lifted, so the studio reads near white and the orb keeps its light. */
-  filter: brightness(1.18) saturate(1.05);
-  opacity: 0; transition: opacity 900ms ease;
-}
-.vv-video.is-live { opacity: 1; }
-.vv-glass-defs { position: absolute; width: 0; height: 0; pointer-events: none; }
-
 /* ---- hero shell ------------------------------------------------------ */
 .vv-hero {
   position: relative; z-index: 10;
+  background: radial-gradient(60% 50% at 78% 22%, rgba(109, 63, 196, 0.06), transparent 70%), var(--vv-ground);
   display: flex; flex-direction: column;
   width: 100%; height: 100vh; height: 100dvh;
   pointer-events: none;   /* only interactive children opt back in */
@@ -177,8 +161,6 @@
   animation: vvCardUp 900ms var(--vv-ease) both; animation-delay: calc(260ms + var(--intro, 0ms));
 }
 @keyframes vvCardUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
-.vv-dup { position: absolute; left: 0; top: 0; z-index: 0; overflow: hidden; pointer-events: none; }
-.vv-dup canvas { position: absolute; inset: 0; width: 100%; height: 100%; filter: brightness(1.18) saturate(1.05) url(#vv-liquid-glass); }
 .vv-card__frost {
   position: absolute; inset: 0; z-index: 1; border-radius: 48px; pointer-events: none;
   background: rgba(255, 255, 255, 0.05);
@@ -193,7 +175,25 @@
 .vv-card__body { display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
 .vv-finding__title { margin: 0; font-size: 0.875rem; font-weight: 600; letter-spacing: -0.025em; }
 .vv-finding__text { margin: 0.25rem 0 0; font-size: 0.75rem; line-height: 1.625; color: var(--vv-ink-2); }
-.vv-card__wave { display: block; width: 100%; height: auto; margin-top: 1.25rem; color: var(--vv-ink); }
+/* the reading card: wider, as tall as its content, the glass on white */
+.vv-card--reading { width: min(640px, 100%); height: auto; min-height: 0; padding: 1.75rem; border-radius: 32px; justify-content: flex-start;
+  background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 30px 80px rgba(20, 20, 15, 0.08); }
+.vv-card--reading .vv-card__frost { border-radius: 32px; }
+@media (min-width: 768px) { .vv-card--reading { padding: 2rem 2.25rem; } }
+.vv-engines { display: flex; flex-direction: column; gap: 0.75rem; font-size: 0.85rem; margin-top: 0.5rem; }
+.vv-engines__r { display: grid; grid-template-columns: 96px 1fr 44px; gap: 12px; align-items: center; }
+.vv-engines__bar { height: 2px; background: rgba(0, 0, 0, 0.12); }
+/* the bars are full at rest; where the browser knows view(), they fill as
+   the block enters, driven by the scroll like the rest of the page */
+.vv-engines__bar i { display: block; height: 100%; width: 100%; background: var(--vv-ink); transform-origin: left center; }
+@supports (animation-timeline: view()) {
+  .vv-engines__bar i { animation: vvFill linear both; animation-timeline: view(); animation-range: entry 30% entry 90%; }
+}
+@keyframes vvFill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.vv-engines__n { text-align: right; font-variant-numeric: tabular-nums; }
+.vv-note { font-size: 0.8rem; color: var(--vv-ink-2); margin: 1rem 0 0; max-width: 42ch; line-height: 1.55; }
+@media (prefers-reduced-motion: reduce) { .vv-engines__bar i { animation: none; transform: none; } }
 @media (min-width: 640px) { .vv-card__title { font-size: 1.125rem; } }
 @media (min-width: 768px) {
   .vv-card__head { padding-bottom: 1rem; }
@@ -354,7 +354,6 @@
   .vv-arrive, .vv-card { animation: none; }
   .vv-ticker__row { animation: none; }
   .vv-menu__panel, .vv-menu__veil, .vv-menu__link, .vv-menu__foot, .vv-burger i { transition-duration: 0.01ms !important; transition-delay: 0ms !important; }
-  .vv-video { transition: none; }
 }
 
 /* ---- the intro: Nuvi says its name before the hero arrives ------------
