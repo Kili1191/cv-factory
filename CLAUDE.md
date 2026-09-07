@@ -44,6 +44,18 @@ même module que le harnais de test : la première version portait sa propre
 copie, limitée au dossier de la session distante, et répondait 503 sur la CI
 où Playwright installe ailleurs.
 
+Le 7 septembre 2026, les gabarits à deux colonnes ont été imprimés en natif
+pour mesurer, avec le même CV d'essai et le barème de `lib/atsFidelity.js` :
+poppler en ordre de flux, MuPDF et Tika (PDFBox) lisent les trois à 100 %,
+parce que la page d'impression peint dans l'ordre de lecture ; les lecteurs
+qui trient par position tombent à 97, 86 et 92 % (poppler par défaut) et à
+86, 86 et 56 % (pdf.js trié, la méthode d'une part des ATS) : un intitulé de
+rubrique ou une période partage sa ligne avec l'autre colonne et n'est plus
+reconnu. La photo doublée de sa couche écrite tient 100 % sur les cinq
+moteurs. C'est pour ça qu'elle reste : le texte natif sur deux colonnes
+n'est pas une question de rendu mais de géométrie, et aucun PDF ne fait lire
+une colonne à un lecteur qui trie par ligne.
+
 Les anciens téléchargements, la photo doublée d'une couche coupée en fin de
 ligne, existent chez les gens : quelqu'un a réimporté le sien et retrouvé
 chaque puce amputée. `lib/lireUnFichier.js` décide donc sur deux signes : la
