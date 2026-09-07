@@ -53,6 +53,8 @@ import ScanEssai from "./ScanEssai";
 import LandingCV from "./LandingCV";
 import Morph from "./Morph";
 import RevelationDeSecours from "./RevelationDeSecours";
+import ApercuGabarit from "./ApercuGabarit";
+import { LAYOUTS, metaGabarit } from "../../lib/gabarits";
 
 const T = {
   en: {
@@ -84,7 +86,6 @@ const T = {
       ["Download and send", "One page, in PDF or Word, that the sorting software reads from the first line to the last."]],
     tplEyebrow: "Six layouts", tplTitle: "Pick the one that looks like you.",
     tplLead: "All six get through the sorting software. We check it every time we change anything.",
-    tpls: [["Classic", "one column"], ["Timeline", "one column"], ["Simple", "one column"], ["Sidebar", "two columns"], ["Swiss", "two columns"], ["Compact", "dense"]],
     ruleEyebrow: "Our rule", ruleTitle: "Nuvi never makes anything up.",
     ruleLead: "Ten years stay ten years. A team of twelve stays a team of twelve. Nuvi only changes how it is written, so the software finds it. If you cannot defend a line in an interview, it is not on your CV.",
     morphLead: "Same facts, written so the software finds them",
@@ -133,7 +134,6 @@ const T = {
       ["Telecharge et envoie", "Une page, en PDF ou en Word, que le logiciel de tri lit de la premiere ligne a la derniere."]],
     tplEyebrow: "Six mises en page", tplTitle: "Choisis celle qui te ressemble.",
     tplLead: "Les six passent le logiciel de tri. On le verifie a chaque fois qu'on change quelque chose.",
-    tpls: [["Classique", "une colonne"], ["Chronologie", "une colonne"], ["Simple", "une colonne"], ["Sidebar", "deux colonnes"], ["Swiss", "deux colonnes"], ["Compact", "dense"]],
     ruleEyebrow: "Notre regle", ruleTitle: "Nuvi n'invente jamais rien.",
     ruleLead: "Dix ans restent dix ans. Une equipe de douze reste une equipe de douze. Nuvi ne change que la facon de l'ecrire, pour que le logiciel le trouve. Si tu ne peux pas defendre une ligne en entretien, elle n'est pas sur ton CV.",
     morphLead: "Les memes faits, ecrits pour que le logiciel les trouve",
@@ -222,25 +222,6 @@ function Chamfer({ href, children, plain }) {
       <span className="vv-chamfer__label">{children}</span>
       <Fleche />
     </a>
-  );
-}
-
-// A skeleton of a CV page for the templates rail: bars, not words, so the
-// six shapes read at a glance and no fake person is printed.
-function Feuille({ lignes, deux }) {
-  const barre = (w, k, cls) => <i key={k} className={cls} style={{ width: w + "%" }} />;
-  if (deux) {
-    return (
-      <div className="vv-sheet vv-two" aria-hidden="true">
-        <div className="vv-side">{[80, 60, 70].map((w, i) => barre(w, i))}<i className="vv-h2" style={{ width: "50%" }} />{[70, 50].map((w, i) => barre(w, "b" + i))}</div>
-        <div><i className="vv-name" />{barre(60, "t")}<i className="vv-h2" />{lignes.map((w, i) => barre(w, i))}</div>
-      </div>
-    );
-  }
-  return (
-    <div className="vv-sheet" aria-hidden="true">
-      <i className="vv-name" />{barre(38, "a")}{barre(60, "b")}<i className="vv-h2" />{lignes.map((w, i) => barre(w, i))}
-    </div>
   );
 }
 
@@ -460,11 +441,10 @@ export default function Vitrine({ lang = "en", onLang }) {
           <h2 className="vv-h nuvi-titre-geant"><Mots>{t.tplTitle}</Mots></h2>
           <p className="vv-lead vv-muted">{t.tplLead}</p>
           <div className="vv-rail" style={{ marginTop: "3rem" }}>
-            {t.tpls.map(([nom, forme], i) => (
-              <figure key={nom} className="vv-tpl">
-                <Feuille deux={i === 3 || i === 4}
-                  lignes={i === 2 ? [92, 92, 92, 92, 92, 92] : i === 5 ? [90, 90, 90, 90, 90, 90, 90, 90] : i === 1 ? [70, 88, 60, 84, 66, 90] : [88, 72, 90, 64, 86, 78]} />
-                <figcaption>{nom} <span>{forme}</span></figcaption>
+            {LAYOUTS.map((id) => (
+              <figure key={id} className="vv-tpl">
+                <div className="vv-tpl__card"><ApercuGabarit kind={id} locale={lang} /></div>
+                <figcaption><b>{metaGabarit(lang)[id].label}</b><span>{metaGabarit(lang)[id].desc}</span></figcaption>
               </figure>
             ))}
           </div>

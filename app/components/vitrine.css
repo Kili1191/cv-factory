@@ -337,16 +337,16 @@
 /* templates rail */
 .vv-rail { display: flex; gap: 1.25rem; overflow-x: auto; padding: 0.5rem 0 1.5rem; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .vv-rail::-webkit-scrollbar { height: 0; }
-.vv-tpl { flex: 0 0 240px; scroll-snap-align: start; margin: 0; }
-.vv-sheet { position: relative; aspect-ratio: 1 / 1.35; background: #fff; border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 6px; padding: 9% 9% 0; overflow: hidden; }
-.vv-sheet i { display: block; height: 0.5em; border-radius: 3px; background: #dcdad4; margin-bottom: 0.45em; }
-.vv-sheet i.vv-name { height: 0.9em; width: 54%; background: #111; margin-bottom: 0.7em; }
-.vv-sheet i.vv-h2 { width: 30%; background: #111; height: 0.45em; margin-top: 1em; }
-.vv-sheet.vv-two { display: grid; grid-template-columns: 34% 1fr; gap: 8%; }
-.vv-sheet.vv-two .vv-side { background: #ececea; margin: -9% 0 0 -9%; padding: 9% 6% 0; height: 130%; }
-.vv-sheet.vv-two .vv-side i { background: #cfcdc7; }
-.vv-tpl figcaption { display: flex; justify-content: space-between; margin-top: 0.9rem; font-size: 0.85rem; }
-.vv-tpl figcaption span { color: var(--vv-ink-2); }
+.vv-tpl { flex: 0 0 300px; scroll-snap-align: start; margin: 0; }
+/* the same card as the app's appearance picker: the preview cut at two
+   thirds, the name and what the shape is for under it */
+.vv-tpl__card { border: 1px solid rgba(0, 0, 0, 0.12); border-radius: 14px; overflow: hidden; background: #fff;
+  box-shadow: 0 12px 30px rgba(20, 20, 15, 0.06); transition: transform 300ms var(--vv-ease), box-shadow 300ms; }
+.vv-tpl:hover .vv-tpl__card { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(20, 20, 15, 0.1); }
+.vv-tpl figcaption { display: flex; flex-direction: column; gap: 0.2rem; margin-top: 0.9rem; font-size: 0.9rem; }
+.vv-tpl figcaption b { font-family: var(--vv-display); font-weight: 500; font-size: 1.05rem; letter-spacing: -0.01em; }
+.vv-tpl figcaption span { color: var(--vv-ink-2); font-size: 0.85rem; line-height: 1.45; }
+@media (min-width: 900px) { .vv-tpl { flex-basis: 320px; } }
 
 /* after the CV */
 .vv-four { display: grid; gap: 1.25rem; margin-top: 3rem; }
