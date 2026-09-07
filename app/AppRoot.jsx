@@ -9874,7 +9874,34 @@ export default function App() {
               // deux boutons "Telecharger" a l'ecran en meme temps - constate
               // en le mesurant, pas en le supposant.
               || showFormatChoice
-            ) && (
+            ) && (<>
+              {/* THE LETTER, ONE CLICK FROM THE DOWNLOAD
+                  The Application Pack has written a cover letter for a
+                  long time, three menus deep. Every competitor shows one
+                  next to the CV, and a person who has just finished a CV
+                  is exactly the person about to need the letter. The
+                  button opens the pack on its letter, with the last match
+                  as context when there is one. */}
+              <button
+                data-cvf="lettre"
+                onClick={() => requestPack("", offerResult)}
+                aria-label={locale === "en" ? "Cover letter" : "Lettre de motivation"}
+                style={{
+                  display:"flex", alignItems:"center", gap:Space.sm,
+                  padding:"10px 16px", minHeight:44, boxSizing:"border-box",
+                  background:Paper, color:Ink,
+                  border:"0.5px solid "+Gray200, borderRadius:RadiusPill, cursor:"pointer",
+                  fontFamily:Sans, fontSize:Text.body, fontWeight:600, letterSpacing:0.2,
+                  transition:Trans(["background","transform"], "base"),
+                }}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/>
+                </svg>
+                {locale === "en" ? "Cover letter" : "Lettre"}
+              </button>
               <button
                 onClick={handleDownloadClick}
                 aria-label="Telecharger CV"
@@ -9912,7 +9939,7 @@ export default function App() {
                 </svg>
                 {locale === "en" ? "Download" : "Telecharger"}
               </button>
-            )}
+            </>)}
             </div>
           </div>
           {/* LE DOCUMENT FLOTTAIT DANS DU VIDE
@@ -10365,6 +10392,23 @@ export default function App() {
             }}>{T.appSub}</div>
           </div>
           <div style={{display:"flex", gap:6}}>
+            {!cvIsEmpty && (
+              <button data-cvf="lettre" onClick={() => requestPack("", offerResult)}
+                aria-label={locale === "en" ? "Cover letter" : "Lettre de motivation"} style={{
+                ...B({
+                  background:Paper, color:Ink,
+                  border:"0.5px solid "+Gray200, borderRadius:RadiusPill,
+                  padding:"6px 12px", minHeight:44, minWidth:44,
+                  display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                  fontSize:11, fontWeight:600, fontFamily:Sans,
+                  transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
+                })
+              }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/></svg>
+                {locale === "en" ? "Letter" : "Lettre"}
+              </button>
+            )}
             {!cvIsEmpty && (
               <button onClick={handleDownloadClick} aria-label="Telecharger CV" style={{
                 ...B({
