@@ -10,8 +10,135 @@
   <title>Nuvi: the CV that passes the robots</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=DM+Serif+Display&display=swap" />
   <link rel="stylesheet" href="/verre/styles.css" />
+
+  <style>
+    /* THE HERO IS A SCREEN, THE SITE IS A PAGE
+       The reference is a single non-scrolling screen. A site needs the
+       sections below, so the page scrolls; the hero keeps its full screen
+       and the video stays fixed behind it. Every section below is opaque,
+       so the video costs nothing once it is out of view. */
+    html, body { overflow: auto; height: auto; }
+    body { background: #f5f4f0; }
+    .hero { height: 100vh; height: 100dvh; }
+    .nav { align-items: center; }
+    .logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: baseline;
+            font-family: "DM Serif Display", Georgia, serif; font-size: 30px; line-height: 1; letter-spacing: -0.01em; color: #000;
+            text-decoration: none; pointer-events: auto; }
+    .logo__mark { position: relative; display: inline-block; width: .26em; height: 1em; margin-left: -.02em; }
+    .logo__stem { position: absolute; left: 50%; bottom: 0; width: .13em; height: .5em; background: #000; border-radius: .018em; transform: translateX(-50%); }
+    .logo__dot { position: absolute; left: 50%; top: .16em; width: .18em; height: .18em; background: #6d3fc4; border-radius: 50%; transform: translateX(-50%); }
+    .logo:focus-visible { outline: 2px solid #000; outline-offset: 6px; }
+
+    .site { position: relative; z-index: 10; background: #f5f4f0; color: #000; font-family: var(--font-body); font-weight: 300; }
+    .sec { position: relative; padding: 6rem 1.25rem; }
+    @media (min-width: 640px) { .sec { padding: 7rem 1.5rem; } }
+    @media (min-width: 768px) { .sec { padding: 9rem 3rem; } }
+    .sec + .sec { border-top: 1px solid rgba(0,0,0,.1); }
+    .sec--white { background: #fff; }
+    .sec--ink { background: #0a0a0a; color: #fff; }
+    .sec--ink .eyebrow { color: rgba(255,255,255,.5); }
+    .sec--ink .t-muted { color: rgba(255,255,255,.6); }
+    .eyebrow { display: block; font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(0,0,0,.45); margin-bottom: 1rem; }
+    .h { margin: 0; font-weight: 300; letter-spacing: -.03em; line-height: 1.05; font-size: clamp(2rem, 5.2vw, 4.25rem); text-wrap: balance; max-width: 18ch; }
+    .h b { font-weight: 300; color: #6d3fc4; }
+    .t-muted { color: rgba(0,0,0,.6); }
+    .lead { max-width: 46ch; font-size: 1rem; line-height: 1.6; margin: 1.25rem 0 0; }
+    @media (min-width: 768px) { .lead { font-size: 1.125rem; } }
+    .grid2 { display: grid; gap: 2.5rem; }
+    @media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; gap: 4rem; align-items: start; } .sticky { position: sticky; top: 6rem; } }
+
+    /* frosted cards: the hero's card without the video behind it */
+    .frost { position: relative; border-radius: 28px; border: 1px solid rgba(47,47,47,.15); background: rgba(255,255,255,.55);
+             backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+             box-shadow: inset 0 1.5px 2px rgba(255,255,255,.6), inset 0 -1px 2px rgba(0,0,0,.08); padding: 1.75rem; }
+
+    /* ticker of real readings */
+    .ticker { overflow: hidden; border-top: 1px solid rgba(0,0,0,.1); border-bottom: 1px solid rgba(0,0,0,.1); background: #f5f4f0; position: relative; z-index: 10; }
+    .ticker__row { display: flex; width: max-content; padding: .9rem 0; font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; animation: tick 40s linear infinite; }
+    .ticker__row span { padding: 0 1.75rem; white-space: nowrap; }
+    .ticker__row span i { font-style: normal; color: #6d3fc4; }
+    @keyframes tick { to { transform: translateX(-50%); } }
+
+    /* the reading demo */
+    .reader { display: grid; gap: 1.25rem; }
+    @media (min-width: 640px) { .reader { grid-template-columns: 1.1fr 1fr; } }
+    .sheet { position: relative; aspect-ratio: 1 / 1.3; background: #fff; border: 1px solid rgba(0,0,0,.12); border-radius: 6px; padding: 9% 9% 0; overflow: hidden; }
+    .sheet i { display: block; height: .5em; border-radius: 3px; background: #dcdad4; margin-bottom: .45em; transition: background 400ms; }
+    .sheet i.name { height: .9em; width: 54%; background: #111; margin-bottom: .7em; }
+    .sheet i.h2 { width: 30%; background: #111; height: .45em; margin-top: 1em; }
+    .sheet i.on { background: #111; }
+    .sheet .scan { position: absolute; left: 0; right: 0; top: 0; height: 2px; background: #6d3fc4; box-shadow: 0 0 18px 4px rgba(109,63,196,.35); animation: scan 4.5s cubic-bezier(.4,0,.2,1) infinite; }
+    @keyframes scan { 0% { top: 0 } 90% { top: 100% } 100% { top: 100% } }
+    .engines { display: flex; flex-direction: column; gap: .75rem; font-size: .85rem; }
+    .engines .r { display: grid; grid-template-columns: 90px 1fr 46px; gap: 12px; align-items: center; }
+    .engines .bar { height: 2px; background: rgba(0,0,0,.12); }
+    .engines .bar i { display: block; height: 100%; width: 0; background: #000; transition: width 1.4s cubic-bezier(.2,.8,.2,1); }
+    .engines .n { text-align: right; font-variant-numeric: tabular-nums; }
+    .in-view .engines .bar i { width: var(--w); }
+    .note { font-size: .8rem; color: rgba(0,0,0,.5); margin-top: 1rem; max-width: 40ch; }
+
+    /* numbered steps */
+    .steps { display: grid; gap: 0; }
+    .step { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; padding: 2rem 0; border-top: 1px solid rgba(0,0,0,.1); }
+    .step:last-child { border-bottom: 1px solid rgba(0,0,0,.1); }
+    .step .k { font-size: .8rem; letter-spacing: .06em; color: rgba(0,0,0,.45); padding-top: .35rem; }
+    .step h3 { margin: 0 0 .5rem; font-weight: 400; font-size: 1.4rem; letter-spacing: -.02em; }
+    .step p { margin: 0; max-width: 46ch; line-height: 1.6; }
+
+    /* templates rail */
+    .rail { display: flex; gap: 1.25rem; overflow-x: auto; padding: .5rem 0 1.5rem; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+    .rail::-webkit-scrollbar { height: 0 }
+    .tpl { flex: 0 0 240px; scroll-snap-align: start; }
+    .tpl .sheet { aspect-ratio: 1 / 1.35; }
+    .tpl .sheet.two { display: grid; grid-template-columns: 34% 1fr; gap: 8%; }
+    .tpl .sheet.two .side { background: #ececea; margin: -9% 0 0 -9%; padding: 9% 6% 0; height: 130%; }
+    .tpl .sheet.two .side i { background: #cfcdc7 }
+    .tpl figcaption { display: flex; justify-content: space-between; margin-top: .9rem; font-size: .85rem; }
+    .tpl figcaption span { color: rgba(0,0,0,.45); }
+
+    /* nothing invented */
+    .diff { display: grid; gap: 1.25rem; }
+    @media (min-width: 720px) { .diff { grid-template-columns: 1fr 1fr; } }
+    .diff .frost { padding: 1.5rem; font-size: .9rem; line-height: 1.65; }
+    .diff h4 { margin: 0 0 1rem; font-weight: 400; font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(0,0,0,.45); }
+    .diff mark { background: rgba(109,63,196,.14); color: inherit; padding: 0 .15em; border-radius: 3px; }
+    .diff s { color: rgba(0,0,0,.35); text-decoration-color: rgba(0,0,0,.35); }
+
+    /* after the CV */
+    .four { display: grid; gap: 1.25rem; }
+    @media (min-width: 640px) { .four { grid-template-columns: 1fr 1fr; } }
+    .four .frost h3 { margin: 0 0 .5rem; font-weight: 400; font-size: 1.25rem; letter-spacing: -.02em; }
+    .four .frost p { margin: 0; line-height: 1.6; color: rgba(0,0,0,.6); }
+    .four .frost .idx { position: absolute; right: 1.5rem; top: 1.5rem; font-size: .75rem; color: rgba(0,0,0,.4); }
+
+    /* pricing */
+    .price { display: grid; gap: 2rem; }
+    @media (min-width: 900px) { .price { grid-template-columns: 1fr 1fr; align-items: center; } }
+    .price ul { list-style: none; margin: 1.5rem 0 0; padding: 0; display: grid; gap: .6rem; }
+    .price li { padding-left: 1.25rem; position: relative; line-height: 1.5; }
+    .price li::before { content: "+"; position: absolute; left: 0; color: rgba(0,0,0,.4); }
+    .price .frost .big { font-size: clamp(2.5rem, 6vw, 4.5rem); letter-spacing: -.03em; line-height: 1; margin: 0; }
+    .price .frost .big small { display: block; font-size: .9rem; letter-spacing: 0; color: rgba(0,0,0,.5); margin-top: .75rem; }
+
+    /* footer */
+    .foot { padding: 5rem 1.25rem 2.5rem; background: #0a0a0a; color: #fff; }
+    @media (min-width: 768px) { .foot { padding: 7rem 3rem 2.5rem; } }
+    .foot .logo { position: static; transform: none; font-size: clamp(5rem, 18vw, 16rem); color: #fff; }
+    .foot .logo__stem { background: #fff; }
+    .foot .cols { display: grid; gap: 2rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,.15); font-size: .85rem; }
+    @media (min-width: 640px) { .foot .cols { grid-template-columns: 1fr 1fr 1fr 1fr; } }
+    .foot a { color: rgba(255,255,255,.7); text-decoration: none; display: block; margin-bottom: .5rem; }
+    .foot a:hover { color: #fff; }
+    .foot .lbl { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: .9rem; }
+
+    /* reveal: everything is visible at rest; in view it settles by 14px */
+    .rv { transform: translateY(14px); opacity: .001; transition: transform 900ms cubic-bezier(.16,1,.3,1), opacity 900ms; }
+    .rv.in-view { transform: none; opacity: 1; }
+    .no-js .rv { transform: none; opacity: 1; }
+    @media (prefers-reduced-motion: reduce) { .rv { transform: none; opacity: 1; } .ticker__row, .sheet .scan { animation: none; } }
+  </style>
 </head>
 <body>
   <video id="bg-video" class="bg-video" aria-hidden="true"
@@ -99,6 +226,7 @@
         </svg>
         <span class="nav__label nav__label--menu">Menu</span>
       </button>
+      <a class="logo" href="/" aria-label="Nuvi"><span>Nuv</span><span class="logo__mark" aria-hidden="true"><i class="logo__stem"></i><i class="logo__dot"></i></span></a>
       <a class="nav__item" href="/app">
         <span class="nav__dot" aria-hidden="true"></span>
         <span class="nav__label">Open the app</span>
@@ -155,6 +283,122 @@
     </div>
   </main>
 
+  <div class="ticker" aria-hidden="true"><div class="ticker__row">
+    <span>poppler <i>100</i></span><span>MuPDF <i>100</i></span><span>Apache Tika <i>100</i></span><span>PDFBox <i>100</i></span><span>pdf.js <i>100</i></span><span>fonts embedded</span><span>one page</span><span>reading order kept</span><span>nothing invented</span>
+    <span>poppler <i>100</i></span><span>MuPDF <i>100</i></span><span>Apache Tika <i>100</i></span><span>PDFBox <i>100</i></span><span>pdf.js <i>100</i></span><span>fonts embedded</span><span>one page</span><span>reading order kept</span><span>nothing invented</span>
+  </div></div>
+
+  <div class="site">
+
+  <section class="sec sec--white" id="check">
+    <div class="grid2">
+      <div class="sticky rv">
+        <span class="eyebrow">01 The check</span>
+        <h2 class="h">Watch the robots read your CV.</h2>
+        <p class="lead t-muted">Recruiters do not read CVs first. Their software does. Nuvi runs the same parsers on your file, on your device, and shows you what they read and what they lost. Nothing is sent anywhere.</p>
+      </div>
+      <div class="frost rv reader-wrap">
+        <div class="reader">
+          <div class="sheet "><i class="name"></i><i style="width:38%"></i><i style="width:60%"></i><i class="h2"></i><i style="width:88%"></i><i style="width:72%"></i><i style="width:90%"></i><i style="width:64%"></i><i style="width:86%"></i><i style="width:78%"></i><i style="width:40%"></i><div class="scan"></div></div>
+          <div>
+            <div class="engines">
+              <div class="r"><span>poppler</span><div class="bar"><i style="--w:100%"></i></div><span class="n">100</span></div>
+              <div class="r"><span>MuPDF</span><div class="bar"><i style="--w:100%"></i></div><span class="n">100</span></div>
+              <div class="r"><span>Tika</span><div class="bar"><i style="--w:100%"></i></div><span class="n">100</span></div>
+              <div class="r"><span>PDFBox</span><div class="bar"><i style="--w:100%"></i></div><span class="n">100</span></div>
+              <div class="r"><span>pdf.js</span><div class="bar"><i style="--w:100%"></i></div><span class="n">100</span></div>
+            </div>
+            <p class="note">A sample CV, the classic template. On the real page this block takes your file.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="how">
+    <div class="grid2">
+      <div class="sticky rv">
+        <span class="eyebrow">02 Three moves</span>
+        <h2 class="h">Drop it. Aim it. Send it.</h2>
+        <p class="lead t-muted">The whole product in three moves, and the third one is the only one your competitors skip.</p>
+      </div>
+      <div class="steps rv">
+        <div class="step"><span class="k">01</span><div><h3>Drop your CV</h3><p>PDF, Word, a photo, a LinkedIn export. Read on your device in under a second, for free, before you decide anything.</p></div></div>
+        <div class="step"><span class="k">02</span><div><h3>Aim it at the job</h3><p>Paste the posting. Nuvi rewrites your CV for it from what you have already written, across every version you have. It picks. It never invents.</p></div></div>
+        <div class="step"><span class="k">03</span><div><h3>Pass the check, then send</h3><p>Native text, embedded fonts, one page, reading order kept. Five engines read it whole before you download it as PDF or Word.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec--white" id="templates">
+    <div class="rv">
+      <span class="eyebrow">03 Six templates</span>
+      <h2 class="h">Every one of them read whole.</h2>
+      <p class="lead t-muted">Two columns are where parsers lose lines. Nuvi's two-column templates leave with a written reading layer, and the one-column ones leave as pure text. Measured on every build.</p>
+    </div>
+    <div class="rail rv" style="margin-top:3rem">
+      <figure class="tpl" style="margin:0"><div class="sheet "><i class="name"></i><i style="width:38%"></i><i style="width:60%"></i><i class="h2"></i><i style="width:88%"></i><i style="width:72%"></i><i style="width:90%"></i><i style="width:64%"></i><i style="width:86%"></i><i style="width:78%"></i><div class="scan"></div></div><figcaption>Classic <span>one column</span></figcaption></figure>
+      <figure class="tpl" style="margin:0"><div class="sheet "><i class="name"></i><i style="width:38%"></i><i style="width:60%"></i><i class="h2"></i><i style="width:70%"></i><i style="width:88%"></i><i style="width:60%"></i><i style="width:84%"></i><i style="width:66%"></i><i style="width:90%"></i><div class="scan"></div></div><figcaption>Timeline <span>one column</span></figcaption></figure>
+      <figure class="tpl" style="margin:0"><div class="sheet "><i class="name"></i><i style="width:38%"></i><i style="width:60%"></i><i class="h2"></i><i style="width:92%"></i><i style="width:92%"></i><i style="width:92%"></i><i style="width:92%"></i><i style="width:92%"></i><i style="width:92%"></i><div class="scan"></div></div><figcaption>ATS <span>one column</span></figcaption></figure>
+      <figure class="tpl" style="margin:0"><div class="sheet two"><div class="side"><i style="width:80%"></i><i style="width:60%"></i><i style="width:70%"></i><i class="h2" style="width:50%"></i><i style="width:70%"></i><i style="width:50%"></i></div><div><i class="name"></i><i style="width:60%"></i><i class="h2"></i><i style="width:90%"></i><i style="width:70%"></i><i style="width:85%"></i></div><div class="scan"></div></div><figcaption>Sidebar <span>two columns</span></figcaption></figure>
+      <figure class="tpl" style="margin:0"><div class="sheet two"><div class="side"><i style="width:80%"></i><i style="width:60%"></i><i class="h2" style="width:50%"></i><i style="width:70%"></i></div><div><i class="name"></i><i style="width:60%"></i><i class="h2"></i><i style="width:90%"></i><i style="width:70%"></i><i style="width:85%"></i><i style="width:60%"></i></div><div class="scan"></div></div><figcaption>Swiss <span>two columns</span></figcaption></figure>
+      <figure class="tpl" style="margin:0"><div class="sheet "><i class="name"></i><i style="width:38%"></i><i style="width:60%"></i><i class="h2"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><i style="width:90%"></i><div class="scan"></div></div><figcaption>Compact <span>dense</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section class="sec sec--ink">
+    <div class="grid2">
+      <div class="sticky rv">
+        <span class="eyebrow">04 The rule</span>
+        <h2 class="h">The AI invents nothing.</h2>
+        <p class="lead t-muted">Every line of a tailored CV exists in something you already wrote. A test refuses the change otherwise. Choosing from your own material is not inventing; the border holds by itself, not by vigilance.</p>
+      </div>
+      <div class="diff rv">
+        <div class="frost" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:#fff"><h4 style="color:rgba(255,255,255,.5)">What you wrote, 2024 version</h4>Managed a portfolio of <mark style="background:rgba(255,255,255,.14)">42 mid-market accounts</mark>, <mark style="background:rgba(255,255,255,.14)">grew renewals to 94 %</mark>, ran the quarterly reviews with finance.</div>
+        <div class="frost" style="background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.15);color:#fff"><h4 style="color:rgba(255,255,255,.5)">Aimed at a Key Account role</h4>Owned <mark style="background:rgba(255,255,255,.14)">42 mid-market accounts</mark> end to end and <mark style="background:rgba(255,255,255,.14)">lifted renewals to 94 %</mark>. <s style="color:rgba(255,255,255,.35)">Closed 3 M in new ARR</s> <span style="color:rgba(255,255,255,.5)">refused: written nowhere.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="rv">
+      <span class="eyebrow">05 After the CV</span>
+      <h2 class="h">The rest of the application, in the same file.</h2>
+    </div>
+    <div class="four rv" style="margin-top:3rem">
+      <div class="frost"><span class="idx">//01</span><h3>Cover letter</h3><p>One click from Download, written from the same CV and the same posting. Same rule: nothing invented.</p></div>
+      <div class="frost"><span class="idx">//02</span><h3>A tracker that reads your inbox</h3><p>Connect Gmail and the recruiter's reply moves the application by itself. No board to fill by hand.</p></div>
+      <div class="frost"><span class="idx">//03</span><h3>Interview preparation</h3><p>Questions from the posting and your CV, and a live assistant during the call, on your phone.</p></div>
+      <div class="frost"><span class="idx">//04</span><h3>PDF and Word</h3><p>The PDF is real text with the fonts inside. The Word file is one column, real headings, real bullets, never a table.</p></div>
+    </div>
+  </section>
+
+  <section class="sec sec--white" id="pricing">
+    <div class="price">
+      <div class="rv">
+        <span class="eyebrow">06 Pricing</span>
+        <h2 class="h">One plan. One price. Cancel in one click.</h2>
+        <ul class="t-muted">
+          <li>Your CV is read, checked and kept on your device for free, before any account.</li>
+          <li>One plan unlocks the rewriting, the letter, the tracker and the interview prep.</li>
+          <li>The same price for everyone. Cancel from Settings, no e-mail to write.</li>
+        </ul>
+      </div>
+      <div class="frost rv" style="padding:2.5rem"><p class="big">Free to check<small>price announced at launch</small></p><a class="chamfer" href="/app" style="margin-top:2rem"><span class="chamfer__glass" aria-hidden="true"></span><svg class="chamfer__outline" viewBox="0 0 260 48" preserveAspectRatio="none" aria-hidden="true"><polygon points="14,0 260,0 260,34 246,48 0,48 0,14" fill="none" stroke="currentColor" stroke-width="1.5" vector-effect="non-scaling-stroke" /></svg><span class="chamfer__label">Start with my CV</span><svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a></div>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <a class="logo" href="/" aria-label="Nuvi"><span>Nuv</span><span class="logo__mark" aria-hidden="true"><i class="logo__stem"></i><i class="logo__dot"></i></span></a>
+    <div class="cols">
+      <div><span class="lbl">Product</span><a href="#check">The check</a><a href="#how">How it works</a><a href="#templates">Templates</a><a href="#pricing">Pricing</a></div>
+      <div><span class="lbl">Nuvi</span><a href="/app">Open the app</a><a href="mailto:hello@thenuvi.com">hello@thenuvi.com</a></div>
+      <div><span class="lbl">Language</span><a href="#">Francais</a><a href="#">English</a></div>
+      <div><span class="lbl">Legal</span><a href="#">Privacy</a><a href="#">Terms</a></div>
+    </div>
+  </footer>
+  </div>
+
   <div class="menu" id="menu">
     <div class="menu__backdrop" id="menu-backdrop"></div>
     <div class="menu__panel" role="dialog" aria-modal="true" aria-label="Menu">
@@ -166,15 +410,15 @@
         <span>Close</span>
       </button>
       <nav class="menu__nav">
-        <a class="menu__link" href="/"><span class="menu__linkText">Product</span>
+        <a class="menu__link" href="#how"><span class="menu__linkText">Product</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
-        <a class="menu__link" href="#"><span class="menu__linkText">Templates</span>
+        <a class="menu__link" href="#templates"><span class="menu__linkText">Templates</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
-        <a class="menu__link" href="#"><span class="menu__linkText">ATS check</span>
+        <a class="menu__link" href="#check"><span class="menu__linkText">ATS check</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
-        <a class="menu__link" href="#"><span class="menu__linkText">Pricing</span>
+        <a class="menu__link" href="#pricing"><span class="menu__linkText">Pricing</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
-        <a class="menu__link" href="#"><span class="menu__linkText">Contact</span>
+        <a class="menu__link" href="mailto:hello@thenuvi.com"><span class="menu__linkText">Contact</span>
           <svg class="menu__arrow icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14" /><path d="m12 5 7 7-7 7" /></svg></a>
       </nav>
       <div class="menu__foot">
@@ -186,5 +430,29 @@
 
   <script type="module" src="/verre/glass-card.js"></script>
   <script type="module" src="/verre/ui.js"></script>
+
+  <script>
+    // Everything is visible at rest; entering the viewport only settles it.
+    (function () {
+      var io = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add("in-view"); io.unobserve(e.target); } });
+      }, { rootMargin: "0px 0px -10% 0px" });
+      document.querySelectorAll(".rv").forEach(function (el) { io.observe(el); });
+      // The sample sheet: lines turn from grey to ink as the scan line passes.
+      var sheets = document.querySelectorAll(".sheet");
+      function tick() {
+        sheets.forEach(function (s) {
+          var scan = s.querySelector(".scan"); if (!scan) return;
+          var y = scan.getBoundingClientRect().top;
+          s.querySelectorAll("i").forEach(function (l) {
+            var r = l.getBoundingClientRect();
+            if (r.top + r.height / 2 < y) l.classList.add("on"); else l.classList.remove("on");
+          });
+        });
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    })();
+  </script>
 </body>
 </html>
