@@ -12,6 +12,7 @@
 // sans lever d'erreur, ce qui est le pire des cas : l'utilisateur croit avoir
 // capture l'annonce.
 
+import { readFile } from "node:fs/promises";
 import { extractJob, fromJsonLd, stripTags } from "../extension/extract.js";
 
 export async function run() {
@@ -117,6 +118,18 @@ export async function run() {
   }
 
   if (!fromJsonLd([])) { /* attendu : rien */ }
+
+  // --- the popup opens the app, not the front page --------------------------
+  // Since the site split, "/" is the landing page and the capture listener
+  // lives on "/app". The popup kept opening the root: the ad was parked in
+  // storage while the person read the landing page, the very detour the
+  // bridge says it avoids. Read from the source, because the popup only
+  // runs inside a browser extension.
+  const popup = await readFile(new URL("../extension/popup.js", import.meta.url), "utf8");
+  const cible = (popup.match(/const NUVI = "([^"]+)"/) || [])[1] || "";
+  if (!/^https:\/\/thenuvi\.com\/app$/.test(cible)) {
+    failures.push("the popup opens \"" + cible + "\" instead of the app at https://thenuvi.com/app");
+  }
 
   // --- l'application recoit-elle vraiment ce que l'extension depose ? -----
   // Une extension qui capture parfaitement et depose dans le vide ne sert a

@@ -1,6 +1,10 @@
 import { extractJob } from "./extract.js";
 
-const NUVI = "https://thenuvi.com/";
+// The app, not the front page: since the site split, "/" is the landing
+// page and the capture listener lives on "/app". Opening the root parked the
+// ad in storage while the person read the landing page: exactly the detour
+// the bridge says it avoids.
+const NUVI = "https://thenuvi.com/app";
 const sub = document.getElementById("sub");
 const out = document.getElementById("out");
 const go = document.getElementById("go");
