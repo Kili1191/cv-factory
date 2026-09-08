@@ -244,7 +244,7 @@ const EN_T = {
   ui_del_skill:"delete skill",
   ui_del_lang:"delete language",
   ui_del:"delete",
-  hd_annonce:"New ad", mt_dl:"Download this CV", colle_annonce:"Ad pasted. One click and your CV fits it.",
+  hd_annonce:"New ad", hd_annonce_court:"New ad", mt_dl:"Download this CV", colle_annonce:"Ad pasted. One click and your CV fits it.",
   mt_gen_pack:"Generate the full application",
   mt_read_local:"Read from the ad, with no AI call",
   mt_reach_adds:"What Nuvi adds from your record",

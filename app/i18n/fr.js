@@ -243,7 +243,7 @@ const FR_T = {
   ui_del_skill:"supprimer competence",
   ui_del_lang:"supprimer langue",
   ui_del:"supprimer",
-  hd_annonce:"Nouvelle annonce", mt_dl:"Telecharger ce CV", colle_annonce:"Annonce collee. Un clic et ton CV s'y adapte.",
+  hd_annonce:"Nouvelle annonce", hd_annonce_court:"Annonce", mt_dl:"Telecharger ce CV", colle_annonce:"Annonce collee. Un clic et ton CV s'y adapte.",
   mt_gen_pack:"Generer la candidature complete",
   mt_read_local:"Lu dans l'offre, sans appeler l'IA",
   mt_reach_adds:"Ce que Nuvi ajoute a ta portee",

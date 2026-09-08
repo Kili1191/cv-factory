@@ -9938,6 +9938,14 @@ export default function App() {
               marginLeft:1,
             }}>{T.appSub}</div>
           </div>
+          {/* THE ROW HAS 296 PIXELS
+              A 390px phone, 16px of padding each side, the logo block at
+              62px: five buttons share what is left. With their labels the
+              row measured 371px and the CI's crash test found "Masquer"
+              at x=418, off the screen. So one label survives, on the
+              action someone repeats a hundred times, and it is the short
+              form; the letter, the zoom and the hide are 44px icons whose
+              names live in aria-label, which is what the suites read. */}
           <div style={{display:"flex", gap:6}}>
             {/* Shown even on an empty CV: the sheet then writes the CV
                 the ad asks for. The letter and the download need one. */}
@@ -9947,14 +9955,14 @@ export default function App() {
                 ...B({
                   background:Paper, color:Ink,
                   border:"0.5px solid "+Gray200, borderRadius:RadiusPill,
-                  padding:"0 12px", minHeight:44, minWidth:44, fontFamily:Sans, fontSize:12, fontWeight:600,
+                  padding:"0 10px", minHeight:44, minWidth:44, fontFamily:Sans, fontSize:12, fontWeight:600,
                   display:"inline-flex", alignItems:"center", gap:6,
                 })
               }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 5v14"/><path d="M5 12h14"/>
                 </svg>
-                {T.hd_annonce}
+                {T.hd_annonce_court}
               </button>
             )}
             {!cvIsEmpty && (
@@ -9963,15 +9971,14 @@ export default function App() {
                 ...B({
                   background:Paper, color:Ink,
                   border:"0.5px solid "+Gray200, borderRadius:RadiusPill,
-                  padding:"6px 12px", minHeight:44, minWidth:44,
+                  padding:"6px 0", width:44, minHeight:44, minWidth:44,
                   display:"flex", alignItems:"center", justifyContent:"center", gap:5,
                   fontSize:11, fontWeight:600, fontFamily:Sans,
                   transition: Trans(["background","color","border-color","box-shadow","transform","opacity"], "fast"),
                 })
               }}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                  strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/></svg>
-                {locale === "en" ? "Letter" : "Lettre"}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 7l8 6 8-6"/></svg>
               </button>
             )}
             {!cvIsEmpty && (
@@ -10004,25 +10011,43 @@ export default function App() {
                 </svg>
               </button>
             )}
-            <button onClick={()=>setZoomed(true)} style={{
+            <button onClick={()=>setZoomed(true)} aria-label={T.zoom} style={{
               ...B({
                 background:Paper, color:Ink,
                 border:"0.5px solid "+Gray200,
-                borderRadius:RadiusPill, padding:"6px 14px",
-                minHeight:44,
-                fontSize:11, fontWeight:500, fontFamily:Sans,
+                borderRadius:RadiusPill, padding:"6px 0", width:44, minWidth:44,
+                minHeight:44, display:"flex", alignItems:"center", justifyContent:"center",
               })
-            }}>{T.zoom}</button>
-            <button onClick={()=>setShowCV(p=>!p)} style={{
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/><path d="M11 8v6"/><path d="M8 11h6"/>
+              </svg>
+            </button>
+            <button onClick={()=>setShowCV(p=>!p)} aria-label={showCV ? T.hide : T.show}
+              aria-pressed={!showCV} style={{
               ...B({
                 background:showCV ? Paper : Ink,
                 color:showCV ? Ink : Cream,
                 border:"0.5px solid "+(showCV ? Gray200 : Ink),
-                borderRadius:RadiusPill, padding:"6px 14px",
-                minHeight:44,
-                fontSize:11, fontWeight:500, fontFamily:Sans,
+                borderRadius:RadiusPill, padding:"6px 0", width:44, minWidth:44,
+                minHeight:44, display:"flex", alignItems:"center", justifyContent:"center",
               })
-            }}>{showCV ? T.hide : T.show}</button>
+            }}>
+              {showCV ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                  <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+                  strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                </svg>
+              )}
+            </button>
           </div>
         </div>
         {/* `!zoomed` : la superposition plein ecran rend deja CVEl. Sans ce
