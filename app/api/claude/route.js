@@ -1,6 +1,9 @@
 import { modelePour, coutEnDollars } from "../../../lib/modeles.js";
+import { billingConfigured, jetonDe, utilisateurDuJeton, lireDroits, compterUnAppel } from "../../../lib/facturation.js";
+import { decider, estUnAjustement, AJUSTEMENTS_GRATUITS } from "../../../lib/plans.js";
 
-const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+// The suite that proves the money circuit points this at a stub.
+const ANTHROPIC_URL = process.env.ANTHROPIC_API_URL || "https://api.anthropic.com/v1/messages";
 
 // Modele courant. Claude Opus 5 est la generation actuelle : contexte d'un
 // million de jetons, et le raisonnement est actif par defaut, ce qui se voit
@@ -115,6 +118,34 @@ export async function POST(request) {
       );
     }
 
+    // WHO PAYS FOR THIS CALL
+    //
+    // With billing configured, every model call is either a subscriber's
+    // or one of the three free fits an account gets. A visitor without an
+    // account is told to sign in (401), an account past its free fits is
+    // told the plan (402); the browser turns both into the right sheet.
+    // Without billing configured, nothing changes: the harness, a
+    // developer machine and the product before launch all run free.
+    let payeur = null;
+    if (billingConfigured()) {
+      const user = await utilisateurDuJeton(jetonDe(request));
+      if (!user) {
+        return new Response(
+          JSON.stringify({ error: { type: "sign_in_required", message: "Sign in for three free fits", fits_free: AJUSTEMENTS_GRATUITS } }),
+          { status: 401, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      const droits = await lireDroits(user.id);
+      const verdict = decider({ abonnement: droits.abonnement, fits: droits.fits, tache: taskName });
+      if (!verdict.ok) {
+        return new Response(
+          JSON.stringify({ error: { type: "plan_required", message: "Your free fits are used", fits_used: droits.fits, fits_free: AJUSTEMENTS_GRATUITS } }),
+          { status: 402, headers: { "Content-Type": "application/json" } }
+        );
+      }
+      payeur = { user, raison: verdict.raison };
+    }
+
     const max_tokens = pickMaxTokens(requestedMaxTokens);
 
     const messages = Array.isArray(providedMessages) && providedMessages.length > 0
@@ -208,11 +239,16 @@ export async function POST(request) {
     const inputTokens = usage.input_tokens || 0;
     const outputTokens = usage.output_tokens || 0;
     const usd = coutEnDollars(model, usage);
+    // Counted after the answer, so a refused or failed call costs the
+    // person nothing. A fit is one CV for one ad; its second pass is not
+    // a second fit.
+    if (payeur) await compterUnAppel(payeur.user.id, { fit: estUnAjustement(taskName) });
 
     // One line per call in the function logs, which Vercel keeps: the
     // spend by task is what the price was set against, and it has to be
     // readable without a spreadsheet.
     console.log("[usage] task=" + taskName + " model=" + model
+      + (payeur ? " payer=" + payeur.raison : " payer=open")
       + " in=" + inputTokens + " cached=" + cacheReadTokens + " written=" + cacheCreationTokens
       + " out=" + outputTokens + " usd=" + (usd == null ? "?" : usd.toFixed(4))
       + " ms=" + elapsed);

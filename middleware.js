@@ -35,6 +35,9 @@ const LIMITES = [
   { motif: /^\/api\/pdf/, parMinute: 20 },
   { motif: /^\/api\/claude/, parMinute: 40, parJour: 300 },
   { motif: /^\/api\/(entreprise|jobs)/, parMinute: 30 },
+  // Checkout and portal open Stripe pages; the webhook is Stripe itself,
+  // which retries politely. Thirty a minute is a person, not a script.
+  { motif: /^\/api\/billing/, parMinute: 30 },
   // A page in an error loop reports once every ten seconds by itself; a
   // script that hammers the report route gets nothing past this.
   { motif: /^\/api\/incident/, parMinute: 10 },

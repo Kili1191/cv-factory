@@ -25,7 +25,7 @@ import { combienARelancer } from "../lib/applicationFollowUp";
 import { EMPTY, san, sanDeep, normCV, structureDuCv } from "../lib/cvSchema";
 import { LAYOUTS, LAYOUT_META, metaGabarit, DEMO_CV, DEMO_THEME } from "../lib/gabarits";
 import ApercuGabarit from "./components/ApercuGabarit";
-import { aiCall, parseJSON } from "../lib/ai";
+import { aiCall, parseJSON, jetonDuCompte } from "../lib/ai";
 import { contrastRatio, wcagLevel, distanceHex } from "../lib/contrasteCv";
 import { defautsDuCv, defautsVisuels, trierLesDefauts, FACTEUR_MIN }
   from "../lib/leCvEstIlPresentable";
@@ -54,6 +54,7 @@ const VersionsModal = dynamic(() => import("./components/VersionsModal"), { ssr:
 const TruthModal = dynamic(() => import("./components/TruthModal"), { ssr: false });
 const AuthSheet = dynamic(() => import("./components/AuthSheet"), { ssr: false });
 const InstallAppSheet = dynamic(() => import("./components/InstallAppSheet"), { ssr: false });
+const PlanSheet = dynamic(() => import("./components/PlanSheet"), { ssr: false });
 const LiveAssistModal = dynamic(() => import("./components/LiveAssistModal"), { ssr: false });
 const JobSearchModal = dynamic(() => import("./components/JobSearchModal"), { ssr: false });
 const PositioningModal = dynamic(() => import("./components/PositioningModal"), { ssr: false });
@@ -3383,6 +3384,12 @@ export default function App() {
   // L'app fonctionne sans compte, exactement comme avant. Quand le serveur est
   // configure, le compte sert uniquement a retrouver son CV ailleurs.
   const [showAuth, setShowAuth] = useState(false);
+  // THE PLAN
+  // `plan` is what /api/billing says about this account: null until read,
+  // { configured:false } when billing is off. The sheet opens on a 402 from
+  // the AI route, or from Settings.
+  const [showPlan, setShowPlan] = useState(false);
+  const [plan, setPlan] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
   // Vrai uniquement au retour de l'autorisation Google, pour lancer le
   // balayage de la boite mail sans redemander un clic.
@@ -3863,6 +3870,76 @@ export default function App() {
 
   // Branchement du compte. Sans configuration serveur, initCloud sort tout de
   // suite et l'application se comporte comme avant.
+  // The AI client says when the route asked for an account or the plan:
+  // one event, two sheets. Not an error, not an incident.
+  useEffect(() => {
+    const surLePlan = (e) => {
+      const d = (e && e.detail) || {};
+      if (d.type === "sign_in_required") { notify(T.pl_signin_needed); setShowAuth(true); return; }
+      if (d.type === "plan_required") { setShowPlan(true); }
+    };
+    window.addEventListener("nuvi:paywall", surLePlan);
+    return () => window.removeEventListener("nuvi:paywall", surLePlan);
+  }, [notify, T]);
+
+  const lireLePlan = useCallback(async () => {
+    try {
+      const jeton = await jetonDuCompte();
+      const r = await fetch("/api/billing", { headers: jeton ? { Authorization: "Bearer " + jeton } : {} });
+      if (!r.ok) return;
+      setPlan(await r.json());
+    } catch { /* offline: the last known plan stands */ }
+  }, []);
+  useEffect(() => { lireLePlan(); }, [lireLePlan, cloud.user]);
+
+  // Back from Stripe. The webhook can land a second after the person does,
+  // so the plan is read again after a beat.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let params;
+    try { params = new URLSearchParams(window.location.search); } catch { return; }
+    const facture = params.get("facture");
+    if (!facture) return;
+    try {
+      params.delete("facture");
+      const q = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (q ? "?" + q : "") + window.location.hash);
+    } catch { /* l'historique refuse : sans importance */ }
+    if (facture === "ok") {
+      notify(T.pl_welcome);
+      const t = setTimeout(lireLePlan, 1500);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const ouvrirLePaiement = useCallback(async (planId) => {
+    const jeton = await jetonDuCompte();
+    const r = await fetch("/api/billing/checkout", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(jeton ? { Authorization: "Bearer " + jeton } : {}) },
+      body: JSON.stringify({ plan: planId }),
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.url) throw new Error((d.error && d.error.message) || "checkout");
+    window.location.assign(d.url);
+  }, []);
+
+  const gererLAbonnement = useCallback(async () => {
+    try {
+      const jeton = await jetonDuCompte();
+      const r = await fetch("/api/billing/portal", {
+        method: "POST",
+        headers: jeton ? { Authorization: "Bearer " + jeton } : {},
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) throw new Error((d.error && d.error.message) || "portal");
+      window.location.assign(d.url);
+    } catch {
+      notify(T.pl_failed);
+    }
+  }, [notify, T]);
+
   useEffect(() => {
     const stop = initCloud((changedKeys) => {
       // Des donnees plus recentes viennent d'un autre appareil. Elles sont
@@ -8376,6 +8453,17 @@ export default function App() {
         </Suspense>
       )}
 
+      {showPlan && (
+        <Suspense fallback={null}>
+          <PlanSheet
+            T={T} locale={locale} plan={plan} cloudUser={cloud.user}
+            onSignIn={() => { setShowPlan(false); setShowAuth(true); }}
+            onCheckout={ouvrirLePaiement}
+            onClose={() => setShowPlan(false)}
+          />
+        </Suspense>
+      )}
+
       {showCustomize && (
         <CustomizeSheet
           T={T} cv={cv} theme={theme}
@@ -8657,6 +8745,9 @@ export default function App() {
           onClearAiCache={() => { clearAllAiCache(); notify(T.set_cache_done); }}
           cloudEnabled={isCloudConfigured()}
           cloudUser={cloud.user}
+          plan={plan}
+          onOpenPlan={() => { setShowSettings(false); setShowPlan(true); }}
+          onManagePlan={gererLAbonnement}
           onSignIn={() => { setShowSettings(false); setShowAuth(true); }}
           onSignOut={async () => {
             await signOut();

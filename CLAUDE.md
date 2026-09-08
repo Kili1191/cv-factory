@@ -107,6 +107,18 @@ candidatures tiennent dans le plan. La route écrit une ligne `[usage]` par
 appel, avec le modèle et le coût, que Vercel garde : c'est contre cette
 ligne que le prix se vérifie. `tests/the-model-follows-the-task.mjs`.
 
+L'argent arrive par `app/api/billing`. Le plan est fixé dans `lib/plans.js`
+(24 € par mois, 49 € pour trois mois, trois adaptations gratuites avec un
+compte) ; `lib/facturation.js` parle à Stripe et à Supabase avec la clé
+service, côté serveur seulement. La route de l'IA demande qui paie : sans
+compte 401, au bout des gratuites 402, et `lib/ai.js` transforme ces deux
+réponses en un événement `nuvi:paywall` qui ouvre la feuille de connexion ou
+la feuille du plan. Un plan n'existe que parce que Stripe l'a dit sur le
+webhook, signé ; le navigateur ne peut rien s'accorder (RLS en lecture
+seule). Sans les sept variables (`docs/facturation.md`), tout reste gratuit
+et sans compte : le harnais et une machine de développement tournent ainsi.
+`tests/the-money-arrives.mjs` prouve le circuit contre des doublures.
+
 Les routes ont un plafond. `middleware.js` compte les appels par adresse sur
 une minute (20 sur `/api/pdf`, 40 sur `/api/claude`, 30 sur les registres)
 et sur un jour (300 sur `/api/claude` : un script qui se tient sous la

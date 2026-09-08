@@ -50,6 +50,9 @@ export default function SettingsPanel({
   onOpenHistory, onClearAiCache,
   cloudEnabled = false, cloudUser = null,
   onSignIn = () => {}, onSignOut = () => {},
+  // The plan, as /api/billing describes it; null while unknown or when
+  // billing is not configured. Two ways out: choose a plan, or manage it.
+  plan = null, onOpenPlan = () => {}, onManagePlan = () => {},
   onOpenInstall = () => {},
   // The shape of the current CV (lib/incidents.js formeDuCv): sections and
   // counts, no text. Sent with a report only when the person ticks the box.
@@ -147,6 +150,51 @@ export default function SettingsPanel({
               {locale === "en" ? "Sign in to keep your CV" : "Se connecter pour garder son CV"}
             </button>
           )}
+        </div>
+      )}
+
+      {/* THE PLAN
+          What the person pays, or does not yet, and the one button that
+          fits: choose the plan, or open Stripe's portal to change the card
+          or cancel. No retention screen. Hidden when billing is off. */}
+      {plan && plan.configured && (
+        <div data-nuvi="reglages-plan" style={{marginBottom:18}}>
+          <label style={{
+            display:"block", fontSize:11, fontWeight:600,
+            letterSpacing:"0.1em", textTransform:"uppercase",
+            color:CoralText, marginBottom:8, fontFamily:Sans,
+          }}>{T.set_plan}</label>
+          <div style={{
+            padding:"12px 14px", borderRadius:12,
+            background:Paper, border:"0.5px solid "+Hairline,
+          }}>
+            <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:2}}>
+              {plan.status === "subscribed"
+                ? (plan.plan === "trimestre" ? T.pl_status_quarter : T.pl_status_month)
+                : plan.status === "free"
+                  ? T.pl_status_free.replace("{n}", String(Math.max(0, (plan.fits_free || 3) - (plan.fits_used || 0))))
+                  : T.pl_status_visitor}
+            </div>
+            <div style={{fontSize:11.5, color:InkMuted, marginBottom:10}}>
+              {plan.status === "subscribed" && plan.period_end
+                ? T.pl_until.replace("{date}", new Date(plan.period_end).toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR"))
+                : T.pl_includes_short}
+            </div>
+            <button
+              data-nuvi="reglages-plan-bouton"
+              onClick={plan.status === "subscribed" && plan.portal ? onManagePlan : onOpenPlan}
+              style={{
+                ...B({
+                  width:"100%", minHeight:44, borderRadius:RadiusPill,
+                  background: plan.status === "subscribed" ? Paper : `linear-gradient(135deg, ${Purple}, ${Magenta})`,
+                  color: plan.status === "subscribed" ? Ink : "#fff",
+                  border: plan.status === "subscribed" ? "0.5px solid "+Hairline : "none",
+                  fontSize:13, fontWeight:600, fontFamily:Sans,
+                }),
+              }}>
+              {plan.status === "subscribed" && plan.portal ? T.pl_manage : T.pl_choose}
+            </button>
+          </div>
         </div>
       )}
 

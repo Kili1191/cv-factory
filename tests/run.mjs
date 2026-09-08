@@ -58,6 +58,7 @@ const SUITES = [
   ["a busy AI is not a broken one", "./a-busy-ai-is-not-a-broken-one.mjs"],
   ["the routes have a ceiling", "./the-routes-have-a-ceiling.mjs"],
   ["the model follows the task", "./the-model-follows-the-task.mjs"],
+  ["the money arrives", "./the-money-arrives.mjs"],
   ["a breakage reaches the owner", "./a-breakage-reaches-the-owner.mjs"],
   ["the career record really reaches the screen", "./the-career-record-reaches-the-screen.mjs"],
   ["the front door does its job", "./the-front-door-does-its-job.mjs"],
