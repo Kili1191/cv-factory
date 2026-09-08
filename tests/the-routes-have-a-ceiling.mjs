@@ -14,6 +14,7 @@
 import { startServer, stopServer, BASE_URL } from "./lib/harness.mjs";
 
 const LIMITE_IA = 40;
+const LIMITE_JOUR = 300;
 
 async function appel(ip) {
   const headers = { "content-type": "application/json" };
@@ -43,13 +44,25 @@ export async function run() {
     const autre = await appel("203.0.113.10");
     if (autre.status === 429) failures.push("another visitor inherited the first one's count");
 
+    // The day. A script pacing itself under the minute would have spent a
+    // month of revenue in a night: past three hundred calls in a day the
+    // answer says to come back tomorrow, not in a minute.
+    const troisieme = "203.0.113.11";
+    let dernier = null;
+    for (let i = 0; i < LIMITE_JOUR + 2; i += 1) dernier = await appel(troisieme);
+    const secondes = Number(dernier && dernier.retryAfter);
+    if (dernier.status !== 429) failures.push("past " + LIMITE_JOUR + " calls in a day the route still answered");
+    else if (!(secondes > 3600)) {
+      failures.push("past the day limit the Retry-After is " + dernier.retryAfter + "s, a minute's wait instead of a day's");
+    }
+
     const local = [];
     for (let i = 0; i < LIMITE_IA + 3; i += 1) local.push((await appel(null)).status);
     if (local.includes(429)) failures.push("a local caller, the harness itself, was limited");
 
     if (!failures.length) {
-      console.log("      a visitor is stopped at " + LIMITE_IA + " AI calls a minute with a Retry-After, "
-        + "another visitor is not, and the local harness never is");
+      console.log("      a visitor is stopped at " + LIMITE_IA + " AI calls a minute and " + LIMITE_JOUR
+        + " a day with a Retry-After, another visitor is not, and the local harness never is");
     }
   } catch (err) {
     failures.push("the test crashed: " + (err && err.message ? err.message : String(err)));

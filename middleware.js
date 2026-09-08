@@ -19,13 +19,21 @@
 //
 // The limits are far above what a person does by hand (twenty downloads a
 // minute, forty AI calls a minute) and far below what a script does.
+//
+// A second window, a day long, sits on the AI route. Forty calls a minute
+// is 57,600 a day: a script pacing itself under the minute limit could
+// spend a month of revenue in a night. Three hundred calls a day is three
+// times what the heaviest hand does (a hundred applications a month is
+// about fifteen calls a day), and a script gets nothing past it until
+// tomorrow. Same memory, same caveat: a floor, not the ceiling.
 
 import { NextResponse } from "next/server";
 
 const FENETRE_MS = 60_000;
+const JOUR_MS = 24 * 60 * 60 * 1000;
 const LIMITES = [
   { motif: /^\/api\/pdf/, parMinute: 20 },
-  { motif: /^\/api\/claude/, parMinute: 40 },
+  { motif: /^\/api\/claude/, parMinute: 40, parJour: 300 },
   { motif: /^\/api\/(entreprise|jobs)/, parMinute: 30 },
   // A page in an error loop reports once every ten seconds by itself; a
   // script that hammers the report route gets nothing past this.
@@ -50,8 +58,28 @@ function adresse(req) {
 function elaguer(maintenant) {
   if (COMPTEURS.size < MAX_ENTREES) return;
   for (const [cle, c] of COMPTEURS) {
-    if (maintenant - c.debut > FENETRE_MS) COMPTEURS.delete(cle);
+    if (maintenant - c.debut > (c.fenetre || FENETRE_MS)) COMPTEURS.delete(cle);
   }
+}
+
+// One counter per address, rule and window. Past the limit, the answer
+// says when the window reopens, so the client's existing wait applies.
+function compter(cle, maintenant, fenetre, limite) {
+  let c = COMPTEURS.get(cle);
+  if (!c || maintenant - c.debut > fenetre) {
+    c = { debut: maintenant, n: 0, fenetre };
+    COMPTEURS.set(cle, c);
+  }
+  c.n += 1;
+  if (c.n <= limite) return null;
+  return Math.max(1, Math.ceil((c.debut + fenetre - maintenant) / 1000));
+}
+
+function refuser(attente) {
+  return new NextResponse(JSON.stringify({ error: "too many requests" }), {
+    status: 429,
+    headers: { "Content-Type": "application/json", "Retry-After": String(attente) },
+  });
 }
 
 export function middleware(req) {
@@ -64,19 +92,16 @@ export function middleware(req) {
   const maintenant = Date.now();
   elaguer(maintenant);
   const cle = ip + " " + regle.motif.source;
-  let c = COMPTEURS.get(cle);
-  if (!c || maintenant - c.debut > FENETRE_MS) {
-    c = { debut: maintenant, n: 0 };
-    COMPTEURS.set(cle, c);
+  // The day is counted first, so a call refused by the minute still counts
+  // against the day: a script that retries every second is exactly the
+  // caller the day limit is for.
+  if (regle.parJour) {
+    const attente = compter(cle + " jour", maintenant, JOUR_MS, regle.parJour);
+    if (attente) return refuser(attente);
   }
-  c.n += 1;
-  if (c.n <= regle.parMinute) return NextResponse.next();
-
-  const attente = Math.max(1, Math.ceil((c.debut + FENETRE_MS - maintenant) / 1000));
-  return new NextResponse(JSON.stringify({ error: "too many requests" }), {
-    status: 429,
-    headers: { "Content-Type": "application/json", "Retry-After": String(attente) },
-  });
+  const attente = compter(cle, maintenant, FENETRE_MS, regle.parMinute);
+  if (attente) return refuser(attente);
+  return NextResponse.next();
 }
 
 export const config = { matcher: ["/api/:path*"] };

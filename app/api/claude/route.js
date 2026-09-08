@@ -1,3 +1,5 @@
+import { modelePour, coutEnDollars } from "../../../lib/modeles.js";
+
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 
 // Modele courant. Claude Opus 5 est la generation actuelle : contexte d'un
@@ -16,7 +18,9 @@ const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 //    "medium" pour tenir dans ce budget sans sacrifier la qualite. Monter a
 //    "high" ameliore les reponses difficiles mais rapproche du plafond :
 //    a ne faire qu'en augmentant maxDuration en meme temps.
-const MODEL_DEFAULT = "claude-opus-5";
+// Since 8 September 2026 the model is chosen per task in lib/modeles.js:
+// Sonnet 5 writes the first pass, Opus 5 the measured second pass and the
+// readings of a person's own history. The constraints above hold for both.
 const EFFORT_DEFAULT = "medium";
 
 const NO_DASH_BLOCK = `IMPORTANT FORMATTING RULE
@@ -127,6 +131,7 @@ export async function POST(request) {
     }
 
     const system = buildSystemBlocks(cvContext);
+    const model = modelePour(taskName);
 
     // The function dies at maxDuration whatever this call does; without a
     // signal the upstream request outlives it and keeps generating tokens
@@ -140,7 +145,7 @@ export async function POST(request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: MODEL_DEFAULT,
+        model,
         max_tokens,
         // LA SORTIE STRUCTUREE REMPLACE UNE PILE ENTIERE
         //
@@ -202,11 +207,22 @@ export async function POST(request) {
     const cacheCreationTokens = usage.cache_creation_input_tokens || 0;
     const inputTokens = usage.input_tokens || 0;
     const outputTokens = usage.output_tokens || 0;
+    const usd = coutEnDollars(model, usage);
+
+    // One line per call in the function logs, which Vercel keeps: the
+    // spend by task is what the price was set against, and it has to be
+    // readable without a spreadsheet.
+    console.log("[usage] task=" + taskName + " model=" + model
+      + " in=" + inputTokens + " cached=" + cacheReadTokens + " written=" + cacheCreationTokens
+      + " out=" + outputTokens + " usd=" + (usd == null ? "?" : usd.toFixed(4))
+      + " ms=" + elapsed);
 
     const response = {
       ...data,
       _cvf_meta: {
         task_name: taskName,
+        model,
+        usd,
         elapsed_ms: elapsed,
         cache_read_tokens: cacheReadTokens,
         cache_creation_tokens: cacheCreationTokens,

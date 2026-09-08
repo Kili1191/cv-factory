@@ -97,8 +97,20 @@ ordre d'arbre, sauf les enveloppes entre une décoration absolue et son
 ancrage, et enferme les nœuds texte nus dans une portée positionnée. Tika ne
 tourne qu'avec `TIKA_JAR` : sans lui, ce défaut restait invisible en local.
 
+Le modèle suit la tâche, et le coût suit le modèle. Depuis le 8 septembre
+2026, `lib/modeles.js` choisit : Sonnet 5 écrit le premier passage, Opus 5
+le second passage mesuré (`-reprise`) et les lectures du parcours de la
+personne (`import-cv`, `read_cv_image`, `linkedin`). Tout allait à Opus, et
+une candidature complète coûtait 0,39 $ : à 19 € par mois, le plan perdait
+de l'argent dès 48 candidatures. Avec la règle, 0,18 $, et cent
+candidatures tiennent dans le plan. La route écrit une ligne `[usage]` par
+appel, avec le modèle et le coût, que Vercel garde : c'est contre cette
+ligne que le prix se vérifie. `tests/the-model-follows-the-task.mjs`.
+
 Les routes ont un plafond. `middleware.js` compte les appels par adresse sur
-une minute (20 sur `/api/pdf`, 40 sur `/api/claude`, 30 sur les registres) et
+une minute (20 sur `/api/pdf`, 40 sur `/api/claude`, 30 sur les registres)
+et sur un jour (300 sur `/api/claude` : un script qui se tient sous la
+minute aurait dépensé un mois de revenu en une nuit) et
 répond 429 avec `Retry-After`, que le client sait déjà attendre. La mémoire de
 l'instance sert de compteur : assez pour arrêter une boucle, pas un plafond
 global ; un magasin partagé viendra quand il en faudra un. Un appelant sans
