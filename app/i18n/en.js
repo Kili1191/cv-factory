@@ -246,6 +246,11 @@ const EN_T = {
   ui_del:"delete",
   hd_annonce:"New ad", hd_annonce_court:"New ad", mt_dl:"Download this CV", colle_annonce:"Ad pasted. One click and your CV fits it.",
   mt_gen_pack:"Generate the full application",
+  // The result panel: read on every single application, so it speaks the
+  // interface's language. These three were hard-coded in French.
+  mt_req_key:"What the job asks for",
+  mt_kw_in:"Already in your CV",
+  mt_kw_add:"Added for this ad",
   mt_read_local:"Read from the ad, with no AI call",
   mt_reach_adds:"What Nuvi adds from your record",
   ob_img_reading:"Reading the photo...",

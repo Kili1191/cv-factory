@@ -106,11 +106,58 @@ export async function run() {
       }
     }
 
+    // LE RESULTAT DU MATCH, L'ECRAN LU A CHAQUE CANDIDATURE
+    //
+    // Le parcours ci-dessus ouvre le panneau Match VIDE, et c'est tout ce
+    // qu'il a jamais mesure. Trois libelles du RESULTAT etaient ecrits en
+    // dur en francais ("Requirements cles", "Presents", "Ajoutes") : ils ne
+    // s'affichent qu'une fois l'adaptation faite, donc aucune suite ne les
+    // voyait, et ils sont partis en production sur l'ecran que quelqu'un
+    // qui postule cent fois regarde cent fois. On produit donc un resultat,
+    // avec un modele double, et on lit ce qu'il affiche.
+    const resultat = { match_score: 78, job_title: "Beverage Manager", company: "A venue",
+      key_requirements: ["WSET Level 2"], keywords_matched: ["stock control"],
+      keywords_to_add: ["gross profit"], hidden_signals: [], culture_decode: "",
+      seniority_decode: "", likely_interview_questions: [], cover_letter_hook: "",
+      cv_optimized: { ...SAMPLE_CV, title: "Beverage Manager" } };
+    await page.route("**/api/claude", (route) => route.fulfill({
+      status: 200, contentType: "application/json",
+      body: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(resultat) }] }) }));
+    await page.evaluate(() => window.__nuviOpenModal("open-match"));
+    await page.waitForTimeout(900);
+    const champ = page.locator('textarea[data-nuvi="match-annonce"]').first();
+    if (!(await champ.count())) {
+      failures.push("le panneau Match n'offre pas son champ d'annonce");
+    } else {
+      await champ.fill("Beverage Manager wanted in central London. You will own the drinks "
+        + "programme for a 200 cover venue, manage fifteen staff, and control gross profit "
+        + "and stock. WSET Level 2 essential.");
+      await page.waitForTimeout(400);
+      await page.locator('[data-nuvi="match-choix"][data-nuvi-choix="actuel"]').first().click({ timeout: 8000 });
+      await page.waitForTimeout(2500);
+      // Ces intitules sont mis en capitales par le CSS : innerText rend la
+      // forme affichee, pas la chaine du code. On compare donc sans casse,
+      // sinon le test echoue sur un libelle parfaitement juste.
+      const vu = (await page.evaluate(() => document.body.innerText)).toLowerCase();
+      for (const mot of ["requirements cles", "ajoutes", "presents"]) {
+        if (vu.includes(mot)) {
+          failures.push("le resultat du match affiche \"" + mot + "\" dans une interface "
+            + "anglaise : ce libelle ne passe pas par les traductions");
+        }
+      }
+      for (const mot of ["what the job asks for", "already in your cv", "added for this ad"]) {
+        if (!vu.includes(mot)) {
+          failures.push("le resultat du match n'affiche pas \"" + mot + "\" : le libelle "
+            + "traduit n'est pas arrive a l'ecran");
+        }
+      }
+    }
+
     if (!failures.length) {
       console.log(
         "      " + PARCOURS.length + " fonctionnalites ouvertes l'une apres "
         + "l'autre : jamais plus d'un panneau a l'ecran, et aucun mot de "
-        + "francais dans l'interface anglaise"
+        + "francais dans l'interface anglaise, resultat du match compris"
       );
     }
     await ctx.close();

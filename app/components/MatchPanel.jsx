@@ -274,7 +274,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             border:"0.5px solid "+Purple,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase"}}>
-              Requirements cles
+              {T.mt_req_key}
             </div>
             {(res.key_requirements||[]).map((r,i) => (
               <div key={i} style={{fontSize:12, color:Ink, marginBottom:3}}>
@@ -289,7 +289,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           {(res.keywords_matched||[]).length > 0 && (
             <div style={{background:GreenSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
               <div style={{fontSize:9, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-                Presents
+                {T.mt_kw_in}
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
                 {(res.keywords_matched||[]).map((k,i) => (
@@ -304,7 +304,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           {(res.keywords_to_add||[]).length > 0 && (
             <div style={{background:CoralSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
               <div style={{fontSize:9, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-                Ajoutes
+                {T.mt_kw_add}
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
                 {(res.keywords_to_add||[]).map((k,i) => (
