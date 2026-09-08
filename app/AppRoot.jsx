@@ -5518,9 +5518,18 @@ export default function App() {
   // CV written for the ad, pack. Status "prepared", not "applied": the
   // person marks it sent once they have sent it, and the follow-up nudge
   // only counts what was sent. The same ad, seen twice, is one row.
-  const suivreLaCandidature = useCallback((offer, matchRes) => {
+  // THE APPLICATION KEEPS THE CV THAT WAS SENT
+  //
+  // A hundred applications, a hundred fitted CVs, and a recruiter who calls
+  // three weeks later about "the CV you sent us": the row that knows the
+  // ad must know the file too. `cvEnvoye` is the CV as it left, kept whole
+  // on the row; the tracker reopens it in the editor, with undo. A second
+  // fit for the same ad replaces it: the last one sent is the one that
+  // counts.
+  const suivreLaCandidature = useCallback((offer, matchRes, cvEnvoye) => {
     const texte = String(offer || "").trim();
     if (!texte) return null;
+    const garde = cvEnvoye && typeof cvEnvoye === "object" ? cvEnvoye : null;
     const company = String((matchRes && matchRes.company) || "").trim();
     const role = String((matchRes && matchRes.job_title) || "").trim();
     const empreinte = texte.slice(0, 240).toLowerCase().replace(/\s+/g, " ");
@@ -5529,8 +5538,9 @@ export default function App() {
           && String(a.role || "").toLowerCase() === role.toLowerCase()));
     const deja = applications.find(memeAnnonce);
     if (deja) {
-      if ((!deja.company && company) || (!deja.role && role)) {
-        updateApplication({ ...deja, company: deja.company || company, role: deja.role || role, offer: deja.offer || texte });
+      if ((!deja.company && company) || (!deja.role && role) || garde) {
+        updateApplication({ ...deja, company: deja.company || company, role: deja.role || role,
+          offer: deja.offer || texte, cv: garde || deja.cv || null });
       }
       return deja;
     }
@@ -5542,6 +5552,7 @@ export default function App() {
       notes: T.ap_tracked_note || "",
       link: "",
       offer: texte,
+      cv: garde,
       created: Date.now(),
     };
     addApplication(app);
@@ -6156,10 +6167,15 @@ export default function App() {
       // fields the model filled, the ones a recruiter checks by phone.
       setDeduitsAValider(deduits);
       notify(locale === "en" ? "Your CV is ready" : "Ton CV est pret");
+      // Handed back so the caller can keep it with the application: the
+      // state above is not readable in the same tick.
+      setObImp(false);
+      return propre;
     } catch (err) {
       notify(T.ea + (err && err.message ? ": " + err.message : ""));
     }
     setObImp(false);
+    return null;
   }, [apiKey, locale, notify, T, pushH, setCVFn, cv]);
 
   const runFromOffer = useCallback(
@@ -8256,7 +8272,7 @@ export default function App() {
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
-          onApplied={(annonce, resultat)=>{ suivreLaCandidature(annonce, resultat || offerResult); setOfferResult(null); setShowOffer(false); }}
+          onApplied={(annonce, resultat, cvEnvoye)=>{ suivreLaCandidature(annonce, resultat || offerResult, cvEnvoye); setOfferResult(null); setShowOffer(false); }}
           onPackRequest={requestPack}
           onCreateFromOffer={(offre) => runFromOffer(offre, "")}
           onUndo={undo}
@@ -8570,6 +8586,18 @@ export default function App() {
             // CV sont deux outils qui ne se parlent pas.
             const offer = (app && app.offer) || "";
             if (key === "offer") return; // le formulaire s'en charge
+            if (key === "reopen") {
+              // The CV as it left for this company, back in the editor,
+              // with the one on screen a step behind for undo.
+              if (!app || !app.cv) return;
+              pushH();
+              setCVFn(() => normCV(app.cv, EMPTY));
+              setShowApplications(false);
+              logActivity(ACT.VERSION_RESTORED, (locale === "en" ? "Reopened the CV sent to " : "CV envoye rouvert : ")
+                + ([app.company, app.role].filter(Boolean).join(" - ") || "?"));
+              notify(T.ap_cv_reopened);
+              return;
+            }
             setShowApplications(false);
             setTimeout(() => {
               if (key === "prepare") {

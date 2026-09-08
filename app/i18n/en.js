@@ -677,6 +677,8 @@ const EN_T = {
   pk_copy:"Copy",
   ap_tracked_from_cv:"Saved in your applications: ",
   ap_tracked_note:"CV adapted with Nuvi. Mark it as applied once you have sent it.",
+  ap_do_reopen:"Reopen the CV I sent",
+  ap_cv_reopened:"The CV you sent is back on screen. Download it or fit it again.",
   pk_copy_answer:"Copy this answer",
   // === Nuvi Coach conversational ===
   co_fab_aria:"Open Nuvi coach",

@@ -162,11 +162,11 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
     setPh("loading");
     try {
       const annonce = offer;
-      await onCreateFromOffer(offer);
+      const ecrit = await onCreateFromOffer(offer);
       setOffer("");
       setRes(null);
       setPh("input");
-      if (onApplied) onApplied(annonce, null);
+      if (onApplied) onApplied(annonce, null, ecrit || null);
     } catch {
       notify(T.ea);
       setPh("input");
@@ -180,9 +180,13 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
     // Rouvert depuis un resultat garde en memoire, ou remis en arriere par
     // "Remettre le precedent" : le CV a l'ecran n'est pas l'adapte, on le
     // pose maintenant, avec l'instantane qui permet d'y revenir.
+    // When already applied, the CV on screen IS the fitted one; otherwise
+    // it is built here, and the same object goes to the editor and to the
+    // application row, so the row keeps exactly what the person sees.
+    const envoye = applique ? cv : normCV(res.cv_optimized, cv);
     if (!applique) {
       if (typeof pushH === "function") pushH();
-      setCVFn(() => normCV(res.cv_optimized, cv));
+      setCVFn(() => envoye);
     }
     notify(T.mt_applied);
     const annonce = offer, resultat = res;
@@ -190,9 +194,9 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
     setRes(null);
     setOffer("");
     setApplique(false);
-    // The ad and the result travel with the gesture, so the root can keep a
-    // trace of the application without asking for the ad a second time.
-    if (onApplied) onApplied(annonce, resultat);
+    // The ad, the result and the CV travel with the gesture, so the root
+    // can keep the application whole without asking for anything twice.
+    if (onApplied) onApplied(annonce, resultat, envoye);
   };
 
   const remettre = () => {
@@ -414,7 +418,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
         {applique && typeof onDownload === "function" ? (
           <button data-nuvi="match-dl" onClick={() => {
             const annonce = offer, resultat = res;
-            if (onApplied) onApplied(annonce, resultat);
+            if (onApplied) onApplied(annonce, resultat, cv);
             onDownload();
           }} style={{
             ...B({

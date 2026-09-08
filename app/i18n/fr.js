@@ -676,6 +676,8 @@ const FR_T = {
   pk_copy:"Copier",
   ap_tracked_from_cv:"Gardee dans tes candidatures : ",
   ap_tracked_note:"CV adapte avec Nuvi. Passe-la en envoyee une fois postulee.",
+  ap_do_reopen:"Rouvrir le CV envoye",
+  ap_cv_reopened:"Le CV envoye est de retour a l'ecran. Telecharge-le ou readapte-le.",
   pk_copy_answer:"Copier cette reponse",
   // === Coach Nuvi conversationnel ===
   co_fab_aria:"Ouvrir le coach Nuvi",

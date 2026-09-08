@@ -38,6 +38,7 @@ const SUITES = [
   ["the diagnosis reaches the screen", "./the-diagnosis-reaches-the-screen.mjs"],
   ["a posting alone is enough", "./a-posting-alone-is-enough.mjs"],
   ["one click from the ad", "./one-click-from-the-ad.mjs"],
+  ["the application keeps the CV it sent", "./the-application-keeps-the-cv-it-sent.mjs"],
   ["every paste field takes a file", "./every-paste-field-takes-a-file.mjs"],
   ["every panel can be closed", "./every-panel-can-be-closed.mjs"],
   ["no page is an orphan", "./no-page-is-an-orphan.mjs"],
