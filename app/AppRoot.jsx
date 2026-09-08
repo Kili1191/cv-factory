@@ -4888,6 +4888,20 @@ export default function App() {
           compress: true,
         });
 
+        // THE PROPERTIES BELONG TO THE CANDIDATE, NOT TO THE TOOL
+        //
+        // A PDF carries a Title and an Author that every reader shows under
+        // File > Properties, and that a part of the ATS read. Left alone,
+        // this one went out with an empty title, which is its own tell. It
+        // now says what a document written by hand says: the person, and
+        // the role they are applying for.
+        try {
+          const nom = String((cv && cv.name) || "").trim();
+          const poste = String((cv && cv.title) || "").trim();
+          const titre = [nom, poste].filter(Boolean).join(" - ");
+          if (titre) pdf.setProperties({ title: titre, author: nom, subject: poste, creator: nom });
+        } catch { /* an old jsPDF without setProperties: the file is still fine */ }
+
         const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
         // A pleine largeur, la hauteur que prendrait le CV sur le papier.

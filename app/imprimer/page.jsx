@@ -179,6 +179,26 @@ function peindreDansLOrdreDeLecture(el) {
 export default function Imprimer() {
   const [d, setD] = useState(null);
   const [pret, setPret] = useState(false);
+  // THE DOCUMENT IS THE CANDIDATE'S, AND ITS PROPERTIES SAY SO
+  //
+  // Chromium copies document.title into the PDF's /Title. This page had no
+  // title of its own, so it inherited the site's, and every CV printed here
+  // left with "Nuvi - the CV that gets past the ATS" in File > Properties:
+  // the tool's name and its slogan, on the candidate's document, readable
+  // by any recruiter and by the ATS that index PDF metadata. A competitor
+  // went viral in September 2026 for exactly this class of leak, a trace of
+  // the tool visible to the person hiring.
+  //
+  // The title is what a document written by hand would carry: the name, and
+  // the role when there is one. Nothing about how it was made.
+  useEffect(() => {
+    if (!d || !d.cv) return;
+    const nom = String(d.cv.name || "").trim();
+    const poste = String(d.cv.title || "").trim();
+    const titre = [nom, poste].filter(Boolean).join(" - ");
+    if (titre) document.title = titre;
+  }, [d]);
+
   useEffect(() => {
     if (!d) return;
     const el = document.getElementById("cv-print");

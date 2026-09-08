@@ -20,11 +20,25 @@ import { POLICES_DU_SITE, UA_POLICES_STATIQUES } from "../../../lib/policesDuSit
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
+// CHROMIUM WRITES ITS USER AGENT INTO THE PDF'S CREATOR FIELD
+//
+// Headless Chromium calls itself "HeadlessChrome", and that string went
+// into every printed CV, where any reader shows it under File > Properties
+// and a part of the ATS index it. It is the one line in the file that no
+// document printed by a person ever carries.
+//
+// The override has to be here, on the command line: page.setUserAgent()
+// goes through the network layer and the print pipeline never sees it, so
+// the field kept its headless value. This says the same browser and the
+// same version, without announcing the machine that ran it.
+const AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+  + "(KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36";
+
 async function lancerChromium() {
   if (process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME) {
     const chromium = (await import("@sparticuz/chromium")).default;
     return puppeteer.launch({
-      args: chromium.args,
+      args: [...chromium.args, "--user-agent=" + AGENT],
       executablePath: await chromium.executablePath(),
       headless: true,
     });
@@ -33,7 +47,8 @@ async function lancerChromium() {
   if (!local) return null;
   return puppeteer.launch({
     executablePath: local,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"],
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage",
+      "--user-agent=" + AGENT],
     headless: true,
   });
 }
