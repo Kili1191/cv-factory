@@ -61,3 +61,44 @@ const esc = (s) => String(s || "").replace(/[<>&]/g, c => ({ "<": "&lt;", ">": "
     window.close();
   });
 })();
+
+// REMPLIR LE FORMULAIRE OUVERT
+//
+// The script is injected only here, on the tab the person is looking at,
+// only when they press this button: the extension asks for no standing
+// permission on the job boards. It fills and stops, and the note under the
+// button says so, because a person is about to send this to an employer.
+const fill = document.getElementById("fill");
+const fillout = document.getElementById("fillout");
+const NOMS = {
+  prenom: "prenom", nom: "nom", nomComplet: "nom", email: "e-mail",
+  telephone: "telephone", ville: "ville", lieu: "lieu", linkedin: "LinkedIn", site: "site",
+};
+if (fill) {
+  fill.addEventListener("click", async () => {
+    fill.disabled = true;
+    fillout.textContent = "Lecture du formulaire...";
+    try {
+      const [onglet] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const [res] = await chrome.scripting.executeScript({
+        target: { tabId: onglet.id },
+        files: ["remplir.js"],
+      });
+      const r = (res && res.result) || {};
+      if (r.erreur === "aucun profil") {
+        fillout.textContent = "Ouvre Nuvi une fois pour que ton CV soit connu.";
+      } else if (r.erreur) {
+        fillout.textContent = "Cette page n'a pas laisse faire.";
+      } else if (!r.remplis || !r.remplis.length) {
+        fillout.textContent = "Aucun champ reconnu ici. A remplir a la main.";
+      } else {
+        const vus = [...new Set(r.remplis.map((c) => NOMS[c] || c))];
+        fillout.textContent = r.remplis.length + " champs remplis : " + vus.join(", ")
+          + ". Relis, puis envoie toi-meme.";
+      }
+    } catch {
+      fillout.textContent = "Cette page n'a pas laisse faire.";
+    }
+    fill.disabled = false;
+  });
+}

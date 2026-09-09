@@ -135,6 +135,25 @@ vers 127.0.0.1 est la facon classique de passer un controle fait une seule
 fois. La page etant un attrape-tout, une adresse qui n'en est pas une rend
 le 404 d'avant. `tests/a-link-is-a-door.mjs`.
 
+L'extension remplit le formulaire, et ne l'envoie jamais. Postuler cent
+fois, ce ne sont pas cent decisions, ce sont les memes vingt cases tapees
+cent fois : prenom, nom, e-mail, telephone, ville, LinkedIn. C'est
+exactement ce que font les outils qui promettent « cinquante candidatures
+d'un coup », dans le navigateur de la personne, et c'est pour ca que les
+sites d'emploi ne peuvent pas les bloquer : le navigateur, c'est elle.
+`extension/champs.js` porte la regle (`champPour` reconnait la case,
+`remplirLeDocument` ecrit en passant par le setter du prototype, sinon
+React ne voit rien), `remplir.js` n'est injecte que sur l'onglet ouvert et
+seulement au clic, et `bridge.js` porte le profil depuis thenuvi.com vers
+le stockage de l'extension, parce qu'un script sur un site d'emploi ne peut
+pas lire celui de Nuvi. Deux regles tiennent l'ensemble : on remplit, la
+personne envoie ; et on n'ecrit que ce qu'elle a deja dit, dans une case
+dont le sens ne fait aucun doute. Mot de passe, numero d'assurance
+nationale, date de naissance, salaire, preavis, droit de travailler,
+diversite, lettre de motivation : jamais.
+`tests/the-extension-fills-the-form.mjs` tient les deux sens, et verifie
+que le formulaire n'est pas parti.
+
 L'argent arrive par `app/api/billing`. Le plan est fixé dans `lib/plans.js`
 (24 € par mois, 49 € pour trois mois, trois adaptations gratuites avec un
 compte) ; `lib/facturation.js` parle à Stripe et à Supabase avec la clé

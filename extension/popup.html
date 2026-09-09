@@ -26,9 +26,17 @@
     font: 600 14px inherit; cursor: pointer;
   }
   button[disabled] { opacity: .5; cursor: default; }
+  button.second {
+    background: none; color: inherit; border: 1px solid #e8e3d6;
+    margin-top: 8px; font-weight: 600;
+  }
+  @media (prefers-color-scheme: dark) { button.second { border-color: #33333c; } }
+  .tiny { font-size: 11.5px; margin: 8px 0 0; text-align: center; }
 </style>
 <h1>Nuvi</h1>
 <p class="muted" id="sub">Lecture de l'annonce...</p>
 <div id="out"></div>
 <button id="go" disabled>Envoyer vers Nuvi</button>
+<button id="fill" class="second">Remplir ce formulaire</button>
+<p class="muted tiny" id="fillout">Nuvi remplit, c'est toi qui envoies.</p>
 <script src="popup.js" type="module"></script>

@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Nuvi - capture une offre",
-  "version": "1.0.1",
-  "description": "Envoie une annonce vers Nuvi en un clic : elle devient une candidature suivie et ton CV s'adapte.",
+  "version": "1.1.0",
+  "description": "Envoie une annonce vers Nuvi en un clic, et remplis le formulaire de candidature avec ce que ton CV sait deja. Nuvi remplit, tu envoies.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -13,7 +13,7 @@
   ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "Capturer cette offre",
+    "default_title": "Nuvi",
     "default_icon": {
       "16": "icon16.png",
       "48": "icon48.png",
@@ -35,5 +35,15 @@
     "16": "icon16.png",
     "48": "icon48.png",
     "128": "icon128.png"
-  }
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "champs.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
 }
