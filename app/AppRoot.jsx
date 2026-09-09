@@ -283,7 +283,7 @@ const QUI_DECIDE =
   + "transforme pas la demande en une version plus sage, et n'explique pas ce "
   + "que tu aurais fait a sa place. Tu executes, et tu passes a la suite.";
 
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk", REP:"cvf_rep" };
 
 
 // === FR_T et EN_T ont ete extraits dans ./i18n/{fr,en}.js ===
@@ -3391,6 +3391,9 @@ export default function App() {
   const [showPlan, setShowPlan] = useState(false);
   const [plan, setPlan] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
+  // The answers every application form asks for, given once. The browser
+  // extension reads them from storage and repeats them into the form.
+  const [reponses, setReponses] = useState({});
   // Vrai uniquement au retour de l'autorisation Google, pour lancer le
   // balayage de la boite mail sans redemander un clic.
   // --- AJUSTEMENT DU CV A L'ECRAN (bureau) ---------------------------------
@@ -3549,6 +3552,8 @@ export default function App() {
     }
     const savedVs = lsG(SK.VS, []);
     if (Array.isArray(savedVs) && savedVs.length) setVersions(savedVs);
+    const savedRep = lsG(SK.REP, null);
+    if (savedRep && typeof savedRep === "object") setReponses(savedRep);
     const savedCt = lsG(SK.CT, null);
     if (savedCt && typeof savedCt === "object") setCvCustom_(savedCt);
     // Load coach conversation history (cap a 50 derniers messages)
@@ -8757,6 +8762,8 @@ export default function App() {
           onReplayIntro={() => { setShowSettings(false); replayIntro(); }}
           onOpenHistory={() => { setShowSettings(false); setShowActivity(true); }}
           onClearAiCache={() => { clearAllAiCache(); notify(T.set_cache_done); }}
+          reponses={reponses}
+          onReponses={(r) => { setReponses(r); lsS(SK.REP, r); queuePush(SK.REP, r); }}
           cloudEnabled={isCloudConfigured()}
           cloudUser={cloud.user}
           plan={plan}

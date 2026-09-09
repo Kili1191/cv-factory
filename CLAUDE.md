@@ -151,6 +151,16 @@ personne envoie ; et on n'ecrit que ce qu'elle a deja dit, dans une case
 dont le sens ne fait aucun doute. Mot de passe, numero d'assurance
 nationale, date de naissance, salaire, preavis, droit de travailler,
 diversite, lettre de motivation : jamais.
+Les questions que chaque formulaire repose (droit de travailler, visa
+parraine, preavis, salaire, mobilite, permis) sont celles qui coutent les
+vingt minutes, parce qu'elles reviennent a chaque candidature et que la
+reponse ne change pas. Nuvi ne les devine pas : la personne repond une
+fois dans Reglages (`cvf_rep`, synchronise), et l'extension repete ses
+mots. Une question sans reponse reste vide. Ces questions arrivent le plus
+souvent en liste deroulante ou en paire de boutons, donc `optionPour`
+reconnait le oui et le non tels que la page les ecrit, et le parrainage se
+teste avant le droit de travailler : « will you require sponsorship »
+contient les deux, et se tromper inverse le sens.
 `tests/the-extension-fills-the-form.mjs` tient les deux sens, et verifie
 que le formulaire n'est pas parti.
 

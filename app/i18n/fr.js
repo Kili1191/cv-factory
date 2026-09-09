@@ -954,6 +954,18 @@ const FR_T = {
 
   // Le plan
   set_plan:"Plan",
+  // Les reponses que chaque formulaire redemande
+  rep_titre:"Les reponses que tu repetes",
+  rep_sous:"Chaque formulaire les demande, et ta reponse ne change pas. Ecris-les une fois et l'extension Nuvi les remplit pour toi. Une case vide reste vide.",
+  rep_droit:"As-tu le droit de travailler ici ?",
+  rep_sponsor:"As-tu besoin d'un visa parraine ?",
+  rep_preavis:"Preavis, ou date de disponibilite",
+  rep_preavis_ex:"1 mois",
+  rep_salaire:"Salaire souhaite",
+  rep_salaire_ex:"38 000",
+  rep_mobilite:"Pret a demenager ?",
+  rep_permis:"Permis de conduire ?",
+  rep_oui_non:"Oui ou Non",
   pl_eyebrow:"Un seul plan",
   pl_title:"Tout, pour toute la recherche",
   pl_sub:"Adaptations illimitees, lettres, relances, preparation d'entretien, PDF et Word. TVA comprise. Resiliation depuis Reglages en un clic.",

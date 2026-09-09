@@ -53,6 +53,9 @@ export default function SettingsPanel({
   // The plan, as /api/billing describes it; null while unknown or when
   // billing is not configured. Two ways out: choose a plan, or manage it.
   plan = null, onOpenPlan = () => {}, onManagePlan = () => {},
+  // The answers every application form asks for. Kept here rather than
+  // guessed, and repeated by the browser extension.
+  reponses = {}, onReponses = () => {},
   onOpenInstall = () => {},
   // The shape of the current CV (lib/incidents.js formeDuCv): sections and
   // counts, no text. Sent with a report only when the person ticks the box.
@@ -465,6 +468,46 @@ export default function SettingsPanel({
           </button>
         </div>
       )}
+
+      {/* THE ANSWERS EVERY FORM ASKS FOR, GIVEN ONCE
+          Right to work, notice period, salary. They are the boxes that eat
+          the twenty minutes, because every application asks them and the
+          answer never changes. Nuvi refuses to guess them; typed once here,
+          the extension repeats them. Empty stays empty. */}
+      <div data-nuvi="reglages-reponses" style={{marginBottom:18}}>
+        <label style={{
+          display:"block", fontSize:11, fontWeight:600,
+          letterSpacing:"0.1em", textTransform:"uppercase",
+          color:CoralText, marginBottom:4, fontFamily:Sans,
+        }}>{T.rep_titre}</label>
+        <div style={{fontSize:11.5, color:InkMuted, marginBottom:10, lineHeight:1.5}}>{T.rep_sous}</div>
+        {[
+          ["droitDeTravailler", T.rep_droit, T.rep_oui_non],
+          ["sponsor", T.rep_sponsor, T.rep_oui_non],
+          ["preavis", T.rep_preavis, T.rep_preavis_ex],
+          ["salaire", T.rep_salaire, T.rep_salaire_ex],
+          ["mobilite", T.rep_mobilite, T.rep_oui_non],
+          ["permis", T.rep_permis, T.rep_oui_non],
+        ].map(([cle, libelle, exemple]) => (
+          <div key={cle} style={{marginBottom:8}}>
+            <label htmlFor={"rep-" + cle} style={{
+              display:"block", fontSize:12, fontWeight:600, color:Ink, marginBottom:3,
+            }}>{libelle}</label>
+            <input
+              id={"rep-" + cle}
+              data-nuvi-reponse={cle}
+              value={(reponses && reponses[cle]) || ""}
+              onChange={(e) => onReponses({ ...(reponses || {}), [cle]: e.target.value })}
+              placeholder={exemple}
+              style={{
+                width:"100%", minHeight:44, boxSizing:"border-box",
+                padding:"10px 12px", borderRadius:RadiusMd,
+                border:"0.5px solid "+Hairline, background:Paper, color:Ink,
+                fontFamily:Sans, fontSize:13,
+              }}/>
+          </div>
+        ))}
+      </div>
 
       {/* Raccourcis clavier - eyebrow Coral */}
       <div style={{marginBottom:18}}>

@@ -957,6 +957,18 @@ const EN_T = {
 
   // The plan
   set_plan:"Plan",
+  // The answers every application form asks for
+  rep_titre:"Answers you repeat",
+  rep_sous:"Every form asks these, and your answer never changes. Write them once and the Nuvi extension fills them in for you. Leave one empty and it stays empty.",
+  rep_droit:"Do you have the right to work here?",
+  rep_sponsor:"Do you need visa sponsorship?",
+  rep_preavis:"Notice period, or when you can start",
+  rep_preavis_ex:"1 month",
+  rep_salaire:"Salary you are looking for",
+  rep_salaire_ex:"38,000",
+  rep_mobilite:"Willing to relocate?",
+  rep_permis:"Driving licence?",
+  rep_oui_non:"Yes or No",
   pl_eyebrow:"One plan",
   pl_title:"Everything, for the whole search",
   pl_sub:"Unlimited fits, letters, follow-ups, interview prep, PDF and Word. VAT included. Cancel from Settings in one click.",

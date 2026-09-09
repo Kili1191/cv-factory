@@ -21,8 +21,10 @@ function porterLeProfil() {
     if (!brut) return;
     const cv = JSON.parse(brut);
     if (!cv || typeof cv !== "object") return;
-    import(chrome.runtime.getURL("champs.js")).then(({ profilDepuisLeCv }) => {
-      const profil = profilDepuisLeCv(cv);
+    let reponses = null;
+    try { reponses = JSON.parse(localStorage.getItem("cvf_rep") || "null"); } catch { reponses = null; }
+    import(chrome.runtime.getURL("champs.js")).then(({ profilComplet }) => {
+      const profil = profilComplet(cv, reponses);
       if (!profil.email && !profil.nomComplet) return;
       chrome.storage.local.set({ nuvi_profil: profil });
     }).catch(() => { /* module unreachable: the filler simply has nothing */ });

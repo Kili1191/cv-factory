@@ -40,6 +40,18 @@ export function profilDepuisLeCv(cv) {
   };
 }
 
+// The CV knows a name and an email. It does not know a notice period, so
+// the answers the person gave once in Settings travel beside it.
+export function profilComplet(cv, reponses) {
+  const r = reponses && typeof reponses === "object" ? reponses : {};
+  const propre = {};
+  for (const cle of ["droitDeTravailler", "sponsor", "preavis", "salaire", "mobilite", "permis"]) {
+    const v = String(r[cle] || "").trim();
+    if (v) propre[cle] = v;
+  }
+  return { ...profilDepuisLeCv(cv), ...propre };
+}
+
 // WHAT A BOX IS CALLED, IN EVERY DIALECT
 //
 // The order matters: the longer, more specific names are tested first, so
@@ -56,12 +68,31 @@ const REGLES = [
   ["nomComplet", /(^|[^a-z])(full[\s_-]*name|your[\s_-]*name|name)([^a-z]|$)/i],
 ];
 
+// THE QUESTIONS EVERY FORM ASKS, ANSWERED ONCE
+//
+// Right to work, notice period, salary expectation, sponsorship. These are
+// the boxes that actually eat the twenty minutes, because they are asked
+// on every single application and the answer never changes. Nuvi does not
+// guess at any of them: the person answers once, in Settings, and the
+// extension repeats their words. An unanswered question stays empty.
+const REPONSES = [
+  // Sponsorship is tested before the right to work, because "will you
+  // require sponsorship to work in the UK" contains both, and answering it
+  // with the wrong one inverts the meaning.
+  ["sponsor", /(require|need|request).{0,30}(sponsor|visa)|sponsor(ship)?[\s_-]*(required|needed)/i],
+  ["droitDeTravailler", /(right[\s_-]*to[\s_-]*work|authoris(ed|ation)[\s_-]*to[\s_-]*work|legally[\s_-]*(able|entitled)[\s_-]*to[\s_-]*work|eligible[\s_-]*to[\s_-]*work|work[\s_-]*permit)/i],
+  ["preavis", /(notice[\s_-]*period|when[\s_-]*(can|could)[\s_-]*you[\s_-]*start|availability|available[\s_-]*from|start[\s_-]*date|preavis)/i],
+  ["salaire", /(salary|expected[\s_-]*(pay|salary)|salary[\s_-]*expectation|remuneration|desired[\s_-]*pay|pretentions)/i],
+  ["mobilite", /(relocat|willing[\s_-]*to[\s_-]*move|open[\s_-]*to[\s_-]*relocation)/i],
+  ["permis", /(driving[\s_-]*licen[cs]e|driver'?s[\s_-]*licen[cs]e|permis[\s_-]*de[\s_-]*conduire)/i],
+];
+
 // WHAT IS NEVER TOUCHED, WHATEVER IT IS CALLED
 //
-// A password, a national insurance number, a date of birth, anything about
-// money or a decision the person has to make themselves. Guessing at any
-// of these is how an application goes out with a wrong answer in it.
-const JAMAIS = /(password|passe|national[\s_-]*insurance|\bnino\b|social[\s_-]*security|\bssn\b|birth|naissance|salary|salaire|expected[\s_-]*pay|notice[\s_-]*period|sponsor|visa|right[\s_-]*to[\s_-]*work|disab|gender|ethnic|race|veteran|cover[\s_-]*letter|lettre|why[\s_-]*do[\s_-]*you|search|recherche|coupon|promo|referral[\s_-]*code)/i;
+// A password, a national insurance number, a date of birth, the diversity
+// questions, and anything the person has to write themselves. There is no
+// answer we could store that would make guessing at these right.
+const JAMAIS = /(password|passe|national[\s_-]*insurance|\bnino\b|social[\s_-]*security|\bssn\b|birth|naissance|disab|gender|ethnic|\brace\b|veteran|sexual|religion|criminal|conviction|cover[\s_-]*letter|lettre|why[\s_-]*do[\s_-]*you|tell[\s_-]*us[\s_-]*(about|why)|search|recherche|coupon|promo|referral[\s_-]*code)/i;
 
 const TYPES_ECRIVABLES = new Set(["text", "email", "tel", "url", "search", ""]);
 
@@ -87,10 +118,38 @@ export function champPour(descripteur) {
   if (JAMAIS.test(mots)) return null;
   if (PAR_AUTOCOMPLETE[auto]) return PAR_AUTOCOMPLETE[auto];
   if (!mots.trim()) return null;
+  // The repeated questions first: "when can you start" is a question about
+  // a date, and the rule for a name must never see it.
+  for (const [cle, motif] of REPONSES) {
+    if (motif.test(mots)) return cle;
+  }
   for (const [cle, motif] of REGLES) {
     if (motif.test(mots)) return cle;
   }
   return null;
+}
+
+// A question with two answers is a dropdown or a pair of buttons more often
+// than a box, so yes and no have to be recognised as the page spells them.
+const OUI = /^\s*(yes|oui|y|true|i (do|am|have))\b/i;
+const NON = /^\s*(no|non|n|false|i (do not|don't|am not))\b/i;
+
+export function optionPour(textes, valeur) {
+  const v = String(valeur || "").trim();
+  if (!v) return -1;
+  const cible = OUI.test(v) ? OUI : NON.test(v) ? NON : null;
+  const liste = textes.map((t) => String(t || "").trim());
+  if (cible) {
+    const i = liste.findIndex((t) => cible.test(t));
+    if (i >= 0) return i;
+    return -1;
+  }
+  // Free text, a notice period or a start date: the option that says the
+  // same thing, then the one that contains it.
+  const exact = liste.findIndex((t) => t.toLowerCase() === v.toLowerCase());
+  if (exact >= 0) return exact;
+  const contient = liste.findIndex((t) => t && v.toLowerCase().includes(t.toLowerCase()));
+  return contient;
 }
 
 // React and its kind listen for events, and setting .value by hand does
@@ -133,24 +192,67 @@ export function decrire(el, doc) {
   };
 }
 
+function marquerLe(el, cle) {
+  el.setAttribute("data-nuvi-rempli", cle);
+  try { el.style.outline = "2px solid #5b3df5"; el.style.outlineOffset = "1px"; } catch { /* styles refused */ }
+}
+
 // Fills what it recognises and leaves everything else alone. A box the
 // person already filled is never overwritten: their answer beats ours.
 export function remplirLeDocument(doc, profil, marquer = true) {
   const remplis = [];
-  const boites = doc.querySelectorAll("input, textarea");
-  for (const el of boites) {
+  const vus = new Set();
+
+  for (const el of doc.querySelectorAll("input, textarea")) {
     if (el.disabled || el.readOnly) continue;
+    const type = String(el.getAttribute("type") || "").toLowerCase();
+
+    // A pair of buttons is one question: it is read from the group's own
+    // wording, not from the label of the button, which only says "Yes".
+    if (type === "radio") {
+      const nom = el.getAttribute("name") || "";
+      if (!nom || vus.has("radio:" + nom)) continue;
+      const groupe = [...doc.querySelectorAll('input[type="radio"][name="' + CSS.escape(nom) + '"]')];
+      if (groupe.some((r) => r.checked)) { vus.add("radio:" + nom); continue; }
+      const enveloppe = el.closest("fieldset,div,li,section");
+      const question = enveloppe ? (enveloppe.querySelector("legend,label,p,span") || {}).textContent || "" : "";
+      const cle = champPour({ type: "text", name: nom, label: question });
+      const valeur = cle && profil && profil[cle];
+      if (!valeur) { vus.add("radio:" + nom); continue; }
+      const i = optionPour(groupe.map((r) => libelleDe(r, doc) || r.value), valeur);
+      if (i >= 0) {
+        groupe[i].checked = true;
+        groupe[i].dispatchEvent(new Event("change", { bubbles: true }));
+        if (marquer) marquerLe(groupe[i], cle);
+        remplis.push(cle);
+      }
+      vus.add("radio:" + nom);
+      continue;
+    }
+
     if (String(el.value || "").trim()) continue;
     const cle = champPour(decrire(el, doc));
     if (!cle) continue;
     const valeur = profil && profil[cle];
     if (!valeur) continue;
     ecrire(el, valeur);
-    if (marquer) {
-      el.setAttribute("data-nuvi-rempli", cle);
-      try { el.style.outline = "2px solid #5b3df5"; el.style.outlineOffset = "1px"; } catch { /* styles refused */ }
-    }
+    if (marquer) marquerLe(el, cle);
     remplis.push(cle);
   }
+
+  for (const el of doc.querySelectorAll("select")) {
+    if (el.disabled || el.selectedIndex > 0) continue;
+    const cle = champPour({ ...decrire(el, doc), type: "text" });
+    const valeur = cle && profil && profil[cle];
+    if (!valeur) continue;
+    const options = [...el.options];
+    const i = optionPour(options.map((o) => o.textContent), valeur);
+    if (i < 0) continue;
+    el.value = options[i].value;
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    if (marquer) marquerLe(el, cle);
+    remplis.push(cle);
+  }
+
   return remplis;
 }

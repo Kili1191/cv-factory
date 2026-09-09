@@ -14,7 +14,13 @@
 
 import { readFile } from "node:fs/promises";
 import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
-import { champPour, profilDepuisLeCv } from "../extension/champs.js";
+import { champPour, profilDepuisLeCv, profilComplet, optionPour } from "../extension/champs.js";
+
+// What the person answered once, in Settings.
+const REPONSES = {
+  droitDeTravailler: "Yes", sponsor: "No", preavis: "1 month",
+  salaire: "38,000", mobilite: "Yes",
+};
 
 const CV = {
   name: "Camille Marchetti", title: "Bar Manager",
@@ -41,16 +47,25 @@ const RECONNUS = [
   [{ label: "Your name" }, "nomComplet"],
 ];
 
+// The questions every form asks, which the person answered once.
+const REPETEES = [
+  [{ label: "Do you have the right to work in the UK?" }, "droitDeTravailler"],
+  [{ label: "Are you legally entitled to work in the United Kingdom?" }, "droitDeTravailler"],
+  [{ label: "Will you now or in the future require sponsorship?" }, "sponsor"],
+  [{ label: "Do you require visa sponsorship?" }, "sponsor"],
+  [{ label: "What is your notice period?" }, "preavis"],
+  [{ label: "When can you start?" }, "preavis"],
+  [{ label: "Salary expectation" }, "salaire"],
+  [{ label: "Are you willing to relocate?" }, "mobilite"],
+  [{ label: "Do you hold a full driving licence?" }, "permis"],
+];
+
 // The boxes that must stay empty, whatever they are called.
 const INTOUCHABLES = [
   { name: "password", type: "password", label: "Password" },
   { label: "Confirm password", type: "password" },
   { label: "National Insurance number" },
   { label: "Date of birth" },
-  { label: "Expected salary" },
-  { label: "Notice period" },
-  { label: "Do you have the right to work in the UK?" },
-  { label: "Will you require visa sponsorship?" },
   { label: "Gender" },
   { label: "Ethnic origin" },
   { label: "Do you consider yourself to have a disability?" },
@@ -79,6 +94,32 @@ export async function run() {
         + vu + " instead of " + attendu);
     }
   }
+  for (const [descripteur, attendu] of REPETEES) {
+    const vu = champPour({ type: "text", ...descripteur });
+    if (vu !== attendu) {
+      failures.push("\"" + descripteur.label + "\" was read as " + vu + " instead of " + attendu
+        + ": sponsorship and the right to work are opposite answers to the same subject");
+    }
+  }
+  for (const [textes, valeur, attendu, quoi] of [
+    [["Yes", "No"], "Yes", 0, "yes among yes and no"],
+    [["Yes", "No"], "No", 1, "no among yes and no"],
+    [["No", "Yes"], "Yes", 1, "yes when no comes first"],
+    [["Please select", "Yes", "No"], "No", 2, "no past a placeholder"],
+    [["Immediately", "1 month", "3 months"], "1 month", 1, "a notice period spelled the same"],
+    [["Immediately", "1 month"], "Available in 1 month", 1, "a notice period inside a longer answer"],
+    [["Yes", "No"], "", -1, "nothing, when the person did not answer"],
+    [["Green", "Blue"], "Yes", -1, "nothing, when no option means yes"],
+  ]) {
+    const vu = optionPour(textes, valeur);
+    if (vu !== attendu) failures.push("choosing " + quoi + " picked " + vu + " instead of " + attendu);
+  }
+  const complet = profilComplet(CV, { droitDeTravailler: "Yes", preavis: "1 month", salaire: "" });
+  if (complet.droitDeTravailler !== "Yes" || complet.preavis !== "1 month") {
+    failures.push("the answers given once did not join the profile");
+  }
+  if ("salaire" in complet) failures.push("an unanswered question travelled as an empty answer");
+
   for (const descripteur of INTOUCHABLES) {
     const vu = champPour({ type: "text", ...descripteur });
     if (vu) {
@@ -104,12 +145,21 @@ export async function run() {
       <label for="ph">Phone number</label><input id="ph" type="tel" name="phone">
       <label for="li">LinkedIn profile</label><input id="li" name="linkedin_url">
       <label for="ci">Town or city</label><input id="ci" name="city">
-      <label for="sa">Expected salary</label><input id="sa" name="salary">
       <label for="ni">National Insurance number</label><input id="ni" name="nino">
-      <label for="rw">Do you have the right to work in the UK?</label><input id="rw" name="rtw">
       <label for="pw">Password</label><input id="pw" type="password" name="password">
       <label for="cv">Upload your CV</label><input id="cv" type="file" name="resume">
       <label for="pr">Preferred name</label><input id="pr" name="preferred_name" value="Cam">
+      <label for="np">What is your notice period?</label><input id="np" name="notice">
+      <label for="sal">Salary expectation</label><input id="sal" name="salary_expectation">
+      <label for="rtw2">Do you have the right to work in the UK?</label>
+      <select id="rtw2" name="rtw2"><option value="">Please select</option><option>Yes</option><option>No</option></select>
+      <label for="sp">Will you now or in the future require sponsorship?</label>
+      <select id="sp" name="sponsorship"><option value="">Please select</option><option>Yes</option><option>No</option></select>
+      <fieldset id="relo"><legend>Are you willing to relocate?</legend>
+        <label for="r1">Yes</label><input type="radio" id="r1" name="relocate" value="y">
+        <label for="r2">No</label><input type="radio" id="r2" name="relocate" value="n"></fieldset>
+      <label for="eth">Ethnic origin</label>
+      <select id="eth" name="ethnicity"><option value="">Please select</option><option>Prefer not to say</option></select>
       <button type="submit" id="envoyer">Submit application</button>
     </form><div id="envoye">no</div>
     <script>document.getElementById("f").addEventListener("submit", function (e) {
@@ -123,33 +173,41 @@ export async function run() {
       return {
         remplis,
         fn: v("fn"), ln: v("ln"), em: v("em"), ph: v("ph"), li: v("li"), ci: v("ci"),
-        sa: v("sa"), ni: v("ni"), rw: v("rw"), pw: v("pw"), pr: v("pr"),
+        ni: v("ni"), pw: v("pw"), pr: v("pr"),
+        np: v("np"), sal: v("sal"), rtw2: v("rtw2"), sp: v("sp"), eth: v("eth"),
+        relocateOui: document.getElementById("r1").checked,
+        relocateNon: document.getElementById("r2").checked,
         envoye: document.getElementById("envoye").textContent,
         marques: document.querySelectorAll("[data-nuvi-rempli]").length,
       };
-    }, { src: module, profil });
+    }, { src: module, profil: profilComplet(CV, REPONSES) });
 
     const attendus = {
       fn: "Camille", ln: "Marchetti", em: CV.email, ph: CV.phone,
       li: CV.linkedin, ci: "London",
+      np: "1 month", sal: "38,000", rtw2: "Yes", sp: "No",
     };
     for (const [id, valeur] of Object.entries(attendus)) {
       if (resultat[id] !== valeur) {
         failures.push("the box " + id + " holds \"" + resultat[id] + "\" instead of \"" + valeur + "\"");
       }
     }
-    for (const id of ["sa", "ni", "rw", "pw"]) {
+    if (!resultat.relocateOui || resultat.relocateNon) {
+      failures.push("the yes and no pair for relocating was not answered as the person said");
+    }
+    if (resultat.eth) failures.push("a diversity question was answered by the machine: \"" + resultat.eth + "\"");
+    for (const id of ["ni", "pw"]) {
       if (resultat[id]) failures.push("the box " + id + " was filled, and it never should be: \"" + resultat[id] + "\"");
     }
     if (resultat.pr !== "Cam") failures.push("a box the person had already filled was overwritten");
     if (resultat.envoye !== "no") failures.push("THE FORM WAS SUBMITTED. Nuvi fills, the person sends.");
-    if (resultat.marques !== 6) failures.push(resultat.marques + " boxes are marked as filled instead of 6: the person cannot see what was touched");
+    if (resultat.marques !== 11) failures.push(resultat.marques + " boxes are marked as filled instead of 11: the person cannot see what was touched");
     await ctx.close();
 
     if (!failures.length) {
-      console.log("      " + RECONNUS.length + " shapes of a box land in the right field, "
-        + INTOUCHABLES.length + " are never touched, an answer already there survives, "
-        + "and the form is not sent");
+      console.log("      " + (RECONNUS.length + REPETEES.length) + " shapes of a box land in the right "
+        + "field, including dropdowns and yes-no pairs, " + INTOUCHABLES.length + " are never touched, "
+        + "an answer already there survives, and the form is not sent");
     }
   } catch (err) {
     failures.push("the test itself crashed: " + (err && err.message));
