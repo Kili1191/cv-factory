@@ -18,7 +18,25 @@
 
 import { useEffect, useState } from "react";
 import { adresseDepuisLeChemin } from "../../lib/annonceEnLigne.js";
+import { signaler } from "../../lib/incidents.js";
 import NotFound from "../not-found.jsx";
+
+// WHICH BOARDS THIS DOOR ACTUALLY OPENS
+//
+// It works wherever the posting is served as a page anyone can read and
+// carries the schema.org block the boards publish for Google Jobs: the ATS
+// boards a company hosts itself, Greenhouse, Lever, Ashby, Workable and
+// their like. It cannot work where the posting needs a login, is drawn by
+// script after the page loads, or sits behind bot protection, which is the
+// case on the two biggest aggregators.
+//
+// Guessing which is which is not a plan, so every failure is reported with
+// the host and the reason and nothing else: after a week of real links the
+// owner knows the list instead of believing one.
+const AILLEURS = {
+  no_posting: "that page does not publish its ad in a form Nuvi can read",
+  unreachable: "that page did not let Nuvi read it",
+};
 
 const GRIS = "#f5f4f0";
 const POLICE = '"Helvetica Neue", Inter, Helvetica, Arial, sans-serif';
@@ -46,8 +64,15 @@ export default function Porte({ params }) {
         const d = await r.json().catch(() => ({}));
         if (!vivant) return;
         if (!r.ok || !d.job) {
-          setMessage((d.error && d.error.message) || "that page could not be read");
+          const genre = (d.error && d.error.type) || "unreachable";
+          setMessage(AILLEURS[genre] || (d.error && d.error.message) || "that page could not be read");
           setEtat("erreur");
+          // The host, the reason, the status. Never the address itself: a
+          // job someone is applying for is their business.
+          let hote = "";
+          try { hote = new URL(url).hostname; } catch { hote = "?"; }
+          signaler("porte_annonce", genre + " " + ((d.error && d.error.message) || r.status),
+            { hote, statut: r.status });
           return;
         }
         // The extension's own channel: the app consumes this once, opens
@@ -85,7 +110,8 @@ export default function Porte({ params }) {
       </h1>
       <p style={{ margin: "16px 0 0", fontSize: 15, color: "#5f5f5f", maxWidth: "48ch" }}>
         {etat === "erreur"
-          ? message + ". Open the ad, copy the text, and paste it into Nuvi: that always works."
+          ? message + ". Copy the text of the ad and paste it into Nuvi, anywhere on the page: "
+            + "that works on every job site, including the ones that ask for a login."
           : (cible ? new URL(cible).hostname : "")}
       </p>
       <a href="/app" style={{
