@@ -67,6 +67,18 @@ jamais ce chemin. `GET /api/pdf` dit depuis un navigateur si le Chromium de la
 fonction démarre : la photo de secours cache toute panne de la route, à qui
 télécharge comme à qui maintient. `tests/an-old-download-is-read-whole.mjs`.
 
+Le CV telecharge ne porte aucune trace de l'outil. Un PDF a des
+proprietes que tout lecteur affiche et qu'une partie des ATS indexent : la
+page d'impression n'ayant pas de titre a elle, chaque CV imprime sortait
+avec `Nuvi - the CV that gets past the ATS` en Titre et `HeadlessChrome` en
+Createur, le nom du produit et son slogan sur le document du candidat.
+`app/imprimer` se titre donc du nom de la personne et de son poste, l'export
+photo pose les memes proprietes par jsPDF, et l'agent est impose sur la
+ligne de commande de Chromium : `page.setUserAgent()` passe par la couche
+reseau et le moteur d'impression ne le voit pas.
+`tests/the-pdf-carries-no-trace-of-nuvi.mjs` lit le dictionnaire `/Info`
+dans les octets, sans dependre de poppler.
+
 Les polices de l'impression sont des instances statiques. Chromium ne sait
 pas incorporer une police variable dans un PDF : il dessine chaque glyphe en
 contour (police « Type 3 », aucun fichier de police), et les extracteurs y
@@ -106,6 +118,22 @@ de l'argent dès 48 candidatures. Avec la règle, 0,18 $, et cent
 candidatures tiennent dans le plan. La route écrit une ligne `[usage]` par
 appel, avec le modèle et le coût, que Vercel garde : c'est contre cette
 ligne que le prix se vérifie. `tests/the-model-follows-the-task.mjs`.
+
+Un lien est une porte. `thenuvi.com/https://job-boards.greenhouse.io/acme/jobs/4012`
+ouvre l'application avec cette annonce deja lue : c'est la boucle de
+croissance d'un concurrent, elle ne coute rien a apprendre et le lien se
+partage. `app/[...cible]/page.jsx` remonte l'adresse (les navigateurs
+ecrasent le double slash, et beaucoup collent le lien deja encode),
+`app/api/annonce` va chercher la page et en tire l'annonce avec
+`extension/extract.js`, le meme extracteur que l'extension, puis le tout
+passe par `cvf_incoming_job`, le canal de l'extension : l'application sait
+deja en faire une candidature suivie avec la feuille ouverte dessus. La
+route fait chercher au serveur une adresse choisie par un inconnu, donc
+`lib/annonceEnLigne.js` refuse tout ce qui est prive, par le nom et par
+l'adresse resolue, et a chaque redirection : une page publique qui redirige
+vers 127.0.0.1 est la facon classique de passer un controle fait une seule
+fois. La page etant un attrape-tout, une adresse qui n'en est pas une rend
+le 404 d'avant. `tests/a-link-is-a-door.mjs`.
 
 L'argent arrive par `app/api/billing`. Le plan est fixé dans `lib/plans.js`
 (24 € par mois, 49 € pour trois mois, trois adaptations gratuites avec un

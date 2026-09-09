@@ -35,6 +35,9 @@ const LIMITES = [
   { motif: /^\/api\/pdf/, parMinute: 20 },
   { motif: /^\/api\/claude/, parMinute: 40, parJour: 300 },
   { motif: /^\/api\/(entreprise|jobs)/, parMinute: 30 },
+  // The route that fetches a page a stranger named. Ten a minute is a
+  // person pasting links; a script scanning the web through us is not.
+  { motif: /^\/api\/annonce/, parMinute: 10, parJour: 200 },
   // Checkout and portal open Stripe pages; the webhook is Stripe itself,
   // which retries politely. Thirty a minute is a person, not a script.
   { motif: /^\/api\/billing/, parMinute: 30 },
