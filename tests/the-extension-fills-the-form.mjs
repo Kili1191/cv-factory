@@ -13,7 +13,7 @@
 // filled and a wrong one gets sent.
 
 import { readFile } from "node:fs/promises";
-import { startServer, stopServer, launchBrowser, BASE_URL } from "./lib/harness.mjs";
+import { launchBrowser } from "./lib/harness.mjs";
 import { champPour, profilDepuisLeCv, profilComplet, optionPour } from "../extension/champs.js";
 
 // What the person answered once, in Settings.
@@ -129,15 +129,22 @@ export async function run() {
   }
 
   // --- the form itself, in a browser ------------------------------------
-  const server = await startServer();
+  // No server: this suite measures a form and a module, and nothing it
+  // touches is served by the product.
   const browser = await launchBrowser();
   try {
     const module = await readFile(new URL("../extension/champs.js", import.meta.url), "utf8");
     const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
     const page = await ctx.newPage();
-    // Any page will do as a host: what is measured is the filling, and the
-    // form below is the shape a board serves.
-    await page.goto(BASE_URL + "/verifier", { waitUntil: "domcontentloaded" });
+    // A BLANK PAGE, AND NOTHING OF OURS ON IT
+    //
+    // The first version loaded one of the product's own pages as a host and
+    // then replaced its body with this form. It passed here and crashed on
+    // the CI, because React was still hydrating: it mounted a moment later,
+    // put its own document back, and the form the test was reading had
+    // stopped existing. A test that races the thing it is not measuring
+    // fails on whichever machine is slower that day. A new page starts
+    // blank, and blank is all this needs.
     await page.setContent(`<!doctype html><html><body><form id="f">
       <label for="fn">First name</label><input id="fn" name="first_name">
       <label for="ln">Last name</label><input id="ln" name="last_name">
@@ -165,11 +172,18 @@ export async function run() {
     <script>document.getElementById("f").addEventListener("submit", function (e) {
       e.preventDefault(); document.getElementById("envoye").textContent = "yes"; });</script>
     </body></html>`);
-    await page.addScriptTag({ content: module, type: "module" });
+    // The form has to be there before anything is measured on it.
+    await page.waitForSelector("#fn", { timeout: 10000 });
     const resultat = await page.evaluate(async ({ src, profil: p }) => {
       const m = await import("data:text/javascript;base64," + btoa(unescape(encodeURIComponent(src))));
       const remplis = m.remplirLeDocument(document, p);
-      const v = (id) => document.getElementById(id).value;
+      // Named so that a box which vanished is reported as such, instead of
+      // arriving as "cannot read properties of null" from somewhere.
+      const v = (id) => {
+        const el = document.getElementById(id);
+        if (!el) throw new Error("the box " + id + " is not on the page");
+        return el.value;
+      };
       return {
         remplis,
         fn: v("fn"), ln: v("ln"), em: v("em"), ph: v("ph"), li: v("li"), ci: v("ci"),
@@ -213,7 +227,6 @@ export async function run() {
     failures.push("the test itself crashed: " + (err && err.message));
   } finally {
     await browser.close();
-    await stopServer(server);
   }
   return failures;
 }
