@@ -16,7 +16,8 @@
 
 import { createServer } from "node:http";
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV, BASE_URL } from "./lib/harness.mjs";
-import { adresseDepuisLeChemin, adressePriveeOuInterdite } from "../lib/annonceEnLigne.js";
+import { adresseDepuisLeChemin, adressePriveeOuInterdite, texteDeLAnnonce } from "../lib/annonceEnLigne.js";
+import { stripTags } from "../extension/extract.js";
 
 const DESCRIPTION = "We are looking for a Bar Manager to lead a cocktail led venue in central "
   + "London. You will own the drinks list end to end, from costing to training, and manage a "
@@ -67,7 +68,40 @@ export async function run() {
     if (vu) failures.push("/" + rien.join("/") + " was read as the address " + vu + ", so an ordinary path becomes a fetch");
   }
 
-  // --- 2. What the server refuses to fetch ------------------------------
+  // --- 2. The ad, on a page that does not declare one --------------------
+  //
+  // The boards that publish a schema.org block are the easy half. Most of
+  // the British ones are an ordinary page, where the ad sits between a
+  // menu, a cookie notice, a column of "jobs like this one" and a footer
+  // of county names. What gets sent to the model has to be the ad.
+  const chrome = "<nav><a href=\"/\">Home</a><a href=\"/jobs\">Jobs</a><a href=\"/cv\">CV advice</a>"
+    + "<a href=\"/login\">Sign in</a></nav><header><h1>The Board</h1></header>"
+    + "<aside><h2>Similar jobs</h2><a>Bar Supervisor London</a><a>Assistant Manager Leeds</a>"
+    + "<a>Head Chef Bristol</a><a>Sous Chef Cardiff</a></aside>"
+    + "<footer>Jobs in London Jobs in Manchester Jobs in Birmingham Jobs in Leeds Jobs in "
+    + "Glasgow Jobs in Bristol Jobs in Liverpool Jobs in Sheffield Jobs in Edinburgh Jobs in "
+    + "Cardiff Jobs in Belfast Jobs in Newcastle Jobs in Nottingham Jobs in Brighton</footer>";
+  const annonce = "<main><h1>Bar Manager</h1><p>" + DESCRIPTION + "</p>"
+    + "<ul><li>Salary 38,000 to 42,000 plus tronc</li><li>Five days including weekends</li></ul></main>";
+
+  const lu = texteDeLAnnonce(chrome + annonce, stripTags);
+  if (!/cocktail led venue/.test(lu)) failures.push("the ad itself was not found on a page without a schema block");
+  if (!/tronc/.test(lu)) failures.push("the ad was cut before its pay and hours");
+  for (const [quoi, motif] of [["the menu", /CV advice/], ["the jobs beside it", /Head Chef Bristol/],
+    ["the footer of counties", /Jobs in Cardiff/]]) {
+    if (motif.test(lu)) failures.push(quoi + " was sent to the model as part of the ad");
+  }
+
+  // A page that is only furniture must fail, not hand over a menu as an ad.
+  const sansAnnonce = texteDeLAnnonce(chrome + "<main><h1>Search results</h1>"
+    + "<a>Bar Manager London</a><a>Bar Manager Leeds</a><a>Bar Manager Bath</a>"
+    + "<a>Bar Manager York</a><a>Bar Manager Hull</a><a>Bar Manager Ely</a></main>", stripTags);
+  if (sansAnnonce) {
+    failures.push("a page of links was read as an ad (" + sansAnnonce.slice(0, 60)
+      + "): a CV would be fitted against a navigation bar");
+  }
+
+  // --- 3. What the server refuses to fetch ------------------------------
   const interdits = ["127.0.0.1", "localhost", "10.0.0.5", "192.168.1.1", "172.16.0.9",
     "169.254.169.254", "metadata.google.internal", "::1", "fd00::1", "boitier.local"];
   for (const h of interdits) {
@@ -77,7 +111,7 @@ export async function run() {
     if (adressePriveeOuInterdite(h)) failures.push(h + " is refused, and it should not be");
   }
 
-  // --- 3. The route, and the door ---------------------------------------
+  // --- 4. The route, and the door ---------------------------------------
   const { server: offre, port } = await pageDOffre();
   const server = await startServer();
   const browser = await launchBrowser();
@@ -152,8 +186,9 @@ export async function run() {
     await ctx.close();
 
     if (!failures.length) {
-      console.log("      6 shapes of a pasted link become one address, 10 private addresses are refused, "
-        + "and a job link lands in the app with the ad read and filed");
+      console.log("      6 shapes of a pasted link become one address, the ad is found without a schema "
+        + "block and a page of links is not, 10 private addresses are refused, and a job link lands "
+        + "in the app with the ad read and filed");
     }
   } catch (err) {
     failures.push("the test itself crashed: " + (err && err.message));
