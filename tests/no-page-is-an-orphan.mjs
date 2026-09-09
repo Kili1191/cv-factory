@@ -30,6 +30,14 @@ const EXEMPTES = {
   "/app": "c'est l'outil lui-meme, la vitrine y mene",
   "/diagnostic": "outil de mise en service, orpheline volontairement (voir "
     + "l'en-tete de app/diagnostic/page.jsx)",
+  // Cette page n'est pas une destination, c'est une facon d'ecrire une
+  // adresse : on colle le lien d'une annonce derriere thenuvi.com/ et on
+  // arrive dans l'application avec elle. Aucun lien du site ne peut y
+  // mener, puisque la moitie de l'adresse vient de l'annonce. Elle est
+  // aussi l'attrape-tout qui rend le 404, ce que tout lien casse rend
+  // visible. tests/a-link-is-a-door.mjs la couvre de bout en bout.
+  "/[...cible]": "porte par l'adresse, pas par un lien : thenuvi.com/<lien "
+    + "de l'annonce>. Couverte par tests/a-link-is-a-door.mjs",
 };
 
 function routes() {
