@@ -138,6 +138,39 @@ export async function run() {
     }
   }
 
+  // --- 2c. What reaches the model is text, and the job has its own name ---
+  //
+  // Two things measured on real ads, 10 September 2026. LinkedIn writes its
+  // description with the angle brackets escaped inside the JobPosting block,
+  // and tags were removed before entities were decoded, so the ad arrived as
+  // "<strong>Company Description<br><br></strong>Cint is ...". And NHS Jobs
+  // titles every advert page "Job Advert", so every NHS application was filed
+  // under that one name while the job's own name sat in the heading above it.
+  const echappe = stripTags("&lt;strong&gt;Company Description&lt;br&gt;&lt;/strong&gt;"
+    + " We are hiring a bar manager.");
+  if (/<\/?[a-z]/i.test(echappe)) {
+    failures.push("escaped markup reaches the model as markup: \"" + echappe.slice(0, 60) + "\"");
+  }
+  if (!/Company Description/.test(echappe) || !/hiring a bar manager/.test(echappe)) {
+    failures.push("clearing the escaped markup took the words with it: \"" + echappe.slice(0, 60) + "\"");
+  }
+
+  const pageNhs = "<!doctype html><html><head><title>Job Advert</title></head><body>"
+    + "<h1>Practice Nurse</h1><main>" + annonce + "</main></body></html>";
+  const luNhs = extractJob(pageDepuisLeHtml(pageNhs, stripTags));
+  if (!luNhs) failures.push("a page whose ad is only in its text was read as no ad at all");
+  else if (luNhs.title !== "Practice Nurse") {
+    failures.push("the job is filed as \"" + luNhs.title + "\", the name of the page and not of the job");
+  }
+  // And a real title still wins over the heading, which is often the employer.
+  const pageOrdinaire = "<!doctype html><html><head><title>Bar Manager</title></head><body>"
+    + "<h1>Anchor Group</h1><main>" + annonce + "</main></body></html>";
+  const luOrdinaire = extractJob(pageDepuisLeHtml(pageOrdinaire, stripTags));
+  if (!luOrdinaire || luOrdinaire.title !== "Bar Manager") {
+    failures.push("the heading won over a title that already named the job (got \""
+      + (luOrdinaire && luOrdinaire.title) + "\")");
+  }
+
   // --- 3. What the server refuses to fetch ------------------------------
   const interdits = ["127.0.0.1", "localhost", "10.0.0.5", "192.168.1.1", "172.16.0.9",
     "169.254.169.254", "metadata.google.internal", "::1", "fd00::1", "boitier.local"];

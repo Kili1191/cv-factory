@@ -20,8 +20,21 @@
 // Chaque niveau dit d'ou vient ce qu'il rend, pour que l'interface puisse
 // prevenir quand la lecture est approximative.
 
+// MARKUP THAT ARRIVES ESCAPED IS STILL MARKUP
+//
+// Tags are removed before entities are decoded, so a board that writes its
+// description with the angle brackets escaped ("&lt;strong&gt;") hands back
+// text with the tags spelled out. LinkedIn does exactly this inside its
+// JobPosting block, and the ad reached the model as
+// "<strong>Company Description<br><br></strong>Cint is ...".
+//
+// A second pass, once and only over real tag names, clears it. Once, because
+// a loop here is a loop on a stranger's page; real tag names, because "a
+// budget < 50 > the last one" is a sentence and not an element.
+const UNE_BALISE = /<\/?[a-z][a-z0-9]*(?:\s[^<>]*)?\/?>/gi;
+
 export function stripTags(html) {
-  return String(html || "")
+  const texte = String(html || "")
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<\/(p|div|li|h\d)>/gi, "\n")
     .replace(/<li[^>]*>/gi, "- ")
@@ -31,10 +44,11 @@ export function stripTags(html) {
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&quot;/gi, '"')
-    .replace(/[ \t]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
+    .replace(/&quot;/gi, '"');
+  const propre = UNE_BALISE.test(texte)
+    ? texte.replace(UNE_BALISE, (m) => (/^<br/i.test(m) ? "\n" : " "))
+    : texte;
+  return propre.replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
 function firstString(...values) {
@@ -112,8 +126,19 @@ export function fromJsonLd(blocks) {
   return null;
 }
 
-export function fromMeta(meta, bodyText) {
-  const title = firstString(meta["og:title"], meta.title);
+// A PAGE TITLE THAT NAMES THE PAGE AND NOT THE JOB
+//
+// NHS Jobs titles every advert page "Job Advert", so every NHS application
+// was filed under that one name and the tracker could not tell two apart,
+// while the job's own name sat in the heading right above the ad. These are
+// labels for a kind of page, never a job: when one is all the page offers,
+// the heading is the better answer.
+const TITRE_DE_PAGE = /^(job advert|job advert details|job description|job details|job vacancy|vacancy|vacancy details|job|careers?|job posting)$/i;
+
+export function fromMeta(meta, bodyText, h1) {
+  const declare = firstString(meta["og:title"], meta.title);
+  const titre = String(h1 || "").trim();
+  const title = TITRE_DE_PAGE.test(declare) && titre ? titre : declare;
   const text = String(bodyText || "").trim();
   if (!title || text.length < 400) return null;
   return {
@@ -127,11 +152,11 @@ export function fromMeta(meta, bodyText) {
 }
 
 /**
- * @param {{ jsonLd?: string[], meta?: object, bodyText?: string }} page
+ * @param {{ jsonLd?: string[], meta?: object, bodyText?: string, h1?: string }} page
  */
 export function extractJob(page) {
   const found = fromJsonLd(page.jsonLd)
-    || fromMeta(page.meta || {}, page.bodyText);
+    || fromMeta(page.meta || {}, page.bodyText, page.h1);
   if (!found) return null;
   // Une annonce de trois lignes n'est pas exploitable pour adapter un CV.
   // Le seuil vaut ce qu'il mesure : une vraie annonce fait plusieurs milliers
