@@ -14,7 +14,7 @@
 
 import { readFile } from "node:fs/promises";
 import { launchBrowser } from "./lib/harness.mjs";
-import { champPour, profilDepuisLeCv, profilComplet, optionPour } from "../extension/champs.js";
+import { champPour, profilDepuisLeCv, profilComplet, optionPour, estUneBoiteACv } from "../extension/champs.js";
 
 // What the person answered once, in Settings.
 const REPONSES = {
@@ -58,6 +58,30 @@ const REPETEES = [
   [{ label: "Salary expectation" }, "salaire"],
   [{ label: "Are you willing to relocate?" }, "mobilite"],
   [{ label: "Do you hold a full driving licence?" }, "permis"],
+];
+
+// The file boxes. The CV goes in the one that asks for a CV and in no
+// other: a passport box holding a CV is worse than an empty one, because
+// the person cannot see it happened and the employer gets the wrong paper.
+// The last two are the ones that decide the rule. A box can carry the words
+// of its neighbour (the cover letter sits right under "Resume/CV" on
+// Greenhouse, and the labels bleed), so when both appear the CV stays out;
+// and a text box that says CV is a link box, not a file box.
+const BOITES_A_CV = [
+  { type: "file", label: "Upload your CV" },
+  { type: "file", name: "resume" },
+  { type: "file", label: "Attach your resume" },
+  { type: "file", label: "Curriculum vitae" },
+  { type: "file", id: "resume_upload", label: "" },
+];
+const PAS_DES_BOITES_A_CV = [
+  { type: "file", label: "Cover letter" },
+  { type: "file", label: "Passport or ID document" },
+  { type: "file", label: "Photo" },
+  { type: "file", label: "Portfolio" },
+  { type: "file", label: "" },
+  { type: "file", label: "Cover letter", name: "resume_cover_letter" },
+  { type: "text", label: "Link to your CV" },
 ];
 
 // The boxes that must stay empty, whatever they are called.
@@ -128,6 +152,19 @@ export async function run() {
     }
   }
 
+  for (const d of BOITES_A_CV) {
+    if (!estUneBoiteACv(d)) {
+      failures.push("the CV box \"" + (d.label || d.name || d.id) + "\" was not recognised: "
+        + "the person has to go and find the file themselves, which is most of the work again");
+    }
+  }
+  for (const d of PAS_DES_BOITES_A_CV) {
+    if (estUneBoiteACv(d)) {
+      failures.push("\"" + (d.label || d.name || "an unnamed box") + "\" would receive the CV, "
+        + "and the employer would get the wrong document");
+    }
+  }
+
   // --- the form itself, in a browser ------------------------------------
   // No server: this suite measures a form and a module, and nothing it
   // touches is served by the product.
@@ -155,6 +192,8 @@ export async function run() {
       <label for="ni">National Insurance number</label><input id="ni" name="nino">
       <label for="pw">Password</label><input id="pw" type="password" name="password">
       <label for="cv">Upload your CV</label><input id="cv" type="file" name="resume">
+      <label for="cl">Cover letter</label><input id="cl" type="file" name="cover_letter">
+      <label for="pp">Passport or ID document</label><input id="pp" type="file" name="passport">
       <label for="pr">Preferred name</label><input id="pr" name="preferred_name" value="Cam">
       <label for="np">What is your notice period?</label><input id="np" name="notice">
       <label for="sal">Salary expectation</label><input id="sal" name="salary_expectation">
@@ -216,12 +255,49 @@ export async function run() {
     if (resultat.pr !== "Cam") failures.push("a box the person had already filled was overwritten");
     if (resultat.envoye !== "no") failures.push("THE FORM WAS SUBMITTED. Nuvi fills, the person sends.");
     if (resultat.marques !== 11) failures.push(resultat.marques + " boxes are marked as filled instead of 11: the person cannot see what was touched");
+
+    // THE CV FILE ITSELF
+    //
+    // A file input cannot be assigned, so this is the one part of the
+    // filler that can only be proved in a browser: a DataTransfer is the
+    // only way to build a FileList, and whether the bytes actually land in
+    // the box is not something a module test can see.
+    const joint = await page.evaluate(async ({ src }) => {
+      const m = await import("data:text/javascript;base64," + btoa(unescape(encodeURIComponent(src))));
+      const octets = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x37]);
+      const boites = m.boitesACv(document);
+      let joints = 0;
+      for (const el of boites) if (m.attacherLeCv(el, octets, "Camille Marchetti.pdf")) joints += 1;
+      const nomDe = (id) => {
+        const el = document.getElementById(id);
+        if (!el) throw new Error("the box " + id + " is not on the page");
+        return el.files && el.files.length ? el.files[0].name : "";
+      };
+      return {
+        boites: boites.length, joints,
+        cv: nomDe("cv"), cl: nomDe("cl"), pp: nomDe("pp"),
+        taille: document.getElementById("cv").files[0] ? document.getElementById("cv").files[0].size : 0,
+        envoye: document.getElementById("envoye").textContent,
+      };
+    }, { src: module });
+
+    if (joint.boites !== 1) {
+      failures.push(joint.boites + " file boxes were taken for the CV box instead of 1");
+    }
+    if (joint.cv !== "Camille Marchetti.pdf") {
+      failures.push("the CV did not land in the CV box (it holds \"" + joint.cv + "\")");
+    }
+    if (joint.taille !== 8) failures.push("the CV box holds " + joint.taille + " bytes instead of the file");
+    if (joint.cl) failures.push("the cover letter box received the CV: \"" + joint.cl + "\"");
+    if (joint.pp) failures.push("the passport box received the CV: \"" + joint.pp + "\"");
+    if (joint.envoye !== "no") failures.push("THE FORM WAS SUBMITTED once the file was attached.");
     await ctx.close();
 
     if (!failures.length) {
       console.log("      " + (RECONNUS.length + REPETEES.length) + " shapes of a box land in the right "
         + "field, including dropdowns and yes-no pairs, " + INTOUCHABLES.length + " are never touched, "
-        + "an answer already there survives, and the form is not sent");
+        + "an answer already there survives, the CV lands in the CV box and in no other, "
+        + "and the form is not sent");
     }
   } catch (err) {
     failures.push("the test itself crashed: " + (err && err.message));

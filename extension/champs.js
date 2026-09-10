@@ -192,6 +192,46 @@ export function decrire(el, doc) {
   };
 }
 
+// THE BOX EVERY APPLICATION HAS, AND THE ONE NUVI EXISTS FOR
+//
+// Eleven boxes filled and the person still has to go and find the PDF in
+// their Downloads folder, which is where the tailored CV and the one from
+// three weeks ago look identical. So the file goes in too, freshly printed
+// from the CV on screen.
+//
+// Only the box that asks for a CV. A form often wants a passport, a
+// photograph, a certificate or a portfolio in the same shape, and putting
+// a CV in any of those is worse than leaving them empty: the person cannot
+// see it happened, and the employer receives the wrong document.
+const BOITE_A_CV = /(\bcv\b|resume|resum[eé]|curriculum)/i;
+const PAS_LE_CV = /(cover[\s_-]*letter|lettre|passport|photo|picture|portrait|certificat|diploma|dipl[oô]me|portfolio|reference|payslip|proof|id[\s_-]*document|right[\s_-]*to[\s_-]*work)/i;
+
+export function estUneBoiteACv(descripteur) {
+  const d = descripteur || {};
+  if (String(d.type || "").toLowerCase() !== "file") return false;
+  const mots = [d.label, d.name, d.id, d.placeholder, d.ariaLabel].filter(Boolean).join(" ");
+  if (!mots.trim()) return false;
+  if (PAS_LE_CV.test(mots)) return false;
+  return BOITE_A_CV.test(mots);
+}
+
+export function boitesACv(doc) {
+  return [...doc.querySelectorAll('input[type="file"]')]
+    .filter((el) => !el.disabled && !el.files?.length && estUneBoiteACv(decrire(el, doc)));
+}
+
+// A file input cannot be assigned; it takes a FileList, and the only way to
+// build one is through a DataTransfer. The change event afterwards is what
+// tells the page a file arrived, exactly as a real choice would.
+export function attacherLeCv(el, octets, nom) {
+  const dt = new DataTransfer();
+  dt.items.add(new File([octets], nom, { type: "application/pdf" }));
+  el.files = dt.files;
+  el.dispatchEvent(new Event("input", { bubbles: true }));
+  el.dispatchEvent(new Event("change", { bubbles: true }));
+  return el.files.length === 1;
+}
+
 function marquerLe(el, cle) {
   el.setAttribute("data-nuvi-rempli", cle);
   try { el.style.outline = "2px solid #5b3df5"; el.style.outlineOffset = "1px"; } catch { /* styles refused */ }

@@ -137,6 +137,14 @@ curl -s 'https://recherche-entreprises.api.gouv.fr/search?q=camaieu&per_page=3' 
 Le dossier `extension/` est complet : manifeste, icônes tirées de l'œil de
 Nuvi, lecture de l'annonce (JSON-LD → balises → texte de la page).
 
+Deux boutons. *Envoyer vers Nuvi* range l'annonce et ouvre l'application
+dessus. *Remplir ce formulaire* écrit dans le formulaire de candidature
+ouvert ce que le CV et les réponses de Réglages disent déjà, puis demande à
+`thenuvi.com/api/pdf` d'imprimer le CV du moment et le joint à la case qui
+demande un CV : plus rien à chercher dans le dossier des téléchargements.
+Le fichier ne passe par aucun serveur autre que celui de Nuvi, et le
+formulaire n'est jamais envoyé : c'est la personne qui appuie.
+
 Pour l'essayer tout de suite : `chrome://extensions` → *Mode développeur* →
 *Charger l'extension non empaquetée* → choisir le dossier `extension/`.
 

@@ -23,10 +23,21 @@ function porterLeProfil() {
     if (!cv || typeof cv !== "object") return;
     let reponses = null;
     try { reponses = JSON.parse(localStorage.getItem("cvf_rep") || "null"); } catch { reponses = null; }
+    const lire = (cle, defaut) => {
+      try { const v = JSON.parse(localStorage.getItem(cle) || "null"); return v == null ? defaut : v; }
+      catch { return defaut; }
+    };
     import(chrome.runtime.getURL("champs.js")).then(({ profilComplet }) => {
       const profil = profilComplet(cv, reponses);
       if (!profil.email && !profil.nomComplet) return;
-      chrome.storage.local.set({ nuvi_profil: profil });
+      // The CV itself travels too, so the popup can ask Nuvi to print it
+      // and attach the file to the application. It stays in the
+      // extension's own storage on this machine, and goes nowhere except
+      // back to Nuvi's own printer.
+      chrome.storage.local.set({
+        nuvi_profil: profil,
+        nuvi_cv: { cv, layout: lire("cvf_l", "classic"), theme: lire("cvf_ct", null), locale: lire("cvf_c", "en") },
+      });
     }).catch(() => { /* module unreachable: the filler simply has nothing */ });
   } catch { /* unreadable storage: nothing to carry */ }
 }

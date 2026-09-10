@@ -161,8 +161,21 @@ souvent en liste deroulante ou en paire de boutons, donc `optionPour`
 reconnait le oui et le non tels que la page les ecrit, et le parrainage se
 teste avant le droit de travailler : « will you require sponsorship »
 contient les deux, et se tromper inverse le sens.
-`tests/the-extension-fills-the-form.mjs` tient les deux sens, et verifie
-que le formulaire n'est pas parti.
+La derniere case est le fichier. Vingt cases remplies et il faut encore
+aller chercher un PDF sur le disque, ou le CV adapte a cette annonce n'est
+meme pas : il vient d'etre ecrit dans Nuvi. Le bouton demande donc le CV du
+moment a `thenuvi.com/api/pdf`, le seul hote que l'extension a le droit
+d'atteindre, et le pose dans la case. Dans celle qui demande un CV et dans
+aucune autre : un passeport, une photo, un portfolio ou une lettre prennent
+la meme forme, et un CV depose dans l'une d'elles est pire qu'une case vide,
+parce que la personne ne le voit pas et que l'employeur recoit le mauvais
+papier. Les mots d'une case voisine debordent sur elle (la lettre est collee
+sous « Resume/CV » chez Greenhouse), donc quand les deux apparaissent le CV
+reste dehors. Une case fichier ne s'affecte pas : seul un `DataTransfer`
+fabrique une `FileList`, et c'est la partie du remplissage qui ne se prouve
+que dans un navigateur.
+`tests/the-extension-fills-the-form.mjs` tient les deux sens, la case du CV
+et celles qui n'en sont pas, et verifie que le formulaire n'est pas parti.
 
 L'argent arrive par `app/api/billing`. Le plan est fixé dans `lib/plans.js`
 (24 € par mois, 49 € pour trois mois, trois adaptations gratuites avec un
