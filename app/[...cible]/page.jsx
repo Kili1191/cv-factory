@@ -110,7 +110,11 @@ export default function Porte({ params }) {
       </h1>
       <p style={{ margin: "16px 0 0", fontSize: 15, color: "#5f5f5f", maxWidth: "48ch" }}>
         {etat === "erreur"
-          ? message + ". Copy the text of the ad and paste it into Nuvi, anywhere on the page: "
+          // The host is on screen, not only in the incident line. Whoever is
+          // walking a list of boards to find out which ones open needs the
+          // answer in the screenshot they are already taking.
+          ? (cible ? new URL(cible).hostname + ": " : "") + message
+            + ". Copy the text of the ad and paste it into Nuvi, anywhere on the page: "
             + "that works on every job site, including the ones that ask for a login."
           : (cible ? new URL(cible).hostname : "")}
       </p>
