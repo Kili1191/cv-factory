@@ -16,8 +16,8 @@
 
 import { createServer } from "node:http";
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV, BASE_URL } from "./lib/harness.mjs";
-import { adresseDepuisLeChemin, adressePriveeOuInterdite, texteDeLAnnonce } from "../lib/annonceEnLigne.js";
-import { stripTags } from "../extension/extract.js";
+import { adresseDepuisLeChemin, adressePriveeOuInterdite, texteDeLAnnonce, pageDepuisLeHtml } from "../lib/annonceEnLigne.js";
+import { stripTags, extractJob } from "../extension/extract.js";
 
 const DESCRIPTION = "We are looking for a Bar Manager to lead a cocktail led venue in central "
   + "London. You will own the drinks list end to end, from costing to training, and manage a "
@@ -27,14 +27,19 @@ const DESCRIPTION = "We are looking for a Bar Manager to lead a cocktail led ven
   + "five days a week including weekends, with a rota published a fortnight ahead. We offer a "
   + "competitive salary, tronc, and a clear route to Beverage Manager within eighteen months.";
 
+// A board's page as the route receives it: the ad declared in a schema.org
+// block, and a browser tab title that says something else on purpose, so a
+// reading that quietly falls back to the page cannot pass for a good one.
+const HTML_OFFRE = "<!doctype html><html><head><title>Bar Manager at Anchor Group</title>"
+  + '<script type="application/ld+json">' + JSON.stringify({
+    "@context": "https://schema.org", "@type": "JobPosting",
+    title: "Bar Manager", description: "<p>" + DESCRIPTION + "</p>",
+    hiringOrganization: { "@type": "Organization", name: "Anchor Group" },
+    jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: "London" } },
+  }) + "</script></head><body><h1>Bar Manager</h1></body></html>";
+
 function pageDOffre() {
-  const html = "<!doctype html><html><head><title>Bar Manager at Anchor Group</title>"
-    + '<script type="application/ld+json">' + JSON.stringify({
-      "@context": "https://schema.org", "@type": "JobPosting",
-      title: "Bar Manager", description: "<p>" + DESCRIPTION + "</p>",
-      hiringOrganization: { "@type": "Organization", name: "Anchor Group" },
-      jobLocation: { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: "London" } },
-    }) + "</script></head><body><h1>Bar Manager</h1></body></html>";
+  const html = HTML_OFFRE;
   const server = createServer((req, res) => {
     if (req.url.startsWith("/vers-le-prive")) {
       res.writeHead(302, { Location: "http://127.0.0.1:9/secret" });
@@ -99,6 +104,38 @@ export async function run() {
   if (sansAnnonce) {
     failures.push("a page of links was read as an ad (" + sansAnnonce.slice(0, 60)
       + "): a CV would be fitted against a navigation bar");
+  }
+
+  // --- 2b. The declared ad wins over the page text ----------------------
+  //
+  // The boards that publish a schema.org JobPosting are the half where the
+  // reading is exact: the employer, the title and the description are named
+  // rather than guessed from the densest block. This seam broke in silence
+  // once. pageDepuisLeHtml parsed each block and handed the object to
+  // extractJob, which parses it again; JSON.parse on an object throws, the
+  // block was skipped, and every board fell through to the page text. The
+  // route still answered 200, so nothing looked broken: Lever returned the
+  // browser tab's title instead of the posting's, and a board that renders
+  // its ad in the browser returned "no job ad found on that page".
+  //
+  // So the two are checked together, on the same HTML the route reads.
+  const declare = extractJob(pageDepuisLeHtml(HTML_OFFRE, stripTags));
+  if (!declare) {
+    failures.push("a page carrying a JobPosting block was read as no ad at all");
+  } else {
+    if (declare.confidence !== "high" || declare.via !== "JobPosting") {
+      failures.push("the JobPosting block was not used: the reading came back "
+        + declare.confidence + " via " + declare.via + ", so the page text won over the declared ad");
+    }
+    if (declare.company !== "Anchor Group") {
+      failures.push("the employer named in the block is not read back (got \"" + declare.company + "\")");
+    }
+    if (declare.title !== "Bar Manager") {
+      failures.push("the title read is \"" + declare.title + "\" and not the posting's own");
+    }
+    if (!/cocktail led venue/.test(declare.description)) {
+      failures.push("the description read is not the one the block declares");
+    }
   }
 
   // --- 3. What the server refuses to fetch ------------------------------

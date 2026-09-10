@@ -85,7 +85,13 @@ function flattenNodes(parsed) {
 export function fromJsonLd(blocks) {
   for (const raw of blocks || []) {
     let parsed;
-    try { parsed = JSON.parse(raw); } catch { continue; }
+    // A caller that already has the object hands it over as it is. The
+    // browser side collects textContent, so both shapes reach here, and a
+    // JSON.parse on an object throws instead of saying so: the block then
+    // disappears and the caller only sees a poorer reading. Accepting both
+    // costs one test and removes the whole class of failure.
+    if (raw && typeof raw === "object") parsed = raw;
+    else { try { parsed = JSON.parse(raw); } catch { continue; } }
     for (const node of flattenNodes(parsed)) {
       const type = node["@type"];
       const isJob = type === "JobPosting"
