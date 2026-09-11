@@ -158,6 +158,17 @@ export async function run() {
       await page.waitForTimeout(400);
       await page.locator('[data-nuvi="match-choix"][data-nuvi-choix="actuel"]').first().click({ timeout: 8000 });
       await page.waitForTimeout(2500);
+      // Le decodage est replie : le panneau montre le score, les mots-cles
+      // et le bouton, et range le reste derriere un depliant. innerText ne
+      // rend pas ce qui n'est pas affiche, donc on l'ouvre, ce qui verifie
+      // au passage que le depliant s'ouvre vraiment.
+      const depliant = page.locator('[data-nuvi="match-decodage"] summary').first();
+      if (!(await depliant.count())) {
+        failures.push("le resultat du match n'offre pas le depliant du decodage");
+      } else {
+        await depliant.click({ timeout: 8000 });
+        await page.waitForTimeout(400);
+      }
       // Ces intitules sont mis en capitales par le CSS : innerText rend la
       // forme affichee, pas la chaine du code. On compare donc sans casse,
       // sinon le test echoue sur un libelle parfaitement juste.

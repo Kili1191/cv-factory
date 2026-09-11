@@ -18,6 +18,36 @@ import {
   Sans, Serif, RadiusMd, RadiusPill, ShadowSm,
   B, IN, LBL, NO_DASH, CoralText, GreenText, PurpleText } from "./sharedTokens";
 
+// ONE THING IS COLOURED, AND IT IS THE ONE THING COLOUR MEANS SOMETHING
+//
+// The result used to be ten filled boxes down a narrow column, each with its
+// own tint, its own border and its own shouted label. Green carried three
+// unrelated ideas (applied, keywords present, seniority), coral carried
+// three more (the hook, the hidden signals, the questions), purple two. The
+// colour was rotation, not meaning, so nothing stood out and the panel read
+// as noise on the screen someone looks at on every single application.
+//
+// Border, fill and radius each say "separate object". Spent on every block
+// they say nothing. So they are spent once: on the score, which is the
+// summary, and on the two keyword lists, where green against coral is the
+// only genuine pair on the panel, already in your CV against missing from
+// it. Everything else is a section: a quiet label, its text, and the space
+// between them. No feature left, nothing hidden, one voice instead of ten.
+function Section({ label, children, last = false }) {
+  return (
+    <div style={{
+      paddingBottom: last ? 0 : 14, marginBottom: last ? 0 : 14,
+      borderBottom: last ? "none" : "0.5px solid " + Hairline,
+    }}>
+      <div style={{
+        fontSize: 9.5, fontWeight: 700, color: InkMuted, marginBottom: 7,
+        letterSpacing: "0.07em", textTransform: "uppercase",
+      }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
 function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "en", onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
   pushH, onCreateFromOffer, onUndo, onDownload }) {
@@ -292,137 +322,6 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
           </div>
         </div>
 
-        {/* Requirements */}
-        {(res.key_requirements||[]).length > 0 && (
-          <div style={{
-            background:PurpleSoft, borderRadius:RadiusMd,
-            padding:"10px 13px", marginBottom:10,
-            border:"0.5px solid "+Purple,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:6, letterSpacing:"0.06em", textTransform:"uppercase"}}>
-              {T.mt_req_key}
-            </div>
-            {(res.key_requirements||[]).map((r,i) => (
-              <div key={i} style={{fontSize:12, color:Ink, marginBottom:3}}>
-                {"* "}{r}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Keywords matched / to add */}
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:10}}>
-          {(res.keywords_matched||[]).length > 0 && (
-            <div style={{background:GreenSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-                {T.mt_kw_in}
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
-                {(res.keywords_matched||[]).map((k,i) => (
-                  <span key={i} style={{
-                    background:"#dcfce7", color:GreenText,
-                    borderRadius:3, padding:"2px 5px", fontSize:9,
-                  }}>{k}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {(res.keywords_to_add||[]).length > 0 && (
-            <div style={{background:CoralSoft, borderRadius:RadiusMd, padding:"9px 11px"}}>
-              <div style={{fontSize:9, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-                {T.mt_kw_add}
-              </div>
-              <div style={{display:"flex", flexWrap:"wrap", gap:3}}>
-                {(res.keywords_to_add||[]).map((k,i) => (
-                  <span key={i} style={{
-                    background:"#fef3c7", color:"#92400e",
-                    borderRadius:3, padding:"2px 5px", fontSize:9,
-                  }}>{k}</span>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Cover letter hook - terracotta */}
-        {res.cover_letter_hook && (
-          <div style={{
-            background:CoralSoft,
-            border:"0.5px solid "+Coral,
-            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.06em", textTransform:"uppercase"}}>
-              {T.mt_hook}
-            </div>
-            <div style={{fontSize:12, color:Ink, lineHeight:1.6, fontStyle:"italic", fontFamily:Serif}}>
-              "{res.cover_letter_hook}"
-            </div>
-          </div>
-        )}
-
-        {/* Hidden signals */}
-        {res.hidden_signals && res.hidden_signals.length > 0 && (
-          <div style={{
-            background:CoralSoft, border:"0.5px solid "+Coral,
-            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              {T.mt_hidden}
-            </div>
-            {res.hidden_signals.map((s,i) => (
-              <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
-                {"> "}{s}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Culture decode */}
-        {res.culture_decode && (
-          <div style={{
-            background:PurpleSoft, border:"0.5px solid "+Purple,
-            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              {T.mt_culture}
-            </div>
-            <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
-              {res.culture_decode}
-            </div>
-          </div>
-        )}
-
-        {/* Seniority decode */}
-        {res.seniority_decode && (
-          <div style={{
-            background:GreenSoft, border:"0.5px solid "+Green,
-            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              {T.mt_seniority}
-            </div>
-            <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
-              {res.seniority_decode}
-            </div>
-          </div>
-        )}
-
-        {/* Interview questions */}
-        {res.likely_interview_questions && res.likely_interview_questions.length > 0 && (
-          <div style={{
-            background:CoralSoft, border:"0.5px solid "+Coral,
-            borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
-          }}>
-            <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              {T.mt_questions}
-            </div>
-            {res.likely_interview_questions.map((q,i) => (
-              <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
-                {(i+1)+". "}{q}
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* Apply button - gradient violet→magenta */}
         <button onClick={apply} style={{
@@ -491,6 +390,147 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
           </button>
         )}
 
+
+        {/* WHAT TO LOOK AT, AND WHAT TO LOOK AT LATER
+            The panel used to hand over an essay: the score, then five
+            requirements, then ten chips, then a paragraph of hook, four
+            paragraphs of hidden signals, two more decodes and six interview
+            questions, all at once, in a column the width of a phone. Kilian
+            put it exactly right: you do not know where to look.
+            The person has one decision here, take this CV or not, and it
+            rests on two things: the score, and which words of the ad are
+            already in the CV against which are missing. Those stay open,
+            with the button that acts on them underneath.
+            The rest is reading for later. The culture and the seniority
+            matter when you write the letter, the questions matter the night
+            before an interview, and none of it changes the decision on
+            screen. It is one tap away, and nothing has been removed. */}
+        <details data-nuvi="match-decodage" style={{marginTop:4}}>
+          <summary style={{
+            cursor:"pointer", listStyle:"none", padding:"11px 0",
+            fontSize:12, fontWeight:600, color:InkMuted, fontFamily:Sans,
+            display:"flex", alignItems:"center", gap:7, minHeight:44,
+            boxSizing:"border-box", borderTop:"0.5px solid "+Hairline,
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="m6 9 6 6 6-6"/>
+            </svg>
+            {T.mt_decoded_more}
+          </summary>
+          <div style={{paddingTop:6}}>
+            {/* Requirements */}
+            {(res.key_requirements||[]).length > 0 && (
+              <Section label={T.mt_req_key}>
+                {(res.key_requirements||[]).map((r,i) => (
+                  <div key={i} style={{
+                    fontSize:12.5, color:Ink, lineHeight:1.55, marginBottom:4,
+                    paddingLeft:13, textIndent:-13,
+                  }}>
+                    <span style={{color:InkMuted}}>{"\u2022  "}</span>{r}
+                  </div>
+                ))}
+              </Section>
+            )}
+
+            {/* Keywords matched / to add */}
+            <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:7, marginBottom:10}}>
+              {(res.keywords_matched||[]).length > 0 && (
+                <div style={{background:GreenSoft, borderRadius:RadiusMd, padding:"10px 12px"}}>
+                  <div style={{fontSize:9.5, fontWeight:700, color:GreenText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+                    {T.mt_kw_in}
+                  </div>
+                  <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                    {(res.keywords_matched||[]).map((k,i) => (
+                      <span key={i} style={{
+                        background:Paper, color:GreenText,
+                        borderRadius:4, padding:"3px 7px", fontSize:10,
+                      }}>{k}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(res.keywords_to_add||[]).length > 0 && (
+                <div style={{background:CoralSoft, borderRadius:RadiusMd, padding:"10px 12px"}}>
+                  <div style={{fontSize:9.5, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
+                    {T.mt_kw_add}
+                  </div>
+                  <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
+                    {(res.keywords_to_add||[]).map((k,i) => (
+                      <span key={i} style={{
+                        background:Paper, color:CoralText,
+                        borderRadius:4, padding:"3px 7px", fontSize:10,
+                      }}>{k}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* The hook is a sentence to reuse, so it is set as one: the serif
+                italic already marks it as quoted, and a tinted box around it
+                added nothing but another edge. */}
+            {res.cover_letter_hook && (
+              <Section label={T.mt_hook}>
+                <div style={{
+                  fontSize:13.5, color:Ink, lineHeight:1.65, fontStyle:"italic",
+                  fontFamily:Serif, paddingLeft:11, borderLeft:"2px solid "+Coral,
+                }}>
+                  {res.cover_letter_hook}
+                </div>
+              </Section>
+            )}
+
+            {/* Hidden signals */}
+            {res.hidden_signals && res.hidden_signals.length > 0 && (
+              <Section label={T.mt_hidden}>
+                {res.hidden_signals.map((s,i) => (
+                  <div key={i} style={{
+                    fontSize:12.5, color:Ink, marginBottom:7, lineHeight:1.55,
+                    paddingLeft:13, textIndent:-13,
+                  }}>
+                    <span style={{color:CoralText}}>{"\u2022  "}</span>{s}
+                  </div>
+                ))}
+              </Section>
+            )}
+
+            {/* Culture and seniority answer the same question, what kind of
+                place is this, so they sit together instead of as two tinted
+                blocks of different colours. */}
+            {res.culture_decode && (
+              <Section label={T.mt_culture}>
+                <div style={{fontSize:12.5, color:Ink, lineHeight:1.55}}>
+                  {res.culture_decode}
+                </div>
+              </Section>
+            )}
+
+            {res.seniority_decode && (
+              <Section label={T.mt_seniority}>
+                <div style={{fontSize:12.5, color:Ink, lineHeight:1.55}}>
+                  {res.seniority_decode}
+                </div>
+              </Section>
+            )}
+
+            {/* Interview questions. Last section, so no rule under it: the
+                Apply button is the next thing and it draws its own line. */}
+            {res.likely_interview_questions && res.likely_interview_questions.length > 0 && (
+              <Section label={T.mt_questions} last>
+                {res.likely_interview_questions.map((q,i) => (
+                  <div key={i} style={{
+                    fontSize:12.5, color:Ink, marginBottom:7, lineHeight:1.55,
+                    paddingLeft:17, textIndent:-17,
+                  }}>
+                    <span style={{color:InkMuted, fontVariantNumeric:"tabular-nums"}}>{(i+1)+".  "}</span>{q}
+                  </div>
+                ))}
+              </Section>
+            )}
+          </div>
+        </details>
+
         {/* New offer */}
         <button onClick={()=>{setPh("input");setRes(null);}} style={{
           ...B({
@@ -525,7 +565,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
         <div style={{
           background:CoralSoft, border:"0.5px solid "+Coral,
           borderRadius:RadiusMd, padding:"9px 12px", marginBottom:10,
-          fontSize:12, color:"#7f1d1d",
+          fontSize:12, color:CoralText,
         }}>
           {T.mt_empty_cv}
         </div>
@@ -586,8 +626,8 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
               <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
                 {ecart.aReformuler.map((k,i) => (
                   <span key={i} style={{
-                    background:"#fef3c7", color:"#92400e",
-                    borderRadius:3, padding:"3px 7px", fontSize:11,
+                    background:CoralSoft, color:CoralText,
+                    borderRadius:4, padding:"3px 7px", fontSize:11,
                   }}>{k}</span>
                 ))}
               </div>

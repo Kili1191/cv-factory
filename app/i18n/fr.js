@@ -250,6 +250,7 @@ const FR_T = {
   mt_kw_add:"Ajoutes pour cette annonce",
   mt_read_local:"Lu dans l'offre, sans appeler l'IA",
   mt_reach_adds:"Ce que Nuvi ajoute a ta portee",
+  mt_decoded_more:"Ce que Nuvi a lu dans l'annonce",
   mt_hook:"Accroche lettre de motivation",
   mt_hidden:"Signaux caches dans l'offre",
   mt_culture:"Culture entreprise (decodee)",
