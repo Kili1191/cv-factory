@@ -272,6 +272,7 @@ const EN_T = {
   mt_gap_renamed_sub:"The words are in your CV, but not in that order. A sorting robot does not put them together.",
   mt_gap_missing:"Not in your CV",
   mt_gap_missing_6:" (first 6)",
+  mt_you_choose:"You choose which ones to add.",
   ob_img_reading:"Reading the photo...",
   ob_pdf_photo_reading:"This PDF's hidden text is cut: reading the page itself...",
   ob_img_too_big:"Image too large: 5 MB maximum.",

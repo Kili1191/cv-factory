@@ -698,7 +698,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
               un mot-clef ajoute sans experience derriere est un mensonge que
               l'entretien decouvre en trente secondes. */}
           <div style={{fontSize:11, color:InkMuted, marginTop:10, lineHeight:1.5}}>
-            Tu choisis lesquels ajouter.
+            {T.mt_you_choose}
           </div>
         </div>
       )}

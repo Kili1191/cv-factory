@@ -267,6 +267,7 @@ const FR_T = {
   mt_gap_renamed_sub:"Les mots sont dans ton CV, pas dans cet ordre. Un tri automatique ne les rapproche pas.",
   mt_gap_missing:"Absent de ton CV",
   mt_gap_missing_6:" (les 6 premiers)",
+  mt_you_choose:"Tu choisis lesquels ajouter.",
   ob_img_reading:"Lecture de la photo...",
   ob_pdf_photo_reading:"Le texte caché de ce PDF est coupé : lecture de la page elle-même...",
   ob_img_too_big:"Image trop lourde : 5 Mo maximum.",

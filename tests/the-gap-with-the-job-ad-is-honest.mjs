@@ -249,6 +249,26 @@ Posted 3 days ago
 Apply now on the company website
 About the role: Senior Associate, Client and Workplace Experience.
 Expedite Group Europe is hiring.`;
+  // Deuxieme passage, releve sur une vraie annonce : le panneau donnait a
+  // ajouter au CV le nom de la rue et le code postal du bureau, plus deux
+  // morceaux de la page du site. Le chiffre les comptait au denominateur.
+  const ADRESSE = `Senior Associate, Client and Workplace Experience
+Expedite Group Europe
+
+Job details align with your profile.
+Location: 12 Bartholomew Lane, London EC2N 2AT
+Second office: 40 Lavender Road, London.
+Job details align with your profile.
+Location: 12 Bartholomew Lane, London EC2N 2AT
+Second office: 40 Lavender Road, London.`;
+  for (const mobilier of ["bartholomew lane", "lavender road", "london ec2n",
+    "details align", "lane london"]) {
+    if (phrasesClefs(ADRESSE).includes(mobilier)) {
+      failures.push("\"" + mobilier + "\" est propose comme exigence : c'est l'adresse du "
+        + "bureau ou un morceau de la page, pas ce que le poste demande");
+    }
+  }
+
   const duMince = phrasesClefs(MINCE);
   for (const mobilier of ["gbp", "days ago", "apply now", "company website",
     "united kingdom", "expedite group", "full time", "000"]) {

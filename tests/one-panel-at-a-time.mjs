@@ -174,6 +174,7 @@ export async function run() {
       // sinon le test echoue sur un libelle parfaitement juste.
       const vu = (await page.evaluate(() => document.body.innerText)).toLowerCase();
       for (const mot of ["requirements cles", "ajoutes", "presents",
+        "tu choisis lesquels ajouter",
         "accroche lettre de motivation", "signaux caches", "culture entreprise",
         "niveau attendu", "questions probables", "absent de ton cv",
         "tu l'as deja, ils l'appellent autrement"]) {
