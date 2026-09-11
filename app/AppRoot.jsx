@@ -1725,7 +1725,7 @@ const IconFinalize = (
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
+function OfferSheet({ T, locale, cv, setCVFn, notify, apiKey, pushH, versions,
   initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose,
   onCreateFromOffer, onUndo, onDownload }) {
   return (
@@ -1760,6 +1760,7 @@ function OfferSheet({ T, cv, setCVFn, notify, apiKey, pushH, versions,
         notify={notify}
         apiKey={apiKey}
         T={T}
+        locale={locale}
         onPackRequest={onPackRequest}
         pushH={pushH}
         initialResult={initialResult}
@@ -8382,7 +8383,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           initialOffer={pendingOffer}
-          T={T} cv={cv} versions={versions} setCVFn={setCVFn}
+          T={T} locale={locale} cv={cv} versions={versions} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}

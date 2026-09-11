@@ -18,7 +18,7 @@ import {
   Sans, Serif, RadiusMd, RadiusPill, ShadowSm,
   B, IN, LBL, NO_DASH, CoralText, GreenText, PurpleText } from "./sharedTokens";
 
-function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackRequest,
+function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "en", onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
   pushH, onCreateFromOffer, onUndo, onDownload }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
@@ -99,7 +99,33 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
       ? dossierEnTexte(dossierParcours(cv, versions))
       : cvT;
 
+    // AN APPLICATION IS WRITTEN IN THE LANGUAGE OF THE AD
+    //
+    // This prompt said nothing about language. It is written in French, so
+    // the model answered in French: the decoding, the cover letter hook,
+    // and the rewritten CV itself. Someone applying in London, interface in
+    // English, ad in English, got a French CV to send to a British
+    // recruiter. This is the central action of the product, and it made the
+    // application unusable with nothing on screen to say so.
+    //
+    // The rule is the one a person applying already follows: you write in
+    // the language of the ad. Not the interface language, which only says
+    // what someone prefers to read; not the source CV's, which only says
+    // where they started. Translating your own sentences is not inventing:
+    // the same facts, in the reader's language.
+    //
+    // The interface language is only the fallback, for an ad too short or
+    // too mixed to decide from.
+    const langueDeLaCandidature =
+      "LANGUE : redige TOUT (decodage, accroche, questions, et le CV optimise "
+      + "en entier) dans la langue de l'OFFRE ci-dessus. Si l'offre ne permet "
+      + "pas de trancher, ecris en "
+      + (locale === "en" ? "anglais" : "francais") + ". "
+      + "Les intitules de poste, les noms d'entreprise et les noms d'ecole "
+      + "restent tels quels.\n";
+
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
+      + langueDeLaCandidature
       +"OFFRE:\n"+offer+"\n"
       +(choix === "parcours"
         ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"
@@ -326,7 +352,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:5, letterSpacing:"0.06em", textTransform:"uppercase"}}>
-              Accroche lettre de motivation
+              {T.mt_hook}
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.6, fontStyle:"italic", fontFamily:Serif}}>
               "{res.cover_letter_hook}"
@@ -341,7 +367,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              Signaux caches dans l'offre
+              {T.mt_hidden}
             </div>
             {res.hidden_signals.map((s,i) => (
               <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
@@ -358,7 +384,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:PurpleText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              Culture entreprise (decodee)
+              {T.mt_culture}
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
               {res.culture_decode}
@@ -373,7 +399,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:10,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:GreenText, marginBottom:5, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              Niveau attendu (decode)
+              {T.mt_seniority}
             </div>
             <div style={{fontSize:12, color:Ink, lineHeight:1.5}}>
               {res.seniority_decode}
@@ -388,7 +414,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
             borderRadius:RadiusMd, padding:"10px 13px", marginBottom:12,
           }}>
             <div style={{fontSize:10, fontWeight:700, color:CoralText, marginBottom:6, letterSpacing:"0.05em", textTransform:"uppercase"}}>
-              Questions probables en entretien
+              {T.mt_questions}
             </div>
             {res.likely_interview_questions.map((q,i) => (
               <div key={i} style={{fontSize:12, color:"#7f1d1d", marginBottom:4, lineHeight:1.5}}>
@@ -543,10 +569,10 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
               chez Workday et iCIMS, et un ecart de seniorite s'y voit. */}
           {ecart.titre.etat !== "exact" && ecart.titre.vise && (
             <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:10}}>
-              <strong>Intitule</strong>{" : l'offre dit "}
+              <strong>{T.mt_gap_title}</strong>{T.mt_gap_says}
               <span style={{background:CoralSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.vise}</span>
-              {ecart.titre.actuel ? <>{", ton CV dit "}<span style={{background:CreamSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.actuel}</span></> : null}
-              {ecart.titre.etat === "proche" ? ". Proche, mais pas identique." : "."}
+              {ecart.titre.actuel ? <>{T.mt_gap_yours}<span style={{background:CreamSoft, borderRadius:3, padding:"1px 5px"}}>{ecart.titre.actuel}</span></> : null}
+              {ecart.titre.etat === "proche" ? T.mt_gap_close : T.mt_gap_exact}
             </div>
           )}
 
@@ -554,11 +580,8 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           {ecart.aReformuler.length > 0 && (
             <div style={{marginBottom: ecart.manquantes.length ? 10 : 0}}>
               <div style={{fontSize:12, color:Ink, lineHeight:1.5, marginBottom:6}}>
-                <strong>Tu l'as deja, ils l'appellent autrement.</strong>{" "}
-                <span style={{color:InkMuted}}>
-                  Les mots sont dans ton CV, pas dans cet ordre. Un tri automatique
-                  ne les rapproche pas.
-                </span>
+                <strong>{T.mt_gap_renamed}</strong>{" "}
+                <span style={{color:InkMuted}}>{T.mt_gap_renamed_sub}</span>
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
                 {ecart.aReformuler.map((k,i) => (
@@ -574,7 +597,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, onPackReque
           {ecart.manquantes.length > 0 && (
             <div>
               <div style={{fontSize:12, color:InkMuted, lineHeight:1.5, marginBottom:6}}>
-                Absent de ton CV{ecart.manquantes.length > 6 ? " (les 6 premiers)" : ""} :
+                {T.mt_gap_missing}{ecart.manquantes.length > 6 ? T.mt_gap_missing_6 : ""} :
               </div>
               <div style={{display:"flex", flexWrap:"wrap", gap:4}}>
                 {ecart.manquantes.slice(0,6).map((k,i) => (

@@ -115,14 +115,37 @@ export async function run() {
     // voyait, et ils sont partis en production sur l'ecran que quelqu'un
     // qui postule cent fois regarde cent fois. On produit donc un resultat,
     // avec un modele double, et on lit ce qu'il affiche.
+    // CHAQUE BLOC DU RESULTAT, PAS SEULEMENT CEUX QUI SE REMPLISSENT SEULS
+    //
+    // La version precedente laissait hidden_signals, culture_decode,
+    // seniority_decode, les questions et l'accroche VIDES, donc les cinq
+    // panneaux qui les affichent ne se dessinaient jamais et leurs libelles
+    // n'etaient lus par personne. Ils sont partis en francais dans
+    // l'interface anglaise, et c'est un utilisateur qui l'a vu, sur l'ecran
+    // qu'on regarde a chaque candidature. Un champ vide dans un jeu d'essai
+    // est une branche non testee.
     const resultat = { match_score: 78, job_title: "Beverage Manager", company: "A venue",
       key_requirements: ["WSET Level 2"], keywords_matched: ["stock control"],
-      keywords_to_add: ["gross profit"], hidden_signals: [], culture_decode: "",
-      seniority_decode: "", likely_interview_questions: [], cover_letter_hook: "",
+      keywords_to_add: ["gross profit"],
+      hidden_signals: ["The venue does 200 covers, so volume matters more than the title"],
+      culture_decode: "A small team where everyone carries several roles",
+      seniority_decode: "Mid level, with full ownership of the drinks programme",
+      likely_interview_questions: ["How do you hold gross profit through a bad month?"],
+      cover_letter_hook: "Ten years running high volume bars, and a route to Beverage Manager.",
       cv_optimized: { ...SAMPLE_CV, title: "Beverage Manager" } };
-    await page.route("**/api/claude", (route) => route.fulfill({
-      status: 200, contentType: "application/json",
-      body: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(resultat) }] }) }));
+    // Le prompt part-il en disant dans quelle langue repondre ? Il ne le
+    // disait pas, et comme il est ecrit en francais le modele repondait en
+    // francais : le CV adapte sortait en francais pour une annonce anglaise,
+    // pret a etre envoye a un recruteur britannique. Les libelles ci-dessous
+    // ne voient pas ca, parce que rien a l'ecran n'est faux : c'est le
+    // contenu qui est dans la mauvaise langue. On lit donc la demande.
+    let promptEnvoye = "";
+    await page.route("**/api/claude", (route) => {
+      try { promptEnvoye = route.request().postData() || ""; } catch { promptEnvoye = ""; }
+      return route.fulfill({
+        status: 200, contentType: "application/json",
+        body: JSON.stringify({ content: [{ type: "text", text: JSON.stringify(resultat) }] }) });
+    });
     await page.evaluate(() => window.__nuviOpenModal("open-match"));
     await page.waitForTimeout(900);
     const champ = page.locator('textarea[data-nuvi="match-annonce"]').first();
@@ -139,13 +162,25 @@ export async function run() {
       // forme affichee, pas la chaine du code. On compare donc sans casse,
       // sinon le test echoue sur un libelle parfaitement juste.
       const vu = (await page.evaluate(() => document.body.innerText)).toLowerCase();
-      for (const mot of ["requirements cles", "ajoutes", "presents"]) {
+      for (const mot of ["requirements cles", "ajoutes", "presents",
+        "accroche lettre de motivation", "signaux caches", "culture entreprise",
+        "niveau attendu", "questions probables", "absent de ton cv",
+        "tu l'as deja, ils l'appellent autrement"]) {
         if (vu.includes(mot)) {
           failures.push("le resultat du match affiche \"" + mot + "\" dans une interface "
             + "anglaise : ce libelle ne passe pas par les traductions");
         }
       }
-      for (const mot of ["what the job asks for", "already in your cv", "added for this ad"]) {
+      if (!promptEnvoye) {
+        failures.push("la demande envoyee a l'IA n'a pas ete lue : l'assertion sur la langue ne prouve rien");
+      } else if (!/langue de l['\u2019]?OFFRE/i.test(promptEnvoye)) {
+        failures.push("le prompt du match ne dit pas dans quelle langue repondre. Ecrit en "
+          + "francais, il fait repondre en francais : quelqu'un qui postule a Londres recoit "
+          + "un CV francais a envoyer a un recruteur britannique");
+      }
+      for (const mot of ["what the job asks for", "already in your cv", "added for this ad",
+        "cover letter hook", "hidden signals in the ad", "company culture, decoded",
+        "level expected, decoded", "likely interview questions"]) {
         if (!vu.includes(mot)) {
           failures.push("le resultat du match n'affiche pas \"" + mot + "\" : le libelle "
             + "traduit n'est pas arrive a l'ecran");
