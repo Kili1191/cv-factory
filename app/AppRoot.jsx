@@ -507,6 +507,24 @@ function ensureFontLoaded(href) {
 // every parser reads the way it is drawn.
 const GABARITS_NATIFS = new Set(["classic", "timeline", "ats"]);
 
+// AND THE ONE A NEW PERSON GETS IS ONE OF THEM
+//
+// The default was "sidebar", so somebody who never opened the template
+// picker, which is most people, downloaded the picture: a page that carries
+// no readable text at all, and passes only because of the layer written
+// under it. That layer measures 100% on all five parsers, so this is not a
+// fidelity fix. It is that the promise on the front page is a CV the sorting
+// software reads, and the file we hand over by default should be one whose
+// text is simply there, the way every other builder ships it, rather than
+// one that works because of a trick we maintain. When what you see and what
+// the machine reads are two separate things, a broken layer looks perfect on
+// screen: that is exactly how the amputated bullets of the old exports
+// reached real people.
+//
+// The six templates all stay, the picker still opens on the import screen,
+// and anyone who wants two columns picks them in one click.
+const GABARIT_PAR_DEFAUT = "classic";
+
 // Asks the server for the native PDF and hands it to the browser as a
 // download. Returns false when the server has no PDF to give (no Chromium,
 // an error, a wrong content type) or when the template is not one of the
@@ -3126,7 +3144,7 @@ export default function App() {
 
   const [cv, setCV_]       = useState(EMPTY);
   const [thN, setThN_]     = useState("ink");
-  const [layout, setLy_]   = useState("sidebar");
+  const [layout, setLy_]   = useState(GABARIT_PAR_DEFAUT);
   const [apiKey, setAK_]   = useState("server-managed");
   // L'ANGLAIS PAR DEFAUT, LE FRANCAIS EN UN CLIC
   //
@@ -3535,8 +3553,8 @@ export default function App() {
     }
     const savedTh = lsG(SK.TH, "ink");
     if (savedTh !== "ink") setThN_(savedTh);
-    const savedLy = lsG(SK.LY, "sidebar");
-    if (savedLy !== "sidebar") setLy_(savedLy);
+    const savedLy = lsG(SK.LY, GABARIT_PAR_DEFAUT);
+    if (savedLy !== GABARIT_PAR_DEFAUT) setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
     if (savedKy) setAK_(savedKy);
     // ABSENT n'est pas la meme chose que "en". lsG rend la valeur par defaut
@@ -8205,7 +8223,7 @@ export default function App() {
         setCVFn(() => normCV(tpl.cv));
       }
       setTh(tpl.theme || "ink");
-      setLy(tpl.layout || "sidebar");
+      setLy(tpl.layout || GABARIT_PAR_DEFAUT);
       notify(currentEmpty ? "Template charge!" : (locale === "en"
         ? "Layout applied (your data is kept)"
         : "Mise en page appliquee (tes donnees sont conservees)"));

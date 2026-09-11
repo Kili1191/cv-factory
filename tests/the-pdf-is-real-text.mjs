@@ -116,10 +116,62 @@ export async function run() {
     }
 
     // 2 bis. A TWO-COLUMN TEMPLATE KEEPS THE WRITTEN LAYER, BY DESIGN
+    //
+    // AND THE LAYER IS WHAT GETS CHECKED, NOT THE PICTURE
+    //
+    // This case used to assert one thing: that the file contains a JPEG.
+    // That proves the page is a picture and says nothing at all about the
+    // half that does the work. The picture carries no readable text; the
+    // layer written under it is the entire reason an ATS can read this
+    // file, and it was the only part nobody looked at.
+    //
+    // It is also the part that broke before. The exports up to 5 September
+    // cut the layer at the right edge of every line, and someone
+    // re-imported their own file and found every long bullet amputated
+    // mid-word. Nothing on screen showed it: the picture was perfect. A
+    // layer that is empty, truncated or out of order looks exactly like a
+    // layer that is right, which is why it needs a machine to say so.
     const colonne = await telecharger(browser, "sidebar");
     if (!colonne.bytes) failures.push("sidebar: no PDF downloaded");
     else if (!colonne.bytes.includes(Buffer.from("DCTDecode"))) {
       failures.push("sidebar: the column template went native; its two columns would be read line by line across both");
+    } else {
+      const { text } = await extractPdfText(colonne.bytes);
+      const plat = text.replace(/\s+/g, " ").trim();
+      if (!plat) {
+        failures.push("sidebar: the picture carries no text layer at all, so an ATS reads nothing: "
+          + "what the recruiter's software gets is a blank page");
+      } else {
+        // The name, the title and every heading: a layer missing any of
+        // them is a CV filed under nothing.
+        for (const attendu of [CV.name, CV.title]) {
+          if (attendu && !plat.includes(attendu)) {
+            failures.push("sidebar: \"" + attendu + "\" is not in the written layer, so the file does not name the candidate");
+          }
+        }
+        if (!/EXPERIENCE/i.test(plat)) {
+          failures.push("sidebar: the experience heading is missing from the written layer");
+        }
+        // The failure that reached real people: a line cut at the right
+        // margin. The bullet is long enough to wrap several times, so its
+        // last words only survive if the layer wraps rather than clips.
+        if (!/deux continents/.test(plat)) {
+          failures.push("sidebar: a wrapped bullet stops before its last words in the written layer. "
+            + "This is the amputated-bullet failure, and it is invisible on screen");
+        }
+        // And in reading order: the sidebar sits first in the DOM, so a
+        // layer that follows the page geometry rather than the reading
+        // order puts the contact band ahead of the person's own name.
+        // Case-insensitively: the heading is drawn "Experience", and an
+        // indexOf on the shouted form finds nothing and reads as position
+        // zero, which fails a layer that is in fact correct.
+        const ouExp = plat.search(/EXPERIENCE/i);
+        const ouNom = plat.indexOf(CV.name);
+        if (ouExp >= 0 && ouNom >= 0 && ouNom > ouExp) {
+          failures.push("sidebar: the written layer reaches the experience heading before the candidate's name, "
+            + "so it follows the columns and not the reading order");
+        }
+      }
     }
 
     // 3. THE FALLBACK STILL DELIVERS
