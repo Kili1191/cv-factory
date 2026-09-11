@@ -255,6 +255,7 @@ const EN_T = {
   mt_reach_adds:"What Nuvi adds from your record",
   // The rest of the match result, found the same way as the first three:
   // by walking the product in English and reading what came back in French.
+  mt_no_score:"This ad says too little to score a fit. The two lists below are still exact.",
   mt_cover:"{n} of the {t} phrases this ad uses are in your CV, word for word",
   mt_decoded_more:"What Nuvi read in this ad",
   mt_hook:"Cover letter hook",

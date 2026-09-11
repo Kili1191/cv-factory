@@ -231,6 +231,47 @@ export async function run() {
     }
   }
 
+  // --- 6. LE MOBILIER D'UNE ANNONCE N'EST PAS UNE EXIGENCE --------------
+  //
+  // Sur une annonce agregee, un titre, un salaire, un type de contrat et
+  // presque rien d'autre, les expressions extraites etaient le salaire, la
+  // date de publication, le bouton Postuler et le nom de la boite. Le
+  // panneau les donnait comme "absentes de ton CV", et le chiffre les
+  // comptait au denominateur : un CV parfaitement adapte sortait a 7 sur
+  // 100 parce que personne n'ecrit "days ago" sur un CV.
+  const MINCE = `Senior Associate, Client and Workplace Experience
+Expedite Group Europe
+
+London, United Kingdom
+Full-time
+Salary: 36,000 - 60,000 GBP per year
+Posted 3 days ago
+Apply now on the company website
+About the role: Senior Associate, Client and Workplace Experience.
+Expedite Group Europe is hiring.`;
+  const duMince = phrasesClefs(MINCE);
+  for (const mobilier of ["gbp", "days ago", "apply now", "company website",
+    "united kingdom", "expedite group", "full time", "000"]) {
+    const vu = duMince.find((p) => p.includes(mobilier));
+    if (vu) {
+      failures.push("\"" + vu + "\" est propose comme exigence de l'annonce : "
+        + "c'est le mobilier du site d'emploi, pas ce que le poste demande");
+    }
+  }
+  if (couverture(CV, MINCE) !== null) {
+    failures.push("une annonce qui ne dit que son titre et son salaire rend quand meme "
+      + "une part sur 100 : un CV bien adapte y sortait a 7 et le chiffre ne mesurait rien");
+  }
+  // Et l'annonce complete, elle, garde ses exigences : le filtre coupe le
+  // mobilier, pas le metier. Ces trois-la sortent bien de cette annonce,
+  // verifie contre la version d'avant le filtre.
+  const duRiche = phrasesClefs(ANNONCE);
+  for (const vrai of ["stock control", "cost control", "inventory management"]) {
+    if (!duRiche.includes(vrai)) {
+      failures.push("le filtre du mobilier a emporte \"" + vrai + "\", qui est une vraie exigence");
+    }
+  }
+
   if (!failures.length) {
     console.log(
       `      intitule "${t.actuel}" vs "${t.vise}" -> ${t.etat} ; `

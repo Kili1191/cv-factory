@@ -322,17 +322,22 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
           padding:"14px 18px", marginBottom:12,
           border:"0.5px solid "+Hairline,
         }}>
-          <div style={{textAlign:"center", flexShrink:0}}>
-            <div style={{
-              fontFamily:Serif, fontSize:34, fontWeight:500,
-              color:sc(res.match_score), lineHeight:1, letterSpacing:"-0.02em",
-            }}>
-              {res.match_score}
+          {/* No number when the ad gave nothing solid to count. An ad that
+              is a title, a salary and a contract type yields no real
+              requirement, and a part of nothing reads as a confident 7. */}
+          {typeof res.match_score === "number" ? (
+            <div style={{textAlign:"center", flexShrink:0}}>
+              <div style={{
+                fontFamily:Serif, fontSize:34, fontWeight:500,
+                color:sc(res.match_score), lineHeight:1, letterSpacing:"-0.02em",
+              }}>
+                {res.match_score}
+              </div>
+              <div style={{fontSize:9, color:InkMuted, fontWeight:600, letterSpacing:1, marginTop:2}}>
+                Match
+              </div>
             </div>
-            <div style={{fontSize:9, color:InkMuted, fontWeight:600, letterSpacing:1, marginTop:2}}>
-              Match
-            </div>
-          </div>
+          ) : null}
           <div style={{flex:1}}>
             <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:4, fontFamily:Sans}}>
               {res.job_title}{res.company?" - "+res.company:""}
@@ -346,12 +351,18 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
                   .replace("{t}", res.couverture.demandees)}
               </div>
             )}
-            <div style={{width:"100%", height:5, borderRadius:3, background:Hairline}}>
-              <div style={{
-                width:res.match_score+"%", height:"100%",
-                borderRadius:3, background:sc(res.match_score),
-              }}/>
-            </div>
+            {typeof res.match_score === "number" ? (
+              <div style={{width:"100%", height:5, borderRadius:3, background:Hairline}}>
+                <div style={{
+                  width:res.match_score+"%", height:"100%",
+                  borderRadius:3, background:sc(res.match_score),
+                }}/>
+              </div>
+            ) : (
+              <div style={{fontSize:11.5, color:InkMuted, lineHeight:1.5}}>
+                {T.mt_no_score}
+              </div>
+            )}
           </div>
         </div>
 
