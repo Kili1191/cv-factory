@@ -6,7 +6,7 @@
 
 import { useState, useMemo } from "react";
 import { SCHEMA_MATCH } from "./schemas";
-import { rapport } from "../../lib/atsMatch.js";
+import { rapport, couverture } from "../../lib/atsMatch.js";
 import { normCV } from "../../lib/cvSchema.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
@@ -193,10 +193,34 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       // Un instantane d'abord : c'est l'action centrale du produit et elle
       // remplace TOUT le CV. Sans lui, une adaptation moins bonne que
       // l'original etait sans retour.
+      let adapte = null;
       if (r && r.cv_optimized) {
+        adapte = normCV(r.cv_optimized, base);
         if (typeof pushH === "function") pushH();
-        setCVFn(() => normCV(r.cv_optimized, base));
+        setCVFn(() => adapte);
         setApplique(true);
+      }
+      // THE BIG NUMBER IS MEASURED, NOT GUESSED
+      //
+      // match_score is a free number field in the schema: the model filled
+      // it in however it felt, nothing computed it and nothing checked it.
+      // The same CV against the same ad could come back 72 or 81, and no
+      // sorting software produces anything like it. Meanwhile atsMatch.js
+      // refuses to return a mark out of 100 on purpose, with the reason
+      // written beside the code: a mark suggests a precision we do not
+      // have, and pushes people to optimise the number instead of the CV.
+      // The hero of this panel contradicted the principle underneath it.
+      //
+      // It now counts the ad's own phrases that appear in the CV exactly as
+      // the ad writes them, which is what a string-matching ATS does. It is
+      // measured on the ADAPTED CV, the document that would actually be
+      // sent, so it rises when Nuvi has done its job. If the ad yields no
+      // phrase to compare, the field goes away rather than showing a number
+      // resting on nothing.
+      if (r) {
+        const couv = couverture(adapte || base, offer);
+        if (couv) { r.match_score = couv.score; r.couverture = couv; }
+        else { delete r.match_score; delete r.couverture; }
       }
       setRes(r);
       setPh("done");
@@ -310,9 +334,18 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
             </div>
           </div>
           <div style={{flex:1}}>
-            <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:6, fontFamily:Sans}}>
+            <div style={{fontSize:13, fontWeight:600, color:Ink, marginBottom:4, fontFamily:Sans}}>
               {res.job_title}{res.company?" - "+res.company:""}
             </div>
+            {/* What the number counts, said in one line. A score nobody can
+                explain is a score nobody should act on. */}
+            {res.couverture && (
+              <div style={{fontSize:11, color:InkMuted, lineHeight:1.45, marginBottom:7}}>
+                {String(T.mt_cover || "")
+                  .replace("{n}", res.couverture.present)
+                  .replace("{t}", res.couverture.demandees)}
+              </div>
+            )}
             <div style={{width:"100%", height:5, borderRadius:3, background:Hairline}}>
               <div style={{
                 width:res.match_score+"%", height:"100%",

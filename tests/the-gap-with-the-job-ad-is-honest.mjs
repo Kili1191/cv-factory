@@ -29,7 +29,7 @@
 //      bourrage, c'est-a-dire une fausse declaration dans un recrutement.
 
 import {
-  rapport, titreEnTete, phrasesClefs, ecartMotsClefs, ticsDeMachine,
+  rapport, titreEnTete, phrasesClefs, ecartMotsClefs, ticsDeMachine, couverture,
 } from "../lib/atsMatch.js";
 
 const CV = {
@@ -187,10 +187,55 @@ export async function run() {
   }
   if (typeof r.aCorriger !== "number") failures.push("le rapport ne rend plus de compte a corriger");
 
+  // --- 5. LE GRAND CHIFFRE SE CALCULE -----------------------------------
+  //
+  // Le panneau affichait un score sur 100 rendu par le modele : un champ
+  // libre du schema, que rien ne calculait et que rien ne verifiait. Deux
+  // passages sur le meme couple annonce/CV ne donnaient pas le meme nombre.
+  // Ce fichier-ci refusait deja de rendre une note, avec la raison ecrite a
+  // cote : une note fait croire a une precision qu'on n'a pas.
+  //
+  // Celui-la se compte. Ce qu'on tient ici, c'est qu'il mesure bien quelque
+  // chose : qu'il monte quand le CV reprend les mots de l'annonce, qu'il
+  // tombe a zero quand il n'en reprend aucun, qu'il ne rend rien plutot
+  // qu'un chiffre creux quand l'annonce n'offre rien a comparer, et que son
+  // denominateur est celui que le panneau affiche a cote.
+  const couv = couverture(CV, ANNONCE);
+  if (!couv) {
+    failures.push("aucune couverture calculee sur une vraie annonce : le panneau n'aurait pas de chiffre");
+  } else {
+    if (couv.demandees !== e.demandees) {
+      failures.push("la couverture compte " + couv.demandees + " expressions demandees et l'ecart "
+        + e.demandees + " : les deux chiffres du panneau ne parlent pas de la meme chose");
+    }
+    if (couv.present !== couv.demandees - e.manquantes.length - e.aReformuler.length) {
+      failures.push("le nombre d'expressions presentes ne se deduit pas des listes affichees");
+    }
+    if (couv.score < 0 || couv.score > 100) {
+      failures.push("la couverture rend " + couv.score + ", hors de l'echelle qu'elle affiche");
+    }
+    // Le meme CV ecrit avec les mots de l'annonce doit mieux s'en sortir.
+    // Sans cette comparaison, une fonction qui rendrait toujours 50 passerait.
+    const avecLesMots = { ...CV, title: "Bar Manager", skills: [...CV.skills, ...phrasesClefs(ANNONCE)] };
+    const mieux = couverture(avecLesMots, ANNONCE);
+    if (!mieux || mieux.score <= couv.score) {
+      failures.push("reprendre les expressions de l'annonce ne fait pas monter le chiffre ("
+        + couv.score + " puis " + (mieux && mieux.score) + ") : il ne mesure pas ce qu'il annonce");
+    }
+    const vide = couverture({ title: "", summary: "", experience: [], education: [], skills: [], languages: [] }, ANNONCE);
+    if (!vide || vide.score !== 0) {
+      failures.push("un CV vide ne tombe pas a zero (" + (vide && vide.score) + ")");
+    }
+    if (couverture(CV, "") !== null) {
+      failures.push("une annonce sans expression rend quand meme un chiffre, qui ne repose sur rien");
+    }
+  }
+
   if (!failures.length) {
     console.log(
       `      intitule "${t.actuel}" vs "${t.vise}" -> ${t.etat} ; `
-      + `${e.aReformuler.length} a reformuler, ${e.manquantes.length} absentes, aucune inventee`
+      + `${e.aReformuler.length} a reformuler, ${e.manquantes.length} absentes, aucune inventee ; `
+      + `couverture mesuree ${couv ? couv.present + "/" + couv.demandees : "aucune"}`
     );
   }
   return failures;

@@ -189,6 +189,13 @@ export async function run() {
           + "francais, il fait repondre en francais : quelqu'un qui postule a Londres recoit "
           + "un CV francais a envoyer a un recruteur britannique");
       }
+      // Le grand chiffre se mesure : la doublure rend match_score 78, et le
+      // panneau doit afficher le sien, avec la phrase qui dit ce qu'il
+      // compte. Sans cette ligne, le nombre du modele serait passe.
+      if (!/phrases this ad uses are in your cv/.test(vu)) {
+        failures.push("le panneau n'explique pas ce que compte son grand chiffre : "
+          + "le score du modele est passe a la place de la mesure");
+      }
       for (const mot of ["what the job asks for", "already in your cv", "added for this ad",
         "cover letter hook", "hidden signals in the ad", "company culture, decoded",
         "level expected, decoded", "likely interview questions"]) {
