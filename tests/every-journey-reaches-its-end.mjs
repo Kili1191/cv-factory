@@ -263,7 +263,19 @@ const PARCOURS = [
       if (!(await cliquerTexte(page, /Fit my CV to this ad|Adapter mon CV a cette offre/i, 3000))) { echec("etape 4 : pas de bouton d'analyse"); return; }
       if (!appels.includes("match")) { echec("etape 4 : aucun appel match"); return; }
       const corps = await page.locator("body").innerText();
-      if (!/78/.test(corps)) { echec("etape 5 : le score de l'analyse n'est pas a l'ecran"); return; }
+      // LE CHIFFRE AFFICHE EST CELUI QU'ON MESURE, PAS CELUI DE LA DOUBLURE
+      //
+      // Cette ligne cherchait "78", le match_score que la doublure rend. Or
+      // ce champ etait un nombre libre que le modele remplissait comme il le
+      // sentait : le panneau le remplace desormais par la part des
+      // expressions de l'annonce reellement presentes dans le CV. Chercher
+      // 78 revenait donc a exiger que la valeur inventee gagne.
+      if (!/phrases this ad uses are in your cv/i.test(corps)) {
+        echec("etape 5 : le score de l'analyse n'est pas a l'ecran"); return;
+      }
+      if (/\b78\b/.test(corps)) {
+        echec("etape 5 : le score de la doublure est affiche tel quel, la mesure ne l'a pas remplace"); return;
+      }
       if (!(await cliquerTexte(page, /full application|candidature complete|Application Pack|Pack candidature/i, 1200))) {
         echec("etape 6 : pas d'entree vers le pack"); return;
       }
