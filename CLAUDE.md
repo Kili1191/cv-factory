@@ -177,6 +177,45 @@ que dans un navigateur.
 `tests/the-extension-fills-the-form.mjs` tient les deux sens, la case du CV
 et celles qui n'en sont pas, et verifie que le formulaire n'est pas parti.
 
+Le chiffre du panneau se compte. `match_score` etait un champ libre du
+schema : le modele le remplissait comme il le sentait, rien ne le calculait,
+rien ne le verifiait, et deux passages sur le meme couple annonce/CV ne
+donnaient pas le meme nombre. `lib/atsMatch.js` avait pourtant deja tranche,
+la raison ecrite a cote du code : une note sur 100 fait croire a une
+precision qu'on n'a pas et pousse a optimiser le chiffre plutot que le CV.
+Le grand chiffre en tete du panneau disait le contraire du principe ecrit
+dessous. `couverture()` compte desormais la part des expressions de
+l'annonce qui figurent dans le CV telles que l'annonce les ecrit, ce que
+fait un tri par chaines, et la mesure porte sur le CV ADAPTE, celui qu'on
+enverrait. Une ligne sous le chiffre dit ce qu'il a compte : un score que
+personne ne sait expliquer est un score sur lequel personne ne devrait agir.
+
+Le mobilier d'un site d'emploi n'est pas une exigence. Sur une annonce
+agregee, un titre, un salaire, un type de contrat et presque rien d'autre,
+les expressions extraites etaient `000 gbp`, `days ago`, `apply now`,
+`company website`, le nom de la boite. Le panneau les proposait comme
+absentes du CV depuis toujours, et le chiffre les comptait : un CV dont
+l'intitule reprenait mot pour mot celui de l'annonce sortait a 7 sur 100.
+L'en-tete etait deja coupe, mais sur une annonce mince le mobilier est dans
+le corps ; il se reconnait a ce qu'il dit, une somme, une date, une
+invitation a postuler, une adresse, une forme juridique, jamais une
+competence. Et sous six exigences reelles, aucun chiffre n'est affiche :
+une part de rien reste rien, les deux listes restent justes.
+`tests/the-gap-with-the-job-ad-is-honest.mjs`.
+
+Le gabarit par defaut est a une colonne. Il valait `sidebar`, a deux
+colonnes, donc qui n'ouvrait jamais le selecteur, c'est-a-dire presque tout
+le monde, telechargeait la photo : une page sans un mot lisible, qui ne
+passe que grace a la couche ecrite dessous. Cette couche mesure 100 % sur
+les cinq moteurs, ce n'est donc pas une correction de fidelite. C'est que la
+promesse de la page d'accueil est un CV que les logiciels de tri lisent, et
+que le fichier rendu par defaut doit etre celui dont le texte est
+simplement la. Quand ce qu'on voit et ce que la machine lit sont deux choses
+separees, une couche cassee reste parfaite a l'ecran : c'est ainsi que les
+puces amputees des anciens exports sont arrivees chez de vraies personnes.
+`GABARIT_PAR_DEFAUT` vaut `classic` ; les six gabarits restent, le
+selecteur s'ouvre toujours a l'import, et deux colonnes sont a un clic.
+
 L'argent arrive par `app/api/billing`. Le plan est fixé dans `lib/plans.js`
 (24 € par mois, 49 € pour trois mois, trois adaptations gratuites avec un
 compte) ; `lib/facturation.js` parle à Stripe et à Supabase avec la clé
