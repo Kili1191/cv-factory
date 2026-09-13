@@ -285,6 +285,46 @@ Second office: 40 Lavender Road, London.`;
   // Et l'annonce complete, elle, garde ses exigences : le filtre coupe le
   // mobilier, pas le metier. Ces trois-la sortent bien de cette annonce,
   // verifie contre la version d'avant le filtre.
+  // --- 7. UNE EXIGENCE N'EST PAS UN MORCEAU DE PHRASE ------------------
+  //
+  // Trouve en se mettant a la place du client sur une annonce de Beverage
+  // Manager : le panneau donnait a ajouter "across two", "across both",
+  // "both bars", "experience running", "management across", "essential
+  // level", "experienced beverage". Des suites de deux mots decoupees au
+  // hasard, qui ne veulent rien dire seules, et qui comptaient au
+  // denominateur du chiffre.
+  const BEVERAGE = `Beverage Manager
+Soho House, London
+
+We are looking for an experienced Beverage Manager to lead our bar team across two sites.
+
+Responsibilities:
+- Full stock control and inventory management across both bars
+- Team leadership: recruit, train and develop a team of fifteen bartenders
+- Cost control and P&L responsibility for the beverage department
+- Own the drinks list, from supplier negotiation to menu costing
+
+Requirements:
+- Proven experience running a high volume bar in a premium setting
+- WSET Level 2 essential, Level 3 desirable
+- Strong commercial awareness and gross profit discipline`;
+  const duBeverage = phrasesClefs(BEVERAGE);
+  for (const debris of ["across two", "across both", "both bars", "experience running",
+    "management across", "essential level", "experienced beverage", "fifteen bartenders"]) {
+    if (duBeverage.includes(debris)) {
+      failures.push("\"" + debris + "\" est propose comme exigence : c'est un morceau de "
+        + "phrase, il ne commence ni ne finit sur un mot qui nomme quoi que ce soit");
+    }
+  }
+  // Et les vraies exigences de la meme annonce sont toujours la : le filtre
+  // coupe les bords mous, pas le metier.
+  for (const vrai of ["commercial awareness", "menu costing", "beverage department",
+    "inventory management", "supplier negotiation", "premium setting"]) {
+    if (!duBeverage.includes(vrai)) {
+      failures.push("le filtre des bords a emporte \"" + vrai + "\", qui est une vraie exigence");
+    }
+  }
+
   const duRiche = phrasesClefs(ANNONCE);
   for (const vrai of ["stock control", "cost control", "inventory management"]) {
     if (!duRiche.includes(vrai)) {
