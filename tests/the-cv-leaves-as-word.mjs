@@ -33,7 +33,15 @@ function texteDuDocx(octets) {
   return { dossier, fichier, xml, texte: xml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ") };
 }
 
+// A soffice on the PATH is not a Writer. The remote image ships
+// libreoffice-core alone: the binary launches, answers "source file could not
+// be loaded" on a valid .docx, and exits 0. The suite then read the missing
+// PDF as a broken export and said so, which sent a session hunting a bug in
+// exporterEnDocx that was not there. The Writer module is the thing that
+// opens a .docx, so that is what we look for.
 function ouEstSoffice() {
+  const modules = ["/usr/lib/libreoffice/program/swriter", "/usr/lib/libreoffice/program/libswlo.so"];
+  if (!modules.some((m) => existsSync(m))) return null;
   for (const p of ["/usr/bin/soffice", "/usr/bin/libreoffice", "/usr/lib/libreoffice/program/soffice"]) if (existsSync(p)) return p;
   return null;
 }
@@ -63,7 +71,7 @@ export async function run() {
   // --- 2. LibreOffice Writer opens and prints it ------------------------------
   const soffice = ouEstSoffice();
   if (!soffice) {
-    console.log("      NON EXECUTE : LibreOffice Writer absent de cette machine");
+    console.log("      NON EXECUTE : LibreOffice Writer absent de cette machine (apt install libreoffice-writer)");
     if (process.env.CI) failures.push("LibreOffice Writer missing on CI");
   } else {
     try {

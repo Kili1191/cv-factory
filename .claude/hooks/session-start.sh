@@ -32,9 +32,22 @@ echo "--> moteurs d'extraction PDF et OCR"
 # qu'un ATS retrouve le CV exporte. Sans eux les controles concernes se
 # declarent non executes au lieu de rougir, ce qui est pire qu'un echec : on
 # croit avoir verifie.
-if ! command -v pdftotext >/dev/null 2>&1; then
+# libreoffice-writer opens the .docx and prints it, the proof that the Word
+# export is a document and not a zip that passes a regex. The image ships
+# libreoffice-core alone: soffice is on the PATH and cannot load a .docx, so
+# the suite found a binary, got "source file could not be loaded", and
+# reported "Writer produced no PDF" as if the export were broken. CI installs
+# writer (.github/workflows), this script did not, so the same tree was green
+# there and red here.
+MANQUE=""
+command -v pdftotext >/dev/null 2>&1 || MANQUE="$MANQUE poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra"
+[ -x /usr/lib/libreoffice/program/swriter ] || MANQUE="$MANQUE libreoffice-writer"
+if [ -n "$MANQUE" ]; then
+  # update sans condition : les listes de l'image sont plus vieilles que les
+  # paquets qu'elles pointent, et apt rend alors un 404 sur une version
+  # retiree du miroir. Une installation avait echoue exactement ainsi.
   apt-get update -qq
-  apt-get install -y -qq poppler-utils mupdf-tools tesseract-ocr tesseract-ocr-fra
+  apt-get install -y -qq $MANQUE
 fi
 
 echo "--> Apache Tika"
