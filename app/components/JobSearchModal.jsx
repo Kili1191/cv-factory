@@ -15,15 +15,19 @@
 // fait le pont a la main, en recollant l'annonce a chaque etape.
 
 import React, { useCallback, useState } from "react";
+import { codeAdzuna } from "../../lib/conventions.js";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
   Purple, Magenta, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,  CoralText } from "./tokens";
 
-export default function JobSearchModal({ T, locale = "en", onTrack, onClose }) {
+export default function JobSearchModal({ marche = "", T, locale = "en", onTrack, onClose }) {
   const [what, setWhat] = useState("");
   const [where, setWhere] = useState("");
-  const [country, setCountry] = useState("fr");
+  // The market the person already set decides where the search starts. It
+  // defaulted to France for everyone, so somebody in London searched the
+  // French market until they spotted the button.
+  const [country, setCountry] = useState(() => codeAdzuna(marche) || "fr");
   const [jobs, setJobs] = useState([]);
   const [state, setState] = useState("idle"); // idle | loading | done | off
   const [warnings, setWarnings] = useState([]);

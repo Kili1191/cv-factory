@@ -22,7 +22,7 @@
 //   4. The request that reaches the model carries the rules.
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
-import { reglesDuPays, conventionsDuPays, paysDuTexte, PAYS_CONNUS } from "../lib/conventions.js";
+import { reglesDuPays, conventionsDuPays, paysDuTexte, PAYS_CONNUS, codeAdzuna } from "../lib/conventions.js";
 
 // Words that would mean the rules are telling the model to put something on
 // the CV. None of them belongs in a rule that only takes away.
@@ -63,6 +63,21 @@ export async function run() {
   if (reglesDuPays("AUTO") !== "" || reglesDuPays("") !== "" || reglesDuPays("ZZ") !== "") {
     failures.push("un marche inconnu produit quand meme une regle : mieux vaut se taire "
       + "que d'affirmer une convention qu'on n'a pas");
+  }
+
+  // --- 2 bis. One market, obeyed everywhere ----------------------------
+  //
+  // The job search kept its own country, defaulting to France, so somebody
+  // in London opened "Find a role" and searched the French market until
+  // they spotted the button. Adzuna calls the United Kingdom "gb", which is
+  // exactly the kind of detail that makes a search quietly return nothing.
+  if (codeAdzuna("UK") !== "gb") {
+    failures.push("le marche britannique n'est pas traduit en \"gb\" pour Adzuna (rendu "
+      + JSON.stringify(codeAdzuna("UK")) + ") : la recherche londonienne ne rendrait rien");
+  }
+  if (codeAdzuna("FR") !== "fr") failures.push("le marche francais n'est pas traduit en \"fr\"");
+  if (codeAdzuna("ZZ") !== "" || codeAdzuna("") !== "") {
+    failures.push("un marche inconnu rend quand meme un code de pays a la recherche");
   }
 
   // --- 3. The ad names the market --------------------------------------

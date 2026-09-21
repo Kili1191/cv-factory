@@ -8449,7 +8449,7 @@ export default function App() {
       {showJobs && (
         <Suspense fallback={null}>
           <JobSearchModal
-            T={T} locale={locale}
+            T={T} locale={locale} marche={auditCountry}
             onClose={() => setShowJobs(false)}
             onTrack={(job) => {
               // Le geste qui ferme la boucle. L'offre devient une candidature
