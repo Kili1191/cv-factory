@@ -34,6 +34,7 @@ const SUITES = [
   ["the setup page names what is missing", "./the-setup-page-names-what-is-missing.mjs"],
   ["job sources return the same shape", "./job-sources-normalise.mjs"],
   ["the gap with the job ad is honest", "./the-gap-with-the-job-ad-is-honest.mjs"],
+  ["the CV obeys its market", "./the-cv-obeys-its-market.mjs"],
   ["the diagnosis names one cause", "./the-diagnosis-names-one-cause.mjs"],
   ["the diagnosis reaches the screen", "./the-diagnosis-reaches-the-screen.mjs"],
   ["a posting alone is enough", "./a-posting-alone-is-enough.mjs"],

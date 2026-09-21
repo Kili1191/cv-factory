@@ -7,6 +7,7 @@
 import { useState, useMemo } from "react";
 import { SCHEMA_MATCH } from "./schemas";
 import { rapport, couverture } from "../../lib/atsMatch.js";
+import { reglesDuPays, paysDuTexte } from "../../lib/conventions.js";
 import { normCV } from "../../lib/cvSchema.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
@@ -48,7 +49,7 @@ function Section({ label, children, last = false }) {
   );
 }
 
-function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "en", onPackRequest,
+function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "en", pays = "", onPackRequest,
   onResult, onApplied, initialResult, initialOffer = "",
   pushH, onCreateFromOffer, onUndo, onDownload }) {
   // `initialOffer` vient du suivi de candidatures : ouvrir "Adapter mon CV"
@@ -154,8 +155,23 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       + "Les intitules de poste, les noms d'entreprise et les noms d'ecole "
       + "restent tels quels.\n";
 
+    // THE CV OBEYS THE MARKET IT IS BEING SENT TO
+    //
+    // Nuvi already knew which country someone was aiming at: the picker
+    // drives the recruiter audit and the interview simulation. The CV
+    // itself ignored it, so a person applying in London got a French
+    // convention CV back from a product whose promise is a document that
+    // gets through. The ad names the market better than any setting, so it
+    // is read first and the setting is the fallback.
+    //
+    // The rules only ever remove and shorten. A rule that added anything
+    // would have to invent a date of birth or a nationality nobody wrote.
+    const marche = paysDuTexte(offer) || pays || "";
+    const reglesDuMarche = reglesDuPays(marche);
+
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
       + langueDeLaCandidature
+      + reglesDuMarche
       +"OFFRE:\n"+offer+"\n"
       +(choix === "parcours"
         ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"

@@ -18,6 +18,7 @@ import { lireCommeLesAts } from "../lib/atsVendors";
 import { texteProbable } from "../lib/deuxLectures";
 import { etatDeLaPuce } from "../lib/resultatOuResponsabilite";
 import { deuxLectures } from "../lib/deuxLectures.js";
+import { paysDuTexte } from "../lib/conventions.js";
 import { secteurProbable, SECTEURS } from "../lib/metier";
 import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
@@ -283,7 +284,7 @@ const QUI_DECIDE =
   + "transforme pas la demande en une version plus sage, et n'explique pas ce "
   + "que tu aurais fait a sa place. Tu executes, et tu passes a la suite.";
 
-const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk", REP:"cvf_rep" };
+const SK = { CV:"cvf_d", TH:"cvf_t", LY:"cvf_l", KY:"cvf_k", LC:"cvf_c", BK:"cvf_bk", VS:"cvf_vs", CT:"cvf_ct", CO:"cvf_co", AP:"cvf_ap", TU:"cvf_tu", DK:"cvf_dk", REP:"cvf_rep", PAYS:"cvf_pays" };
 
 
 // === FR_T et EN_T ont ete extraits dans ./i18n/{fr,en}.js ===
@@ -1725,7 +1726,7 @@ const IconFinalize = (
 // OfferSheet v17 : sheet bottom iOS-native qui contient le MatchPanel.
 // Permet d'analyser l'offre OU de re-consulter le resultat persiste.
 // ============================================================
-function OfferSheet({ T, locale, cv, setCVFn, notify, apiKey, pushH, versions,
+function OfferSheet({ T, locale, pays, cv, setCVFn, notify, apiKey, pushH, versions,
   initialResult, initialOffer, onResult, onApplied, onPackRequest, onClose,
   onCreateFromOffer, onUndo, onDownload }) {
   return (
@@ -1761,6 +1762,7 @@ function OfferSheet({ T, locale, cv, setCVFn, notify, apiKey, pushH, versions,
         apiKey={apiKey}
         T={T}
         locale={locale}
+        pays={pays}
         onPackRequest={onPackRequest}
         pushH={pushH}
         initialResult={initialResult}
@@ -3177,7 +3179,18 @@ export default function App() {
   const [obImp, setObImp]   = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [showAdjust, setShowAdjust] = useState(false);  // [Nuvi v2] AdjustModal sliding from right
-  const [auditCountry, setAuditCountry] = useState("FR");
+  // THE MARKET IS NOT FRANCE FOR EVERYONE, AND IT SURVIVES A RELOAD
+  //
+  // This was hardcoded to "FR" and kept nowhere, so somebody applying in
+  // London was audited against the French market, told the French market's
+  // interview questions, and lost the correction every time the page
+  // reloaded. The person's own location answers it better than a default,
+  // and once they set it, it stays set.
+  const [auditCountry, setAuditCountry_] = useState("FR");
+  const setAuditCountry = useCallback((v) => {
+    setAuditCountry_(v);
+    try { lsS(SK.PAYS, v); } catch { /* storage refused: the session keeps it */ }
+  }, []);
   const [auditLoading, setAuditLoading] = useState(false);
   const [auditResult, setAuditResult]   = useState(null);
   const [auditMsgIdx, setAuditMsgIdx]   = useState(0);
@@ -3554,6 +3567,14 @@ export default function App() {
     }
     const savedTh = lsG(SK.TH, "ink");
     if (savedTh !== "ink") setThN_(savedTh);
+    // Nobody has said which market yet: the person's own location answers
+    // it far better than a default of France, and they can still change it.
+    const savedPays = lsG(SK.PAYS, "");
+    if (savedPays) setAuditCountry_(savedPays);
+    else {
+      const devine = paysDuTexte((savedCV && savedCV.location) || "");
+      if (devine) setAuditCountry_(devine);
+    }
     const savedLy = lsG(SK.LY, GABARIT_PAR_DEFAUT);
     if (savedLy !== GABARIT_PAR_DEFAUT) setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
@@ -8383,7 +8404,7 @@ export default function App() {
       {showOffer && (
         <OfferSheet
           initialOffer={pendingOffer}
-          T={T} locale={locale} cv={cv} versions={versions} setCVFn={setCVFn}
+          T={T} locale={locale} pays={auditCountry} cv={cv} versions={versions} setCVFn={setCVFn}
           notify={notify} apiKey={apiKey} pushH={pushH}
           initialResult={offerResult}
           onResult={(r) => { setOfferResult(r); if (typeof nuviTrigger === 'function' && r) nuviTrigger('feature-completed'); }}
