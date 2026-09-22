@@ -113,9 +113,14 @@
 
 /* the logo, centred; the still mark has the animated one's geometry */
 .vv-mark-still { font-family: var(--vv-serif); font-size: 22px; line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #000; }
+/* The tittle sits 0.06em over the stem, which starts at 0.5em. It used to
+   start at 0.16em and end at 0.34em, a gap almost as wide as the dot. The
+   geometry is in em, so that gap was always there and was simply too small
+   to see: the footer wordmark is the only place the mark is set large, and
+   a CSS bug had been holding it at 16px, so nobody ever saw it at size. */
 .vv-mark-still .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
 .vv-mark-still .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: #000; border-radius: 0.018em; transform: translateX(-50%); }
-.vv-mark-still .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
+.vv-mark-still .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.26em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
 .vv-logo { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: inline-flex; align-items: center;
            min-height: 44px; text-decoration: none; color: var(--vv-ink); pointer-events: auto; }
 
@@ -321,10 +326,29 @@
 .vv-ticker__row span { padding: 0 1.75rem; white-space: nowrap; }
 .vv-ticker__row span { display: inline-flex; align-items: center; gap: 1.75rem; }
 .vv-ticker__row span i { width: 5px; height: 5px; border-radius: 50%; background: var(--vv-purple); opacity: 0.6; }
-.vv-metiers { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 0.35rem 1.25rem; font-family: var(--vv-display); font-size: clamp(1.5rem, 3.2vw, 2.5rem); letter-spacing: -0.02em; line-height: 1.25; }
-.vv-metiers li { display: inline-flex; align-items: center; gap: 1.25rem; }
-.vv-metiers li::after { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--vv-purple); opacity: 0.5; }
-.vv-metiers li:last-child::after { display: none; }
+/* Twenty-four job titles were set as one wrapping run of large display type
+   with a purple dot after each. A wrap puts that dot at the end of a line,
+   so the phone showed titles two and three to a row with dots dangling off
+   the right edge and one title stranded alone above them: the ragged block
+   that got this section called ugly. The dot leads now, in the row rather
+   than after the words, so it can never be orphaned by a wrap, and the
+   titles sit one per row with a hairline between, the same rule the steps
+   section already uses. Two columns once there is width for them. The type
+   comes down from 2.5rem: this is an index of jobs, not a headline, and at
+   headline size the list was the loudest thing on a page whose actual
+   subject is the CV. */
+/* Columns and not a two-column grid: a grid fills across, so reading down
+   the left column gave every other job and the two columns only made sense
+   read as rows, which is not how anyone reads two lists side by side.
+   Multi-column fills down then over, and it does not need to know how many
+   jobs there are. */
+.vv-metiers { list-style: none; margin: 0; padding: 0; columns: 1; column-gap: 2.5rem;
+  font-family: var(--vv-display); font-size: clamp(1rem, 1.4vw, 1.3rem);
+  letter-spacing: -0.01em; line-height: 1.3; }
+.vv-metiers li { display: flex; align-items: center; gap: 0.8rem; padding: 0.42rem 0;
+  border-top: 1px solid var(--vv-line); break-inside: avoid; }
+.vv-metiers li::before { content: ""; flex: 0 0 5px; height: 5px; border-radius: 50%; background: var(--vv-purple); opacity: 0.55; }
+@media (min-width: 560px) { .vv-metiers { columns: 2; } }
 @keyframes vvTick { to { transform: translateX(-50%); } }
 
 /* numbered steps */
@@ -367,11 +391,25 @@
 .vv-foot__mark { font-family: var(--vv-serif); font-size: clamp(5rem, 18vw, 16rem); line-height: 1; letter-spacing: -0.01em; display: inline-flex; align-items: baseline; color: #fff; text-decoration: none; }
 .vv-foot__mark .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
 .vv-foot__mark .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: #fff; border-radius: 0.018em; transform: translateX(-50%); }
-.vv-foot__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
+.vv-foot__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.26em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%); }
 .vv-foot .vv-cols { display: grid; gap: 2rem; margin-top: 3rem; padding-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.15); font-size: 0.85rem; }
 @media (min-width: 640px) { .vv-foot .vv-cols { grid-template-columns: 1fr 1fr 1fr 1fr; } }
-.vv-foot a, .vv-foot button { display: inline-flex; align-items: center; min-height: 32px; color: #bdbdbd; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; transition: color 300ms; }
-.vv-foot a:hover, .vv-foot button:hover { color: #fff; }
+/* The links carry min-height 32px so a thumb can hit them, which needs a
+   flex box: inline-flex gave them the height and also put them all on one
+   line, so the column read "How it worksLayoutsCheck my CVPrice" with no
+   space between the words. margin-top could not separate them either, an
+   inline box ignores vertical margins. The column does the stacking now,
+   and flex-start keeps each link as wide as its own text so the hover
+   target is the label and not the whole column. */
+.vv-foot .vv-col { display: flex; flex-direction: column; align-items: flex-start; }
+/* Scoped to the columns, not to every link in the footer. The giant Nuvi
+   wordmark is an <a> too, and ".vv-foot a" outranked ".vv-foot__mark" by one
+   class: "font: inherit" is a shorthand, so it reset the mark's family and
+   its clamp(5rem, 18vw, 16rem) down to 16px Inter, and "color: #bdbdbd" beat
+   its white. The wordmark that is supposed to fill the foot of the page had
+   never rendered at its size, in any build. */
+.vv-foot .vv-col a, .vv-foot .vv-col button { display: inline-flex; align-items: center; min-height: 32px; color: #bdbdbd; text-decoration: none; background: none; border: 0; padding: 0; font: inherit; cursor: pointer; transition: color 300ms; text-align: left; }
+.vv-foot .vv-col a:hover, .vv-foot .vv-col button:hover { color: #fff; }
 .vv-foot .vv-lbl { display: block; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #a3a3a3; margin-bottom: 0.6rem; }
 .vv-foot .vv-col > * + * { margin-top: 0.15rem; }
 .vv-foot__bottom { margin-top: 2.5rem; font-size: 0.75rem; color: #a3a3a3; }
@@ -399,7 +437,7 @@
   clip-path: inset(0 0 0 0); animation: vvMarkIn 900ms var(--vv-ease) 120ms both; }
 .vv-intro__mark .vv-i { position: relative; display: inline-block; width: 0.26em; height: 1em; margin-left: -0.02em; }
 .vv-intro__mark .vv-i::before { content: ""; position: absolute; left: 50%; bottom: 0; width: 0.13em; height: 0.5em; background: currentColor; border-radius: 0.018em; transform: translateX(-50%); }
-.vv-intro__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.16em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%);
+.vv-intro__mark .vv-i::after { content: ""; position: absolute; left: 50%; top: 0.26em; width: 0.18em; height: 0.18em; background: var(--vv-purple); border-radius: 50%; transform: translateX(-50%);
   animation: vvDot 700ms var(--vv-ease) 700ms both; }
 .vv-intro__line { font-family: var(--vv-display); font-size: clamp(1rem, 2.2vw, 1.375rem); color: var(--vv-ink-2); letter-spacing: -0.01em; animation: vvArrive 700ms var(--vv-ease) 900ms both; }
 @keyframes vvMarkIn { from { opacity: 0; transform: translateY(0.25em); } to { opacity: 1; transform: none; } }
