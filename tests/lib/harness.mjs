@@ -112,8 +112,16 @@ export async function stopServer(server) {
   );
 }
 
-export async function launchBrowser() {
-  return chromium.launch(browserOptions());
+// Un test peut avoir besoin de drapeaux en plus : la capture d'onglet, par
+// exemple, demande a Chromium de repondre tout seul au selecteur de partage.
+// Les options par defaut restent celles de tout le monde.
+export async function launchBrowser(extra) {
+  const base = browserOptions();
+  if (!extra) return chromium.launch(base);
+  return chromium.launch({
+    ...base, ...extra,
+    args: [...(base.args || []), ...(extra.args || [])],
+  });
 }
 
 // CV de reference : contient un exemplaire de chaque chose qu'un ATS cherche.

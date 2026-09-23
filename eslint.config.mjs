@@ -24,6 +24,11 @@ const BROWSER_GLOBALS = [
   "ReadableStream", "WritableStream", "TransformStream",
   "chrome",
   "SpeechRecognition", "webkitSpeechRecognition", "MediaRecorder",
+  // The live assistant captures the meeting tab and reads its loudness, so
+  // it builds streams and analyser nodes by hand. MediaStream is the one it
+  // constructs: getDisplayMedia hands back video and audio together, and
+  // only the audio tracks are wanted.
+  "MediaStream", "AudioContext", "webkitAudioContext", "Float32Array",
   "HTMLElement", "Node", "Element", "CSS", "SVGElement", "Worker",
   "print", "scrollTo", "getSelection", "IdleDeadline",
   "process", "Buffer", "global", "globalThis", "React",

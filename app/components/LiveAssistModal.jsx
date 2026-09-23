@@ -27,8 +27,25 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { serializeCvForContext } from "../../lib/cvSerializer.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
+import { creerOracle, ressembleAUnCasque } from "../../lib/quiParle.js";
 
+// Only used when the meeting tab is NOT being captured. With the tab, silence
+// stops being the signal: see lib/quiParle.js.
 const SILENCE_MS = 900;
+
+// How often the two analysers are read. Speech changes far slower than this,
+// and the loop does nothing but two RMS sums, so there is no reason to tie it
+// to the screen refresh with requestAnimationFrame: that stops in a
+// background tab, which is exactly where this runs while the person is
+// looking at the meeting window.
+const PAS_ECOUTE_MS = 20;
+
+function rms(analyseur, tampon) {
+  analyseur.getFloatTimeDomainData(tampon);
+  let somme = 0;
+  for (let i = 0; i < tampon.length; i += 1) somme += tampon[i] * tampon[i];
+  return Math.sqrt(somme / tampon.length);
+}
 
 export default function LiveAssistModal({
   open, onClose, cv, offer, locale = "en", applications = [], onChangeCv,
@@ -57,10 +74,26 @@ export default function LiveAssistModal({
   const [colle, setColle] = useState("");
   const [posteTape, setPosteTape] = useState("");
 
+  // Following the meeting tab. When this is on, the assistant knows who is
+  // speaking from the source instead of guessing from silence, so the
+  // microphone never has to be stopped and follow-up questions arrive on
+  // their own. See lib/quiParle.js for why this is not voice recognition.
+  const [suitLAppel, setSuitLAppel] = useState(false);
+  const [appelErreur, setAppelErreur] = useState("");
+  const [casque, setCasque] = useState(false);
+
   const recRef = useRef(null);
   const silenceRef = useRef(null);
   const lastSentRef = useRef("");
   const abortRef = useRef(null);
+
+  const oracleRef = useRef(null);
+  const audioRef = useRef(null);        // { ctx, tabStream, micStream, timer }
+  const questionRef = useRef("");       // the recruiter's words, as they come
+  const longueurRef = useRef(0);        // how many results the engine has emitted
+  const baseRef = useRef(0);            // where the CURRENT question starts in them
+  const paroleRecruteurRef = useRef(0); // ms of recruiter speech in this question
+  const veutEcouterRef = useRef(false); // the person asked to listen, and has not stopped
 
   const T = locale === "en" ? {
     title: "Live assist",
@@ -79,6 +112,15 @@ export default function LiveAssistModal({
     micRien: "Nothing was heard. Start listening again, or type the question.",
     micAutre: "Listening stopped. Start again, or type the question below.",
     micRepris: "Mic off while you answer. Tap to catch the next question.",
+    suivre: "Follow the call",
+    suivreQuoi: "Share the meeting tab with its audio. Nuvi then knows the interviewer from you, catches follow-up questions on its own, and never mistakes your answer for a question. Only how loud the tab is gets read, never its sound.",
+    suivi: "Following the call",
+    suivreArret: "Stop following",
+    appelAbsent: "This browser cannot capture a tab. Chrome or Edge on a computer can.",
+    appelRefuse: "The share was declined. Nuvi is back to listening on the microphone alone.",
+    appelSansSon: "That share had no sound. Share again and tick \u201cAlso share tab audio\u201d, at the bottom left of the picker.",
+    appelEchec: "The tab could not be captured. Nuvi is back to listening on the microphone alone.",
+    casque: "The interviewer is speaking and the microphone hears none of it: you are on headphones. Put the call on speaker, or type the question below.",
   } : {
     title: "Assistant live",
     sub: "Il ecoute et te donne trois reperes. Jamais un texte a lire.",
@@ -95,6 +137,15 @@ export default function LiveAssistModal({
     micRien: "Rien n'a ete entendu. Relance l'ecoute, ou tape la question.",
     micAutre: "L'ecoute s'est arretee. Relance-la, ou tape la question ci-dessous.",
     micRepris: "Micro coupe pendant que tu reponds. Touche pour attraper la question suivante.",
+    suivre: "Suivre l'appel",
+    suivreQuoi: "Partage l'onglet de la visio avec son son. Nuvi distingue alors le recruteur de toi, attrape les questions suivantes tout seul, et ne prend jamais ta reponse pour une question. Seul le volume de l'onglet est lu, jamais son contenu.",
+    suivi: "Suit l'appel",
+    suivreArret: "Ne plus suivre",
+    appelAbsent: "Ce navigateur ne sait pas capturer un onglet. Chrome ou Edge sur ordinateur le savent.",
+    appelRefuse: "Le partage a ete refuse. Nuvi revient a l'ecoute du micro seul.",
+    appelSansSon: "Ce partage etait sans son. Repartage en cochant \u00ab Partager aussi l'audio de l'onglet \u00bb, en bas a gauche du selecteur.",
+    appelEchec: "L'onglet n'a pas pu etre capture. Nuvi revient a l'ecoute du micro seul.",
+    casque: "Le recruteur parle et le micro n'en entend rien : tu es au casque. Mets l'appel en haut-parleur, ou tape la question ci-dessous.",
   };
 
   // Le CV ENTIER, pas un extrait. Un recruteur peut demander n'importe quel
@@ -209,10 +260,113 @@ export default function LiveAssistModal({
 
   // --- ecoute ---------------------------------------------------------------
   const stopListening = useCallback(() => {
+    veutEcouterRef.current = false;
     setListening(false);
     if (silenceRef.current) { clearTimeout(silenceRef.current); silenceRef.current = null; }
     if (recRef.current) { try { recRef.current.stop(); } catch { /* deja arrete */ } }
   }, []);
+
+  // --- suivre l'appel -------------------------------------------------------
+  //
+  // The recruiter's voice exists as an audio track inside the meeting tab,
+  // before it ever reaches a speaker. Capturing that track turns "whose voice
+  // is this" into "which stream carries energy", which is a number on the
+  // device rather than a model on a server.
+  //
+  // NOTHING IS TRANSCRIBED FROM THIS TRACK and nothing leaves the machine:
+  // the only thing read from it is a loudness, twenty times a second. The
+  // video track that Chrome insists on handing over with it is stopped on the
+  // spot, because this needs no picture and holding one would keep a screen
+  // share alive for no reason.
+  const cesserDeSuivre = useCallback(() => {
+    const a = audioRef.current;
+    if (a) {
+      if (a.timer) clearInterval(a.timer);
+      [a.tabStream, a.micStream].forEach((st) => {
+        if (st) st.getTracks().forEach((t) => { try { t.stop(); } catch { /* deja arrete */ } });
+      });
+      if (a.ctx) { try { a.ctx.close(); } catch { /* deja fermee */ } }
+      audioRef.current = null;
+    }
+    oracleRef.current = null;
+    setSuitLAppel(false);
+    setCasque(false);
+  }, []);
+
+  const suivreLAppel = useCallback(async () => {
+    setAppelErreur("");
+    try {
+      const md = navigator.mediaDevices;
+      if (!md || typeof md.getDisplayMedia !== "function") { setAppelErreur("absent"); return; }
+
+      // Chrome refuses an audio-only capture, so video is asked for and
+      // dropped immediately.
+      const tabStream = await md.getDisplayMedia({ video: true, audio: true });
+      const pistes = tabStream.getAudioTracks();
+      tabStream.getVideoTracks().forEach((t) => { try { t.stop(); } catch { /* deja arrete */ } });
+      if (!pistes.length) {
+        tabStream.getTracks().forEach((t) => { try { t.stop(); } catch { /* deja arrete */ } });
+        // They shared, but without ticking the audio box. That is the whole
+        // point of the share, so it has to be said rather than silently
+        // falling back.
+        setAppelErreur("sans-son");
+        return;
+      }
+
+      // Echo cancellation on the microphone is what keeps the recruiter,
+      // coming back through the speakers, from looking like the candidate.
+      const micStream = await md.getUserMedia({ audio: { echoCancellation: true } });
+
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const faire = (stream) => {
+        const an = ctx.createAnalyser();
+        an.fftSize = 1024;
+        ctx.createMediaStreamSource(stream).connect(an);
+        return { an, buf: new Float32Array(an.fftSize) };
+      };
+      const tab = faire(new MediaStream(pistes));
+      const mic = faire(micStream);
+
+      const oracle = creerOracle();
+      oracleRef.current = oracle;
+
+      // If they stop the share from Chrome's own bar, stop following.
+      pistes[0].addEventListener("ended", () => cesserDeSuivre());
+
+      const timer = setInterval(() => {
+        const t = performance.now();
+        const { qui, evenement } = oracle.pas(rms(tab.an, tab.buf), rms(mic.an, mic.buf), t);
+        if (qui === "recruteur") paroleRecruteurRef.current += PAS_ECOUTE_MS;
+
+        if (evenement === "debut") {
+          // A question of its own: forget the last one entirely.
+          questionRef.current = "";
+          baseRef.current = longueurRef.current;
+          paroleRecruteurRef.current = 0;
+          setHeard("");
+          setCues("");
+          setCasque(false);
+        } else if (evenement === "fin") {
+          const q = questionRef.current.trim();
+          if (q && q !== lastSentRef.current) { lastSentRef.current = q; askFor(q); }
+          else if (ressembleAUnCasque(paroleRecruteurRef.current, q)) {
+            // They spoke for seconds and not one word reached the
+            // microphone. The tab told us they were speaking, so this is not
+            // a broken assistant, it is a pair of headphones.
+            setCasque(true);
+          }
+        }
+        // "reprise" deliberately does nothing here: the words keep being
+        // appended to the same question, and the next "fin" sends the whole
+        // of it, which replaces the cues instead of starting over.
+      }, PAS_ECOUTE_MS);
+
+      audioRef.current = { ctx, tabStream, micStream, timer };
+      setSuitLAppel(true);
+    } catch (err) {
+      setAppelErreur((err && err.name === "NotAllowedError") ? "refuse" : "echec");
+    }
+  }, [askFor, cesserDeSuivre]);
 
   const startListening = useCallback(() => {
     const Ctor = typeof window !== "undefined"
@@ -227,11 +381,41 @@ export default function LiveAssistModal({
     rec.lang = locale === "en" ? "en-US" : "en-US"; // l'entretien se tient en anglais
 
     rec.onresult = (event) => {
+      // WHY THIS READS THE WHOLE ARRAY AND NOT FROM resultIndex
+      //
+      // It used to build the text from event.resultIndex onwards. That index
+      // is the first result that CHANGED, not the start of what was said.
+      // Once the engine finalises a chunk, the next event's index points past
+      // it, so the string held only the tail: a long question finalised in
+      // two chunks arrived at the model as its second half alone. The first
+      // half was on screen for a moment and then gone.
+      //
+      // The results array is cumulative for the whole session, so the read
+      // starts at baseRef, which is moved forward when a new question begins.
+      longueurRef.current = event.results.length;
       let text = "";
-      for (let i = event.resultIndex; i < event.results.length; i += 1) {
+      for (let i = baseRef.current; i < event.results.length; i += 1) {
         text += event.results[i][0].transcript;
       }
       const clean = text.trim();
+
+      // WHOSE WORDS ARE THESE
+      //
+      // When the meeting tab is being followed, the answer is known rather
+      // than guessed. Words that arrive while the candidate is the one
+      // speaking are their own answer, most often the cues being read out
+      // loud, and they are dropped here: not shown, not sent, not counted.
+      // That is the loop the microphone used to be stopped for.
+      const oracle = oracleRef.current;
+      if (oracle) {
+        if (!oracle.ecouteLeRecruteur(performance.now())) return;
+        setHeard(clean);
+        questionRef.current = clean;
+        // The oracle decides when the question is over, from the recruiter's
+        // own stream. No silence timer, and the microphone stays open.
+        return;
+      }
+
       setHeard(clean);
       // On n'attend pas un long silence : des que ca s'arrete brievement, on
       // considere la question posee et on lance la reponse.
@@ -261,16 +445,36 @@ export default function LiveAssistModal({
       setListening(false);
       setMicErreur((e && e.error) || "unknown");
     };
-    rec.onend = () => { setListening(false); };
+    // CHROME ENDS A CONTINUOUS SESSION ON ITS OWN
+    //
+    // Even with continuous = true, the engine gives up after a long enough
+    // quiet spell. That was harmless when a question always stopped the
+    // microphone anyway. Now that the assistant is meant to sit through a
+    // whole interview without being touched, an engine that quietly ends is
+    // the microphone dying mid-call with nothing on screen to say so. While
+    // the tab is being followed it is started again, and the results array
+    // that comes back is a fresh one, so the read offset goes back to zero.
+    rec.onend = () => {
+      setListening(false);
+      if (veutEcouterRef.current && oracleRef.current) {
+        baseRef.current = 0;
+        longueurRef.current = 0;
+        try { rec.start(); setListening(true); } catch { /* deja relance */ }
+      }
+    };
 
-    try { rec.start(); recRef.current = rec; setListening(true); }
+    baseRef.current = 0;
+    longueurRef.current = 0;
+    try { rec.start(); recRef.current = rec; veutEcouterRef.current = true; setListening(true); }
     catch { setSupport("no"); }
   }, [askFor, locale]);
 
   useEffect(() => {
-    if (!open) stopListening();
-    return () => stopListening();
-  }, [open, stopListening]);
+    if (!open) { stopListening(); cesserDeSuivre(); }
+    // A screen share and a live microphone must not outlive the screen that
+    // asked for them.
+    return () => { stopListening(); cesserDeSuivre(); };
+  }, [open, stopListening, cesserDeSuivre]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -646,7 +850,95 @@ export default function LiveAssistModal({
         </div>
       )}
 
-      {!listening && !cues && (
+      {/* SUIVRE L'APPEL
+          The one control that changes what the assistant can know. Without
+          it the microphone is the only source and silence is the only signal,
+          so the person has to restart it by hand after every question. With
+          it, the recruiter arrives on their own stream and the assistant can
+          tell the two of them apart by source, which is the whole design in
+          lib/quiParle.js. */}
+      {!suitLAppel && (
+        <div style={{
+          margin: "12px 0 0", padding: "12px 13px", borderRadius: 10,
+          background: "rgba(124,107,255,.1)", border: "1px solid rgba(124,107,255,.28)",
+          color: "rgba(255,255,255,.72)", fontSize: 12.5, lineHeight: 1.5,
+        }}>
+          <div style={{ color: "#fff", fontSize: 13.5, fontWeight: 600, marginBottom: 4 }}>
+            {T.suivre}
+          </div>
+          {T.suivreQuoi}
+          <button
+            type="button"
+            onClick={suivreLAppel}
+            style={{
+              display: "block", marginTop: 10, minHeight: 44, padding: "0 16px",
+              borderRadius: 10, border: "1px solid rgba(124,107,255,.5)",
+              background: "rgba(124,107,255,.18)", color: "#fff",
+              fontSize: 14, fontWeight: 600, fontFamily: "inherit", cursor: "pointer",
+            }}
+          >
+            {T.suivre}
+          </button>
+        </div>
+      )}
+
+      {suitLAppel && (
+        <div style={{
+          margin: "12px 0 0", padding: "10px 13px", borderRadius: 10,
+          display: "flex", alignItems: "center", gap: 10,
+          background: "rgba(124,107,255,.12)", border: "1px solid rgba(124,107,255,.3)",
+          color: "rgba(255,255,255,.8)", fontSize: 13,
+        }}>
+          <span style={{
+            width: 9, height: 9, borderRadius: "50%", background: "#7c6bff",
+            animation: "liveDot 1.1s ease-in-out infinite", flexShrink: 0,
+          }} />
+          <span style={{ flex: 1 }}>{T.suivi}</span>
+          <button
+            type="button"
+            onClick={cesserDeSuivre}
+            style={{
+              minHeight: 36, padding: "0 12px", borderRadius: 9,
+              border: "1px solid rgba(255,255,255,.2)", background: "transparent",
+              color: "rgba(255,255,255,.75)", fontSize: 12.5,
+              fontFamily: "inherit", cursor: "pointer",
+            }}
+          >
+            {T.suivreArret}
+          </button>
+        </div>
+      )}
+
+      {appelErreur && (
+        <div role="status" aria-live="polite" style={{
+          marginTop: 12, padding: "11px 13px", borderRadius: 10,
+          background: "rgba(255,180,95,.12)", border: "1px solid rgba(255,180,95,.3)",
+          color: "#ffe6cc", fontSize: 13, lineHeight: 1.5,
+        }}>
+          {appelErreur === "absent" ? T.appelAbsent
+            : appelErreur === "refuse" ? T.appelRefuse
+            : appelErreur === "sans-son" ? T.appelSansSon
+            : T.appelEchec}
+        </div>
+      )}
+
+      {/* LE CASQUE, NOMME
+          Capturing the tab works whatever they listen on, so the assistant
+          still knows the recruiter is talking. What it cannot get is their
+          words, because those only ever existed in the headphones. Saying so
+          is the difference between a fixable setup and an app that looks
+          dead. */}
+      {casque && (
+        <div role="status" aria-live="polite" style={{
+          marginTop: 12, padding: "11px 13px", borderRadius: 10,
+          background: "rgba(255,180,95,.14)", border: "1px solid rgba(255,180,95,.34)",
+          color: "#ffe6cc", fontSize: 13.5, lineHeight: 1.5,
+        }}>
+          {T.casque}
+        </div>
+      )}
+
+      {!listening && !cues && !suitLAppel && (
         <div style={{
           margin: "12px 0 0", padding: "11px 13px", borderRadius: 10,
           background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",

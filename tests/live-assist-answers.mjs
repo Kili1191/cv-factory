@@ -151,13 +151,84 @@ export async function run() {
 
     if (errors.length) failures.push("erreur JS : " + errors[0]);
     await ctx.close();
-
-    if (!failures.length) {
-      console.log("      poste confirme, question tapee, trois reperes affiches (micro non testable ici)");
-    }
   } finally {
     await browser.close();
     await stopServer(server);
+  }
+
+  // --- 3. suivre l'onglet de la visio -------------------------------------
+  //
+  // CE QUE CE BOUT COUVRE, ET POURQUOI IL EXISTE
+  //
+  // Le micro n'est pas testable ici, mais la capture d'onglet l'est : avec
+  // les bons drapeaux, Chromium repond lui-meme au selecteur de partage et
+  // rend une vraie piste audio. C'est le seul endroit ou l'on sache si le
+  // chemin marche : getDisplayMedia rend une video ET un son, l'AudioContext
+  // doit accepter la piste, et rien de tout cela ne se devine en lisant le
+  // code. La premiere version du composant tombait ici meme, faute d'avoir
+  // declare MediaStream.
+  //
+  // Ce qui est verifie ici : le partage demarre pour de vrai et l'ecran le
+  // dit. Que la piste video soit relachee se verifie dans la suite statique
+  // voisine : une piste arretee ne se distingue pas, depuis la page, d'une
+  // piste qu'on n'a jamais demandee.
+  const server2 = await startServer();
+  const browser2 = await launchBrowser({
+    args: [
+      "--use-fake-ui-for-media-stream",
+      "--use-fake-device-for-media-stream",
+      "--auto-select-desktop-capture-source=Entire screen",
+    ],
+  });
+  try {
+    const ctx = await browser2.newContext({
+      viewport: { width: 1440, height: 950 },
+      permissions: ["microphone"],
+    });
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", e => errors.push(e.message.split("\n")[0].slice(0, 90)));
+
+    await seedApp(page, SAMPLE_CV);
+    const entry = page.locator('[role="button"], button').filter({ hasText: "Entretien live" }).first();
+    if (await entry.count() === 0) {
+      failures.push("aucune entree 'Entretien live' pour le test de capture");
+    } else {
+      await entry.click({ timeout: 8000 });
+      await page.waitForTimeout(1200);
+      // On passe le choix du poste : n'importe lequel convient ici.
+      const skip = page.locator("button").filter({ hasText: /Product Manager|Sans annonce|Aucune|Continuer/i }).first();
+      if (await skip.count()) { await skip.click({ timeout: 8000 }); await page.waitForTimeout(900); }
+
+      const bouton = page.locator("button").filter({ hasText: /Suivre l'appel|Follow the call/ }).first();
+      if (await bouton.count() === 0) {
+        failures.push(
+          "aucun bouton pour suivre l'appel. Sans lui l'assistant ne connait que le "
+          + "micro : il ne sait pas qui parle et il faut le relancer a chaque question."
+        );
+      } else {
+        await bouton.click({ timeout: 8000 });
+        await page.waitForTimeout(2500);
+
+        const suit = await page.evaluate(() =>
+          /Suit l'appel|Following the call/.test(document.body.innerText));
+        if (!suit) {
+          const dit = await page.evaluate(() => document.body.innerText.slice(0, 400));
+          failures.push("la capture de l'onglet n'a pas demarre. L'ecran dit : " + JSON.stringify(dit.slice(0, 200)));
+        }
+      }
+    }
+
+    if (errors.length) failures.push("erreur JS pendant la capture : " + errors[0]);
+    await ctx.close();
+  } finally {
+    await browser2.close();
+    await stopServer(server2);
+  }
+
+  if (!failures.length) {
+    console.log("      poste confirme, question tapee, trois reperes affiches, "
+      + "et l'onglet de la visio se laisse suivre (micro non testable ici)");
   }
   return failures;
 }
