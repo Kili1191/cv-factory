@@ -274,23 +274,37 @@ une seule ligne). `tests/a-linkedin-profile-is-a-cv.mjs` imprime une page à la
 forme de l'export au moment du test, aucun fichier personnel n'est dans le
 dépôt ; un vrai fichier reste la prochaine chose à essayer.
 
-La vitrine, sur `/`, est depuis le 7 septembre 2026 la page que Kilian a
-choisie sur motionsites, « Planetary Pulse » : une vidéo de bulle irisée sur
-un studio presque blanc, une typographie noire légère, une carte de verre
-liquide qui réfracte la vidéo derrière elle (un filtre SVG et un canvas
-redessiné à chaque image), un bouton chanfreiné, un menu qui glisse.
-`app/components/Vitrine.jsx` et `vitrine.css`, préfixe `vv-`. Une première
-version l'avait recolorée dans le crème et le corail du site et a été
-refusée : la lumière de la vidéo est la palette, et la seule couleur ajoutée
-est le violet du point du logo. Les sections en dessous vivent dans le même
-monde et gardent les classes que les suites tiennent (`nuvi-scroll-in`,
-`nuvi-titre-geant`, `nuvi-mots`, `nuvi-piste-doc`, `nuvi-temps`) : le
-mouvement au défilement reste dans `globals.css`. La vidéo est demandée
-d'abord à `/vitrine/orbe.mp4`, la copie de Nuvi, et retombe sur le fichier
-de la référence chez son hébergeur tant que cette copie n'est pas dans le
-dépôt ; sans elle, le gris du studio et tous les mots restent. Les encres
-sont des gris pleins, jamais une opacité sur un fond inconnu : la suite de
-lisibilité mesure chaque texte contre la première boîte opaque derrière lui.
+La vitrine, sur `/`, reprend depuis le 7 septembre 2026 la structure que
+Kilian a choisie sur motionsites, « Planetary Pulse » : le texte en haut à
+gauche, une carte en bas à droite, une typographie noire légère, un bouton
+chanfreiné, un menu qui glisse. `app/components/Vitrine.jsx` et
+`vitrine.css`, préfixe `vv-`. Une première version l'avait recolorée dans le
+crème et le corail du site et a été refusée ; la seule couleur ajoutée est le
+violet du point du logo.
+
+**L'orbe est partie le 7 septembre**, le jour même. La vidéo de la référence
+remplissait l'écran et ne disait rien du produit. Kilian : trop grosse,
+aucune utilité, et le gris restait quel que soit le filtre. Il n'y a donc
+ni `<video>` ni `/vitrine/orbe.mp4` dans le dépôt, et ce n'est pas un fichier
+manquant : la carte tient désormais la seule chose de cette page qui ne soit
+pas une affirmation, la ligne de CV du visiteur lue mot à mot sur l'appareil.
+L'en-tête de `Vitrine.jsx` le dit aussi, parce que ce paragraphe-ci a déjà
+envoyé une session chercher une vidéo qui n'existe plus.
+
+Les sections en dessous vivent dans le même monde et gardent les classes que
+les suites tiennent (`nuvi-scroll-in`, `nuvi-titre-geant`, `nuvi-mots`,
+`nuvi-piste-doc`, `nuvi-temps`) : le mouvement au défilement reste dans
+`globals.css`. Les encres sont des gris pleins, jamais une opacité sur un
+fond inconnu : la suite de lisibilité mesure chaque texte contre la première
+boîte opaque derrière lui.
+
+La page se regarde sur un téléphone avant d'être déclarée finie. Trois
+défauts y ont survécu longtemps parce que personne ne l'avait fait : les
+liens du pied de page se lisaient « How it worksLayoutsCheck my CVPrice »,
+la grande signature Nuvi n'avait jamais dépassé 16px (`.vv-foot a` battait
+`.vv-foot__mark` d'une classe, et son `font: inherit` est un raccourci), et
+la liste des métiers laissait un point orphelin au bout de chaque ligne.
+Aucune suite ne les voyait : le contraste était juste, les mots étaient là.
 
 **3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
 a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
