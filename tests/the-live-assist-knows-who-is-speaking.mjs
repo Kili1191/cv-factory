@@ -19,7 +19,7 @@
 // is what an AnalyserNode gives the component.
 
 import {
-  creerOracle, ressembleAUnCasque, RECRUTEUR, CANDIDAT, PERSONNE,
+  creerOracle, ressembleAUnCasque, ongletSansSon, RECRUTEUR, CANDIDAT, PERSONNE,
   FIN_DE_QUESTION_MS, CASQUE_APRES_MS,
 } from "../lib/quiParle.js";
 
@@ -279,6 +279,57 @@ export async function run() {
   }
   if (ressembleAUnCasque(400, "")) {
     failures.push("a short burst with no words is not yet enough to call it headphones");
+  }
+
+  // --- 9. A tab that carries no call is named, not left silent ------------
+  //
+  // Following the call means picking a tab, and picking is a chance to pick
+  // wrong: the wrong tab, or a phone interview where no meeting tab exists.
+  // The oracle is then CORRECT that the recruiter never speaks, so it drops
+  // every word as the candidate's own answer, forever, and says nothing. The
+  // headphone message cannot cover this one, because that fires only after
+  // the tab has reported somebody speaking.
+  {
+    const o = creerOracle();
+    let t = 0, parleAuMicro = 0, ongletAParle = false;
+    // Six seconds of the candidate talking to a tab that carries nothing.
+    for (const [tab, mic] of [...parole(6500, FOND, FORT, FOND)]) {
+      const { qui } = o.pas(tab, mic, t);
+      if (qui === RECRUTEUR) ongletAParle = true;
+      if (qui === CANDIDAT) parleAuMicro += PAS_MS;
+      t += PAS_MS;
+    }
+    if (ongletAParle) failures.push("a silent tab was read as somebody speaking");
+    if (!ongletSansSon(t, ongletAParle, parleAuMicro)) {
+      failures.push(
+        "six seconds of speech with nothing on the tab is not reported. The "
+        + "assistant drops every word and never says why, which is what a phone "
+        + "interview looks like if someone presses Follow the call."
+      );
+    }
+  }
+  {
+    // And it must stay quiet when the tab IS carrying the call, otherwise it
+    // would cry wolf over every pause between two questions.
+    const o = creerOracle();
+    let t = 0, parleAuMicro = 0, ongletAParle = false;
+    for (const [tab, mic] of [
+      ...parole(1500, FORT, FUITE, FOND),
+      ...pendant(3000, FOND, FOND),
+      ...parole(4000, FOND, FORT, FOND),
+    ]) {
+      const { qui } = o.pas(tab, mic, t);
+      if (qui === RECRUTEUR) ongletAParle = true;
+      if (qui === CANDIDAT) parleAuMicro += PAS_MS;
+      t += PAS_MS;
+    }
+    if (ongletSansSon(t, ongletAParle, parleAuMicro)) {
+      failures.push("a working call was reported as a tab with no sound");
+    }
+  }
+  // A quiet room is not a mistake: nobody has said anything yet.
+  if (ongletSansSon(20000, false, 0)) {
+    failures.push("silence alone was reported as a tab with no sound");
   }
 
   return failures;

@@ -27,7 +27,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { serializeCvForContext } from "../../lib/cvSerializer.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
-import { creerOracle, ressembleAUnCasque } from "../../lib/quiParle.js";
+import { creerOracle, ressembleAUnCasque, ongletSansSon } from "../../lib/quiParle.js";
 
 // Only used when the meeting tab is NOT being captured. With the tab, silence
 // stops being the signal: see lib/quiParle.js.
@@ -81,6 +81,7 @@ export default function LiveAssistModal({
   const [suitLAppel, setSuitLAppel] = useState(false);
   const [appelErreur, setAppelErreur] = useState("");
   const [casque, setCasque] = useState(false);
+  const [ongletMuet, setOngletMuet] = useState(false);
 
   const recRef = useRef(null);
   const silenceRef = useRef(null);
@@ -94,6 +95,9 @@ export default function LiveAssistModal({
   const baseRef = useRef(0);            // where the CURRENT question starts in them
   const paroleRecruteurRef = useRef(0); // ms of recruiter speech in this question
   const veutEcouterRef = useRef(false); // the person asked to listen, and has not stopped
+  const debutSuiviRef = useRef(0);      // when following the call started
+  const ongletAParleRef = useRef(false);// the tab has carried energy at least once
+  const paroleMicRef = useRef(0);       // ms of speech heard on the microphone
 
   const T = locale === "en" ? {
     title: "Live assist",
@@ -121,6 +125,7 @@ export default function LiveAssistModal({
     appelSansSon: "That share had no sound. Share again and tick \u201cAlso share tab audio\u201d, at the bottom left of the picker.",
     appelEchec: "The tab could not be captured. Nuvi is back to listening on the microphone alone.",
     casque: "The interviewer is speaking and the microphone hears none of it: you are on headphones. Put the call on speaker, or type the question below.",
+    muet: "No sound is reaching Nuvi from that tab, and somebody is talking. Share the tab the call is in and tick \u201cAlso share tab audio\u201d. On a phone interview there is no tab to share: stop following, put the phone on speaker, and Nuvi listens through the microphone.",
   } : {
     title: "Assistant live",
     sub: "Il ecoute et te donne trois reperes. Jamais un texte a lire.",
@@ -146,6 +151,7 @@ export default function LiveAssistModal({
     appelSansSon: "Ce partage etait sans son. Repartage en cochant \u00ab Partager aussi l'audio de l'onglet \u00bb, en bas a gauche du selecteur.",
     appelEchec: "L'onglet n'a pas pu etre capture. Nuvi revient a l'ecoute du micro seul.",
     casque: "Le recruteur parle et le micro n'en entend rien : tu es au casque. Mets l'appel en haut-parleur, ou tape la question ci-dessous.",
+    muet: "Aucun son ne parvient a Nuvi depuis cet onglet, et quelqu'un parle. Partage l'onglet ou se tient l'appel, en cochant \u00ab Partager aussi l'audio de l'onglet \u00bb. Pour un entretien au telephone il n'y a pas d'onglet a partager : arrete de suivre, mets le telephone en haut-parleur, et Nuvi ecoute par le micro.",
   };
 
   // Le CV ENTIER, pas un extrait. Un recruteur peut demander n'importe quel
@@ -291,6 +297,7 @@ export default function LiveAssistModal({
     oracleRef.current = null;
     setSuitLAppel(false);
     setCasque(false);
+    setOngletMuet(false);
   }, []);
 
   const suivreLAppel = useCallback(async () => {
@@ -336,7 +343,18 @@ export default function LiveAssistModal({
       const timer = setInterval(() => {
         const t = performance.now();
         const { qui, evenement } = oracle.pas(rms(tab.an, tab.buf), rms(mic.an, mic.buf), t);
-        if (qui === "recruteur") paroleRecruteurRef.current += PAS_ECOUTE_MS;
+        if (qui === "recruteur") {
+          paroleRecruteurRef.current += PAS_ECOUTE_MS;
+          ongletAParleRef.current = true;
+        }
+        if (qui === "candidat") paroleMicRef.current += PAS_ECOUTE_MS;
+
+        // Somebody is talking and none of it reaches the tab: the wrong tab
+        // was shared, or there is no meeting tab at all, which is what a
+        // phone interview looks like from here.
+        if (ongletSansSon(t - debutSuiviRef.current, ongletAParleRef.current, paroleMicRef.current)) {
+          setOngletMuet(true);
+        }
 
         if (evenement === "debut") {
           // A question of its own: forget the last one entirely.
@@ -361,6 +379,10 @@ export default function LiveAssistModal({
         // of it, which replaces the cues instead of starting over.
       }, PAS_ECOUTE_MS);
 
+      debutSuiviRef.current = performance.now();
+      ongletAParleRef.current = false;
+      paroleMicRef.current = 0;
+      setOngletMuet(false);
       audioRef.current = { ctx, tabStream, micStream, timer };
       setSuitLAppel(true);
     } catch (err) {
@@ -935,6 +957,21 @@ export default function LiveAssistModal({
           color: "#ffe6cc", fontSize: 13.5, lineHeight: 1.5,
         }}>
           {T.casque}
+        </div>
+      )}
+
+      {/* L'ONGLET QUI NE PORTE PAS L'APPEL
+          The silent dead end: the oracle is right that the recruiter is
+          never speaking, so it drops every word, forever, and says nothing.
+          The microphone hearing speech is what turns a quiet moment into a
+          mistake worth naming. */}
+      {ongletMuet && (
+        <div role="status" aria-live="polite" style={{
+          marginTop: 12, padding: "11px 13px", borderRadius: 10,
+          background: "rgba(255,180,95,.14)", border: "1px solid rgba(255,180,95,.34)",
+          color: "#ffe6cc", fontSize: 13.5, lineHeight: 1.5,
+        }}>
+          {T.muet}
         </div>
       )}
 
