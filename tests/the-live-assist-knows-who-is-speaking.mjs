@@ -52,6 +52,32 @@ function pendant(ms, tab, mic) {
   return Array.from({ length: n }, () => [tab, mic]);
 }
 
+// SPEECH IS NOT A CONTINUOUS NOISE, AND THE FIXTURE MUST NOT PRETEND IT IS
+//
+// These cases first described a question as a flat run of one loudness for
+// two seconds. Nothing says that except a sine tone: between two syllables,
+// and between two words, the energy falls back to the room for a few tens of
+// milliseconds. That matters, because the oracle finds its quiet level by
+// taking the smallest loudness of the last several seconds, and a fixture
+// with no gaps hands it speech as the definition of quiet.
+//
+// A flat fixture would have let a broken threshold pass, and it did: the
+// version measured against a fixed 0.02 looked perfect here while a meeting
+// tab with an ordinary room tone never produced a single cue.
+//
+// 120ms voiced, 60ms of gap: slower than real syllables, which makes it the
+// harder case, and still far under the 300ms hangover that holds the verdict
+// steady across a gap.
+function parole(ms, tab, mic, fond) {
+  const f = [];
+  const n = Math.round(ms / PAS_MS);
+  for (let i = 0; i < n; i += 1) {
+    const creux = (i % 9) >= 6;            // 120ms on, 60ms off
+    f.push(creux ? [fond, fond] : [tab, mic]);
+  }
+  return f;
+}
+
 export async function run() {
   const failures = [];
 
@@ -59,7 +85,7 @@ export async function run() {
   {
     const { evenements } = jouer([
       ...pendant(200, FOND, FOND),
-      ...pendant(1800, FORT, FUITE),        // they ask, leaking into the mic
+      ...parole(1800, FORT, FUITE, FOND),   // they ask, leaking into the mic
       ...pendant(2000, FOND, FOND),         // they stop
     ]);
     const noms = evenements.map((e) => e.evenement).join(",");
@@ -81,9 +107,9 @@ export async function run() {
   // 900ms and shorter than the window here, so it must stay ONE question.
   {
     const { evenements } = jouer([
-      ...pendant(400, FORT, FUITE),         // "So"
+      ...parole(400, FORT, FUITE, FOND),    // "So"
       ...pendant(1100, FOND, FOND),         // thinking, longer than the old 900ms
-      ...pendant(1600, FORT, FUITE),        // the rest of the question
+      ...parole(1600, FORT, FUITE, FOND),   // the rest of the question
       ...pendant(2000, FOND, FOND),
     ]);
     const noms = evenements.map((e) => e.evenement).join(",");
@@ -107,9 +133,9 @@ export async function run() {
   // that may look like the recruiter.
   {
     const { evenements, verdicts, oracle, duree } = jouer([
-      ...pendant(1200, FORT, FUITE),        // the recruiter asks
+      ...parole(1200, FORT, FUITE, FOND),   // the recruiter asks
       ...pendant(2000, FOND, FOND),         // they stop, cues appear
-      ...pendant(4000, FOND, FORT),         // the candidate answers, at length
+      ...parole(4000, FOND, FORT, FOND),    // the candidate answers, at length
     ]);
     const apresLaFin = evenements.filter((e) => e.t > 1200 + FIN_DE_QUESTION_MS);
     if (apresLaFin.length) {
@@ -132,11 +158,11 @@ export async function run() {
   // --- 4. A second question arrives on its own, with no tap ---------------
   {
     const { evenements } = jouer([
-      ...pendant(1200, FORT, FUITE),        // first question
+      ...parole(1200, FORT, FUITE, FOND),   // first question
       ...pendant(2000, FOND, FOND),         // ends
-      ...pendant(3000, FOND, FORT),         // the candidate answers
+      ...parole(3000, FOND, FORT, FOND),    // the candidate answers
       ...pendant(1200, FOND, FOND),
-      ...pendant(1400, FORT, FUITE),        // the recruiter asks again
+      ...parole(1400, FORT, FUITE, FOND),   // the recruiter asks again
       ...pendant(2000, FOND, FOND),
     ]);
     const noms = evenements.map((e) => e.evenement).join(",");
@@ -150,9 +176,9 @@ export async function run() {
   // --- 5. Carrying on right after the cues refreshes the same question ----
   {
     const { evenements } = jouer([
-      ...pendant(1200, FORT, FUITE),
+      ...parole(1200, FORT, FUITE, FOND),
       ...pendant(2000, FOND, FOND),         // cues shown
-      ...pendant(800, FORT, FUITE),         // "and tell me why"
+      ...parole(800, FORT, FUITE, FOND),    // "and tell me why"
       ...pendant(2000, FOND, FOND),
     ]);
     const noms = evenements.map((e) => e.evenement).join(",");
@@ -169,11 +195,29 @@ export async function run() {
   // Without this the assistant would decide the candidate was talking every
   // time the recruiter did, and shut its own gate on the question.
   {
-    const { verdicts } = jouer([...pendant(1500, FORT, FUITE)]);
-    if (verdicts.some((v) => v !== RECRUTEUR)) {
+    const { verdicts } = jouer([...parole(1500, FORT, FUITE, FOND)]);
+
+    // What must never happen, at any moment: the leak reading as the
+    // candidate. That would shut the gate on the recruiter's own question.
+    if (verdicts.includes(CANDIDAT)) {
       failures.push(
-        "while the recruiter speaks and leaks into the microphone, the verdict must stay "
-        + RECRUTEUR + "; got " + [...new Set(verdicts)].join("/")
+        "the recruiter leaking through the speakers was read as the candidate. "
+        + "Their question would be dropped as if it were the answer."
+      );
+    }
+
+    // The first frames are allowed to say "nobody", and that is not a defect
+    // to assert away. The quiet level is the smallest loudness seen so far,
+    // so before the first gap between syllables the only thing ever measured
+    // is speech, and speech cannot stand out from itself. One gap is enough,
+    // which is under 200ms here, and it never comes back for the rest of the
+    // call. The alternative, a floor that starts low and climbs, reads a
+    // noisy room as speech for tens of seconds and never recovers.
+    const apresReglage = verdicts.slice(Math.round(300 / PAS_MS));
+    if (apresReglage.some((v) => v !== RECRUTEUR)) {
+      failures.push(
+        "once the quiet level is settled the verdict must stay " + RECRUTEUR
+        + " throughout the question; got " + [...new Set(apresReglage)].join("/")
       );
     }
   }
@@ -186,6 +230,39 @@ export async function run() {
     }
     if (evenements.length) {
       failures.push("silence alone raised " + evenements.map((e) => e.evenement).join(","));
+    }
+  }
+
+  // --- 7 bis. A meeting tab is never silent ------------------------------
+  //
+  // THE FAILURE THIS EXISTS FOR
+  //
+  // The first version of the oracle called it speech above a fixed 0.02. The
+  // recruiter's microphone is open, so their room arrives with their voice: a
+  // fan, a keyboard, an office. Measured against a steady room tone of 0.025
+  // the recruiter never stopped talking, the question never ended, and NOT
+  // ONE CUE EVER APPEARED. Silently: no error, no message, an assistant that
+  // sits there. Every case above passed at the time, because every one of
+  // them assumed a digitally silent tab between questions.
+  //
+  // Four rooms, from a padded studio to a noisy office. All four have to
+  // behave identically, because the quiet level is measured and not assumed.
+  for (const fond of [0.002, 0.01, 0.025, 0.05]) {
+    const { evenements } = jouer([
+      ...pendant(400, fond, fond),
+      ...parole(1800, FORT, FUITE, fond),
+      ...pendant(2500, fond, fond),        // they stop, the room does not
+      ...parole(2000, fond, FORT, fond),   // the candidate answers
+    ]);
+    const noms = evenements.map((e) => e.evenement).join(",");
+    if (noms !== "debut,fin") {
+      failures.push(
+        "with a room tone of " + fond + " the question came out as "
+        + (noms || "nothing") + " instead of debut,fin. "
+        + (noms === "debut"
+          ? "The question never ends, so no cue is ever shown and nothing says why."
+          : "The room itself is being read as somebody speaking.")
+      );
     }
   }
 
