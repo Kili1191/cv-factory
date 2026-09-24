@@ -98,7 +98,114 @@ export default function Diagnostic() {
   // celui qui est casse aujourd'hui.
   const [google, setGoogle] = useState({ state: "wait" });
 
+  // CE QUI SE DEGRADE EN SILENCE
+  //
+  // Les six points ci-dessus portent sur les comptes, et un compte qui manque
+  // finit par se voir : le bouton n'est pas la. Ces quatre-la sont pires,
+  // parce qu'ils ne se voient jamais. Chacun laisse le produit repondre, avec
+  // l'air de marcher, en rendant moins qu'il ne promet :
+  //
+  //   le PDF natif tombe sur la photo de secours, et personne ne le sait ;
+  //   la recherche d'offres rend une liste vide, comme s'il n'y avait pas
+  //     d'offres a Londres aujourd'hui ;
+  //   le paiement absent laisse tout gratuit, donc sans plafond sur la
+  //     facture Anthropic ;
+  //   l'assistant live ne peut pas entendre dans ce navigateur-ci.
+  //
+  // Le dernier ne se verifie que d'ici : il depend du navigateur qui lit
+  // cette page, pas du serveur.
+  const [pdf, setPdf] = useState({ state: "wait" });
+  const [offres, setOffres] = useState({ state: "wait" });
+  const [paiement, setPaiement] = useState({ state: "wait" });
+  const [live, setLive] = useState({ state: "wait" });
+
   useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  useEffect(() => {
+    let alive = true;
+
+    // Le GET de la route dit si le Chromium de la fonction demarre. Sans lui
+    // l'export retombe sur la photo doublee d'une couche de texte, ce qui
+    // reste lisible par une partie des ATS mais n'est plus le fichier promis.
+    fetch("/api/pdf")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j && j.ok) {
+          setPdf({ state: "ok", detail: `Chromium ${j.chromium || "?"}, ${j.ms || "?"} ms` });
+        } else {
+          setPdf({
+            state: "ko",
+            detail: (j && j.erreur) || "la route ne rend pas de PDF",
+            fix: "Chaque telechargement retombe sur la photo du CV, sans que "
+               + "rien ne le dise. Regarde les journaux de la fonction /api/pdf "
+               + "sur Vercel : @sparticuz/chromium ne demarre pas.",
+          });
+        }
+      })
+      .catch((e) => {
+        if (alive) setPdf({ state: "ko", detail: String(e).slice(0, 120),
+          fix: "La route ne repond pas du tout. Tous les exports passent par la photo." });
+      });
+
+    fetch("/api/jobs/search?what=&where=&country=gb")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        const sources = (j && j.sources) || [];
+        if (j && j.configured) {
+          setOffres({ state: "ok", detail: `sources actives : ${sources.join(", ") || "aucune nommee"}` });
+        } else {
+          setOffres({
+            state: "ko",
+            detail: "aucune source d'offres configuree",
+            fix: "La recherche rend une liste vide, ce qui se lit comme "
+               + "\"aucune offre aujourd'hui\" et non comme une panne. Adzuna est "
+               + "gratuit : developer.adzuna.com, puis Vercel > Environment "
+               + "Variables > ADZUNA_APP_ID et ADZUNA_APP_KEY, et redeploie. "
+               + "Pour le Royaume-Uni, REED_API_KEY en plus.",
+          });
+        }
+      })
+      .catch(() => { if (alive) setOffres({ state: "ko", detail: "la route ne repond pas" }); });
+
+    fetch("/api/billing")
+      .then((r) => r.json())
+      .then((j) => {
+        if (!alive) return;
+        if (j && j.configured) setPaiement({ state: "ok", detail: "Stripe repond, les plans sont vendables" });
+        else {
+          setPaiement({
+            state: "ko",
+            detail: "tout est gratuit et sans compte",
+            fix: "Personne ne peut payer, et rien ne plafonne la facture "
+               + "Anthropic. Les six valeurs sont dans docs/facturation.md. "
+               + "SUPABASE_SERVICE_ROLE_KEY ne doit JAMAIS porter le prefixe "
+               + "NEXT_PUBLIC_ : elle ignore les regles de securite.",
+          });
+        }
+      })
+      .catch(() => { if (alive) setPaiement({ state: "ko", detail: "la route ne repond pas" }); });
+
+    // Celui-la porte sur le navigateur qui lit cette page.
+    const aLaVoix = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+    const aLOnglet = Boolean(navigator.mediaDevices
+      && typeof navigator.mediaDevices.getDisplayMedia === "function");
+    if (aLaVoix && aLOnglet) {
+      setLive({ state: "ok", detail: "transcription et capture d'onglet disponibles ici" });
+    } else {
+      setLive({
+        state: "ko",
+        detail: [!aLaVoix ? "pas de transcription" : null,
+          !aLOnglet ? "pas de capture d'onglet" : null].filter(Boolean).join(", "),
+        fix: "Teste depuis Chrome ou Edge sur un ordinateur. Sur telephone la "
+           + "capture d'onglet n'existe pas, et l'assistant ne peut alors "
+           + "distinguer le recruteur de la personne.",
+      });
+    }
+
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     if (!URL_ENV || !KEY_ENV) {
@@ -291,13 +398,55 @@ export default function Diagnostic() {
           />
         </ul>
 
+        {/* CE QUI SE DEGRADE EN SILENCE
+            Les six points ci-dessus finissent par se voir : un compte qui
+            manque, c'est un bouton absent. Ces quatre-la ne se voient
+            jamais. Le produit repond, il a l'air de marcher, et il rend
+            moins qu'il ne promet. */}
+        <h2 style={{
+          fontFamily: "Fraunces, Georgia, serif",
+          fontSize: 22, fontWeight: 600, margin: "40px 0 6px",
+        }}>Ce qui se degrade en silence</h2>
+        <p style={{ color: MUTED, fontSize: 13.5, margin: "0 0 12px", lineHeight: 1.6 }}>
+          Rien de ce qui suit ne leve d&apos;erreur. Le produit repond, il a
+          l&apos;air de marcher, et il rend moins qu&apos;il ne promet. Le
+          dernier point depend du navigateur qui lit cette page.
+        </p>
+
+        <ul style={{ margin: 0, padding: 0 }}>
+          <Verdict
+            state={pdf.state}
+            title="7. Le PDF telecharge est du vrai texte"
+            detail={pdf.detail}
+            fix={pdf.fix}
+          />
+          <Verdict
+            state={offres.state}
+            title="8. La recherche d'offres a une source"
+            detail={offres.detail}
+            fix={offres.fix}
+          />
+          <Verdict
+            state={paiement.state}
+            title="9. Quelqu'un peut payer"
+            detail={paiement.detail}
+            fix={paiement.fix}
+          />
+          <Verdict
+            state={live.state}
+            title="10. L'assistant live peut entendre, ici"
+            detail={live.detail}
+            fix={live.fix}
+          />
+        </ul>
+
         {/* Le seul point qu'aucun code ne peut verifier, et donc le plus oublie. */}
         <div style={{
           marginTop: 32, padding: "18px 20px", borderRadius: 12,
           background: "rgba(0,0,0,.035)", fontSize: 13, lineHeight: 1.65,
         }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            6. A verifier a la main : les adresses de retour
+            11. A verifier a la main : les adresses de retour
           </div>
           <p style={{ margin: "0 0 10px", color: MUTED }}>
             Aucun test ne peut lire ce reglage depuis ici. S'il est faux, le lien
