@@ -351,6 +351,23 @@
 @media (min-width: 560px) { .vv-metiers { columns: 2; } }
 @keyframes vvTick { to { transform: translateX(-50%); } }
 
+/* applying: the link door and the extension */
+.vv-apply { display: grid; grid-template-columns: 1fr; gap: 1.25rem; margin-top: 2.5rem; }
+@media (min-width: 860px) { .vv-apply { grid-template-columns: 1fr 1fr; } }
+.vv-apply__card { display: flex; flex-direction: column; gap: 0.7rem; }
+.vv-apply__card h3 { margin: 0; font-family: var(--vv-display); font-weight: 400;
+  font-size: clamp(1.25rem, 2vw, 1.6rem); letter-spacing: -0.02em; line-height: 1.25; }
+.vv-apply__card p { margin: 0; line-height: 1.6; color: var(--vv-ink-3); }
+.vv-apply__hint { font-size: 0.85rem; color: var(--vv-ink-2); }
+/* The address is the instruction, so it has to survive being long on a
+   phone: it wraps inside the box instead of pushing the page sideways. */
+.vv-apply__url { display: block; padding: 0.7rem 0.8rem; border-radius: 10px;
+  background: rgba(0, 0, 0, 0.045); border: 1px solid var(--vv-line);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.82rem;
+  line-height: 1.5; color: var(--vv-ink); overflow-wrap: anywhere; }
+.vv-apply__url span { color: var(--vv-purple); }
+.vv-apply__regle { font-weight: 500; color: var(--vv-ink) !important; }
+
 /* numbered steps */
 .vv-step { display: grid; grid-template-columns: 3.5rem 1fr; gap: 1rem; padding: 2rem 0; border-top: 1px solid var(--vv-line); }
 .vv-step:last-child { border-bottom: 1px solid var(--vv-line); }

@@ -68,7 +68,7 @@ const T = {
       ["Each job title and each employer", "A real job title. \u201cHospitality professional\u201d is not one."],
       ["The dates", "From when to when. \u201cFor years\u201d does not count."],
       ["What you achieved, in numbers", "\u201cTeam of 12\u201d counts. \u201cLed a large team\u201d does not."]],
-    links: [["How it works", "#how"], ["Layouts", "#templates"], ["Check my CV", "#check"], ["Price", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
+    links: [["How it works", "#how"], ["Layouts", "#templates"], ["Applying", "#apply"], ["Check my CV", "#check"], ["Price", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Get in touch", lang: "Language",
     ticker: ["Read whole by the sorting software", "One page", "Nothing made up", "Free to check", "PDF and Word", "In French and English"],
     checkEyebrow: "Why you hear nothing back", checkTitle: "A robot reads your CV before anyone does.",
@@ -98,6 +98,20 @@ const T = {
       ["Follow your applications", "Connect your Gmail and every reply from a recruiter updates your list by itself."],
       ["Prepare the interview", "The questions they will ask, from the ad and your CV, and help during the call, on your phone."],
       ["PDF or Word", "Send the file the recruiter asks for. Both are read whole by their software."]],
+    // APPLYING, NOT WRITING
+    //
+    // These two exist and nothing on this page has ever mentioned them. They
+    // are the only part of Nuvi that touches the hundred applications rather
+    // than the one CV, which is where the twenty minutes actually go.
+    applyEyebrow: "Applying, a hundred times",
+    applyTitle: "The CV is the easy part.",
+    applyLead: "Twenty fields, typed again for every job. Nuvi does that part too.",
+    doorTitle: "Paste any job link after the address",
+    doorBody: "Nuvi opens with that ad already read, and the CV adapted to it. Nothing to install, and the link can be shared with anyone.",
+    doorHint: "Try it with a real ad:",
+    extTitle: "The browser extension fills the form",
+    extBody: "First name, e-mail, phone, LinkedIn, and the questions every site asks again: right to work, notice period, sponsorship. It answers with the words you gave once, and attaches the CV you just adapted.",
+    extRule: "It fills. You press send. Never the other way round.",
     priceEyebrow: "Price", priceTitle: "One plan. One price. Cancel in one click.",
     priceRows: ["Checking your CV is free, no account needed.", "One plan gives you everything: the rewriting, the letter, the follow-up, the interview prep.", "Same price for everyone. Cancel from Settings, no e-mail to write."],
     priceBig: "Free to check", priceSmall: "price announced at launch",
@@ -116,7 +130,7 @@ const T = {
       ["Chaque poste et chaque employeur", "Un vrai intitule de poste. \u00ab Professionnel de la restauration \u00bb n'en est pas un."],
       ["Les dates", "De quand a quand. \u00ab Depuis des annees \u00bb ne compte pas."],
       ["Ce que tu as accompli, en chiffres", "\u00ab Equipe de 12 \u00bb compte. \u00ab A encadre une grande equipe \u00bb non."]],
-    links: [["Comment ca marche", "#how"], ["Mises en page", "#templates"], ["Verifier mon CV", "#check"], ["Prix", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
+    links: [["Comment ca marche", "#how"], ["Mises en page", "#templates"], ["Postuler", "#apply"], ["Verifier mon CV", "#check"], ["Prix", "#pricing"], ["Contact", "mailto:hello@thenuvi.com"]],
     touch: "Nous ecrire", lang: "Langue",
     ticker: ["Lu en entier par le logiciel de tri", "Une page", "Rien d'invente", "Verification gratuite", "PDF et Word", "En francais et en anglais"],
     checkEyebrow: "Pourquoi tu n'as pas de reponse", checkTitle: "Un robot lit ton CV avant tout le monde.",
@@ -146,6 +160,15 @@ const T = {
       ["Suis tes candidatures", "Connecte ton Gmail et chaque reponse d'un recruteur met ta liste a jour toute seule."],
       ["Prepare l'entretien", "Les questions qu'on va te poser, tirees de l'annonce et de ton CV, et de l'aide pendant l'appel, sur ton telephone."],
       ["PDF ou Word", "Envoie le fichier que le recruteur demande. Les deux sont lus en entier par son logiciel."]],
+    applyEyebrow: "Postuler, cent fois",
+    applyTitle: "Le CV est la partie facile.",
+    applyLead: "Vingt cases, retapees a chaque annonce. Nuvi fait aussi cette partie-la.",
+    doorTitle: "Colle n'importe quel lien d'annonce apres l'adresse",
+    doorBody: "Nuvi s'ouvre avec cette annonce deja lue, et le CV adapte dessus. Rien a installer, et le lien se partage.",
+    doorHint: "A essayer avec une vraie annonce :",
+    extTitle: "L'extension remplit le formulaire",
+    extBody: "Prenom, e-mail, telephone, LinkedIn, et les questions que chaque site repose : droit de travailler, preavis, parrainage. Elle repond avec les mots que tu as donnes une fois, et joint le CV que tu viens d'adapter.",
+    extRule: "Elle remplit. C'est toi qui envoies. Jamais l'inverse.",
     priceEyebrow: "Prix", priceTitle: "Un plan. Un prix. Resiliable en un clic.",
     priceRows: ["Verifier ton CV est gratuit, sans compte.", "Un seul plan te donne tout : la reecriture, la lettre, le suivi, la preparation d'entretien.", "Le meme prix pour tout le monde. Resiliation depuis Reglages, pas d'e-mail a ecrire."],
     priceBig: "Verification gratuite", priceSmall: "prix annonce au lancement",
@@ -493,6 +516,37 @@ export default function Vitrine({ lang = "en", onLang }) {
             {t.after.map(([titre, corps]) => (
               <div key={titre} className="vv-frost"><h3>{titre}</h3><p>{corps}</p></div>
             ))}
+          </div>
+        </section>
+
+        {/* 06 bis APPLYING
+            The link door and the extension. Both have been built and working
+            for weeks and this page has never said either existed, which is
+            the same as not having them: they are what turns one adapted CV
+            into a hundred applications, and that is where the time goes. */}
+        <section className="vv-sec nuvi-scroll-in" id="apply">
+          <span className="vv-eyebrow">{t.applyEyebrow}</span>
+          <h2 className="vv-h nuvi-titre-geant"><Mots>{t.applyTitle}</Mots></h2>
+          <p className="vv-lead vv-muted">{t.applyLead}</p>
+
+          <div className="vv-apply">
+            <div className="vv-frost vv-apply__card">
+              <h3>{t.doorTitle}</h3>
+              {/* The address IS the demonstration: reading it is the whole
+                  instruction, so it is set as the thing it is, a URL, and
+                  not described in a sentence. */}
+              <p className="vv-apply__hint">{t.doorHint}</p>
+              <code className="vv-apply__url">
+                thenuvi.com/<span>https://job-boards.greenhouse.io/acme/jobs/4012</span>
+              </code>
+              <p>{t.doorBody}</p>
+            </div>
+
+            <div className="vv-frost vv-apply__card">
+              <h3>{t.extTitle}</h3>
+              <p>{t.extBody}</p>
+              <p className="vv-apply__regle">{t.extRule}</p>
+            </div>
           </div>
         </section>
 
