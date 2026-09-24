@@ -807,6 +807,25 @@ const FR_T = {
   ap_stats_active:"En cours",
   ap_stats_offers:"Offres",
   ap_stats_rejected:"Refus",
+  // Voir le commentaire dans en.js : ces seize libelles vivaient en dur dans
+  // le composant, donc le francais marchait par accident et l'anglais
+  // affichait du francais.
+  ap_health_good:"Ca avance",
+  ap_health_pending:"En cours",
+  ap_health_dead:"Mortes",
+  ap_to_follow_one:"candidature attend une relance.",
+  ap_to_follow_many:"candidatures attendent une relance.",
+  ap_to_follow_hint:"C'est le seul geste qui les fait repartir.",
+  ap_field_offer:"Annonce (colle le texte)",
+  ap_offer_ready:"Annonce enregistree, les actions suivantes sont debloquees",
+  ap_do_offer:"Coller l'annonce",
+  ap_do_offer_hint:"Debloque le CV adapte, la relance et l'entretien",
+  ap_do_tailor:"Adapter mon CV",
+  ap_do_tailor_hint:"Reecrit ton CV pour cette annonce",
+  ap_do_followup:"Rediger la relance",
+  ap_do_prepare:"Preparer l'entretien",
+  ap_do_prepare_hint:"Questions et reponses sur cette annonce",
+  ap_do_negotiate:"Preparer la negociation",
   // === Multi-CV strategie (recommandation Nuvi) ===
   mc_btn:"Quel CV envoyer ?",
   mc_btn_desc:"Nuvi recommande la meilleure version pour cette offre",

@@ -812,6 +812,29 @@ const EN_T = {
   ap_stats_active:"Active",
   ap_stats_offers:"Offers",
   ap_stats_rejected:"Rejected",
+  // SEIZE LIBELLES QUI N'EXISTAIENT DANS AUCUNE DES DEUX LANGUES
+  //
+  // Ils etaient ecrits en dur dans ApplicationsTrackerModal.jsx, en francais,
+  // derriere un "T.x || ...". Un francophone voyait donc la bonne phrase par
+  // accident, et un anglophone lisait "Ca avance", "Mortes", "Preparer
+  // l'entretien" au milieu d'un ecran anglais. Rien ne pouvait le signaler :
+  // un repli n'est pas une cle manquante, c'est une chaine valide.
+  ap_health_good:"Moving",
+  ap_health_pending:"Waiting",
+  ap_health_dead:"Dead",
+  ap_to_follow_one:"application is waiting for a nudge.",
+  ap_to_follow_many:"applications are waiting for a nudge.",
+  ap_to_follow_hint:"It is the one move that starts them again.",
+  ap_field_offer:"The ad (paste the text)",
+  ap_offer_ready:"Ad saved. The next steps are unlocked.",
+  ap_do_offer:"Paste the ad",
+  ap_do_offer_hint:"Unlocks the fitted CV, the nudge and the interview",
+  ap_do_tailor:"Fit my CV",
+  ap_do_tailor_hint:"Rewrites your CV for this ad",
+  ap_do_followup:"Write the nudge",
+  ap_do_prepare:"Prepare the interview",
+  ap_do_prepare_hint:"Questions and answers for this ad",
+  ap_do_negotiate:"Prepare the negotiation",
   // === Multi-CV strategy (Nuvi recommendation) ===
   mc_btn:"Which CV to send?",
   mc_btn_desc:"Nuvi recommends the best version for this offer",

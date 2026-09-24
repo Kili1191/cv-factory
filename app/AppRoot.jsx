@@ -5689,6 +5689,18 @@ export default function App() {
       link: "",
       offer: texte,
       cv: garde,
+      // THE LAYOUT IS RECORDED HERE, AND NOWHERE ELSE IT COULD BE
+      //
+      // lib/reponses.js compares reply rates by layout, and that comparison
+      // can only ever exist if the layout is written down at the moment the
+      // application is created. It cannot be recovered afterwards: the person
+      // changes layout between applications, so reading today's setting would
+      // attribute every past application to whatever they last picked, which
+      // is worse than having no comparison at all.
+      //
+      // Rows made before this line existed carry none, and reponses() leaves
+      // them out of the breakdown rather than inventing a bucket for them.
+      gabarit: layout,
       created: Date.now(),
     };
     addApplication(app);
@@ -5696,7 +5708,7 @@ export default function App() {
       + ([role, company].filter(Boolean).join(" - ") || texte.slice(0, 60)));
     notify((T.ap_tracked_from_cv || "") + ([company, role].filter(Boolean).join(", ") || (locale === "en" ? "this ad" : "cette annonce")));
     return app;
-  }, [applications, addApplication, updateApplication, T, locale, notify, logActivity]);
+  }, [applications, addApplication, updateApplication, T, locale, notify, logActivity, layout]);
 
   const requestPack = useCallback((offer, matchRes) => {
     suivreLaCandidature(offer, matchRes);

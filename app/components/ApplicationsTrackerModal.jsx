@@ -15,6 +15,7 @@ import GmailScanPanel from "./GmailScanPanel";
 import { joursDepuis, JOURS_AVANT_RELANCE } from "../../lib/applicationFollowUp";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
+import { reponses, ceQuiEstCompte } from "../../lib/reponses.js";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
@@ -32,6 +33,101 @@ function statusBadge(status, T) {
 }
 
 // Petite carte stat.
+// CE QUI EST ARRIVE AUX CV PARTIS
+//
+// Nuvi mesure une chose avant qu'un CV parte : la part des mots de l'annonce
+// qu'il porte. C'est une approximation du comportement d'une machine. Le seul
+// nombre qui tranche la promesse de la page d'accueil est celui que rien ne
+// comptait : sur les CV reellement envoyes, combien ont fait repondre un
+// humain.
+//
+// Il se lit ici parce que c'est ici qu'on vient regarder ses candidatures.
+// Une ligne dit ce qui a ete compte, comme sous le score de correspondance :
+// un chiffre que personne ne sait expliquer est un chiffre sur lequel
+// personne ne devrait agir. Celui-ci vient de statuts poses a la main ou
+// bouges par Gmail, donc il doit dire tout haut qu'un refus compte comme une
+// reponse.
+function BlocReponses({ applications, locale }) {
+  const r = useMemo(() => reponses(applications), [applications]);
+  if (!r.envoyees) return null;
+
+  const en = locale === "en";
+  // Le taux n'existe pas sous le seuil, et c'est alors le compte qui parle.
+  const tete = r.taux === null
+    ? `${r.repondues}/${r.envoyees}`
+    : `${r.taux}%`;
+  const sousTete = r.taux === null
+    ? (en ? "replies, from applications sent" : "reponses, sur les candidatures envoyees")
+    : (en ? `replied, from ${r.envoyees} sent` : `ont repondu, sur ${r.envoyees} envoyees`);
+
+  const lignes = [
+    r.avancees > 0
+      ? (en ? `${r.avancees} went further than a reply` : `${r.avancees} sont allees plus loin qu'une reponse`)
+      : null,
+    r.enAttente > 0
+      ? (en ? `${r.enAttente} still waiting` : `${r.enAttente} encore en attente`)
+      : null,
+  ].filter(Boolean);
+
+  // Les gabarits ne se comparent que quand deux d'entre eux ont assez
+  // derriere eux pour porter un taux. Un gabarit a deux candidatures affiche
+  // a cote d'un gabarit a trente se lit comme un verdict, et c'est du bruit.
+  const comparables = r.parGabarit.filter((g) => g.taux !== null);
+
+  return (
+    <div style={{
+      padding: "16px 18px", marginBottom: 16,
+      background: Paper, borderRadius: RadiusMd,
+      border: "0.5px solid " + Hairline, boxShadow: ShadowSm,
+      fontFamily: Sans,
+    }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600, letterSpacing: "0.08em",
+        textTransform: "uppercase", color: PurpleText, marginBottom: 10,
+      }}>{en ? "What came back" : "Ce qui est revenu"}</div>
+
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
+        <span style={{
+          fontFamily: Serif, fontSize: 34, fontWeight: 500,
+          color: Ink, lineHeight: 1, letterSpacing: "-0.02em",
+          fontVariantNumeric: "tabular-nums",
+        }}>{tete}</span>
+        <span style={{ fontSize: 13.5, color: InkMuted }}>{sousTete}</span>
+      </div>
+
+      {lignes.length > 0 && (
+        <div style={{ fontSize: 13, color: InkMuted, marginTop: 8, lineHeight: 1.5 }}>
+          {lignes.join(en ? ". " : ". ")}.
+        </div>
+      )}
+
+      {comparables.length >= 2 && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: "0.5px solid " + Hairline }}>
+          <div style={{ fontSize: 12, color: InkMuted, marginBottom: 8 }}>
+            {en ? "By layout, where there is enough to compare:"
+                : "Par gabarit, la ou il y a de quoi comparer :"}
+          </div>
+          {comparables.map((g) => (
+            <div key={g.gabarit} style={{
+              display: "flex", justifyContent: "space-between", gap: 12,
+              fontSize: 13.5, color: Ink, padding: "3px 0",
+            }}>
+              <span>{g.gabarit}</span>
+              <span style={{ color: InkMuted, fontVariantNumeric: "tabular-nums" }}>
+                {g.taux}% {en ? "of" : "sur"} {g.envoyees}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontSize: 12, color: InkMuted, marginTop: 12, lineHeight: 1.5 }}>
+        {ceQuiEstCompte(locale)}
+      </div>
+    </div>
+  );
+}
+
 function StatCard({ label, value, color }) {
   return (
     <div style={{
@@ -563,6 +659,8 @@ export default function ApplicationsTrackerModal({
           }}
         />
       )}
+
+      <BlocReponses applications={applications} locale={locale} />
 
       {/* Stats */}
       {applications.length > 0 && (
