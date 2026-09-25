@@ -107,3 +107,21 @@ un conteneur neuf ne peut pas exécuter `npm test`, et la seule façon de
 vérifier une modification est d'ouvrir une proposition de fusion.
 
 Il ne fait rien en local, où la machine a déjà tout.
+
+## Les agents spécialisés
+
+`.claude/agents/` contient six agents, un par façon dont ce dépôt casse
+réellement. Aucun n'est un rôle générique : chacun porte les pannes qu'on a
+payées, avec les chiffres, pour qu'un agent neuf n'ait pas à les redécouvrir.
+
+| Agent | Quand l'appeler |
+| --- | --- |
+| `silence` | Avant de livrer une fonctionnalité dont la sortie peut légitimement être vide. Il cherche la panne maison : du code correct, qui ne lève rien et ne produit rien. Le bruit de fond à 0,025 qui n'affichait aucun repère, l'onglet muet qui jetait chaque mot, la photo de secours à l'export. |
+| `oeil` | Après toute modification visible. Il ouvre le produit à 390px et 1280px et dit ce qu'on voit. Les liens du pied de page collés, la signature Nuvi bloquée à 16px, le point orphelin : aucune suite ne les voyait. |
+| `epreuve` | En écrivant ou en changeant une suite. Une seule question : qu'est-ce qui la ferait rougir ? Les fixtures plates et les champs vides cachent le plus. |
+| `ats` | Dès qu'on touche à `app/api/pdf`, `app/imprimer`, aux gabarits, au Word ou à l'import. Il connaît les cinq moteurs et pourquoi ils ne sont pas d'accord. |
+| `langue` | Après tout texte ajouté. Un repli `T.x || "..."` n'est pas une clé manquante : c'est une chaîne valide que rien ne signale. |
+| `sous` | Avant de livrer quoi que ce soit qui appelle le modèle. Le plan est à 24 euros et l'arithmétique s'est déjà trompée une fois. |
+
+On les appelle par leur nom avec l'outil Agent. Ils lisent et mesurent ; ils
+ne poussent rien.
