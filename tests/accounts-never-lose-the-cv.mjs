@@ -17,7 +17,7 @@
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
 // On importe LA regle elle-meme, pas une copie. Voir le bloc 2.
-import { decideKey } from "../lib/cloudSync.js";
+import { decideKey, SYNCED_KEYS } from "../lib/cloudSync.js";
 
 export async function run() {
   const failures = [];
@@ -114,6 +114,34 @@ export async function run() {
       const nothingAnywhere = decideKey(null, 0, undefined);
       if (nothingAnywhere.push || nothingAnywhere.write) {
         failures.push("une cle absente des deux cotes declenche quand meme une ecriture");
+      }
+    }
+
+    // --- 2 bis. Un choix sur les documents suit la personne ---------------
+    //
+    // La liste peut s'allonger librement, mais ces cles-la ne sont pas des
+    // reglages d'appareil : ce sont des decisions sur les documents qu'on
+    // envoie. Une seule qui sort de la liste et le deuxieme appareil repart
+    // d'un defaut, sans rien dire, sur le document que le recruteur recoit.
+    //
+    // cvf_pays est arrive ici apres coup : il decide l'orthographe
+    // britannique et le format des dates, et il manquait.
+    {
+      const DOIVENT_SUIVRE = [
+        ["cvf_d", "le CV"],
+        ["cvf_ap", "les candidatures suivies"],
+        ["cvf_rep", "les reponses qu'on repete a chaque formulaire"],
+        ["cvf_pays", "le marche, donc l'orthographe et le format des dates"],
+        ["cvf_l", "le gabarit"],
+        ["cvf_c", "la langue"],
+      ];
+      for (const [cle, quoi] of DOIVENT_SUIVRE) {
+        if (!SYNCED_KEYS.includes(cle)) {
+          failures.push(
+            `${cle} (${quoi}) ne suit pas la personne d'un appareil a l'autre.\n` +
+            "      Le deuxieme appareil repart d'un defaut sans le dire."
+          );
+        }
       }
     }
 

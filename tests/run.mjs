@@ -14,6 +14,7 @@
 const SUITES = [
   ["no CDN dependency at runtime", "./no-runtime-cdn.mjs"],
   ["no em dash, no en dash", "./no-em-dash.mjs"],
+  ["no secret reaches the browser", "./no-secret-reaches-the-browser.mjs"],
   ["no em dash reaches the CV", "./no-em-dash-reaches-the-cv.mjs"],
   ["a bad reading doubts itself", "./a-bad-reading-doubts-itself.mjs"],
   ["a CV copied from a PDF is read", "./a-cv-copied-from-a-pdf-is-read.mjs"],
