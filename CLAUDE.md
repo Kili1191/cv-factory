@@ -383,6 +383,7 @@ mêmes faits réécrits, c'est toujours exactement ce que fait le défaut.
 | `lib/` | La logique métier hors React : parsing ATS, sérialisation du CV, Gmail, Supabase |
 | `extension/` | L'extension de navigateur qui lit une annonce |
 | `tests/` | Les tests de bout en bout, plus `lib/harness.mjs` |
+| `.claude/agents/` | Sept agents specialises, un par facon dont ce depot casse |
 | `docs/` | Mise en service, comptes, Gmail. En français accentué |
 
 ## Commandes
@@ -551,3 +552,24 @@ Les compétences installées pour les agents sont décrites dans
 `.claude/README.md` : le plugin taste-skill, les recommandations d'interface de
 Vercel, playwright-cli pour piloter un navigateur depuis le terminal, et une
 bibliothèque de fichiers `DESIGN.md`.
+
+### Sept agents, un par façon dont ce dépôt casse
+
+`.claude/agents/`. Ce ne sont pas des rôles génériques : chacun porte ce qui
+est déjà parti cassé dans son domaine, avec la mesure et le fichier. Un agent
+qui redit ce que le code dit déjà ne vaut pas sa place ; celui qui sait que
+PDFBox était le seul moteur à voir l'ordre de lecture fait gagner une session.
+
+| Agent | Ce qu'il tient |
+| --- | --- |
+| `ats` | Le PDF lu par les cinq moteurs. Deux colonnes, Type 3, ordre de peinture, l'export Word |
+| `humain` | Ce qui fait jeter un CV par une personne : le générique, le verbe en tête de puce, l'orthographe américaine |
+| `oeil` | L'écran de téléphone, le seul endroit où le produit se lit vraiment |
+| `silence` | Ce qui casse sans rien dire : le repli qui cache la panne, la couche invisible |
+| `epreuve` | La seule question qui vaut pour un test : est-ce qu'il peut devenir rouge |
+| `langue` | Une langue qui fuit dans l'autre, et les libellés qui n'existent dans aucune |
+| `sous` | Ce qu'une fonctionnalité coûte par personne et par mois. L'arithmétique s'est déjà trompée une fois |
+
+`humain` est celui dont le contenu vieillit : les signes qu'un recruteur
+associe à une machine bougent avec les modèles, et sa liste de mots dit
+elle-même de la revérifier avant de s'y fier.
