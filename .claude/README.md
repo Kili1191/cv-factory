@@ -110,7 +110,7 @@ Il ne fait rien en local, où la machine a déjà tout.
 
 ## Les agents spécialisés
 
-`.claude/agents/` contient six agents, un par façon dont ce dépôt casse
+`.claude/agents/` contient sept agents, un par façon dont ce dépôt casse
 réellement. Aucun n'est un rôle générique : chacun porte les pannes qu'on a
 payées, avec les chiffres, pour qu'un agent neuf n'ait pas à les redécouvrir.
 
@@ -121,6 +121,7 @@ payées, avec les chiffres, pour qu'un agent neuf n'ait pas à les redécouvrir.
 | `epreuve` | En écrivant ou en changeant une suite. Une seule question : qu'est-ce qui la ferait rougir ? Les fixtures plates et les champs vides cachent le plus. |
 | `ats` | Dès qu'on touche à `app/api/pdf`, `app/imprimer`, aux gabarits, au Word ou à l'import. Il connaît les cinq moteurs et pourquoi ils ne sont pas d'accord. |
 | `langue` | Après tout texte ajouté. Un repli `T.x || "..."` n'est pas une clé manquante : c'est une chaîne valide que rien ne signale. |
+| `humain` | Sur tout ce qu'un recruteur va lire, le CV réécrit, la lettre, et sur les textes du produit. Le déclencheur du rejet n'est pas l'IA, c'est le générique : une lettre qui pourrait partir telle quelle chez dix employeurs. Il porte les signes que les recruteurs britanniques citent nommément. |
 | `sous` | Avant de livrer quoi que ce soit qui appelle le modèle. Le plan est à 24 euros et l'arithmétique s'est déjà trompée une fois. |
 
 On les appelle par leur nom avec l'outil Agent. Ils lisent et mesurent ; ils
