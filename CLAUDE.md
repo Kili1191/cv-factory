@@ -322,6 +322,21 @@ qu'on lui réclame renvoie la personne dans un traitement de texte. La demande
 est ce qui fait la différence entre un outil et une falsification
 automatique : rien n'apparaît sur le document que la personne n'ait voulu.
 
+**Ce mode existe depuis longtemps et porte la règle en entier.**
+`ecrireLeCv` dans `AppRoot.jsx` écrit un CV complet à partir de l'annonce
+seule, par deux portes : « je pars de l'annonce » sur l'accueil, et
+« Générer avec Nuvi » depuis un intitulé. Quelqu'un qui n'a jamais rédigé de
+CV n'arrive pas avec un CV, il arrive avec une annonce qui l'intéresse. Le
+modèle remplit donc **tout ce que le poste implique**, et c'est exactement ce
+qu'on lui demande de faire à fond. Trois choses restent interdites : un
+employeur, une date, un diplôme que la personne n'a pas donnés.
+
+Et il **marque ce qu'il a rempli**, dans le champ `deduit` du schéma, pour
+que la personne sache quoi remplacer. C'est le même geste que le `BUILT:` de
+l'assistant live, et ce n'est pas une précaution de principe : sur un
+document qu'on envoie, ce qui vient de soi et ce qui vient du modèle se
+lisent pareil, et seule la personne peut décider ce qu'elle assume.
+
 **En entretien, la question EST la demande.** Une mise en situation
 (« que feriez-vous si ») n'a rien à se rappeler : construire EST la bonne
 réponse. Sur une question sans matière dans le CV, l'assistant construit
