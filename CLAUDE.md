@@ -383,7 +383,7 @@ mêmes faits réécrits, c'est toujours exactement ce que fait le défaut.
 | `lib/` | La logique métier hors React : parsing ATS, sérialisation du CV, Gmail, Supabase |
 | `extension/` | L'extension de navigateur qui lit une annonce |
 | `tests/` | Les tests de bout en bout, plus `lib/harness.mjs` |
-| `.claude/agents/` | Sept agents specialises, un par facon dont ce depot casse |
+| `.claude/agents/` | Neuf agents specialises, un par facon dont ce depot casse |
 | `docs/` | Mise en service, comptes, Gmail. En français accentué |
 
 ## Commandes
@@ -553,7 +553,7 @@ Les compétences installées pour les agents sont décrites dans
 Vercel, playwright-cli pour piloter un navigateur depuis le terminal, et une
 bibliothèque de fichiers `DESIGN.md`.
 
-### Sept agents, un par façon dont ce dépôt casse
+### Neuf agents, un par façon dont ce dépôt casse
 
 `.claude/agents/`. Ce ne sont pas des rôles génériques : chacun porte ce qui
 est déjà parti cassé dans son domaine, avec la mesure et le fichier. Un agent
@@ -569,6 +569,8 @@ PDFBox était le seul moteur à voir l'ordre de lecture fait gagner une session.
 | `epreuve` | La seule question qui vaut pour un test : est-ce qu'il peut devenir rouge |
 | `langue` | Une langue qui fuit dans l'autre, et les libellés qui n'existent dans aucune |
 | `sous` | Ce qu'une fonctionnalité coûte par personne et par mois. L'arithmétique s'est déjà trompée une fois |
+| `donnees` | Les données de la personne : ce qui suit d'un appareil à l'autre, et ce qui se perd |
+| `porte` | Lire une page choisie par un inconnu : le lien-porte, l'extracteur, l'extension |
 
 `humain` est celui dont le contenu vieillit : les signes qu'un recruteur
 associe à une machine bougent avec les modèles, et sa liste de mots dit
