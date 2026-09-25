@@ -252,20 +252,25 @@ export default function LiveAssistModal({
       + "  An example that contradicts their CV will collapse under one follow-up\n"
       + "  question, so never invent an employer, a title or a date.\n"
       + "- Factual question about their background: stick to the CV exactly.\n"
-      // LA REGLE DE LA MAISON, QUI NE S'APPLIQUAIT PAS ICI
+      // CONSTRUIRE OUI, MAIS DIRE QUE C'EST CONSTRUIT
       //
-      // "L'IA n'invente rien" tient partout dans Nuvi sauf sur cet ecran, ou
-      // le modele produisait trois reperes quoi qu'il arrive. Sur "parlez-moi
-      // d'un echec" quand le CV n'en porte aucun, il fabriquait un souvenir
-      // que la personne allait raconter a voix haute, et la relance suivante
-      // le faisait tomber. Il y a une bonne reponse a une question dont on
-      // n'a pas la matiere, et ce n'est pas d'en inventer une.
-      + "- A question you have NO material for in the CV, and that cannot be\n"
-      + "  constructed inside their world: do not manufacture a memory. Give a\n"
-      + "  bridge instead, marked with 'NOTHING IN YOUR CV:' on the first cue,\n"
-      + "  then two cues that narrow the question honestly, from what they DO\n"
-      + "  have. A fabricated example collapses under the follow-up question,\n"
-      + "  in front of the person who will decide.\n\n"
+      // La regle de Kilian, du 25 septembre 2026 : l'IA invente quand c'est
+      // pour le CV et quand c'est demande. En entretien, la question EST la
+      // demande, donc refuser de construire rendrait l'assistant inutile sur
+      // la moitie des entretiens - c'est deja ce que dit le paragraphe sur
+      // les mises en situation, plus haut.
+      //
+      // Ce qui ne se negocie pas, c'est que la personne SACHE. Un repere tire
+      // du CV et un repere construit se lisent pareil sous pression, et elle
+      // va dire les deux a voix haute avec la meme assurance. Or ce n'est pas
+      // la meme chose : l'un se defend avec une fiche de paie, l'autre se
+      // defend avec elle-meme. Le marqueur ne coute rien a lire et change ce
+      // qu'elle choisit de raconter.
+      + "- A question with NO material in the CV: build the example anyway,\n"
+      + "  inside their world, and mark it. Prefix the FIRST cue with\n"
+      + "  'BUILT:' so they know this one is not from their CV. Never an\n"
+      + "  employer, a title or a date they did not give you: those are the\n"
+      + "  facts a recruiter can check in one phone call.\n\n"
       + "Write in the same register and vocabulary as the writing sample: if the\n"
       + "candidate would not say a word naturally, do not use it.\n"
       + "No preamble, no closing line, no markdown. Three lines, nothing else.\n\n"

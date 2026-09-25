@@ -209,12 +209,26 @@ export async function run() {
       );
     }
 
-    // La regle de la maison, qui ne s'appliquait pas sur cet ecran.
-    if (!/NOTHING IN YOUR CV/.test(src)) {
+    // CONSTRUIT, ET DIT COMME TEL
+    //
+    // La regle de Kilian : l'IA invente quand c'est pour le CV et quand c'est
+    // demande. En entretien la question EST la demande, donc on construit.
+    // Ce qui ne se negocie pas, c'est que la personne sache lequel de ses
+    // reperes sort de son CV et lequel vient d'etre fabrique : sous pression
+    // les deux se lisent pareil et se disent avec la meme assurance, mais
+    // l'un se defend avec une fiche de paie et l'autre avec elle-meme.
+    if (!/BUILT:/.test(src)) {
       failures.push(
-        "sur une question sans matiere dans le CV, le modele fabrique encore "
-        + "un souvenir. La personne va le raconter a voix haute et la relance "
-        + "suivante le fera tomber, devant celui qui decide."
+        "un repere construit n'est plus signale comme tel. La personne va le "
+        + "dire avec la meme assurance qu'un fait de son CV, sans savoir "
+        + "qu'elle est seule a le defendre."
+      );
+    }
+    // Et la limite qui reste : les faits qu'un recruteur verifie en un appel.
+    if (!/never invent an employer, a title or a date/.test(src)) {
+      failures.push(
+        "l'employeur, l'intitule et la date ne sont plus interdits. Ce sont "
+        + "les trois choses qu'un recruteur verifie en un coup de telephone."
       );
     }
   }

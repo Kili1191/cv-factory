@@ -306,12 +306,54 @@ la grande signature Nuvi n'avait jamais dépassé 16px (`.vv-foot a` battait
 la liste des métiers laissait un point orphelin au bout de chaque ligne.
 Aucune suite ne les voyait : le contraste était juste, les mots étaient là.
 
-**3. L'IA n'invente rien.** Le dossier de parcours rassemble ce que la personne
-a déjà écrit, dans ses différentes versions de CV, et laisse l'adaptation
-piocher dedans. Choisir dans son propre matériau n'est pas inventer. Mais la
-frontière doit tenir toute seule et pas dépendre de la vigilance :
-`tests/the-career-record-invents-nothing.mjs` vérifie que chaque élément
-produit existe dans au moins une source.
+**3. L'IA n'invente rien, sauf quand c'est demandé.** Règle de Kilian, le
+25 septembre 2026 : *l'IA invente quand c'est pour le CV et quand c'est
+demandé*. Les deux conditions comptent, et c'est la seconde qui tient tout.
+
+**Par défaut, rien.** Adapter un CV à une offre ne fabrique aucun fait : le
+dossier de parcours rassemble ce que la personne a déjà écrit, dans ses
+différentes versions de CV, et l'adaptation pioche dedans. Choisir dans son
+propre matériau n'est pas inventer, c'est ce que fait quiconque adapte son CV
+à la main. Personne ne reçoit une expérience qu'il n'a pas demandée.
+
+**Quand la personne le demande, l'IA écrit ce qu'on lui demande.** C'est son
+CV, c'est sa signature en bas, et un outil qui refuse d'écrire la phrase
+qu'on lui réclame renvoie la personne dans un traitement de texte. La demande
+est ce qui fait la différence entre un outil et une falsification
+automatique : rien n'apparaît sur le document que la personne n'ait voulu.
+
+**En entretien, la question EST la demande.** Une mise en situation
+(« que feriez-vous si ») n'a rien à se rappeler : construire EST la bonne
+réponse. Sur une question sans matière dans le CV, l'assistant construit
+aussi, dans le monde de la personne, et **marque le repère `BUILT:`**. Sous
+pression, un repère tiré du CV et un repère fabriqué se lisent pareil et se
+disent avec la même assurance ; l'un se défend avec une fiche de paie,
+l'autre avec elle-même, et elle doit savoir lequel elle tient.
+
+**Trois faits restent interdits partout : l'employeur, l'intitulé et la
+date.** Ce sont ceux qu'un recruteur vérifie en un coup de téléphone, et les
+seuls dont le coût retombe sur la personne des semaines plus tard.
+
+`tests/the-career-record-invents-nothing.mjs` reste, et ne dit pas ce qu'on
+croit : `lib/careerRecord.js` est du JavaScript pur, sans un appel au modèle.
+Ce test garde l'assembleur, pas l'IA. La liberté de l'IA vit dans les
+consignes (`MatchPanel.jsx`, `LiveAssistModal.jsx`), et c'est là qu'il faut
+aller la changer.
+
+**La promesse a été retirée de la vitrine le même jour**, à huit endroits :
+le titre de la section, le bandeau, l'étape « colle l'annonce » et la carte
+de la lettre disaient tous « Nuvi n'invente jamais rien ». Ce *jamais* est
+devenu faux à la seconde où l'invention sur demande a existé, et une
+promesse publique fausse coûte plus cher que la fonctionnalité ne rapporte.
+
+**Et la page ne dit pas l'inverse non plus.** Une première réécriture
+annonçait « n'ajoute rien que tu ne lui aies demandé », ce qui est vrai et
+revient à prévenir le visiteur, sur la page d'accueil, que l'outil peut
+écrire ce qu'on lui réclame. Ce n'est pas le sujet d'une page d'accueil.
+Elle dit donc ce que Nuvi fait : **tes faits restent tes faits**, la
+formulation change pour que le logiciel les trouve, et ce qui figure sur le
+CV appartient à la personne. La section et sa démonstration restent : les
+mêmes faits réécrits, c'est toujours exactement ce que fait le défaut.
 
 ## Structure
 
