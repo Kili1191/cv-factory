@@ -28,6 +28,7 @@ import { serializeCvForContext } from "../../lib/cvSerializer.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 import { creerOracle, ressembleAUnCasque, ongletSansSon } from "../../lib/quiParle.js";
+import { ressembleAUneQuestion, vautUneReprise } from "../../lib/uneQuestion.js";
 
 // Only used when the meeting tab is NOT being captured. With the tab, silence
 // stops being the signal: see lib/quiParle.js.
@@ -52,7 +53,15 @@ export default function LiveAssistModal({
 }) {
   const [listening, setListening] = useState(false);
   const [heard, setHeard] = useState("");
-  const [cues, setCues] = useState("");
+  // LES REPERES NE SE REMPLACENT PLUS
+  //
+  // C'etait une seule chaine, et chaque nouvelle reponse l'ecrasait. Or le
+  // moment ou elle est ecrasee est exactement celui ou la personne est en
+  // train de la lire : le recruteur complete sa question, les mots bougent
+  // sous les yeux. C'est la meme faute que la boucle d'origine, l'outil qui
+  // sabote celui qui s'en sert au moment precis ou il s'en sert. Les blocs
+  // s'empilent, le dernier en tete, les precedents estompes.
+  const [blocs, setBlocs] = useState([]);
   const [thinking, setThinking] = useState(false);
   const [support, setSupport] = useState("unknown");
   // POURQUOI L'ERREUR EST UN ETAT ET NON UN SILENCE
@@ -98,6 +107,9 @@ export default function LiveAssistModal({
   const debutSuiviRef = useRef(0);      // when following the call started
   const ongletAParleRef = useRef(false);// the tab has carried energy at least once
   const paroleMicRef = useRef(0);       // ms of speech heard on the microphone
+  const historiqueRef = useRef([]);     // what has already been asked and answered
+  const demandeRef = useRef("");        // the wording the cues were asked for
+  const anticipeRef = useRef(false);    // cues already asked for mid-question
 
   const T = locale === "en" ? {
     title: "Live assist",
@@ -193,7 +205,10 @@ export default function LiveAssistModal({
     abortRef.current = ctrl;
 
     setThinking(true);
-    setCues("");
+    // Un bloc neuf en tete, vide, qui se remplit au fil du flux. Rien de ce
+    // qui est deja affiche ne bouge.
+    const marque = Date.now() + ":" + Math.random().toString(36).slice(2, 7);
+    setBlocs((p) => [{ id: marque, q, texte: "" }, ...p].slice(0, 6));
 
     // Le type de question decide de ce qu'on a le droit de fabriquer.
     //
@@ -212,6 +227,19 @@ export default function LiveAssistModal({
       + "Reply with EXACTLY three short cues, one per line, each starting with '- '.\n"
       + "A cue is at most 12 words. Never write a full sentence to read aloud:\n"
       + "the candidate speaks in their own words, they only glance at your cues.\n\n"
+      // READING AND SPEAKING FIGHT OVER THE SAME MACHINERY
+      //
+      // A person cannot read one clause while saying a different one: the two
+      // use the same phonological loop, so they stall, or they read your words
+      // out loud and it sounds exactly like what it is. "Lead with the 78% GP
+      // number" is a sentence and will be read. "78% GP" is a token: it is
+      // seen, and said in their own words. So the cues are made of things,
+      // not instructions about things.
+      + "SHAPE OF A CUE: a fragment, not an instruction. Numbers, names, nouns.\n"
+      + "Write \"78% GP, twelve staff\" and not \"Start by mentioning the 78%\n"
+      + "gross profit you achieved\". No verbs of instruction: no lead with, no\n"
+      + "mention, no talk about, no remember to. The candidate glances and\n"
+      + "speaks; anything that reads as a sentence gets read aloud.\n\n"
       + "HOW TO HANDLE THE QUESTION TYPE:\n"
       + "- Hypothetical or scenario question ('what would you do if', 'how would you\n"
       + "  handle', a roleplay): construct a concrete answer. There is nothing to\n"
@@ -223,7 +251,21 @@ export default function LiveAssistModal({
       + "  seniority, same order of magnitude for team sizes, budgets and results.\n"
       + "  An example that contradicts their CV will collapse under one follow-up\n"
       + "  question, so never invent an employer, a title or a date.\n"
-      + "- Factual question about their background: stick to the CV exactly.\n\n"
+      + "- Factual question about their background: stick to the CV exactly.\n"
+      // LA REGLE DE LA MAISON, QUI NE S'APPLIQUAIT PAS ICI
+      //
+      // "L'IA n'invente rien" tient partout dans Nuvi sauf sur cet ecran, ou
+      // le modele produisait trois reperes quoi qu'il arrive. Sur "parlez-moi
+      // d'un echec" quand le CV n'en porte aucun, il fabriquait un souvenir
+      // que la personne allait raconter a voix haute, et la relance suivante
+      // le faisait tomber. Il y a une bonne reponse a une question dont on
+      // n'a pas la matiere, et ce n'est pas d'en inventer une.
+      + "- A question you have NO material for in the CV, and that cannot be\n"
+      + "  constructed inside their world: do not manufacture a memory. Give a\n"
+      + "  bridge instead, marked with 'NOTHING IN YOUR CV:' on the first cue,\n"
+      + "  then two cues that narrow the question honestly, from what they DO\n"
+      + "  have. A fabricated example collapses under the follow-up question,\n"
+      + "  in front of the person who will decide.\n\n"
       + "Write in the same register and vocabulary as the writing sample: if the\n"
       + "candidate would not say a word naturally, do not use it.\n"
       + "No preamble, no closing line, no markdown. Three lines, nothing else.\n\n"
@@ -231,7 +273,19 @@ export default function LiveAssistModal({
       + "\n\nWRITING SAMPLE (register and vocabulary only):\n" + (styleSample || "(none)")
       + (activeOffer
         ? "\n\nROLE THEY ARE INTERVIEWING FOR:\n" + String(activeOffer).slice(0, 2500)
-        : "\n\nThe role is unknown: keep cues general and do not guess the company.");
+        : "\n\nThe role is unknown: keep cues general and do not guess the company.")
+      // L'entretien se souvient de lui-meme. Sans ca, la relance qui creuse
+      // l'exemple qu'on vient de donner arrive au modele detachee de cet
+      // exemple, et le meme souvenir ressort trois questions plus loin.
+      + (historiqueRef.current.length
+        ? "\n\nEARLIER IN THIS INTERVIEW, most recent last. If this question digs\n"
+          + "into the answer just given, treat it as a follow-up and stay on that\n"
+          + "example. Never send them back to an example already used: a repeated\n"
+          + "story is heard as a thin one.\n"
+          + historiqueRef.current
+            .map((h) => "Q: " + h.q + "\nCUES: " + String(h.reperes || "").replace(/\n+/g, " / "))
+            .join("\n\n")
+        : "");
 
     try {
       const res = await fetch("/api/claude/stream", {
@@ -252,12 +306,23 @@ export default function LiveAssistModal({
         const { done, value } = await reader.read();
         if (done) break;
         acc += dec.decode(value, { stream: true });
-        setCues(acc);          // affichage au fil de l'eau
+        setBlocs((p) => p.map((b) => (b.id === marque ? { ...b, texte: acc } : b)));
         setThinking(false);
       }
+      // CE QUI A DEJA ETE DIT DANS CET ENTRETIEN
+      //
+      // Chaque question partait au modele comme si c'etait la premiere phrase
+      // de l'entretien. Deux consequences, les deux visibles par le
+      // recruteur : la relance qui creuse l'exemple qu'on vient de donner
+      // n'etait pas reliee a cet exemple, et le meme souvenir ressortait a
+      // trois questions d'ecart. On garde donc la trace, en clair et sur
+      // l'appareil, et elle repart avec la question suivante. Ici, apres la
+      // boucle : une reponse interrompue n'a rien appris a garder.
+      historiqueRef.current = [...historiqueRef.current, { q, reperes: acc }].slice(-8);
     } catch (err) {
       if (err && err.name !== "AbortError") {
-        setCues("- " + ((err && err.message) || "reponse indisponible"));
+        const m = "- " + ((err && err.message) || "reponse indisponible");
+        setBlocs((p) => p.map((b) => (b.id === marque ? { ...b, texte: m } : b)));
       }
     } finally {
       setThinking(false);
@@ -359,15 +424,28 @@ export default function LiveAssistModal({
         if (evenement === "debut") {
           // A question of its own: forget the last one entirely.
           questionRef.current = "";
+          demandeRef.current = "";
+          anticipeRef.current = false;
           baseRef.current = longueurRef.current;
           paroleRecruteurRef.current = 0;
           setHeard("");
-          setCues("");
           setCasque(false);
         } else if (evenement === "fin") {
           const q = questionRef.current.trim();
-          if (q && q !== lastSentRef.current) { lastSentRef.current = q; askFor(q); }
-          else if (ressembleAUnCasque(paroleRecruteurRef.current, q)) {
+          // La question est finie. Si elle a grandi depuis les reperes deja
+          // demandes, elle en merite de meilleurs, qui viendront s'ajouter
+          // au-dessus sans effacer ceux qu'on est peut-etre en train de lire.
+          // Si elle n'a pas bouge, les premiers tiennent toujours et un
+          // second appel ne ferait que payer deux fois la meme reponse.
+          if (q && vautUneReprise(demandeRef.current, q)) {
+            demandeRef.current = q;
+            askFor(q);
+          } else if (!demandeRef.current && q && q !== lastSentRef.current) {
+            // Une question qu'aucune amorce ne reconnait : elle n'a jamais
+            // ete anticipee, donc elle part ici, comme avant.
+            demandeRef.current = q;
+            askFor(q);
+          } else if (ressembleAUnCasque(paroleRecruteurRef.current, q)) {
             // They spoke for seconds and not one word reached the
             // microphone. The tab told us they were speaking, so this is not
             // a broken assistant, it is a pair of headphones.
@@ -433,8 +511,39 @@ export default function LiveAssistModal({
         if (!oracle.ecouteLeRecruteur(performance.now())) return;
         setHeard(clean);
         questionRef.current = clean;
-        // The oracle decides when the question is over, from the recruiter's
-        // own stream. No silence timer, and the microphone stays open.
+
+        // ON N'ATTEND PLUS LA FIN DE LA PHRASE
+        //
+        // Le silence decidait qu'une question etait finie, puis on appelait
+        // le modele : deux secondes et demie de vide avant le premier mot
+        // affiche, sur un ecran dont tout le role est d'etre lu pendant que
+        // quelqu'un attend qu'on parle. Un tour de parole humain, c'est deux
+        // cents millisecondes.
+        //
+        // Les interpretes de conference ont regle ca il y a longtemps, et
+        // c'est leur metier : ils ne montent jamais jusqu'au point final, ils
+        // produisent avec quelques secondes de retard pendant que l'autre
+        // parle encore. "Parlez-moi d'une fois ou vous avez" se repond deja.
+        // Le modele reflechit donc pendant que le recruteur finit sa phrase.
+        //
+        // Ce n'est pas un delai plus court : un delai plus court se declenche
+        // sur les pauses de reflexion, ce qui est exactement le defaut qui
+        // coupait les questions en deux. Ici le silence n'est pas regarde du
+        // tout, ce sont les mots qui decident, et une pause apres "alors" ne
+        // produit rien parce que "alors" n'est pas une question.
+        // UNE SEULE FOIS PAR QUESTION, ET C'EST UNE QUESTION D'ARGENT
+        //
+        // Sans ce verrou, une question longue declenche un appel chaque fois
+        // que le texte grandit d'assez : six mots, puis neuf, puis quatorze,
+        // puis vingt et un. Quatre appels pour une question, vingt questions
+        // dans un entretien. On anticipe donc une fois, et la fin de la
+        // question en vaut un second seulement si elle a change. Deux au
+        // pire, un le plus souvent.
+        if (!anticipeRef.current && ressembleAUneQuestion(clean)) {
+          anticipeRef.current = true;
+          demandeRef.current = clean;
+          askFor(clean);
+        }
         return;
       }
 
@@ -782,7 +891,9 @@ export default function LiveAssistModal({
     );
   }
 
-  const lines = cues.split("\n").map(l => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+  const enLignes = (t) => String(t || "").split("\n")
+    .map((l) => l.replace(/^[-•]\s*/, "").trim()).filter(Boolean);
+  const rien = blocs.every((b) => !enLignes(b.texte).length);
 
   return (
     <div
@@ -842,23 +953,45 @@ export default function LiveAssistModal({
         flex: 1, minHeight: 0, overflowY: "auto",
         display: "flex", flexDirection: "column", justifyContent: "center", gap: 14,
       }}>
-        {lines.length === 0 ? (
+        {rien ? (
           <div style={{
             color: "rgba(255,255,255,.35)", fontSize: 17, textAlign: "center",
           }}>{thinking ? T.thinking : T.idle}</div>
-        ) : lines.map((l, i) => (
-          <div key={i} style={{
-            display: "flex", gap: 14, alignItems: "flex-start",
-            padding: "16px 18px", borderRadius: 14,
-            background: "rgba(255,255,255,.07)",
-          }}>
-            <span style={{
-              color: "#7c6bff", fontSize: 15, fontWeight: 700, flexShrink: 0,
-              fontVariantNumeric: "tabular-nums",
-            }}>{i + 1}</span>
-            <span style={{ color: "#fff", fontSize: 21, lineHeight: 1.35, fontWeight: 500 }}>{l}</span>
-          </div>
-        ))}
+        ) : blocs.map((bloc, rang) => {
+          const l = enLignes(bloc.texte);
+          if (!l.length) return null;
+          // Le bloc le plus recent est celui qu'on lit. Les precedents
+          // restent lisibles, en retrait : ils ne disparaissent pas, parce
+          // qu'une relance porte sur ce qu'on vient de dire.
+          const actuel = rang === 0;
+          return (
+            <div key={bloc.id} style={{
+              display: "flex", flexDirection: "column", gap: actuel ? 14 : 8,
+              opacity: actuel ? 1 : 0.42,
+              paddingTop: actuel ? 0 : 12,
+              borderTop: actuel ? "none" : "1px solid rgba(255,255,255,.1)",
+              flexShrink: 0,
+            }}>
+              {l.map((ligne, i) => (
+                <div key={i} style={{
+                  display: "flex", gap: 14, alignItems: "flex-start",
+                  padding: actuel ? "16px 18px" : "8px 12px",
+                  borderRadius: 14,
+                  background: actuel ? "rgba(255,255,255,.07)" : "transparent",
+                }}>
+                  <span style={{
+                    color: "#7c6bff", fontSize: actuel ? 15 : 12, fontWeight: 700,
+                    flexShrink: 0, fontVariantNumeric: "tabular-nums",
+                  }}>{i + 1}</span>
+                  <span style={{
+                    color: "#fff", fontSize: actuel ? 21 : 14,
+                    lineHeight: 1.35, fontWeight: 500,
+                  }}>{ligne}</span>
+                </div>
+              ))}
+            </div>
+          );
+        })}
       </div>
 
       {heard && (
@@ -975,7 +1108,7 @@ export default function LiveAssistModal({
         </div>
       )}
 
-      {!listening && !cues && !suitLAppel && (
+      {!listening && rien && !suitLAppel && (
         <div style={{
           margin: "12px 0 0", padding: "11px 13px", borderRadius: 10,
           background: "rgba(255,255,255,.05)", border: "1px solid rgba(255,255,255,.1)",

@@ -16,6 +16,7 @@
 // qu'elle compile.
 
 import { startServer, stopServer, launchBrowser, seedApp, SAMPLE_CV } from "./lib/harness.mjs";
+import { readFileSync } from "node:fs";
 
 const CUES = "- Lead with the 78% GP number\n- Name the team size, twenty people\n- Close on why this venue\n";
 
@@ -150,10 +151,72 @@ export async function run() {
     }
 
     if (errors.length) failures.push("erreur JS : " + errors[0]);
+
+    // 2 bis. UN REPERE NE BOUGE PAS PENDANT QU'ON LE LIT
+    //
+    // Les reperes etaient une seule chaine, et chaque reponse ecrasait la
+    // precedente. Le moment ou elle est ecrasee est exactement celui ou la
+    // personne la lit a voix haute : les mots bougent sous les yeux. C'est
+    // la meme faute que la boucle d'origine, l'outil qui sabote celui qui
+    // s'en sert au moment ou il s'en sert. Une relance porte en plus sur ce
+    // qu'on vient de dire, donc le bloc precedent doit rester lisible.
+    {
+      const boite = page.locator("input[placeholder]").last();
+      if (await boite.count()) {
+        await boite.fill("And what would you do differently now");
+        await boite.press("Enter");
+        await page.waitForTimeout(3000);
+        const apres = await page.evaluate(() => document.body.innerText);
+        if (!/Lead with|Name the team|Close on why/.test(apres)) {
+          failures.push(
+            "la deuxieme question a efface les reperes de la premiere. Ils "
+            + "s'effacent au moment precis ou la personne les lit."
+          );
+        }
+      }
+    }
     await ctx.close();
   } finally {
     await browser.close();
     await stopServer(server);
+  }
+
+  // --- 4. LES TROIS REGLES QUI VIVENT DANS LA CONSIGNE --------------------
+  //
+  // Elles ne se voient pas a l'ecran avec un modele double, parce que c'est
+  // le vrai modele qui les applique. Elles se verifient donc dans le texte
+  // envoye, ce qui est exactement la ou elles peuvent disparaitre sans que
+  // rien ne rougisse.
+  {
+    const src = readFileSync("app/components/LiveAssistModal.jsx", "utf8");
+
+    // Un repere est une chose, pas une instruction : lire et parler se
+    // disputent la meme machinerie, donc une phrase se lit a voix haute.
+    if (!/SHAPE OF A CUE/.test(src) || !/no lead with/.test(src)) {
+      failures.push(
+        "la consigne ne dit plus qu'un repere est un fragment et non une "
+        + "instruction. \"Lead with the 78% GP number\" est une phrase : elle "
+        + "sera lue a voix haute, et ca s'entend."
+      );
+    }
+
+    // L'entretien se souvient de lui-meme.
+    if (!/EARLIER IN THIS INTERVIEW/.test(src) || !/historiqueRef/.test(src)) {
+      failures.push(
+        "l'entretien ne se souvient plus de lui-meme : la relance qui creuse "
+        + "l'exemple qu'on vient de donner arrive detachee de cet exemple, et "
+        + "le meme souvenir ressort trois questions plus loin."
+      );
+    }
+
+    // La regle de la maison, qui ne s'appliquait pas sur cet ecran.
+    if (!/NOTHING IN YOUR CV/.test(src)) {
+      failures.push(
+        "sur une question sans matiere dans le CV, le modele fabrique encore "
+        + "un souvenir. La personne va le raconter a voix haute et la relance "
+        + "suivante le fera tomber, devant celui qui decide."
+      );
+    }
   }
 
   // --- 3. suivre l'onglet de la visio -------------------------------------

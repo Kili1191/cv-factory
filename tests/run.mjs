@@ -52,6 +52,7 @@ const SUITES = [
   ["the interview assistant answers", "./live-assist-answers.mjs"],
   ["the live assistant does not answer itself", "./the-live-assist-does-not-answer-itself.mjs"],
   ["the live assistant knows who is speaking", "./the-live-assist-knows-who-is-speaking.mjs"],
+  ["the cues arrive before the question ends", "./the-cues-arrive-before-the-question-ends.mjs"],
   ["Gmail gives the tracker its real state", "./gmail-reads-the-replies.mjs"],
   ["the app installs on the home screen", "./installs-on-the-home-screen.mjs"],
   ["the home screen hides no text", "./the-home-screen-hides-no-text.mjs"],
