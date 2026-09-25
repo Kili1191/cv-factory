@@ -403,6 +403,17 @@ ce fichier-ci. Les deux suites qu'on lance à la main, `no-em-dash` et
 `no-runtime-cdn`, s'exécutent maintenant vraiment quand on les appelle
 directement. Les autres passent par `npm test <nom>`.
 
+**`node tests/run.mjs` ne construit pas.** C'est `pretest` qui lance
+`next build`, donc seul `npm test` le fait. Appeler le lanceur directement
+sert le build précédent au navigateur : les suites qui pilotent l'écran
+mesurent alors du code qui n'est plus le vôtre, et elles sont vertes ou
+rouges pour un état du dépôt qui n'existe plus. Le 25 septembre 2026, un
+correctif a été déclaré non appliqué sur cette seule base, et une suite
+complète a été comptée comme couvrant un changement construit deux heures
+plus tard. Comparer `.next/BUILD_ID` au fichier modifié règle la question en
+une commande. `SKIP_BUILD=1` est honnête : il dit qu'on saute le build. Le
+piège est de ne rien dire.
+
 `npm run lint` mérite un mot : la configuration ne porte qu'une règle. Un clic
 sur « Comparer » est parti en production en levant `lang is not defined`, le
 composant exposant `locale`. Le build passait, la page se chargeait, la

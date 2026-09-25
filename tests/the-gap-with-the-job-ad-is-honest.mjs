@@ -325,6 +325,46 @@ Requirements:
     }
   }
 
+  // Troisieme passage, sur l'annonce que Kilian a collee le 25 septembre
+  // 2026 : une fiche du Civil Service, presque entierement composee des
+  // rubriques du formulaire. Le panneau lui donnait a ajouter a son CV
+  // "new window", "opens" et "candidates" : le texte d'un lien et le mot
+  // par lequel l'annonce nomme celui qui la lit.
+  const PUBLIQUE = `Active Portfolio Management Analyst, Specialised Product
+Reference: 482647
+Salary
+51,000 - 61,345
+A Civil Service Pension with an employer contribution of 28.97%
+Job grade
+Senior Executive Officer
+Contract type
+Permanent
+Business area
+UKEF - Risk Management Group - Risk Assessment Division
+Type of role
+Risk Management
+Apply before 11:55 pm on Sunday (opens in a new window)
+Candidates will be assessed against the behaviours below.
+Portfolio management and credit risk analysis of specialised products.
+Stakeholder management across the division.`;
+  const duPublique = phrasesClefs(PUBLIQUE);
+  for (const mobilier of ["new window", "opens", "candidates", "job grade",
+    "business area", "contract type", "civil service pension", "employer contribution"]) {
+    const vu = duPublique.find((p) => p === mobilier || p.includes(mobilier));
+    if (vu) {
+      failures.push("\"" + vu + "\" est propose comme exigence : c'est une rubrique du "
+        + "formulaire de l'annonce ou le texte d'un lien, pas ce que le poste demande");
+    }
+  }
+  // Et ce que ce poste demande vraiment sort toujours de la meme annonce.
+  for (const vrai of ["portfolio management", "credit risk", "risk management",
+    "stakeholder management"]) {
+    if (!duPublique.includes(vrai)) {
+      failures.push("le filtre du mobilier a emporte \"" + vrai + "\", qui est une vraie "
+        + "exigence de l'annonce du Civil Service");
+    }
+  }
+
   const duRiche = phrasesClefs(ANNONCE);
   for (const vrai of ["stock control", "cost control", "inventory management"]) {
     if (!duRiche.includes(vrai)) {

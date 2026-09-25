@@ -233,6 +233,31 @@ export async function POST(request) {
       );
     }
 
+    // UNE REPONSE COUPEE N'EST PAS UNE REPONSE
+    //
+    // Le raisonnement consomme les jetons de sortie, et l'adaptation d'un CV
+    // rend l'analyse ET le CV entier : c'est la plus grosse sortie du
+    // produit. Quand le plafond est atteint, l'API repond 200 avec un JSON
+    // tronque au milieu d'une chaine. La route le rendait tel quel, le
+    // navigateur echouait sur JSON.parse, et le message affiche etait
+    // "Error - check API key", qui designe la seule chose qui n'etait pas en
+    // cause. Le cas est nomme ici, ou on le connait.
+    if (data && data.stop_reason === "max_tokens") {
+      console.log("[coupee] task=" + taskName + " model=" + model
+        + " out=" + ((data.usage && data.usage.output_tokens) || "?")
+        + " max=" + max_tokens);
+      return new Response(
+        JSON.stringify({
+          error: {
+            message: "La reponse a ete coupee avant la fin : elle depassait "
+              + max_tokens + " jetons de sortie.",
+            type: "reponse_coupee",
+          },
+        }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
     const usage = data.usage || {};
     const cacheReadTokens = usage.cache_read_input_tokens || 0;
     const cacheCreationTokens = usage.cache_creation_input_tokens || 0;

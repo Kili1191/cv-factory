@@ -34,6 +34,7 @@ const SUITES = [
   ["accounts never lose the CV", "./accounts-never-lose-the-cv.mjs"],
   ["the setup page names what is missing", "./the-setup-page-names-what-is-missing.mjs"],
   ["job sources return the same shape", "./job-sources-normalise.mjs"],
+  ["an adaptation that does not arrive says so", "./an-adaptation-that-does-not-arrive-says-so.mjs"],
   ["the gap with the job ad is honest", "./the-gap-with-the-job-ad-is-honest.mjs"],
   ["the CV obeys its market", "./the-cv-obeys-its-market.mjs"],
   ["the diagnosis names one cause", "./the-diagnosis-names-one-cause.mjs"],

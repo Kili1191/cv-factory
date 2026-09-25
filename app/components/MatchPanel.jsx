@@ -10,6 +10,7 @@ import { rapport, couverture } from "../../lib/atsMatch.js";
 import { reglesDuPays, paysDuTexte } from "../../lib/conventions.js";
 import { normCV } from "../../lib/cvSchema.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
+import { signaler } from "../../lib/incidents.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../../lib/pastedPosting";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
@@ -215,6 +216,18 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
         if (typeof pushH === "function") pushH();
         setCVFn(() => adapte);
         setApplique(true);
+      } else {
+        // L'ANALYSE SANS LE CV EST UNE PANNE, PAS UN RESULTAT
+        //
+        // cv_optimized est obligatoire dans SCHEMA_MATCH, donc une reponse
+        // sans lui veut dire que quelque chose s'est passe en amont. Le
+        // panneau passait quand meme a "done" : l'analyse s'affichait, le CV
+        // ne bougeait pas, et rien ne disait pourquoi. C'est exactement ce
+        // que Kilian a vu deux fois de suite le 25 septembre 2026, et la
+        // seule chose qu'on pouvait en conclure etait "ca ne marche pas".
+        notify(T.mt_sans_cv || T.ea);
+        signaler("match_sans_cv", "reponse sans cv_optimized",
+          { champs: r ? Object.keys(r).join(",") : "aucun" });
       }
       // THE BIG NUMBER IS MEASURED, NOT GUESSED
       //
@@ -241,7 +254,20 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       setRes(r);
       setPh("done");
       if (onResult) onResult(r);
-    } catch { notify(T.ea); setPh("input"); }
+    } catch (err) {
+      // "Error - check API key" etait affiche quelle que soit la cause :
+      // une reponse coupee, un depassement de temps, un reseau tombe. La
+      // cle etait la seule chose qui n'etait jamais en cause, puisque sans
+      // elle on ne serait pas arrive jusqu'ici. Le message de l'erreur
+      // remonte donc tel quel quand il en porte un.
+      const genre = err && err.code;
+      const dit = err && err.message ? String(err.message) : "";
+      notify(genre === "reponse_coupee" || /coupee|timeout|trop longtemps/i.test(dit)
+        ? (T.mt_coupee || dit || T.ea)
+        : (dit || T.ea));
+      signaler("match_echec", dit || "sans message", { genre: String(genre || "") });
+      setPh("input");
+    }
     setLoad(false);
   };
   const analyze = () => lancer("actuel", null);

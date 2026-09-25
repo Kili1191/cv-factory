@@ -284,6 +284,8 @@ const FR_T = {
   mt_choose_create:"Laisser Nuvi ecrire un CV pour ce poste",
   mt_choose_create_s:"A partir de l'annonce seule. Ce que Nuvi ne peut pas savoir de toi est signale, a toi de le remplir.",
   mt_saved:"CV enregistre",
+  mt_sans_cv:"L'analyse est revenue sans le CV reecrit. Rien n'a ete change. Reessaie, ou raccourcis l'annonce.",
+  mt_coupee:"La reponse a ete coupee avant la fin : ce CV et cette annonce sont trop longs ensemble. Rien n'a ete change.",
   mt_applied:"Applique a ton CV. Ctrl+Z ramene le precedent.",
   mt_keep:"Je le garde",
   mt_undo:"Remettre le precedent",
