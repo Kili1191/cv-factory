@@ -271,6 +271,51 @@ const NO_DASH =
 // D'ou une seule regle a deux faces : de sa propre initiative, Nuvi
 // travaille avec ce qui est la ; sur demande explicite, Nuvi fait ce qui
 // est demande, en entier, sans avertissement et sans version edulcoree.
+// LES ETATS D'AVANT, POUR REPRENDRE UN CHANGEMENT PRECIS
+//
+// Le coach n'avait aucun souvenir des versions passees du CV. Interroge sur
+// une puce qu'il venait lui-meme de reecrire, il a repondu a Kilian le 2
+// octobre 2026 qu'il n'avait "pas de trace d'une version precedente" et lui
+// a demande de retaper l'original. L'etat d'avant existait pourtant : il est
+// pris juste avant d'appliquer, pour que Annuler fonctionne. Seulement
+// Annuler ne reprend que le DERNIER changement, et dans une conversation on
+// veut souvent revenir sur l'avant-dernier.
+//
+// On garde donc les huit derniers etats, chacun attache au message qui l'a
+// remplace. Huit parce qu'un CV pese quelques dizaines de kilo-octets et que
+// le stockage du navigateur sert deja au CV, aux versions et aux
+// candidatures : au-dela on risque le quota, et perdre le CV pour garder son
+// historique serait un echange absurde.
+//
+// Cette cle ne suit PAS la personne d'un appareil a l'autre, et c'est
+// volontaire : c'est le fil de cette conversation-ci, sur cet ecran-ci.
+const COACH_AVANT_CLE = "cvf_coach_avant";
+const COACH_AVANT_MAX = 8;
+
+function lireLesAvant() {
+  try {
+    const brut = JSON.parse(localStorage.getItem(COACH_AVANT_CLE) || "[]");
+    return Array.isArray(brut) ? brut : [];
+  } catch { return []; }
+}
+
+// Rend l'identifiant, ou null si le stockage a refuse : sans identifiant le
+// message n'affiche pas de bouton, et un bouton mort est pire qu'une absence.
+function enregistrerUnAvant(cvAvant) {
+  const id = "a" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+  try {
+    const liste = lireLesAvant().filter((e) => e && e.id && e.cv);
+    liste.push({ id, cv: cvAvant });
+    localStorage.setItem(COACH_AVANT_CLE, JSON.stringify(liste.slice(-COACH_AVANT_MAX)));
+    return id;
+  } catch { return null; }
+}
+
+function lireUnAvant(id) {
+  const e = lireLesAvant().find((x) => x && x.id === id);
+  return e && e.cv ? e.cv : null;
+}
+
 const QUI_DECIDE =
   "QUI DECIDE : le candidat, jamais toi.\n"
   + "- DE TA PROPRE INITIATIVE : travaille uniquement a partir de ce qui est "
@@ -7455,6 +7500,10 @@ export default function App() {
       // "Commercial"... is not valid JSON". Sa cle fonctionnait ; le coach
       // venait simplement de lui parler normalement, ce qu'on lui demande
       // de faire.
+      // Le CV tel qu'il est AVANT ce tour. Pris ici, avant toute operation :
+      // plus bas, cv a deja pu etre remplace.
+      const cvAvantLeTour = cv;
+
       let parsed = null;
       try { parsed = parseJSON(txt); } catch { parsed = null; }
 
@@ -7500,12 +7549,17 @@ export default function App() {
         }
       }
 
+      // L'etat d'avant n'est garde que si quelque chose a vraiment change :
+      // un tour de conversation qui n'a touche a rien n'a rien a reprendre.
+      const avantId = realChange ? enregistrerUnAvant(cvAvantLeTour) : null;
+
       const aiMsg = {
         role: "assistant",
         content: reply,
         ts: Date.now(),
         ...(legacyAdopt ? { adopt: legacyAdopt } : {}),
         ...(applySummary ? { appliedSummary: applySummary } : {}),
+        ...(avantId ? { avant: avantId } : {}),
       };
 
       setCoachMessages(prev => {
@@ -8710,6 +8764,15 @@ export default function App() {
           onSend={runCoachMessage}
           onClear={clearCoach}
           onAdopt={adoptCoachSuggestion}
+          onRestore={(id) => {
+            const avant = lireUnAvant(id);
+            if (!avant) { notify(T.co_restore_gone || T.nu); return; }
+            // La restauration est elle-meme un changement : elle passe par
+            // l'historique, donc Ctrl+Z la reprend comme le reste.
+            pushH();
+            setCVFn(() => avant);
+            notify(T.co_restored || T.oku);
+          }}
           onClose={()=>setShowCoach(false)}
           onAction={(action) => {
             // [Nuvi v3] Coach proactif : dispatch des actions feature.

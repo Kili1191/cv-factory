@@ -35,6 +35,7 @@ const SUITES = [
   ["the setup page names what is missing", "./the-setup-page-names-what-is-missing.mjs"],
   ["job sources return the same shape", "./job-sources-normalise.mjs"],
   ["an adaptation that does not arrive says so", "./an-adaptation-that-does-not-arrive-says-so.mjs"],
+  ["the coach thread scrolls and rewinds", "./the-coach-thread-scrolls-and-rewinds.mjs"],
   ["the coach may answer in prose", "./the-coach-may-answer-in-prose.mjs"],
   ["the coach adds the job you name", "./the-coach-adds-the-job-you-name.mjs"],
   ["the gap with the job ad is honest", "./the-gap-with-the-job-ad-is-honest.mjs"],

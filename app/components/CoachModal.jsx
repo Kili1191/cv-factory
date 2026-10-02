@@ -552,7 +552,7 @@ function CoachText({ text }) {
   );
 }
 
-function Bubble({ T, msg, onAdopt, onAction }) {
+function Bubble({ T, msg, onAdopt, onAction, onRestore }) {
   const isUser = msg.role === "user";
 
   if (isUser) {
@@ -634,6 +634,25 @@ function Bubble({ T, msg, onAdopt, onAction }) {
           </div>
         )}
 
+        {/* REVENIR A LA VERSION D'AVANT CE MESSAGE
+            Le coach n'a aucun souvenir des etats passes du CV : interroge
+            sur une puce qu'il venait de reecrire, il a repondu a Kilian
+            qu'il n'avait "pas de trace d'une version precedente" et lui a
+            demande de la retaper. L'etat d'avant existait pourtant, pris
+            juste avant d'appliquer. Il est maintenant attache au message
+            qui l'a remplace, donc chaque changement du fil se reprend
+            individuellement, et pas seulement le dernier. */}
+        {msg.avant && onRestore && (
+          <button onClick={() => onRestore(msg.avant)} style={{
+            ...B({
+              marginTop: 7, marginLeft: 8, padding: "4px 10px",
+              borderRadius: RadiusPill, background: "transparent",
+              border: "0.5px solid " + Hairline, color: InkMuted,
+              fontSize: 11, fontWeight: 600, fontFamily: Sans,
+            }),
+          }}>{T.co_restore || "Put the previous one back"}</button>
+        )}
+
         {msg.quickReplies && msg.quickReplies.length > 0 && onAction && (
           <div style={{
             display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10,
@@ -683,7 +702,7 @@ export default function CoachModal({
   T, cv, apiKey, lang = "en",
   loading, messages,
   coachStatus,  // [Glass Coach v2] NEW prop
-  onSend, onClear, onAdopt, onClose, onAction,
+  onSend, onClear, onAdopt, onClose, onAction, onRestore,
 }) {
   const [input, setInput] = useState("");
   const scrollRef = useRef(null);
@@ -1020,13 +1039,23 @@ export default function CoachModal({
           overscrollBehavior: "contain",
           background: isNarrow ? CreamSoft : "transparent",
           padding: isNarrow ? "14px 16px 8px" : "18px 24px 8px",
-          // Le fil part du bas : une conversation courte se colle a la zone de
-          // saisie au lieu de flotter en haut d'un grand vide.
+          // LE FIL PART DU BAS, SANS RENDRE LE HAUT INATTEIGNABLE
+          //
+          // C'etait justifyContent:"flex-end", qui donne bien l'effet voulu
+          // sur une conversation courte et coupe le haut des que le fil
+          // depasse la hauteur : le debordement part vers le HAUT d'un
+          // conteneur en flex-end, et aucun defilement ne le ramene. Kilian,
+          // le 2 octobre 2026 : "je ne peux pas scroller la conversation".
+          //
+          // Une marge automatique sur une cale fait la meme chose et se
+          // comporte bien : quand il reste de la place elle pousse le fil en
+          // bas, quand le contenu deborde elle vaut zero et le haut reste
+          // atteignable.
           display: "flex",
           flexDirection: "column",
-          justifyContent: "flex-end",
           minHeight: 0,
         }}>
+          <div aria-hidden="true" style={{ marginTop: "auto" }} />
           {!hasMessages && welcomeMsg && (
             <Bubble
               T={T}
@@ -1043,6 +1072,7 @@ export default function CoachModal({
               msg={msg}
               onAdopt={onAdopt}
               onAction={handleAction}
+              onRestore={onRestore}
             />
           ))}
 
