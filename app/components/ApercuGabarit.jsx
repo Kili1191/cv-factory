@@ -45,7 +45,15 @@ class LayoutPreviewErrorBoundary extends Component {
   }
 }
 
-export default function ApercuGabarit({ kind, locale = "fr" }) {
+// LA MEME VIGNETTE, SUR UN VRAI CV
+//
+// Elle ne montrait que DEMO_CV, coupe aux deux tiers, parce qu'elle
+// n'existait que pour choisir une forme. Mettre deux longueurs d'un CV cote
+// a cote demande exactement la meme chose sur le document de la personne, et
+// la page entiere : ce qu'on veut voir, c'est justement ce qui manque en
+// bas. Les deux reglages sont donc des parametres, et leurs valeurs par
+// defaut laissent le selecteur de gabarit inchange.
+export default function ApercuGabarit({ kind, locale = "fr", cv, theme, part = 0.66 }) {
   // [Fix 2026-05-20] Hydrated guard : ne render le composant CV lourd
   // qu'apres hydration cote client. Evite hydration mismatch (#418/#423).
   const [hydrated, setHydrated] = useState(false);
@@ -117,7 +125,7 @@ export default function ApercuGabarit({ kind, locale = "fr" }) {
   // le CV de demonstration ne remplit pas la page. La carte etait haute, et
   // surtout ce qui distingue les six formes - la bande, les colonnes, la
   // place du titre - se joue en haut. On coupe donc au deux tiers.
-  const PART_VISIBLE = 0.66;
+  const PART_VISIBLE = part;
   const previewH = realHeight * scale * PART_VISIBLE;
 
   return (
@@ -144,9 +152,9 @@ export default function ApercuGabarit({ kind, locale = "fr" }) {
           userSelect: "none",
         }}>
           <Comp
-            cv={DEMO_CV}
+            cv={cv || DEMO_CV}
             set={() => {}}
-            t={DEMO_THEME}
+            t={theme || DEMO_THEME}
             T={T}
             locale={locale}
           />

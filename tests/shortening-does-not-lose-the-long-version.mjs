@@ -102,7 +102,41 @@ export async function run() {
         "      Il doit etre atteignable, sinon la garantie qu'il porte n'est pas mesuree."
       );
     } else {
-      await page.waitForTimeout(3000);
+      await page.waitForTimeout(3500);
+
+      // --- LES DEUX LONGUEURS SONT A L'ECRAN, A LA MEME ECHELLE ---------
+      //
+      // Ranger la version longue dans Mes CV repond a "elle n'est pas
+      // perdue". Elle ne repond pas a "laquelle j'envoie" : juger ce qui
+      // manque en lisant une phrase de confirmation est impossible. Les deux
+      // documents sont donc poses cote a cote et on clique celui qu'on garde.
+      const avantCarte = await page.locator('[data-nuvi="choix-avant"]').count();
+      const apresCarte = await page.locator('[data-nuvi="choix-apres"]').count();
+      if (!avantCarte || !apresCarte) {
+        failures.push(
+          "les deux longueurs ne sont pas proposees cote a cote (" + avantCarte + " et "
+          + apresCarte + ").\n" +
+          "      Le CV serait remplace sans que personne ait vu ce qui disparait."
+        );
+      } else {
+        // Rien ne doit etre applique tant que la personne n'a pas choisi.
+        const pendant = await page.evaluate(() => {
+          try {
+            const c = JSON.parse(localStorage.getItem("cvf_d") || "{}");
+            return ((c.experience || [])[0] || {}).bullets?.length || 0;
+          } catch { return -1; }
+        });
+        if (pendant !== PUCES.length) {
+          failures.push(
+            "le CV a deja ete raccourci avant le choix (" + pendant + " puces).\n" +
+            "      Un choix qu'on presente apres coup n'en est pas un."
+          );
+        }
+        await page.locator('[data-nuvi="choix-apres"]').click({ timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(400);
+        await page.locator('[data-nuvi="choix-garder"]').click({ timeout: 8000 }).catch(() => {});
+        await page.waitForTimeout(1500);
+      }
 
       const apres = await page.evaluate(() => {
         let vs = [];

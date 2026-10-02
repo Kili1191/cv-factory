@@ -114,6 +114,7 @@ import {
 } from "../lib/coachScope";
 import FormatChoiceModal from "./components/FormatChoiceModal";
 const DefautsAvantExport = dynamic(() => import("./components/DefautsAvantExport"), { ssr: false });
+const ChoixDeLongueur = dynamic(() => import("./components/ChoixDeLongueur"), { ssr: false });
 const BadgeDefauts = dynamic(() => import("./components/BadgeDefauts"), { ssr: false });
 import VerdictModal from "./components/VerdictModal";
 import { FR_T, EN_T } from "./i18n";
@@ -5233,6 +5234,8 @@ export default function App() {
   // ajoute, les chiffres et les employeurs restent. Il enleve, il resserre,
   // il ne reecrit pas le parcours.
   const [raccourcitEnCours, setRaccourcitEnCours] = useState(false);
+  // Les deux longueurs, le temps que la personne choisisse.
+  const [choixDeLongueur, setChoixDeLongueur] = useState(null);
   const raccourcirPourUnePage = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
     setRaccourcitEnCours(true);
@@ -5299,21 +5302,30 @@ export default function App() {
         logActivity(ACT.VERSION_SAVED, v.name);
       }
 
-      pushH();
-      setCVFn(() => normCV(json, cv));
+      // ON MONTRE LES DEUX, ON N'EN IMPOSE AUCUNE
+      //
+      // Remplacer le CV et annoncer que l'ancien est range ailleurs demande
+      // a la personne de se souvenir qu'un filet existe, d'aller le
+      // chercher, et de comparer de memoire ce qui a disparu. Les deux
+      // documents tiennent a l'ecran en meme temps, a la meme echelle : le
+      // choix se fait en regardant.
+      const court = normCV(json, cv);
+      const mesure = (defautsAvantExport || []).find((d) => d && d.cle === "deborde_page");
+      setChoixDeLongueur({
+        avant: cv,
+        apres: court,
+        pages: mesure ? String(mesure.extrait || "").replace(/[^0-9.,]/g, "") : "",
+      });
       setDefautsAvantExport(null);
       setCorrigesAffiches([]);
       setExplicationsAffichees([]);
-      notify(locale === "en"
-        ? "Shortened to one page. The full-length one is kept in My CVs."
-        : "Raccourci sur une page. La version longue est gardee dans Mes CV.");
     } catch (err) {
       notify((locale === "en" ? "Could not shorten: " : "Impossible de raccourcir : ")
         + (err && err.message ? err.message : ""));
     } finally {
       setRaccourcitEnCours(false);
     }
-  }, [apiKey, T, cv, locale, notify, pushH, setCVFn, versions]);
+  }, [apiKey, T, cv, locale, notify, setCVFn, versions, defautsAvantExport]);
 
   // LE CANDIDAT PARLE, NUVI DEMANDE, PUIS RANGE
   //
@@ -8728,6 +8740,35 @@ export default function App() {
               ? () => { setDefautsAvantExport(null); lancerLeFormat(); }
               : undefined}
             onClose={() => setDefautsAvantExport(null)}
+          />
+        </Suspense>
+      ) : null}
+
+      {choixDeLongueur ? (
+        <Suspense fallback={null}>
+          <ChoixDeLongueur
+            T={T}
+            locale={locale}
+            avant={choixDeLongueur.avant}
+            apres={choixDeLongueur.apres}
+            pages={choixDeLongueur.pages}
+            gabarit={layout}
+            theme={effTheme}
+            onGarder={(quoi) => {
+              if (quoi === "apres") {
+                pushH();
+                setCVFn(() => choixDeLongueur.apres);
+                notify(locale === "en"
+                  ? "Shortened version kept. The full-length one is in My CVs."
+                  : "Version raccourcie gardee. La longue est dans Mes CV.");
+              } else {
+                notify(locale === "en"
+                  ? "Full-length version kept, nothing was removed."
+                  : "Version longue gardee, rien n'a ete retire.");
+              }
+              setChoixDeLongueur(null);
+            }}
+            onClose={() => setChoixDeLongueur(null)}
           />
         </Suspense>
       ) : null}
