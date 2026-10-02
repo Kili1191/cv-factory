@@ -7444,7 +7444,19 @@ export default function App() {
         cv, task_name: "coach_chat",
         ...(messagesAvecImage ? { messages: messagesAvecImage } : {}),
       });
-      const parsed = parseJSON(txt);
+      // ET LA LIGNE D'APRES NE L'ACCEPTAIT PAS
+      //
+      // Le commentaire ci-dessus dit depuis toujours que la prose passe,
+      // "parsed.reply si le JSON tient, le texte brut sinon". Le repli
+      // existait bien ligne suivante, mais parseJSON lache une exception
+      // avant de l'atteindre, et elle remontait jusqu'au catch qui affiche
+      // T.ea. Kilian, le 2 octobre 2026, a repondu a une question du coach
+      // et a lu : "Error - check API key.: Unexpected token 'C',
+      // "Commercial"... is not valid JSON". Sa cle fonctionnait ; le coach
+      // venait simplement de lui parler normalement, ce qu'on lui demande
+      // de faire.
+      let parsed = null;
+      try { parsed = parseJSON(txt); } catch { parsed = null; }
 
       const reply = (parsed && parsed.reply) ? String(parsed.reply) : txt;
       // JSON Patch operations (nouveau format) + retro-compat actions
