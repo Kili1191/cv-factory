@@ -5263,21 +5263,57 @@ export default function App() {
       const txt = await aiCall(p, { schema: SCHEMA_CV_IMPORTE, task_name: "shorten-to-one-page" });
       const json = parseJSON(txt);
       if (!json || typeof json !== "object") throw new Error("reponse illisible");
+      // CE QUI EST COUPE N'EST PAS PERDU
+      //
+      // Kilian, le 2 octobre 2026, devant le panneau qui propose de
+      // raccourcir : "donc la personne perd toute la valeur qu'elle a mis du
+      // temps a construire ?" Ctrl+Z existait, et ne repond pas : il vit en
+      // memoire, douze etats, et disparait au rechargement. Quelqu'un qui
+      // raccourcit, telecharge et revient le lendemain n'avait plus que la
+      // version courte. Le texte long, ecrit puce par puce pendant des
+      // heures, n'existait plus nulle part.
+      //
+      // La version longue est donc rangee dans Mes CV avant la coupe. Elle
+      // y est nommee et datee, elle suit le compte d'un appareil a l'autre,
+      // et le message le dit : sans ca, le filet existe et personne ne sait
+      // qu'il est la.
+      const dejaRangee = versions.length
+        && JSON.stringify(versions[versions.length - 1].cv) === JSON.stringify(cv);
+      if (!dejaRangee) {
+        const quand = new Date();
+        const v = {
+          id: Date.now(),
+          name: ((locale === "en" ? "Full length, " : "Version longue, ")
+            + quand.toLocaleDateString(locale === "en" ? "en-GB" : "fr-FR",
+              { day: "numeric", month: "short" })
+            + " " + quand.toLocaleTimeString(locale === "en" ? "en-GB" : "fr-FR",
+              { hour: "2-digit", minute: "2-digit" })).slice(0, 40),
+          cv,
+          created: quand.toISOString(),
+        };
+        setVersions((vs) => {
+          const next = [...vs, v];
+          lsS(SK.VS, next);
+          return next;
+        });
+        logActivity(ACT.VERSION_SAVED, v.name);
+      }
+
       pushH();
       setCVFn(() => normCV(json, cv));
       setDefautsAvantExport(null);
       setCorrigesAffiches([]);
       setExplicationsAffichees([]);
       notify(locale === "en"
-        ? "Shortened to fit one page. Read it over, then download."
-        : "Raccourci pour tenir sur une page. Relis, puis telecharge.");
+        ? "Shortened to one page. The full-length one is kept in My CVs."
+        : "Raccourci sur une page. La version longue est gardee dans Mes CV.");
     } catch (err) {
       notify((locale === "en" ? "Could not shorten: " : "Impossible de raccourcir : ")
         + (err && err.message ? err.message : ""));
     } finally {
       setRaccourcitEnCours(false);
     }
-  }, [apiKey, T, cv, locale, notify, pushH, setCVFn]);
+  }, [apiKey, T, cv, locale, notify, pushH, setCVFn, versions]);
 
   // LE CANDIDAT PARLE, NUVI DEMANDE, PUIS RANGE
   //
