@@ -140,6 +140,47 @@ export async function run() {
           );
         }
       }
+      // --- 3. LE STOCKAGE PLEIN NE FAIT PAS DISPARAITRE LE BOUTON ------
+      //
+      // Chez quelqu'un dont le navigateur est deja plein de son CV, de ses
+      // versions et de ses candidatures, l'ecriture est refusee. La premiere
+      // version rendait alors null et n'affichait aucun bouton, sans un mot :
+      // le correctif reproduisait la panne qu'il corrigeait.
+      {
+        const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+        const page2 = await ctx2.newPage();
+        await seedApp(page2, SAMPLE_CV, { locale: "en" });
+        let t2 = 0;
+        await page2.route("**/api/claude", (r) => {
+          t2 += 1;
+          return r.fulfill({ status: 200, contentType: "application/json",
+            body: JSON.stringify({ content: [{ type: "text",
+              text: reponse("Reply " + t2 + ".", "Bullet on turn " + t2) }] }) });
+        });
+        // Le stockage refuse tout, comme un quota plein.
+        await page2.evaluate(() => {
+          const vrai = Storage.prototype.setItem;
+          Storage.prototype.setItem = function (k, v) {
+            if (String(k) === "cvf_coach_avant") throw new Error("QuotaExceededError");
+            return vrai.call(this, k, v);
+          };
+        });
+        await page2.evaluate(() => window.__nuviOpenModal("open-coach"));
+        await page2.waitForTimeout(1000);
+        const champ2 = page2.locator("textarea").last();
+        await champ2.fill("rewrite my first bullet");
+        await champ2.press("Enter");
+        await page2.waitForTimeout(2500);
+        const n = await page2.getByRole("button", { name: /put this version back/i }).count();
+        if (n < 1) {
+          failures.push(
+            "quand le stockage refuse l'ecriture, aucun bouton n'apparait.\n" +
+            "      La personne ne peut plus revenir en arriere, et rien ne lui dit pourquoi."
+          );
+        }
+        await ctx2.close();
+      }
+
       if (erreurs.length) failures.push("erreur de page : " + erreurs[0]);
     }
     await ctx.close();

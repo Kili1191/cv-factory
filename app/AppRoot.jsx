@@ -299,19 +299,38 @@ function lireLesAvant() {
   } catch { return []; }
 }
 
-// Rend l'identifiant, ou null si le stockage a refuse : sans identifiant le
-// message n'affiche pas de bouton, et un bouton mort est pire qu'une absence.
+// LA MEMOIRE D'ABORD, LE STOCKAGE ENSUITE
+//
+// Premiere version : on ecrivait dans localStorage et, si l'ecriture etait
+// refusee, on rendait null, donc pas de bouton. Le raisonnement etait bon,
+// un bouton mort est pire qu'une absence, mais le resultat ne l'etait pas :
+// chez quelqu'un dont le stockage est deja plein de son CV, de ses versions
+// et de ses candidatures, le bouton ne serait jamais apparu, sans un mot.
+// C'est la panne que ce depot fabrique le plus souvent, reproduite dans le
+// correctif meme.
+//
+// Les etats vivent donc en memoire pour la session, ou rien ne peut les
+// refuser, et le stockage n'est que la couche qui les fait survivre a un
+// rechargement. Le bouton apparait toujours ; apres un rechargement, il
+// tient si l'ecriture avait reussi, et le dit sinon.
+const avantEnMemoire = new Map();
+
 function enregistrerUnAvant(cvAvant) {
   const id = "a" + Date.now() + "-" + Math.random().toString(36).slice(2, 7);
+  avantEnMemoire.set(id, cvAvant);
+  for (const vieux of [...avantEnMemoire.keys()].slice(0, -COACH_AVANT_MAX)) {
+    avantEnMemoire.delete(vieux);
+  }
   try {
     const liste = lireLesAvant().filter((e) => e && e.id && e.cv);
     liste.push({ id, cv: cvAvant });
     localStorage.setItem(COACH_AVANT_CLE, JSON.stringify(liste.slice(-COACH_AVANT_MAX)));
-    return id;
-  } catch { return null; }
+  } catch { /* quota plein : la memoire de la session suffit a ce tour-ci */ }
+  return id;
 }
 
 function lireUnAvant(id) {
+  if (avantEnMemoire.has(id)) return avantEnMemoire.get(id);
   const e = lireLesAvant().find((x) => x && x.id === id);
   return e && e.cv ? e.cv : null;
 }
