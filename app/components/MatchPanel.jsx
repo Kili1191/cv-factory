@@ -12,7 +12,7 @@ import { normCV } from "../../lib/cvSchema.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import { signaler } from "../../lib/incidents.js";
 import FileDrop, { joindreAuTexte } from "./FileDrop";
-import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../../lib/pastedPosting";
+import { nettoyerLAnnonce, ANNONCE_MINIMUM, lienDedans, hoteQuiRefuseUnServeur } from "../../lib/pastedPosting";
 import { dossierParcours, apportDuDossier, dossierEnTexte } from "../../lib/careerRecord.js";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper, Hairline,
@@ -106,6 +106,62 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
   const lancer = async (choix, baseChoisie) => {
     if (!offer.trim()) { notify(T.off_no_offer); return; }
     if (!apiKey) { notify(T.nk); return; }
+
+    // UN LIEN N'EST PAS UNE ANNONCE, ET UN MODELE NE NAVIGUE PAS
+    //
+    // Kilian, le 2 octobre 2026 : adresse Indeed collee dans le champ, puis
+    // Adapter. Le champ ne comptait que des caracteres, donc l'URL est
+    // partie au modele comme si c'etait l'offre. Il a rendu un intitule qui
+    // disait "Not retrievable from the provided Indeed link", la couverture
+    // a compte les mots de l'adresse, et le panneau a affiche 0 sur 6. Un
+    // resultat complet, bati sur une phrase d'erreur, et rien a l'ecran qui
+    // dise que l'annonce n'avait jamais ete lue.
+    let annonce = offer;
+    const lien = lienDedans(offer);
+    if (lien) {
+      let hote = "";
+      try { hote = new URL(lien).hostname.replace(/^www\./i, ""); } catch { hote = "ce site"; }
+      // Mesure, pas supposition : Indeed repond 401 avec une page de
+      // detection de robot, quel que soit l'agent declare. Lui envoyer une
+      // requete de plus ne ferait que faire attendre la personne.
+      const mur = hoteQuiRefuseUnServeur(lien);
+      if (mur) {
+        notify((T.mt_lien_mur || "").replace("{hote}", mur) || T.ea);
+        return;
+      }
+      setLoad(true);
+      setPh("loading");
+      let pourquoi = "";
+      try {
+        const r = await fetch("/api/annonce", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: lien }),
+        });
+        const d = await r.json().catch(() => ({}));
+        if (r.ok && d && d.job && d.job.description) {
+          annonce = [
+            d.job.title || "",
+            [d.job.company, d.job.location].filter(Boolean).join(", "),
+            "",
+            d.job.description,
+          ].filter((l) => l !== null).join("\n").trim();
+        } else {
+          pourquoi = (d && d.error && d.error.message) || ("HTTP " + r.status);
+        }
+      } catch (err) {
+        pourquoi = (err && err.message) || "network";
+      }
+      if (pourquoi) {
+        setLoad(false);
+        setPh("input");
+        notify((T.mt_lien_echec || "").replace("{hote}", hote) || T.ea);
+        signaler("annonce_lien", pourquoi, { hote });
+        return;
+      }
+      // Le texte lu remplace l'adresse dans le champ : la personne voit ce
+      // sur quoi Nuvi travaille, et peut le corriger avant de relancer.
+      setOffer(annonce);
+    }
     // Le point de depart : le CV a l'ecran, ou un CV enregistre que la
     // personne vient de choisir. Le CV enregistre ne passe pas par l'ecran
     // avant : on part de lui directement, et c'est le resultat qui s'y pose.
@@ -167,13 +223,13 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
     //
     // The rules only ever remove and shorten. A rule that added anything
     // would have to invent a date of birth or a nationality nobody wrote.
-    const marche = paysDuTexte(offer) || pays || "";
+    const marche = paysDuTexte(annonce) || pays || "";
     const reglesDuMarche = reglesDuPays(marche);
 
     const p = "Expert recrutement. Decode l'offre fournie + reecris le CV pour matcher.\n"
       + langueDeLaCandidature
       + reglesDuMarche
-      +"OFFRE:\n"+offer+"\n"
+      +"OFFRE:\n"+annonce+"\n"
       +(choix === "parcours"
         ? "PARCOURS COMPLET (toutes les versions enregistrees par le candidat) :\n"
           + materiau + "\n"
@@ -247,7 +303,7 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       // phrase to compare, the field goes away rather than showing a number
       // resting on nothing.
       if (r) {
-        const couv = couverture(adapte || base, offer);
+        const couv = couverture(adapte || base, annonce);
         if (couv) { r.match_score = couv.score; r.couverture = couv; }
         else { delete r.match_score; delete r.couverture; }
       }

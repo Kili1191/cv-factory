@@ -67,6 +67,7 @@ const SUITES = [
   ["the model follows the task", "./the-model-follows-the-task.mjs"],
   ["the money arrives", "./the-money-arrives.mjs"],
   ["the PDF carries no trace of Nuvi", "./the-pdf-carries-no-trace-of-nuvi.mjs"],
+  ["a link in the ad box is read or named", "./a-link-in-the-ad-box-is-read-or-named.mjs"],
   ["a link is a door", "./a-link-is-a-door.mjs"],
   ["the extension fills the form", "./the-extension-fills-the-form.mjs"],
   ["a breakage reaches the owner", "./a-breakage-reaches-the-owner.mjs"],

@@ -289,6 +289,8 @@ const EN_T = {
   mt_choose_create:"Let Nuvi write a CV for this role",
   mt_choose_create_s:"From the ad alone. What Nuvi cannot know about you is flagged for you to fill in.",
   mt_saved:"Saved CV",
+  mt_lien_mur:"{hote} blocks servers from reading its pages, so no link from there can be read. Two things work: paste the ad text, or use the Nuvi extension on that tab.",
+  mt_lien_echec:"Could not read the ad at {hote}. Paste the ad text instead, or use the Nuvi extension on that tab.",
   mt_sans_cv:"The analysis came back without the rewritten CV. Nothing was changed. Try again, or shorten the ad.",
   mt_coupee:"The answer was cut off before the end: this CV and this ad are too long together. Nothing was changed.",
   mt_applied:"Applied to your CV. Ctrl+Z brings the previous one back.",
