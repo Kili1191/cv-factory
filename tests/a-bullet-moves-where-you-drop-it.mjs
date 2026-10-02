@@ -64,6 +64,21 @@ export async function run() {
         );
       }
 
+      // --- 1 bis. AU REPOS, LE DOCUMENT EST CELUI QUI PART EN PDF -------
+      //
+      // Premiere version : poignee visible en permanence, a quinze pixels sur
+      // la gauche. Mesure a l'ecran sur le gabarit classique, elle se posait
+      // exactement sur la puce du navigateur et la remplacait. Le document
+      // perdait ses points pour gagner des poignees, et aucune suite ne le
+      // voyait : le texte etait la, le contraste etait juste.
+      const auRepos = await poignees.first().evaluate((el) => getComputedStyle(el).opacity);
+      if (Number(auRepos) > 0.01) {
+        failures.push(
+          "la poignee est visible sans qu'on survole la ligne (opacite " + auRepos + ").\n" +
+          "      Elle se pose sur la puce du document et la remplace a l'ecran."
+        );
+      }
+
       // --- 2. LA DEUXIEME PUCE MONTE -----------------------------------
       const avant = await puces(page);
       await poignees.nth(1).focus();

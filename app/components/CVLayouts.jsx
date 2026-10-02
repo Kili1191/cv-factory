@@ -218,6 +218,14 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
 function Puce({ exId, index, bm, style, tag = "li", children }) {
   const [prise, setPrise] = useState(false);
   const [vise, setVise] = useState(false);
+  // LA POIGNEE NE S'INVITE PAS DANS LE DOCUMENT
+  //
+  // Premiere version : visible en permanence, a quinze pixels sur la gauche.
+  // Mesure a l'ecran, sur le gabarit classique : elle se posait exactement
+  // sur la puce du navigateur et la remplacait. Le document perdait ses
+  // points pour gagner des poignees, sur la page que lit un recruteur.
+  // Elle attend donc le survol, et se tient plus a gauche que la puce.
+  const [survol, setSurvol] = useState(false);
   const Balise = tag;
   const bouge = (vers) => { if (typeof bm === "function") bm(exId, index, vers); };
   return (
@@ -230,6 +238,8 @@ function Puce({ exId, index, bm, style, tag = "li", children }) {
       onDragEnd={() => { setPrise(false); setVise(false); }}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setVise(true); }}
       onDragLeave={() => setVise(false)}
+      onMouseEnter={() => setSurvol(true)}
+      onMouseLeave={() => setSurvol(false)}
       onDrop={(e) => {
         e.preventDefault();
         setVise(false);
@@ -253,17 +263,21 @@ function Puce({ exId, index, bm, style, tag = "li", children }) {
         data-cvf-poignee={index}
         onMouseDown={() => setPrise(true)}
         onMouseUp={() => setPrise(false)}
-        onBlur={() => setPrise(false)}
+        onFocus={() => setSurvol(true)}
+        onBlur={() => { setPrise(false); setSurvol(false); }}
         onKeyDown={(e) => {
           if (e.key === "ArrowUp") { e.preventDefault(); bouge(index - 1); }
           if (e.key === "ArrowDown") { e.preventDefault(); bouge(index + 1); }
         }}
         style={{
-          position: "absolute", left: -15, top: 1,
+          position: "absolute", left: -26, top: 1,
           width: 13, height: 15, padding: 0,
           display: "flex", alignItems: "center", justifyContent: "center",
           background: "transparent", border: "none", cursor: "grab",
-          color: "#9a9a9a", opacity: 0.55, lineHeight: 1,
+          color: "#9a9a9a", lineHeight: 1,
+          // Au repos le document est exactement celui qui part en PDF.
+          opacity: survol || prise ? 0.75 : 0,
+          transition: "opacity 120ms ease",
         }}
       >
         <svg width="7" height="11" viewBox="0 0 7 11" fill="currentColor" aria-hidden="true">
