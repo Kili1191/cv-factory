@@ -194,8 +194,91 @@ function EditableTitle({ cv, set, labelKey, locale, fallback }) {
 // CVSidebar : layout sidebar/classic
 // v19 [Deploy B] : Photo CV gere par CVPhoto component
 // ============================================================
+
+// DEPLACER UNE PUCE A LA SOURIS
+//
+// L'ordre des puces est ce qu'un recruteur lit en premier, et c'est le seul
+// reglage du CV qu'on ne corrige pas en reecrivant. Il fallait le demander
+// au coach, ou couper-coller deux textes a la main dans un document qu'on
+// edite en place.
+//
+// POURQUOI LA POIGNEE ET PAS LA LIGNE ENTIERE
+//
+// Une puce est un champ qu'on edite au clic. Rendre toute la ligne
+// deplacable prend le geste de selection du texte : on veut corriger un mot
+// et on attrape la ligne. Seule la poignee arme le deplacement, le temps du
+// clic, et la ligne redevient un texte ordinaire ensuite.
+//
+// Elle porte cvf-no-print, donc elle ne part ni dans la photo ni dans le PDF
+// natif : la page d'impression masque cette classe.
+//
+// Les fleches du clavier font la meme chose, parce qu'un glisser n'existe
+// pas sans souris et que la moitie des gens ecrivent leur CV sur un
+// telephone.
+function Puce({ exId, index, bm, style, tag = "li", children }) {
+  const [prise, setPrise] = useState(false);
+  const [vise, setVise] = useState(false);
+  const Balise = tag;
+  const bouge = (vers) => { if (typeof bm === "function") bm(exId, index, vers); };
+  return (
+    <Balise
+      draggable={prise}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        try { e.dataTransfer.setData("text/plain", String(index)); } catch { /* vieux navigateur */ }
+      }}
+      onDragEnd={() => { setPrise(false); setVise(false); }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; setVise(true); }}
+      onDragLeave={() => setVise(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setVise(false);
+        let depuis = NaN;
+        try { depuis = parseInt(e.dataTransfer.getData("text/plain"), 10); } catch { /* idem */ }
+        if (Number.isInteger(depuis) && depuis !== index) bm(exId, depuis, index);
+      }}
+      data-cvf-puce={index}
+      style={{
+        ...style,
+        position: "relative",
+        // Un lisere en ombre interieure plutot qu'une bordure : une bordure
+        // decalerait la ligne au survol et ferait sauter le document.
+        boxShadow: vise ? "inset 0 2px 0 0 var(--nuvi-purple-text, #5b3df5)" : "none",
+      }}
+    >
+      <button
+        type="button"
+        className="cvf-no-print"
+        aria-label="Move this line"
+        data-cvf-poignee={index}
+        onMouseDown={() => setPrise(true)}
+        onMouseUp={() => setPrise(false)}
+        onBlur={() => setPrise(false)}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowUp") { e.preventDefault(); bouge(index - 1); }
+          if (e.key === "ArrowDown") { e.preventDefault(); bouge(index + 1); }
+        }}
+        style={{
+          position: "absolute", left: -15, top: 1,
+          width: 13, height: 15, padding: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "transparent", border: "none", cursor: "grab",
+          color: "#9a9a9a", opacity: 0.55, lineHeight: 1,
+        }}
+      >
+        <svg width="7" height="11" viewBox="0 0 7 11" fill="currentColor" aria-hidden="true">
+          <circle cx="1.5" cy="1.5" r="1.1"/><circle cx="5.5" cy="1.5" r="1.1"/>
+          <circle cx="1.5" cy="5.5" r="1.1"/><circle cx="5.5" cy="5.5" r="1.1"/>
+          <circle cx="1.5" cy="9.5" r="1.1"/><circle cx="5.5" cy="9.5" r="1.1"/>
+        </svg>
+      </button>
+      {children}
+    </Balise>
+  );
+}
+
 export function CVSidebar({ cv, set, t, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   // [Lisibilite 2026-05-20] Accent garanti lisible sur le fond cream (t.bg).
   // Utilise pour les titres de la colonne main (PROFIL, EXPERIENCE) et le
@@ -476,12 +559,12 @@ export function CVSidebar({ cv, set, t, T, locale }) {
             </div>
             <ul style={{margin:"4px 0 0 13px", padding:0}}>
               {ex.bullets.map((b, i) => (
-                <li key={i} style={{
+                <Puce key={i} exId={ex.id} index={i} bm={bm} style={{
                   fontSize:9.5, color:"#444", marginBottom:2, lineHeight:1.55,
                 }}>
                   <E value={b} onChange={v=>ub(ex.id, i, v)}
                     style={{fontSize:9.5}}/>
-                </li>
+                </Puce>
               ))}
             </ul>
           </div>
@@ -526,7 +609,7 @@ export function CVSidebar({ cv, set, t, T, locale }) {
 // Photo facultative en haut a gauche
 // ============================================================
 export function CVClassic({ cv, set, t, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   const S = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
@@ -623,13 +706,13 @@ export function CVClassic({ cv, set, t, T, locale }) {
           </div>
           <ul style={{ margin: "0 0 0 18px", padding: 0, listStyleType: "disc" }}>
             {ex.bullets.map((b, i) => (
-              <li key={i} style={{
+              <Puce key={i} exId={ex.id} index={i} bm={bm} style={{
                 fontSize: 11, color: t.ti, opacity: 0.92,
                 marginBottom: 2, lineHeight: 1.5,
               }}>
                 <E value={b} onChange={v => ub(ex.id, i, v)}
                   style={{ fontSize: 11 }}/>
-              </li>
+              </Puce>
             ))}
           </ul>
         </div>
@@ -714,7 +797,7 @@ export function CVClassic({ cv, set, t, T, locale }) {
 // Inspiration : Diamond de Zety - parfait pour montrer progression
 // ============================================================
 export function CVTimeline({ cv, set, t, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   return (
     <div style={{
@@ -824,13 +907,13 @@ export function CVTimeline({ cv, set, t, T, locale }) {
                 </div>
                 <ul style={{ margin: "0 0 0 16px", padding: 0, listStyleType: "disc" }}>
                   {ex.bullets.map((b, i) => (
-                    <li key={i} style={{
+                    <Puce key={i} exId={ex.id} index={i} bm={bm} style={{
                       fontSize: 11, color: t.ti, opacity: 0.92,
                       marginBottom: 2, lineHeight: 1.5,
                     }}>
                       <E value={b} onChange={v => ub(ex.id, i, v)}
                         style={{ fontSize: 11 }}/>
-                    </li>
+                    </Puce>
                   ))}
                 </ul>
               </div>
@@ -949,7 +1032,7 @@ export function CVTimeline({ cv, set, t, T, locale }) {
 // et chaque puce se pliait une fois de plus. Colonne, marges et
 // interlignes sont resserres d'un cran, sans toucher au dessin.
 export function CVSwiss({ cv, set, t, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   const S = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
@@ -1045,13 +1128,13 @@ export function CVSwiss({ cv, set, t, T, locale }) {
               <E value={ex.location} onChange={v => ux(ex.id, "location", v)}/>
             </div>
             {ex.bullets.map((b, i) => (
-              <div key={i} style={{
+              <Puce key={i} exId={ex.id} index={i} bm={bm} tag="div" style={{
                 fontSize: 11, color: t.ti, opacity: 0.88,
                 marginBottom: 2, lineHeight: 1.45,
               }}>
                 <E value={b} onChange={v => ub(ex.id, i, v)}
                   style={{ fontSize: 11 }}/>
-              </div>
+              </Puce>
             ))}
           </div>
         </div>
@@ -1135,7 +1218,7 @@ export function CVSwiss({ cv, set, t, T, locale }) {
 // Inspiration : Crisp/Cubic 1-page de Zety - junior/stages
 // ============================================================
 export function CVCompact({ cv, set, t, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   const S = (labelKey, fallback) => {
     if (!hasContent(cv, labelKey)) return null;
@@ -1237,13 +1320,13 @@ export function CVCompact({ cv, set, t, T, locale }) {
                 margin: "0 0 0 14px", padding: 0, listStyleType: "disc",
               }}>
                 {ex.bullets.map((b, i) => (
-                  <li key={i} style={{
+                  <Puce key={i} exId={ex.id} index={i} bm={bm} style={{
                     fontSize: 9.5, color: t.ti, opacity: 0.9,
                     marginBottom: 1, lineHeight: 1.4,
                   }}>
                     <E value={b} onChange={v => ub(ex.id, i, v)}
                       style={{ fontSize: 9.5 }}/>
-                  </li>
+                  </Puce>
                 ))}
               </ul>
             </div>
@@ -1338,7 +1421,7 @@ export function CVCompact({ cv, set, t, T, locale }) {
 const CHAMPS_CONTACT = ["email", "phone", "location", "linkedin"];
 
 export function CVAts({ cv, set, T, locale }) {
-  const { u, ux, ub, ue, us, ul, uc } = MK(set);
+  const { u, ux, ub, bm, ue, us, ul, uc } = MK(set);
 
   // Titre de section : MAJUSCULES bold, PAS de border-bottom.
   // Les ATS modernes detectent les sections via le formatting (caps + bold).
@@ -1456,13 +1539,13 @@ export function CVAts({ cv, set, T, locale }) {
             listStyleType: "disc",
           }}>
             {ex.bullets.map((b, i) => (
-              <li key={i} style={{
+              <Puce key={i} exId={ex.id} index={i} bm={bm} style={{
                 fontSize: 11, color: "#222",
                 marginBottom: 2, lineHeight: 1.5,
               }}>
                 <E value={b} onChange={v => ub(ex.id, i, v)}
                   style={{ fontSize: 11 }}/>
-              </li>
+              </Puce>
             ))}
           </ul>
         </div>

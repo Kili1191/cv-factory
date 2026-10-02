@@ -243,6 +243,24 @@ export function MK(set) {
         ? { ...e, bullets: e.bullets.map((b, j) => j === i ? v : b) }
         : e)
     })),
+    // DEPLACER UNE PUCE DANS SON EXPERIENCE
+    //
+    // L'ordre des puces est ce qu'un recruteur lit en premier et c'est le
+    // seul reglage du CV qui ne se corrige pas en reecrivant : il faut
+    // deplacer. Jusqu'ici il fallait le demander au coach, ou couper-coller
+    // deux textes a la main. Le deplacement est une seule operation pour que
+    // l'historique le reprenne d'un coup.
+    bm: (id, de, vers) => set(p => ({
+      ...p,
+      experience: p.experience.map(e => {
+        if (e.id !== id) return e;
+        const liste = Array.isArray(e.bullets) ? [...e.bullets] : [];
+        if (de < 0 || vers < 0 || de >= liste.length || vers >= liste.length || de === vers) return e;
+        const [prise] = liste.splice(de, 1);
+        liste.splice(vers, 0, prise);
+        return { ...e, bullets: liste };
+      }),
+    })),
     ue: (id, k, v) => set(p => ({
       ...p,
       education: p.education.map(e => e.id === id ? { ...e, [k]: v } : e)

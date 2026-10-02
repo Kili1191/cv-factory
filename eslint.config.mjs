@@ -9,7 +9,7 @@
 // suffi, executee en integration continue avant les tests de bout en bout.
 
 const BROWSER_GLOBALS = [
-  "window", "document", "navigator", "localStorage", "sessionStorage", "fetch", "console",
+  "window", "document", "navigator", "localStorage", "sessionStorage", "Storage", "fetch", "console",
   "setTimeout", "clearTimeout", "setInterval", "clearInterval",
   "requestAnimationFrame", "cancelAnimationFrame", "requestIdleCallback",
   "ResizeObserver", "IntersectionObserver", "MutationObserver", "NodeFilter",
