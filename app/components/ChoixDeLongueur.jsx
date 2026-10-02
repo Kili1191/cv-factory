@@ -22,7 +22,6 @@ import { useState } from "react";
 import {
   Ink, InkMuted, Paper, Hairline, Purple, PurpleSoft, CreamSoft,
   Serif, Sans, RadiusMd, B } from "./tokens";
-import Sheet from "./Sheet";
 import ApercuGabarit from "./ApercuGabarit";
 
 function compterLesPuces(cv) {
@@ -30,14 +29,15 @@ function compterLesPuces(cv) {
     .reduce((n, e) => n + ((e && e.bullets) || []).filter((b) => b && b.trim()).length, 0);
 }
 
-function Carte({ titre, sous, cv, gabarit, theme, locale, choisi, onChoisir, T, testId }) {
+function Carte({ titre, sous, cv, gabarit, theme, locale, choisi, onChoisir, T, testId, enCours }) {
   const [survol, setSurvol] = useState(false);
   return (
     <button
       type="button"
       data-nuvi={testId}
       aria-pressed={choisi}
-      onClick={onChoisir}
+      disabled={enCours}
+      onClick={() => { if (!enCours) onChoisir(); }}
       onMouseEnter={() => setSurvol(true)}
       onMouseLeave={() => setSurvol(false)}
       style={{
@@ -50,8 +50,15 @@ function Carte({ titre, sous, cv, gabarit, theme, locale, choisi, onChoisir, T, 
         }),
       }}
     >
-      <div style={{ pointerEvents: "none" }}>
-        <ApercuGabarit kind={gabarit} locale={locale} cv={cv} theme={theme} part={1} />
+      <div style={{ pointerEvents: "none", minHeight: 120 }}>
+        {cv
+          ? <ApercuGabarit kind={gabarit} locale={locale} cv={cv} theme={theme} part={1} />
+          : (
+            <div style={{
+              height: 220, display: "flex", alignItems: "center", justifyContent: "center",
+              color: InkMuted, fontSize: 12, fontFamily: Sans, background: CreamSoft,
+            }}>{T.ch_preparing || "Preparing..."}</div>
+          )}
       </div>
       <div style={{
         padding: "10px 12px 12px",
@@ -64,27 +71,39 @@ function Carte({ titre, sous, cv, gabarit, theme, locale, choisi, onChoisir, T, 
         <div style={{
           marginTop: 8, fontSize: 11, fontWeight: 700, fontFamily: Sans,
           color: choisi ? Purple : InkMuted,
-        }}>{choisi ? (T.ch_kept || "Kept") : (T.ch_keep || "Keep this one")}</div>
+        }}>{enCours
+          ? (T.ch_preparing || "Preparing...")
+          : choisi ? (T.ch_kept || "Selected") : (T.ch_keep || "Choose this one")}</div>
       </div>
     </button>
   );
 }
 
+// AVANT LE CLIC, PAS APRES
+//
+// Premiere version : les deux apercus arrivaient APRES avoir clique
+// "Raccourcir". Kilian : "l'apercu doit etre avant le clic". Il a raison, et
+// pour la raison qui a fait naitre cet ecran : cliquer un bouton qui coupe
+// du texte en esperant que ce soit le bon choix, c'est exactement ce qu'on
+// voulait supprimer. Le bloc vit donc dans le panneau d'avant
+// telechargement, et la version courte se prepare des que ce panneau
+// s'ouvre. Elle coute un appel au modele par ouverture sur un CV trop long,
+// et c'est le prix de ne pas faire choisir a l'aveugle.
 export default function ChoixDeLongueur({
-  T, locale = "en", avant, apres, gabarit, theme, pages, onGarder, onClose,
+  T, locale = "en", avant, apres, gabarit, theme, pages, enCours, onGarder,
 }) {
-  const [choix, setChoix] = useState("apres");
+  const [choix, setChoix] = useState(null);
   const pucesAvant = compterLesPuces(avant);
-  const pucesApres = compterLesPuces(apres);
+  const pucesApres = apres ? compterLesPuces(apres) : 0;
   const perdues = Math.max(0, pucesAvant - pucesApres);
   const en = locale === "en";
 
   return (
-    <Sheet
-      eyebrow={T.ch_eyebrow || "LENGTH"}
-      title={T.ch_title || "Which one do you send?"}
-      onClose={onClose}
-    >
+    <div data-nuvi="choix-longueur" style={{ marginBottom: 18 }}>
+      <div style={{
+        fontSize: 9, fontWeight: 700, color: InkMuted, fontFamily: Sans,
+        letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 6,
+      }}>{T.ch_eyebrow || "WHICH ONE DO YOU SEND"}</div>
       <div style={{ fontSize: 13, color: InkMuted, fontFamily: Sans, lineHeight: 1.6, marginBottom: 14 }}>
         {perdues > 0
           ? (en
@@ -116,25 +135,30 @@ export default function ChoixDeLongueur({
           sous={(en ? "one page, " : "une page, ") + pucesApres + (en ? " lines" : " lignes")}
           cv={apres} gabarit={gabarit} theme={theme} locale={locale}
           choisi={choix === "apres"} onChoisir={() => setChoix("apres")} T={T}
+          enCours={enCours && !apres}
         />
       </div>
 
       <button
         type="button"
         data-nuvi="choix-garder"
+        disabled={!choix || (choix === "apres" && !apres)}
         onClick={() => onGarder(choix)}
         style={{
           ...B({
             width: "100%", padding: "14px 18px", borderRadius: RadiusMd,
-            background: Ink, color: "#fff", border: "none",
-            fontSize: 14, fontWeight: 700, fontFamily: Sans, cursor: "pointer",
+            background: choix ? Ink : Hairline, color: choix ? "#fff" : InkMuted,
+            border: "none", fontSize: 14, fontWeight: 700, fontFamily: Sans,
+            cursor: choix ? "pointer" : "default",
           }),
         }}
       >
-        {choix === "avant"
-          ? (en ? "Keep the full-length one" : "Garder la version longue")
-          : (en ? "Keep the shortened one" : "Garder la version raccourcie")}
+        {!choix
+          ? (en ? "Pick one above" : "Choisis-en une ci-dessus")
+          : choix === "avant"
+            ? (en ? "Send the full-length one" : "Envoyer la version longue")
+            : (en ? "Send the shortened one" : "Envoyer la version raccourcie")}
       </button>
-    </Sheet>
+    </div>
   );
 }

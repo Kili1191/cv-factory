@@ -86,7 +86,7 @@ const TXT = {
 export default function DefautsAvantExport({
   defauts = [], corriges = [], explications = [], locale = "fr",
   onCorriger, onQuandMeme, onRaccourcir, raccourcitEnCours = false, onClose,
-  onExpliquer,
+  onExpliquer, apercus = null,
 }) {
   const t = TXT[locale] || TXT.fr;
 
@@ -173,6 +173,15 @@ export default function DefautsAvantExport({
         fontSize: 14, lineHeight: 1.55, color: Ink, margin: "0 0 18px",
         maxWidth: "54ch", fontFamily: Sans,
       }}>{corriges.length ? t.introReste(defauts.length) : t.intro(defauts.length)}</p>
+
+      {/* LES DEUX LONGUEURS, EN HAUT, AVANT TOUTE DECISION
+          Un CV trop long ne se corrige pas d'un clic : couper est une
+          redaction, et c'est le seul defaut de cette liste qui demande une
+          decision plutot qu'une correction. Pose en bas de l'ecran il
+          arrivait apres trente et une cartes, donc apres le moment ou la
+          personne a deja decide. Le bouton "Raccourcir" disparait avec lui :
+          il n'y a plus de clic a l'aveugle a proposer. */}
+      {apercus}
 
       <div style={{ display: "grid", gap: 10, marginBottom: 22 }}>
         {defauts.map((d, i) => (
@@ -296,7 +305,7 @@ export default function DefautsAvantExport({
         {/* Un CV trop long ne se corrige pas d'un clic : il faut couper du
             texte, et couper est une redaction. C'est le modele qui s'en
             charge, sous la consigne qui compte : rien d'invente. */}
-        {deborde && onRaccourcir ? <button
+        {deborde && onRaccourcir && !apercus ? <button
           data-nuvi="defauts-raccourcir"
           onClick={onRaccourcir}
           disabled={raccourcitEnCours}

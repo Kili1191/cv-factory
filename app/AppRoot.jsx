@@ -5316,9 +5316,6 @@ export default function App() {
         apres: court,
         pages: mesure ? String(mesure.extrait || "").replace(/[^0-9.,]/g, "") : "",
       });
-      setDefautsAvantExport(null);
-      setCorrigesAffiches([]);
-      setExplicationsAffichees([]);
     } catch (err) {
       notify((locale === "en" ? "Could not shorten: " : "Impossible de raccourcir : ")
         + (err && err.message ? err.message : ""));
@@ -5326,6 +5323,30 @@ export default function App() {
       setRaccourcitEnCours(false);
     }
   }, [apiKey, T, cv, locale, notify, setCVFn, versions, defautsAvantExport]);
+
+  // LA VERSION COURTE SE PREPARE PENDANT QU'ON LIT LE PANNEAU
+  //
+  // Elle arrivait apres un clic sur "Raccourcir", donc on cliquait un bouton
+  // qui coupe du texte sans avoir vu ce qu'il coupe. C'est exactement le
+  // clic a l'aveugle que cet ecran existe pour supprimer. Elle part donc des
+  // que le panneau s'ouvre sur un CV trop long, et les deux documents sont
+  // cote a cote quand la personne arrive au choix.
+  //
+  // Un appel au modele par ouverture sur un CV qui deborde, pas plus : la
+  // garde sur choixDeLongueur et sur raccourcitEnCours empeche le second.
+  useEffect(() => {
+    if (!defautsAvantExport || !defautsAvantExport.length) return;
+    if (!defautsAvantExport.some((d) => d && d.cle === "deborde_page")) return;
+    if (choixDeLongueur || raccourcitEnCours) return;
+    raccourcirPourUnePage();
+  }, [defautsAvantExport, choixDeLongueur, raccourcitEnCours, raccourcirPourUnePage]);
+
+  // Le panneau ferme : on oublie les deux longueurs, sinon la prochaine
+  // ouverture montrerait la comparaison d'un CV qui a change depuis.
+  useEffect(() => {
+    if (!defautsAvantExport) setChoixDeLongueur(null);
+  }, [defautsAvantExport]);
+
 
   // LE CANDIDAT PARLE, NUVI DEMANDE, PUIS RANGE
   //
@@ -8736,6 +8757,33 @@ export default function App() {
             onCorriger={corrigerMaintenant}
             onRaccourcir={defautsAvantExport.some((d) => d.cle === "deborde_page") ? raccourcirPourUnePage : undefined}
             raccourcitEnCours={raccourcitEnCours}
+            apercus={defautsAvantExport.some((d) => d.cle === "deborde_page") ? (
+              <Suspense fallback={null}>
+                <ChoixDeLongueur
+                  T={T}
+                  locale={locale}
+                  avant={(choixDeLongueur && choixDeLongueur.avant) || cv}
+                  apres={choixDeLongueur && choixDeLongueur.apres}
+                  pages={(choixDeLongueur && choixDeLongueur.pages)
+                    || String((defautsAvantExport.find((d) => d.cle === "deborde_page") || {}).extrait || "")
+                      .replace(/[^0-9.,]/g, "")}
+                  gabarit={layout}
+                  theme={effTheme}
+                  enCours={raccourcitEnCours}
+                  onGarder={(quoi) => {
+                    if (quoi === "apres" && choixDeLongueur && choixDeLongueur.apres) {
+                      pushH();
+                      setCVFn(() => choixDeLongueur.apres);
+                    }
+                    setDefautsAvantExport(null);
+                    setCorrigesAffiches([]);
+                    setExplicationsAffichees([]);
+                    setChoixDeLongueur(null);
+                    lancerLeFormat();
+                  }}
+                />
+              </Suspense>
+            ) : null}
             onQuandMeme={defautsDepuisExport
               ? () => { setDefautsAvantExport(null); lancerLeFormat(); }
               : undefined}
@@ -8744,34 +8792,6 @@ export default function App() {
         </Suspense>
       ) : null}
 
-      {choixDeLongueur ? (
-        <Suspense fallback={null}>
-          <ChoixDeLongueur
-            T={T}
-            locale={locale}
-            avant={choixDeLongueur.avant}
-            apres={choixDeLongueur.apres}
-            pages={choixDeLongueur.pages}
-            gabarit={layout}
-            theme={effTheme}
-            onGarder={(quoi) => {
-              if (quoi === "apres") {
-                pushH();
-                setCVFn(() => choixDeLongueur.apres);
-                notify(locale === "en"
-                  ? "Shortened version kept. The full-length one is in My CVs."
-                  : "Version raccourcie gardee. La longue est dans Mes CV.");
-              } else {
-                notify(locale === "en"
-                  ? "Full-length version kept, nothing was removed."
-                  : "Version longue gardee, rien n'a ete retire.");
-              }
-              setChoixDeLongueur(null);
-            }}
-            onClose={() => setChoixDeLongueur(null)}
-          />
-        </Suspense>
-      ) : null}
 
       {/* Verdict Nuvi (anti-doom-loop, score >= 85) */}
       <VerdictModal

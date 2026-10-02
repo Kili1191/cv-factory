@@ -86,23 +86,34 @@ export async function run() {
     });
     await page.waitForTimeout(3500);
 
-    const lance = await page.evaluate(() => {
-      const b = [...document.querySelectorAll("button")]
-        .find((x) => /shorten to fit one page/i.test((x.innerText || "").trim()));
-      if (b) { b.click(); return "bouton"; }
-      return null;
-    });
+    // LES DEUX APERCUS SONT LA AVANT TOUT CLIC
+    //
+    // Premiere version : ils arrivaient APRES avoir clique "Raccourcir".
+    // Kilian : "l'apercu doit etre avant le clic". Cliquer un bouton qui
+    // coupe du texte en esperant que ce soit le bon choix est exactement ce
+    // que cet ecran existe pour supprimer, donc le panneau ne propose plus
+    // ce bouton du tout : il montre les deux documents et on en choisit un.
+    const resteUnClicAveugle = await page.evaluate(() =>
+      [...document.querySelectorAll("button")]
+        .some((x) => /shorten to fit one page/i.test((x.innerText || "").trim())));
+    if (resteUnClicAveugle) {
+      failures.push(
+        "le panneau propose encore \"Shorten to fit one page\" : un bouton qui coupe du\n" +
+        "      texte avant d'avoir montre ce qu'il coupe."
+      );
+    }
+    const lance = (await page.locator('[data-nuvi="choix-longueur"]').count()) ? "apercus" : null;
     if (!lance) {
       // Le panneau ne s'ouvre qu'au telechargement d'un CV trop long ; dans
       // le harnais la mesure de hauteur depend du rendu. On passe alors par
       // la fonction elle-meme, exposee nulle part : le test le dit plutot
       // que de se declarer vert sans avoir rien exerce.
       failures.push(
-        "le bouton \"Shorten to fit one page\" n'est pas a l'ecran : ce test n'a rien exerce.\n" +
-        "      Il doit etre atteignable, sinon la garantie qu'il porte n'est pas mesuree."
+        "le panneau d'avant telechargement ne montre aucune comparaison de longueur.\n" +
+        "      La personne n'a que le choix de couper a l'aveugle, ou de renoncer."
       );
     } else {
-      await page.waitForTimeout(3500);
+      await page.waitForTimeout(5000);
 
       // --- LES DEUX LONGUEURS SONT A L'ECRAN, A LA MEME ECHELLE ---------
       //
