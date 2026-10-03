@@ -559,11 +559,15 @@ export function CVSidebar({ cv, set, t, T, locale }) {
                 <div style={{fontSize:9.5, color: acOnBg, fontWeight:600, marginTop:1}}>
                   <E value={ex.company} onChange={v=>ux(ex.id, "company", v)}
                     style={{fontSize:9.5, color: acOnBg}}/>
-                  {ex.location && String(ex.location).trim() ? <>
-                    {" - "}
-                    <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
-                      style={{fontSize:9.5, color:"#5a5a5a"}}/>
-                  </> : null}
+                  {/* UN CHAMP VIDE DOIT RESTER CLIQUABLE
+                      Le champ entier disparaissait quand le lieu etait
+                      efface, donc on ne pouvait plus le remplir : il fallait
+                      Ctrl+Z, ou renoncer. Seul le separateur depend
+                      maintenant du contenu ; le champ reste, et affiche le
+                      pointille que l'export masque deja. */}
+                  {ex.location && String(ex.location).trim() ? " - " : ""}
+                  <E value={ex.location} onChange={v=>ux(ex.id, "location", v)}
+                    style={{fontSize:9.5, color:"#5a5a5a"}}/>
                 </div>
               </div>
               <div style={{fontSize:9.5, color:"#5f5f5f", flexShrink:0, fontWeight:500}}>

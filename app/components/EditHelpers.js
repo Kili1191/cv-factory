@@ -15,7 +15,7 @@
 //   - E : highlight Cream/Coral au lieu de jaune classique au focus
 //   - Inputs : padding plus genereux, font-size 13, border-radius 10
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Trans } from "./tokens";
 import {
   Ink, InkMuted, Cream, CreamSoft, Paper,
@@ -62,9 +62,79 @@ const NuviLabelStyle = {
 //   multi     : true pour textarea, false pour input
 //   style     : styles personnalises (couleur, font-size, etc.) qui sont aussi
 //               appliques a l'input et au span d'affichage pour conserver la coherence visuelle
+// SELECTIONNER DU TEXTE ET APPUYER SUR SUPPRIMER
+//
+// Kilian, le 3 octobre 2026, "Lyon," surligne dans son CV : "je ne peux pas
+// supprimer". Mesure dans un navigateur : la valeur ne bouge pas d'un pixel.
+//
+// Le champ est un texte ordinaire tant qu'on n'a pas clique dessus, et un
+// input ensuite. Selectionner puis appuyer sur Supprimer ne touche donc
+// rien : il n'y a pas d'input a cet instant, et le navigateur n'efface pas
+// un noeud de texte qui n'est pas editable. Rien a l'ecran ne le dit, et
+// toute la page est faite pour ressembler a un document qu'on edite. Le
+// geste est juste, c'est la reponse qui manquait.
+//
+// Un seul ecouteur pour tout le document : chaque champ depose son setter
+// sur son propre noeud, et l'ecouteur remonte de la selection jusqu'a lui.
+// Poser un ecouteur par champ en ferait une centaine sur un CV fourni.
+let ecouteurPose = false;
+
+function texteApresSuppression(span, plage) {
+  const texte = span.textContent || "";
+  // La selection deborde du champ : on vide ce champ-ci entierement, ce que
+  // la personne a demande pour lui.
+  if (!span.contains(plage.startContainer) || !span.contains(plage.endContainer)) return "";
+  const avant = plage.cloneRange();
+  avant.selectNodeContents(span);
+  avant.setEnd(plage.startContainer, plage.startOffset);
+  const debut = avant.toString().length;
+  const fin = debut + plage.toString().length;
+  return texte.slice(0, debut) + texte.slice(fin);
+}
+
+function poserLEcouteur() {
+  if (ecouteurPose || typeof document === "undefined") return;
+  ecouteurPose = true;
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Backspace" && e.key !== "Delete") return;
+    // Un champ deja ouvert se debrouille seul, et une zone de saisie
+    // ailleurs sur la page ne nous regarde pas.
+    const actif = document.activeElement;
+    if (actif && (actif.tagName === "INPUT" || actif.tagName === "TEXTAREA"
+      || actif.isContentEditable)) return;
+    const sel = typeof window !== "undefined" ? window.getSelection() : null;
+    if (!sel || sel.isCollapsed || !sel.rangeCount) return;
+    const plage = sel.getRangeAt(0);
+    if (!plage.toString()) return;
+
+    // Tous les champs que la selection touche, pas seulement le premier :
+    // on selectionne souvent une ligne entiere, qui en compte trois.
+    const touches = [...document.querySelectorAll("[data-cvf-e]")]
+      .filter((n) => typeof n.__cvfSet === "function" && plage.intersectsNode(n));
+    if (!touches.length) return;
+
+    e.preventDefault();
+    sel.removeAllRanges();
+    for (const n of touches) {
+      const reste = texteApresSuppression(n, plage);
+      if (reste !== (n.textContent || "")) n.__cvfSet(reste);
+    }
+  });
+}
+
 export function E({ value, onChange, multi = false, style = {} }) {
   const [ed, setEd] = useState(false);
   const [loc, setLoc] = useState("");
+  const noeud = useRef(null);
+  useEffect(() => { poserLEcouteur(); }, []);
+  // Le setter voyage sur le noeud : l'ecouteur unique part d'une selection,
+  // donc d'un element du DOM, et n'a aucun autre chemin vers ce champ.
+  useEffect(() => {
+    const n = noeud.current;
+    if (!n) return undefined;
+    n.__cvfSet = onChange;
+    return () => { if (n) delete n.__cvfSet; };
+  }, [onChange, ed]);
 
   const open = useCallback(() => {
     setLoc(value || "");
@@ -113,6 +183,7 @@ export function E({ value, onChange, multi = false, style = {} }) {
 
   return (
     <span onClick={open}
+      ref={noeud}
       data-cvf-e
       style={{
         cursor: "text",

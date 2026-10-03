@@ -36,6 +36,7 @@ const SUITES = [
   ["job sources return the same shape", "./job-sources-normalise.mjs"],
   ["an adaptation that does not arrive says so", "./an-adaptation-that-does-not-arrive-says-so.mjs"],
   ["shortening does not lose the long version", "./shortening-does-not-lose-the-long-version.mjs"],
+  ["selecting text and pressing delete deletes", "./selecting-text-and-pressing-delete-deletes.mjs"],
   ["a bullet moves where you drop it", "./a-bullet-moves-where-you-drop-it.mjs"],
   ["the coach thread scrolls and rewinds", "./the-coach-thread-scrolls-and-rewinds.mjs"],
   ["the coach may answer in prose", "./the-coach-may-answer-in-prose.mjs"],
