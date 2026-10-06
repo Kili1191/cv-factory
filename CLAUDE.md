@@ -624,6 +624,29 @@ the truncated bullets of the old exports reached real people.
 `GABARIT_PAR_DEFAUT` is `classic`; the six templates remain, the picker still
 opens on import, and two columns are one click away.
 
+**The number the product competes on is applications sent, not jobs found.**
+Career Hound, measured on 6 October 2026, is not a generic job board: its home
+page says "Find jobs not on LinkedIn/Indeed. We find jobs posted on company
+websites" and "8,573 people finding 4.5 million hidden jobs". That is the
+career page registry, the same thing our 282 boards do, and on that axis we
+lose by two orders of magnitude to an asset anybody can read off a public
+Greenhouse endpoint. Its whole sitemap is 73 pages, every one under `/remote/`,
+and it lists no price.
+
+Nobody's goal is to find job ads. The goal is an interview, and between the ad
+and the interview sits the work a listings site does not do: the CV rewritten
+for THIS ad, the PDF a sorting robot reads, the twenty form boxes, the follow
+up. So `lib/throughput.js` counts what actually went out, by week, and the
+tracker leads with it. "Sent" is imported from `lib/reponses.js` rather than
+restated, because two definitions of sent in one product would put two numbers
+on one screen with no way to tell which to believe. A week, because job
+hunting is a weekly rhythm: a day is noise and a month is too late to act on.
+A personal best rather than a streak, because a streak punishes the week
+somebody was ill and then means nothing ever again. And a row with no date
+stays in the total, out of the week, and is counted out loud, which is the
+missing salary rule applied to the person's own work.
+`tests/applications-sent-is-the-number.mjs`.
+
 The money arrives through `app/api/billing`. The plan is set in `lib/plans.js`
 (24 euros a month, 49 for three months, three free adaptations with an
 account); `lib/facturation.js` talks to Stripe and to Supabase with the

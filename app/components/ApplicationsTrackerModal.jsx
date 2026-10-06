@@ -16,6 +16,7 @@ import { joursDepuis, JOURS_AVANT_RELANCE } from "../../lib/applicationFollowUp"
 import FileDrop, { joindreAuTexte } from "./FileDrop";
 import { nettoyerLAnnonce } from "../../lib/pastedPosting";
 import { reponses, ceQuiEstCompte } from "../../lib/reponses.js";
+import { throughput, bestWeek } from "../../lib/throughput.js";
 
 // Couleur tag par status.
 function statusBadge(status, T) {
@@ -60,9 +61,49 @@ function BlocReponses({ applications, locale }) {
     ? (en ? "replies, from applications sent" : "reponses, sur les candidatures envoyees")
     : (en ? `replied, from ${r.envoyees} sent` : `ont repondu, sur ${r.envoyees} envoyees`);
 
+  // WHAT THE PERSON GOT DONE, NOT HOW MANY JOBS EXIST
+  //
+  // A listings site boasts about its stock: the competitor measured on
+  // 6 October 2026 says "8,573 people finding 4.5 million hidden jobs".
+  // Nobody's goal is to find job ads. The one number a listings site cannot
+  // produce is this one: how many applications actually went out. It leads
+  // the block because it is the line that says whether the week was any use.
+  const d = throughput(applications);
+  const record = bestWeek(applications);
+  const sem = d.thisWeek;
+  const ligneSemaine = sem > 0
+    ? (en ? sem + " application" + (sem > 1 ? "s" : "") + " sent this week"
+          : sem + " candidature" + (sem > 1 ? "s" : "") + " envoyee" + (sem > 1 ? "s" : "") + " cette semaine")
+      + (d.change === null ? ""
+        : d.change === 0 ? (en ? ", same as last week" : ", comme la semaine derniere")
+        : (en ? ", " + (d.change > 0 ? "+" : "") + d.change + " on last week"
+              : ", " + (d.change > 0 ? "+" : "") + d.change + " par rapport a la semaine derniere"))
+    : (en ? "nothing sent in the last seven days" : "rien d'envoye ces sept derniers jours");
+
   const lignes = [
+    ligneSemaine,
+    // A personal best does not punish the week somebody was ill, which is
+    // what a streak does, and it only ever goes up.
+    record > 1 && sem >= record
+      ? (en ? "your best week so far" : "ta meilleure semaine jusqu'ici")
+      : record > sem
+        ? (en ? "best week so far: " + record : "meilleure semaine jusqu'ici : " + record)
+        : null,
+    // Same rule as a missing salary: what cannot be placed is not discarded
+    // in silence, it is said.
+    d.undated > 0
+      ? (en
+        ? (d.undated === 1 ? "1 carries no date and counts only in the total"
+          : d.undated + " carry no date and count only in the total")
+        : (d.undated === 1 ? "1 n'a pas de date et ne compte que dans le total"
+          : d.undated + " n'ont pas de date et ne comptent que dans le total"))
+      : null,
     r.avancees > 0
-      ? (en ? `${r.avancees} went further than a reply` : `${r.avancees} sont allees plus loin qu'une reponse`)
+      ? (en ? `${r.avancees} went further than a reply`
+        // "1 sont allees" did not agree. It sat directly under the new
+        // throughput lines, so it read as part of the same block.
+        : r.avancees === 1 ? "1 est allee plus loin qu'une reponse"
+          : `${r.avancees} sont allees plus loin qu'une reponse`)
       : null,
     r.enAttente > 0
       ? (en ? `${r.enAttente} still waiting` : `${r.enAttente} encore en attente`)
