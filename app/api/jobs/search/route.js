@@ -12,10 +12,10 @@ import {
   franceTravailConfigured, franceTravailToken, franceTravailParse,
   adzunaConfigured, adzunaUrl, adzunaParse,
   reedConfigured, reedUrl, reedAuthHeader, reedParse,
-  availableSources,
+  availableSources, combienEnTout,
 } from "../../../../lib/jobSources.js";
 import { lireUnBoard, normaliser, lieuCorrespond, titreCorrespond } from "../../../../lib/ats.js";
-import { BOARDS, nomDeLEntreprise } from "../../../../lib/boards.js";
+import { boardsDuMarche, nomDeLEntreprise } from "../../../../lib/boards.js";
 
 export const maxDuration = 30;
 
@@ -27,36 +27,70 @@ export const maxDuration = 30;
 // l'entreprise elle-meme, en JSON public. C'est la ou se trouvent les postes
 // que personne ne voit, et c'est gratuit.
 //
-// Un cache par instance, parce que lire cinquante tableaux prend quelques
-// secondes et que deux recherches d'affilee ne doivent pas les relire.
-// Quinze minutes : un poste publie ce matin reste trouvable ce matin.
-const CACHE_MS = 15 * 60 * 1000;
-let cache = { a: 0, postes: [] };
+// POURQUOI UN INDEX ET PLUS UN CACHE
+//
+// La premiere version lisait les cinquante tableaux a chaque fois que le
+// cache expirait, dix en vol, et tenait dans les trente secondes de la
+// fonction. Elle ne tient plus a cinq cents : cinquante passes en serie
+// depassent le delai et la recherche rend une liste vide, ce qui se lit
+// comme "aucune offre" et non comme une panne. Et le registre doit grandir
+// jusqu'a des milliers de lignes, c'est tout son interet.
+//
+// Donc l'inverse : chaque recherche sert l'index entier, et en profite pour
+// rafraichir les tableaux les plus vieux, dans un budget de temps fixe. Le
+// cout par recherche est borne quelle que soit la taille du registre, et
+// l'index se remplit en quelques recherches au lieu d'une seule tres lente.
+// Une recherche ne rend donc jamais moins que ce que l'instance sait deja.
+const FRAICHEUR_MS = 30 * 60 * 1000;
+const BUDGET_MS = 7000;
+const EN_VOL = 12;
 
-// Dix a la fois : les ATS repondent vite, mais la fonction meurt a trente
-// secondes et cinquante requetes en serie n'y tiendraient pas.
-const EN_VOL = 10;
+// slug -> { lu, postes }. En memoire d'instance, comme le compteur de
+// middleware.js : assez pour qu'une personne qui cherche trois fois de suite
+// ne paie qu'une fois, pas un index partage. Le magasin partage viendra avec
+// le rafraichissement quotidien, qui demande la cle service de Supabase.
+const index = new Map();
 
-async function lireLesBoards(warnings) {
-  if (cache.postes.length && Date.now() - cache.a < CACHE_MS) return cache.postes;
-  const postes = [];
+async function rafraichir(boards, warnings) {
+  const t0 = Date.now();
+  // Les jamais lus d'abord, puis les plus vieux : a froid l'index se
+  // remplit, a chaud il tourne.
+  const file = boards
+    .map((b) => ({ b, lu: (index.get(b.slug) || { lu: 0 }).lu }))
+    .filter((x) => Date.now() - x.lu > FRAICHEUR_MS)
+    .sort((x, y) => x.lu - y.lu);
+
   const muets = [];
   let i = 0;
   async function ouvrier() {
-    while (i < BOARDS.length) {
-      const b = BOARDS[i++];
+    while (i < file.length && Date.now() - t0 < BUDGET_MS) {
+      const { b } = file[i++];
       const r = await lireUnBoard(b.slug, b.ats);
-      if (r.erreur) { muets.push(b.slug); continue; }
-      for (const p of r.postes) postes.push(normaliser(p, nomDeLEntreprise(b.slug), "ats"));
+      if (r.erreur) {
+        // Un tableau muet est note comme lu : sans ca il reste en tete de
+        // file et vole son tour a un tableau qui repond, a chaque recherche.
+        index.set(b.slug, { lu: Date.now(), postes: [] });
+        muets.push(b.slug);
+        continue;
+      }
+      index.set(b.slug, {
+        lu: Date.now(),
+        postes: r.postes.map((p) => normaliser(p, nomDeLEntreprise(b.slug), "ats")),
+      });
     }
   }
   await Promise.all(Array.from({ length: EN_VOL }, ouvrier));
-  // Un tableau qui ne repond plus n'est pas une panne de la recherche : on
-  // le dit sans rien casser, parce qu'une entreprise change d'ATS et que la
-  // liste doit alors etre corrigee.
   if (muets.length) warnings.push(muets.length + " career pages did not answer");
-  cache = { a: Date.now(), postes };
-  return postes;
+  return file.length - i;
+}
+
+function postesDeLIndex(boards) {
+  const out = [];
+  for (const b of boards) {
+    const e = index.get(b.slug);
+    if (e) out.push(...e.postes);
+  }
+  return out;
 }
 
 export async function GET(request) {
@@ -64,6 +98,9 @@ export async function GET(request) {
   const what = url.searchParams.get("what") || "";
   const where = url.searchParams.get("where") || "";
   const country = url.searchParams.get("country") || "fr";
+  // La page est ce qui ouvre le gisement. Sans elle, la recherche plafonne a
+  // la premiere poignee de resultats quoi qu'il y ait derriere.
+  const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
   const env = process.env;
 
   // Les pages carriere ne demandent pas de cle, donc cette source existe
@@ -71,12 +108,16 @@ export async function GET(request) {
   const sources = [...availableSources(env), "career pages"];
   const warnings = [];
   const tasks = [];
+  // Le total annonce par chaque agregateur, pour que l'ecran puisse dire
+  // "50 sur 64 000" au lieu de "50".
+  let total = 0;
 
   if (franceTravailConfigured(env)) {
     tasks.push((async () => {
       try {
         const token = await franceTravailToken(env);
-        const params = new URLSearchParams({ range: "0-19" });
+        const debut = (page - 1) * 50;
+        const params = new URLSearchParams({ range: debut + "-" + (debut + 49) });
         if (what) params.set("motsCles", what);
         if (where) params.set("commune", where);
         const res = await fetch(
@@ -86,7 +127,9 @@ export async function GET(request) {
         // 204 signifie "aucun resultat", ce n'est pas une erreur.
         if (res.status === 204) return [];
         if (!res.ok) throw new Error(`${res.status}`);
-        return franceTravailParse(await res.json());
+        const data = await res.json();
+        total += combienEnTout(data);
+        return franceTravailParse(data);
       } catch (err) {
         warnings.push(`France Travail indisponible (${err.message})`);
         return [];
@@ -97,9 +140,11 @@ export async function GET(request) {
   if (adzunaConfigured(env)) {
     tasks.push((async () => {
       try {
-        const res = await fetch(adzunaUrl(env, { what, where, country }));
+        const res = await fetch(adzunaUrl(env, { what, where, country, page }));
         if (!res.ok) throw new Error(`${res.status}`);
-        return adzunaParse(await res.json());
+        const data = await res.json();
+        total += combienEnTout(data);
+        return adzunaParse(data);
       } catch (err) {
         warnings.push(`Adzuna indisponible (${err.message})`);
         return [];
@@ -110,11 +155,13 @@ export async function GET(request) {
   if (reedConfigured(env)) {
     tasks.push((async () => {
       try {
-        const res = await fetch(reedUrl({ what, where }), {
+        const res = await fetch(reedUrl({ what, where, page }), {
           headers: { Authorization: reedAuthHeader(env) },
         });
         if (!res.ok) throw new Error(`${res.status}`);
-        return reedParse(await res.json());
+        const data = await res.json();
+        total += combienEnTout(data);
+        return reedParse(data);
       } catch (err) {
         warnings.push(`Reed indisponible (${err.message})`);
         return [];
@@ -122,12 +169,18 @@ export async function GET(request) {
     })());
   }
 
-  tasks.push((async () => {
+  const boards = boardsDuMarche(country);
+  let enAttente = 0;
+  // Les pages carriere ne se paginent pas : l'index rend tout ce qu'il a
+  // d'un coup. Les redemander page deux les renverrait a l'identique.
+  if (page === 1) tasks.push((async () => {
     try {
-      const tous = await lireLesBoards(warnings);
-      return tous
+      enAttente = await rafraichir(boards, warnings);
+      const retenus = postesDeLIndex(boards)
         .filter((j) => lieuCorrespond(j.location, where))
         .filter((j) => titreCorrespond(j, what));
+      total += retenus.length;
+      return retenus;
     } catch (err) {
       warnings.push("career pages unavailable (" + (err && err.message) + ")");
       return [];
@@ -148,5 +201,23 @@ export async function GET(request) {
     unique.push(job);
   }
 
-  return Response.json({ jobs: unique, sources, warnings, configured: true });
+  // L'ETAT DE L'INDEX EST DIT, PAS DEVINE
+  //
+  // Une liste courte peut vouloir dire "peu d'offres correspondent" ou
+  // "l'index n'a pas encore lu la moitie du registre". Les deux se lisent
+  // pareil a l'ecran, et c'est exactement la panne silencieuse que ce depot
+  // connait le mieux. La reponse porte donc le compte.
+  const index_etat = {
+    tableaux: boards.length,
+    lus: boards.filter((b) => index.has(b.slug)).length,
+    en_attente: enAttente,
+  };
+  // Pas d'avertissement pour l'attente : l'ecran la dit sous le compte, dans
+  // la langue de la personne, et le cadre d'avertissement est corail. Un
+  // index qui se remplit n'est pas une panne.
+
+  return Response.json({
+    jobs: unique, sources, warnings, index: index_etat, configured: true,
+    page, total, plus: unique.length > 0 && total > page * 50,
+  });
 }

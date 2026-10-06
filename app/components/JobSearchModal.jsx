@@ -32,6 +32,11 @@ export default function JobSearchModal({ marche = "", T, locale = "en", onTrack,
   const [state, setState] = useState("idle"); // idle | loading | done | off
   const [warnings, setWarnings] = useState([]);
   const [sources, setSources] = useState([]);
+  const [etatIndex, setEtatIndex] = useState(null);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [plus, setPlus] = useState(false);
+  const [plusEnCours, setPlusEnCours] = useState(false);
   const [tracked, setTracked] = useState({});
 
   const L = locale === "en" ? {
@@ -45,6 +50,12 @@ export default function JobSearchModal({ marche = "", T, locale = "en", onTrack,
     offTitle: "No job source connected yet",
     offBody: "Connect Adzuna, France Travail or Reed and live listings appear here. See docs/comptes.md.",
     from: "from",
+    // The index fills over a few searches. Saying so costs one line and
+    // stops a short list from reading as "nothing is hiring today".
+    lus: (n, t) => n + " of " + t + " career pages read",
+    encore: "Search again to read the rest.",
+    sur: (n, t) => n + " of " + t.toLocaleString("en-GB") + " matching",
+    plus: "Show more", plusEnCours: "Loading...",
   } : {
     eyebrow: "RECHERCHE D'OFFRES", title: "Trouver un poste",
     sub: "Cherche des offres en direct, puis transforme-en une en candidature suivie, annonce comprise.",
@@ -56,25 +67,50 @@ export default function JobSearchModal({ marche = "", T, locale = "en", onTrack,
     offTitle: "Aucune source d'offres branchee",
     offBody: "Branche Adzuna, France Travail ou Reed et les offres apparaissent ici. Voir docs/comptes.md.",
     from: "via",
+    lus: (n, t) => n + " pages carriere lues sur " + t,
+    encore: "Relance pour lire les autres.",
+    sur: (n, t) => n + " sur " + t.toLocaleString("fr-FR") + " qui correspondent",
+    plus: "En voir plus", plusEnCours: "Chargement...",
   };
 
-  const search = useCallback(async () => {
-    setState("loading");
-    setWarnings([]);
+  // UNE SEULE FONCTION POUR LA PREMIERE PAGE ET POUR LES SUIVANTES
+  //
+  // `suite` dit laquelle : la premiere remplace la liste et remonte, les
+  // autres l'allongent. Ecrire deux fonctions a double le risque qu'une des
+  // deux oublie de dedupliquer, et une offre affichee deux fois se lit comme
+  // deux offres.
+  const chercher = useCallback(async (suite) => {
+    const n = suite ? page + 1 : 1;
+    if (suite) setPlusEnCours(true); else { setState("loading"); setWarnings([]); }
     try {
-      const params = new URLSearchParams({ what, where, country });
+      const params = new URLSearchParams({ what, where, country, page: String(n) });
       const res = await fetch(`/api/jobs/search?${params}`);
       const data = await res.json();
       if (!data.configured) { setState("off"); return; }
-      setJobs(Array.isArray(data.jobs) ? data.jobs : []);
+      const recues = Array.isArray(data.jobs) ? data.jobs : [];
+      setJobs((avant) => {
+        if (!suite) return recues;
+        // Deux pages d'un agregateur se recouvrent quand une offre est
+        // publiee entre les deux appels : la cle est celle du serveur.
+        const vus = new Set(avant.map((j) => j.source + j.id));
+        return avant.concat(recues.filter((j) => !vus.has(j.source + j.id)));
+      });
       setSources(data.sources || []);
       setWarnings(data.warnings || []);
+      if (!suite) setEtatIndex(data.index || null);
+      setTotal(Number(data.total) || 0);
+      setPlus(!!data.plus && recues.length > 0);
+      setPage(n);
       setState("done");
     } catch (err) {
       setWarnings([(err && err.message) || "recherche impossible"]);
       setState("done");
+    } finally {
+      setPlusEnCours(false);
     }
-  }, [what, where, country]);
+  }, [what, where, country, page]);
+
+  const search = useCallback(() => chercher(false), [chercher]);
 
   const field = {
     width: "100%", minHeight: 46, padding: "0 13px",
@@ -141,9 +177,18 @@ export default function JobSearchModal({ marche = "", T, locale = "en", onTrack,
         <p style={{ fontSize: 13.5, color: InkMuted, fontFamily: Sans }}>{L.none}</p>
       )}
 
-      {jobs.length > 0 && (
-        <div style={{ fontSize: 11, color: InkMuted, marginBottom: 10, fontFamily: Sans }}>
-          {jobs.length} · {L.from} {sources.join(", ")}
+      {(jobs.length > 0 || (etatIndex && etatIndex.en_attente > 0)) && (
+        <div style={{ fontSize: 11, color: InkMuted, marginBottom: 10, fontFamily: Sans, lineHeight: 1.5 }}>
+          {jobs.length > 0
+            ? (total > jobs.length ? L.sur(jobs.length, total) : String(jobs.length))
+              + " · " + L.from + " " + sources.join(", ")
+            : null}
+          {etatIndex && etatIndex.tableaux ? (
+            <div>
+              {L.lus(etatIndex.lus, etatIndex.tableaux)}
+              {etatIndex.en_attente > 0 ? " · " + L.encore : null}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -193,6 +238,23 @@ export default function JobSearchModal({ marche = "", T, locale = "en", onTrack,
           )}
         </div>
       ))}
+
+      {plus && (
+        <button
+          type="button"
+          onClick={() => chercher(true)}
+          disabled={plusEnCours}
+          data-nuvi="offres-plus"
+          style={{
+            ...B({
+              width: "100%", minHeight: 46, marginTop: 4, marginBottom: 8,
+              borderRadius: RadiusPill, border: "1px solid " + Hairline,
+              background: Paper, color: Ink,
+              fontSize: 13.5, fontWeight: 600, fontFamily: Sans,
+            }),
+          }}
+        >{plusEnCours ? L.plusEnCours : L.plus}</button>
+      )}
     </Sheet>
   );
 }

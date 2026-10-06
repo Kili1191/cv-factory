@@ -34,8 +34,8 @@
 //   4. Le registre ne contient que des entreprises verifiees, avec un ATS
 //      connu. Une ligne devinee serait une recherche plus lente pour rien.
 
-import { ATS, NOMS_ATS, normaliser, lieuCorrespond, titreCorrespond, lireUnBoard } from "../lib/ats.js";
-import { BOARDS, nomDeLEntreprise } from "../lib/boards.js";
+import { ATS, NOMS_ATS, normaliser, lieuCorrespond, titreCorrespond, lireUnBoard, dansLeMarche, MARCHES } from "../lib/ats.js";
+import { BOARDS, nomDeLEntreprise, boardsDuMarche } from "../lib/boards.js";
 
 // Les formes relevees sur de vrais tableaux le 6 octobre 2026.
 const REPONSES = {
@@ -126,7 +126,68 @@ export async function run() {
     failures.push("le nom lisible de monzo n'est pas renseigne : la liste affichera un identifiant");
   }
 
-  // --- 6. UN TABLEAU MUET NE CASSE PAS LA RECHERCHE ---------------------
+  // --- 6. REPONDRE N'EST PAS APPARTENIR --------------------------------
+  //
+  // Un identifiant d'ATS est mondial et court, donc il se partage. Les deux
+  // chaines ci-dessous sont celles qu'on a vraiment lues le 6 octobre 2026
+  // en devinant des noms d'entreprises londoniennes : `bbc.recruitee.com`
+  // publie a Mechelen, en Belgique, et `web.jobs.personio.com` a Munich.
+  // Les deux avaient repondu avec des postes, et la regle "une ligne ecrite
+  // est une ligne qui a repondu" les aurait inscrites comme la BBC et comme
+  // une universite de Londres.
+  const usurpateurs = [
+    ["Mechelen, Vlaams Gewest, Belgium", "bbc.recruitee.com, qui n'est pas la BBC"],
+    ["M\u00fcnchen", "web.jobs.personio.com, qui n'est pas a Londres"],
+    ["Salt Lake City", "un tableau americain"],
+  ];
+  for (const [lieu, quoi] of usurpateurs) {
+    if (dansLeMarche(lieu, "gb")) {
+      failures.push(
+        "\"" + lieu + "\" passe pour du marche britannique : " + quoi + " entrerait au registre.\n" +
+        "      Le filtre par lieu est la seule chose qui distingue un homonyme d'une entreprise."
+      );
+    }
+  }
+  for (const lieu of ["London, UK", "Manchester", "Remote, England", "Edinburgh, Scotland", "United Kingdom"]) {
+    if (!dansLeMarche(lieu, "gb")) {
+      failures.push("\"" + lieu + "\" est refuse du marche britannique : de vraies entreprises seraient perdues");
+    }
+  }
+  // Un marche inconnu ne doit rien filtrer : sinon ajouter un pays au
+  // registre viderait sa recherche en silence, et rien ne le dirait.
+  if (!dansLeMarche("Sao Paulo", "br")) {
+    failures.push("un marche absent de MARCHES filtre tout : la recherche se vide sans le dire");
+  }
+  if (Object.keys(MARCHES).length < 4) failures.push("MARCHES ne couvre presque aucun pays");
+
+  // --- 7. UN CHAMP AJOUTE NE RETIRE PERSONNE ----------------------------
+  //
+  // Les quarante-neuf premieres lignes n'ont pas de marche. Si le filtre les
+  // ecartait, la recherche d'hier rendrait moins que celle d'avant-hier, et
+  // c'est exactement le genre de regression qu'aucun ecran ne montre.
+  const sansMarche = BOARDS.filter((b) => !b.marche);
+  for (const code of ["gb", "fr", "us", "zz"]) {
+    const retenus = boardsDuMarche(code);
+    for (const b of sansMarche) {
+      if (!retenus.some((x) => x.slug === b.slug)) {
+        failures.push(b.slug + " disparait de la recherche " + code
+          + " alors que sa ligne ne declare aucun marche");
+        break;
+      }
+    }
+  }
+  const gb = boardsDuMarche("gb");
+  if (BOARDS.some((b) => b.marche === "fr") && gb.some((b) => b.marche === "fr")) {
+    failures.push("un tableau declare francais est lu par une recherche britannique : le marche ne filtre rien");
+  }
+  for (const b of BOARDS) {
+    if (b.marche && !MARCHES[b.marche]) {
+      failures.push(b.slug + ' porte le marche "' + b.marche + '", que dansLeMarche ne connait pas :'
+        + " sa ligne ne sera jamais filtree sur le lieu");
+    }
+  }
+
+  // --- 8. UN TABLEAU MUET NE CASSE PAS LA RECHERCHE ---------------------
   //
   // Une entreprise change d'ATS, et son identifiant ne repond plus. Si cette
   // lecture levait, les quarante-huit autres seraient perdues avec elle.
@@ -138,8 +199,9 @@ export async function run() {
   if (!inconnu.erreur) failures.push("un ATS inconnu n'est pas refuse");
 
   if (!failures.length) {
-    console.log("      " + BOARDS.length + " pages carriere verifiees, six ATS lus dans leur forme reelle, "
-      + "et la comptabilite reste hors des resultats");
+    console.log("      " + BOARDS.length + " pages carriere verifiees ("
+      + boardsDuMarche("gb").length + " pour le marche britannique), six ATS lus dans leur forme reelle, "
+      + "et ni la comptabilite ni les homonymes n'entrent dans les resultats");
   }
   return failures;
 }

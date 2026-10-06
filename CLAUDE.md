@@ -177,6 +177,100 @@ que dans un navigateur.
 `tests/the-extension-fills-the-form.mjs` tient les deux sens, la case du CV
 et celles qui n'en sont pas, et verifie que le formulaire n'est pas parti.
 
+Le registre des pages carriere se fabrique, et il ne tient pas dans une
+requête. Les offres qui ne sont sur aucun site d'emploi sont servies en JSON
+public par les six grands ATS : lire un tableau est trivial, savoir qu'il
+existe ne l'est pas, et c'est la seule part de cette fonctionnalité qui coûte
+du temps à un concurrent. `scripts/trouver-des-tableaux.mjs` prend donc les
+noms chez Wikidata, qui rend les entreprises par siège social avec leur site
+officiel, sans clé : 1201 pour Londres en une seconde avec le prédicat direct
+`wdt:P159` (le chemin transitif `wdt:P131*`, « dans le Grand Londres », met
+24 secondes pour cinquante lignes). Deux méthodes, parce qu'aucune ne suffit :
+deviner l'identifiant depuis le nom et le domaine (environ 40 %), et lire la
+page carrière pour y trouver le lien vers l'ATS (3 sur 12 mesuré, parce que
+beaucoup de ces pages chargent leur tableau en JavaScript). Elles ne trouvent
+pas les mêmes : la première rate `octopus.energy`, qui est `octoenergy` chez
+Lever, la seconde rate Monzo, dont le tableau Greenhouse s'appelle bien
+`monzo`.
+
+**Répondre n'est pas appartenir, et c'est la seule leçon de la journée.** Un
+identifiant d'ATS est mondial et court, donc il se partage. Une première
+passe a écrit 56 lignes sur la règle « une ligne écrite est une ligne qui a
+répondu », et elles étaient presque toutes fausses : `bbc.recruitee.com` est
+une société belge de Mechelen, `web.jobs.personio.com` est à Munich,
+`london` était l'ambassade de Serbie, `amazon` était Book Depository, `fr`
+était Nickelodeon. Il a fallu les retirer une par une.
+
+Deux filtres les arrêtent, et les deux ont été mesurés le 6 octobre 2026.
+
+Le premier est le **lieu des postes ouverts**. Une ligne entre au registre
+avec le marché pour lequel elle a été cherchée (`marche`), et seulement si un
+poste ouvert y est. Une entreprise londonienne qui n'embauche ce jour-là qu'à
+Berlin est donc refusée : c'est un manque assumé, elle ne rendrait rien à une
+recherche sur Londres de toute façon. Sur 1199 noms londoniens, ce filtre a
+écarté 56 tableaux qui avaient répondu.
+
+Le second est **le nom que le tableau donne de lui-même**. Wikidata rend
+l'article, pas l'employeur : « BBC Radio 2 » pour la BBC, « Photobox » pour
+ce qui s'appelle aujourd'hui Storio group. Les six ATS déclarent tous
+l'employeur, Greenhouse sur `/v1/boards/<slug>`, Recruitee sur chaque offre,
+les quatre autres dans le titre de la page du tableau (« ClearBank Jobs »,
+« Jobs at ECFR »). Un tableau qui ne sait pas dire de qui il est n'entre
+pas : `lloydsbank.jobs.personio.com` et `arsenalfc.jobs.personio.com`
+répondent « Jobs at » avec un nom vide, et le premier publie un poste de SEO
+et un stage de réseaux sociaux. Ce n'est pas la banque Lloyds. Un intitulé
+faux sur une carte d'offre est pire qu'une carte absente : la personne
+clique et découvre un autre employeur, sur un produit dont toute la promesse
+est la crédibilité.
+
+Résultat de la passe londonienne : **21 tableaux gardés sur 1199 noms
+essayés, 2 %**, 56 écartés sur le lieu, 2 sur le nom, et 7 renommés par leur
+propre tableau. Le registre passe de 49 à 70 lignes. Le rendement dit
+surtout que Wikidata par ville est la mauvaise liste de départ, pleine
+d'ambassades, de clubs de football et de collèges ; filtrée par secteur elle
+rend de vraies entreprises de technologie, mais seulement trois cents pour
+le Royaume-Uni entier.
+
+Les quarante-neuf premières lignes n'ont pas de marché et sont essayées pour
+tous, parce qu'un champ ajouté ne doit jamais retirer une ligne d'une
+recherche qui la trouvait hier.
+
+**Les listes qui iraient au volume ne sont pas atteignables depuis le
+serveur**, mesuré le même jour : l'index Common Crawl rend 504 en dix
+secondes, les moteurs de recherche répondent 202 ou coupent la connexion, et
+les sitemaps de Greenhouse, Lever et Ashby sont 301, 404 ou du HTML vide.
+Ce qui reste, et qui vaut mieux que tout ça : **les agrégateurs nomment
+l'employeur sur chaque annonce**, et ce sont exactement les entreprises qui
+embauchent dans le marché de la personne aujourd'hui.
+`scripts/trouver-des-tableaux.mjs --agregateur` les reprend, donc le
+registre grandit avec l'usage au lieu d'une liste recopiée. La même clé
+gratuite ouvre les deux.
+
+**Et la lecture est devenue un index, pas un cache.** La première version
+lisait les cinquante tableaux dès que le cache de quinze minutes expirait,
+dix en vol, et tenait dans les trente secondes de la fonction. À cinq cents,
+elle ne tient plus : la route dépasse le délai et rend une liste vide, ce qui
+se lit comme « aucune offre » et non comme une panne. Donc l'inverse : chaque
+recherche sert l'index entier et rafraîchit au passage les tableaux les plus
+vieux, dans un budget de sept secondes. Le coût par recherche est borné
+quelle que soit la taille du registre, et la réponse porte le compte
+(`index.lus` sur `index.tableaux`) que l'écran affiche, parce qu'une liste
+courte veut dire deux choses très différentes et qu'elles se lisent pareil.
+
+**Le plafond que la personne voyait n'était pas l'index, c'était vingt.**
+Adzuna et Reed étaient appelés avec vingt résultats de la première page, et
+jamais la suivante. Ils en ont des centaines de milliers derrière la même
+requête. La recherche se pagine donc, cinquante par page (le maximum
+d'Adzuna), les sources annoncent leur total (`count`, `totalResults`) et
+l'écran écrit « 50 sur 64 000 » avec un bouton qui ouvre la suite. Les pages
+carrière ne se paginent pas : l'index rend tout ce qu'il a d'un coup, et les
+redemander page deux les renverrait à l'identique.
+
+Rien de tout ça ne fait des millions d'offres sans les clés : sans
+`ADZUNA_APP_ID`, `ADZUNA_APP_KEY` et `REED_API_KEY`, la recherche n'a que les
+pages carrière, et un registre de pages carrière ne sera jamais un
+agrégateur. `/diagnostic` le dit, point 8.
+
 Le chiffre du panneau se compte. `match_score` etait un champ libre du
 schema : le modele le remplissait comme il le sentait, rien ne le calculait,
 rien ne le verifiait, et deux passages sur le meme couple annonce/CV ne
