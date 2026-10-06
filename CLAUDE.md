@@ -420,6 +420,45 @@ refusal is tested before the offer, like sponsorship before right to work in
 `extension/champs.js`. And the level is read from the title only, because
 every ad says "senior stakeholders" and "report to the Head of".
 
+**The visa is the requirement no job site can sieve, and the one that costs
+the most.** Someone who needs sponsorship burns most of their applications on
+employers who were never going to give it, and finds out weeks later or never.
+It is a sentence in the prose and never a field, so no job board filters on
+it: the same reason the required language earns its line, and a far bigger
+payoff in London.
+
+What it can honestly say is narrower than "will sponsor". An employer that
+sponsors usually says nothing, because it is not a selling point to most
+readers; an employer that will not says so, to stop the applications. So
+silence here is genuinely undecided, which puts this filter under the rule
+above and not under the one below it: `sponsorship: "possible"` deletes the
+ads that ruled sponsorship OUT, keeps the silent ones and counts them, and the
+screen reads "not ruled out", never "sponsors". Promising a sponsor we cannot
+know about is the one kind of invention this product cannot afford.
+
+**And "sponsorship" is a sales word before it is an immigration word.** On the
+account manager ad this repository keeps testing with, it means money:
+sponsorship packages, event sponsorship revenue. Employers also sponsor
+qualifications and charities, and "we do not sponsor individual charity
+requests" is shaped exactly like a refusal, so reading it as one would DELETE
+that job. Nothing is read as a stance unless the ad mentions immigration
+somewhere, and a commercial use next to the word refuses it outright. Two
+further traps, both measured: `\bvisa\b` does not match "visas", so "we cannot
+sponsor work visas", the commonest refusal there is, was read as saying
+nothing at all; and a loose "no" within forty characters turned "there is no
+doubt we will sponsor the right candidate" into a refusal, which deletes
+exactly the employer the filter exists to find. The refusal is tested before
+the offer, for the third time in this repository.
+
+**The filter shipped once doing nothing.** It appeared in the requirements,
+the person set it, and `searchParams` never carried it, because that function
+named its filters in a list written out by hand: a control that changes
+nothing, with nothing on screen saying so. The list now comes from `ENUMS`, so
+the next filter added cannot be left behind, and
+`tests/a-sentence-is-a-search.mjs` walks every requirement from the screen to
+the route and back. Found by driving the real screen and reading the query
+string, not by a suite.
+
 **A filter that cannot decide does not exclude.** Half of ads do not state a
 salary. If a floor dropped them, asking for 50,000 would empty the list of its
 best offers with nothing saying so, and that is the silent failure this

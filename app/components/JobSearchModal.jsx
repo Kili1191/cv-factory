@@ -102,10 +102,14 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     notMeasured: (n) => (n === 1
       ? "1 ad says too little to measure, and keeps its source's order"
       : n + " ads say too little to measure, and keep their source's order"),
+    noSponsorship: (n) => (n === 1
+      ? "1 of these does not say whether it sponsors a visa"
+      : n + " of these do not say whether they sponsor a visa"),
     nothing: "No requirement set. Every offer for this title and place.",
     labels: {
       workplace: "Place of work", language: "The job requires", contract: "Contract",
       level: "Level", salaryFrom: "Salary from", postedWithin: "Posted within",
+      sponsorship: "Visa sponsorship",
     },
     values: {
       workplace: [["", "any"], ["remote", "remote"], ["hybrid", "hybrid"], ["onsite", "on site"]],
@@ -117,6 +121,10 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       level: [["", "any"], ["junior", "junior"], ["mid", "mid"],
         ["senior", "senior"], ["lead", "lead and above"]],
       postedWithin: [["0", "any time"], ["3", "3 days"], ["7", "a week"], ["30", "a month"]],
+      // "not ruled out" and not "sponsors", because that is all the ad says.
+      // Promising a sponsor we cannot know about would be the one kind of
+      // invention this product cannot afford.
+      sponsorship: [["", "any"], ["possible", "not ruled out"]],
     },
   } : {
     eyebrow: "RECHERCHE D'OFFRES", title: "Trouver un poste",
@@ -145,10 +153,14 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     notMeasured: (n) => (n === 1
       ? "1 annonce en dit trop peu pour etre mesuree, elle garde l'ordre de sa source"
       : n + " annonces en disent trop peu pour etre mesurees, elles gardent l'ordre de leur source"),
+    noSponsorship: (n) => (n === 1
+      ? "1 d'entre elles ne dit pas si elle parraine un visa"
+      : n + " d'entre elles ne disent pas si elles parrainent un visa"),
     nothing: "Aucune exigence. Toutes les offres de ce poste a cet endroit.",
     labels: {
       workplace: "Lieu de travail", language: "L'annonce exige", contract: "Contrat",
       level: "Niveau", salaryFrom: "Salaire a partir de", postedWithin: "Publiee depuis",
+      sponsorship: "Parrainage de visa",
     },
     values: {
       workplace: [["", "peu importe"], ["remote", "a distance"], ["hybrid", "hybride"], ["onsite", "sur place"]],
@@ -160,6 +172,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       level: [["", "peu importe"], ["junior", "junior"], ["mid", "confirme"],
         ["senior", "senior"], ["lead", "lead et au-dela"]],
       postedWithin: [["0", "peu importe"], ["3", "3 jours"], ["7", "une semaine"], ["30", "un mois"]],
+      sponsorship: [["", "peu importe"], ["possible", "pas exclu"]],
     },
   };
 
@@ -381,7 +394,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             background: CreamSoft, border: "0.5px solid " + Hairline,
             display: "grid", gap: 10, fontFamily: Sans,
           }}>
-            {["workplace", "language", "contract", "level", "postedWithin"].map((key) => (
+            {["workplace", "language", "contract", "level", "sponsorship", "postedWithin"].map((key) => (
               <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5 }}>
                 <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.labels[key]}</span>
                 <select
@@ -444,6 +457,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             : null}
           {undecided.noSalary ? <div>{L.noSalary(undecided.noSalary)}</div> : null}
           {undecided.noDate ? <div>{L.noDate(undecided.noDate)}</div> : null}
+          {undecided.noSponsorship ? <div>{L.noSponsorship(undecided.noSponsorship)}</div> : null}
           {canSortByFit && sortBy === "fit" && fit.unmeasured > 0
             ? <div>{L.notMeasured(fit.unmeasured)}</div> : null}
           {canSortByFit ? (

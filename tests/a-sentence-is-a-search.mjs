@@ -28,6 +28,7 @@
 import {
   passesFilters, countTheUndecided, activeFilters, workplaceKind,
   jobRequiresLanguage, advertisedReach, contractKind, jobLevel, NO_FILTERS,
+  sponsorshipStance,
 } from "../lib/jobFilters.js";
 import {
   filtersFromTheModel, searchParams, filtersFromParams,
@@ -209,6 +210,98 @@ export async function run() {
     }
   }
 
+  // --- 4c. THE VISA, AND WHAT IT CAN HONESTLY SAY ------------------------
+  //
+  // No job site filters on sponsorship, because it is a sentence and never a
+  // field, and someone who needs a visa otherwise burns most of their
+  // applications on employers who were never going to sponsor one.
+  //
+  // What it can say is narrower than "will sponsor": an employer that
+  // sponsors usually says nothing, an employer that will not says so to stop
+  // the applications. So the filter deletes the certain waste of time and
+  // keeps the silent ones, counted.
+  const refuses = [
+    "We are unable to offer visa sponsorship for this role.",
+    "Unfortunately we cannot sponsor work visas at this time.",
+    "No visa sponsorship is available for this position.",
+    "You must have the right to work in the UK without sponsorship.",
+    "Visa sponsorship is not available.",
+    "We do not offer sponsorship. Right to work in the UK required.",
+  ];
+  for (const t of refuses) {
+    if (sponsorshipStance(job("Account Manager", t)) !== "refuses") {
+      failures.push("\"" + t + "\" is not read as ruling sponsorship out");
+    }
+    if (passesFilters(job("x", t), { sponsorship: "possible" })) {
+      failures.push("an ad that rules sponsorship out survives the visa filter: "
+        + "the one thing this filter exists to delete");
+    }
+  }
+  for (const t of [
+    "Visa sponsorship is available for the right candidate.",
+    "We can sponsor skilled worker visas for exceptional applicants.",
+    "We are happy to sponsor a work permit for the right person.",
+    "We offer visa sponsorship and relocation support.",
+  ]) {
+    if (sponsorshipStance(job("Account Manager", t)) !== "offers") {
+      failures.push("\"" + t + "\" is not read as offering sponsorship");
+    }
+  }
+
+  // "Sponsorship" is a sales word before it is an immigration word, and the
+  // trade this repository keeps testing with is account management. An ad
+  // about sponsorship revenue must say NOTHING about visas.
+  const notAboutVisas = [
+    "Own our sponsorship packages and grow event sponsorship revenue. Right to work in the UK required.",
+    "We are a proud sponsor of the London Marathon and a leading brand.",
+    "Sponsorship opportunities across our events portfolio, plus brand partnership deals.",
+    "You will own a portfolio of enterprise accounts and lead renewals.",
+    "Will you require sponsorship to work in the UK?",
+    // Sponsoring is something employers do to qualifications and to charities
+    // too, and both of these are shaped exactly like a visa answer. Only the
+    // absence of any immigration word tells them apart, so these two are the
+    // cases that keep that requirement honest: without it the first reads as
+    // "offers" and the second as "refuses", and the second DELETES the job.
+    "We can sponsor your professional qualifications and your training.",
+    "We do not sponsor individual charity requests from staff.",
+  ];
+  for (const t of notAboutVisas) {
+    const stance = sponsorshipStance(job("Account Manager", t));
+    if (stance !== "") {
+      failures.push("\"" + t.slice(0, 54) + "...\" is read as \"" + stance + "\": "
+        + "a commercial sponsorship, or a form question, is not an employer's visa policy");
+    }
+  }
+
+  // A refusal must never be read out of a sentence that offers, and the "no"
+  // that belongs to another clause must not create one: dropping an employer
+  // who WOULD sponsor is the silent loss, and it is worse than keeping one
+  // who will not.
+  const noDoubt = "There is no doubt we will sponsor the right candidate for a skilled worker visa.";
+  if (sponsorshipStance(job("Account Manager", noDoubt)) === "refuses") {
+    failures.push("\"no doubt we will sponsor\" is read as a refusal: a loose \"no\" near "
+      + "the word deletes exactly the employers this filter is supposed to find.");
+  }
+
+  // Silence passes and is counted, like a missing salary. A filter that
+  // cannot decide does not exclude.
+  const silentOnVisas = job("Account Manager", "You will own a portfolio of enterprise accounts.");
+  if (!passesFilters(silentOnVisas, { sponsorship: "possible" })) {
+    failures.push("an ad that says nothing about visas is dropped: most ads say nothing, "
+      + "so the list would empty with nothing saying why");
+  }
+  const visaCount = countTheUndecided(
+    [silentOnVisas, job("x", refuses[0])], { sponsorship: "possible" });
+  if (visaCount.noSponsorship !== 1) {
+    failures.push("the count of ads that say nothing about sponsorship is "
+      + visaCount.noSponsorship + " instead of 1: without it the person believes "
+      + "every ad left will sponsor.");
+  }
+  if (!activeFilters({ ...NO_FILTERS, sponsorship: "possible" }).includes("sponsorship")) {
+    failures.push("the visa filter is not counted as active: the badge would not show it, "
+      + "and the total would claim to be exact on a requirement no source can sieve.");
+  }
+
   // --- 5. WHAT THE MODEL RETURNS IS PULLED BACK INTO RANGE ---------------
   const { filters, understood } = filtersFromTheModel({
     what: " Account Manager ", where: "London", country: "GB",
@@ -235,6 +328,27 @@ export async function run() {
   if (params.get("page") !== "3") failures.push("the page is not passed on");
   if (params.get("language") !== "french") failures.push("the required language is not passed to the route");
   if (params.has("workplace")) failures.push("an empty filter is passed on: the route would read it as a requirement");
+
+  // EVERY REQUIREMENT SURVIVES THE ROUND TRIP TO THE ROUTE
+  //
+  // The screen holds the requirement, the query string carries it, the route
+  // reads it back. A filter that drops out anywhere along there is a control
+  // the person sets and that changes nothing, and nothing on screen says so.
+  // The visa filter shipped exactly that way for the length of one probe,
+  // because `searchParams` named its filters in a list written by hand.
+  const everyRequirement = {
+    ...NO_FILTERS, what: "account manager", where: "London", country: "gb",
+    workplace: "hybrid", language: "french", contract: "permanent",
+    level: "senior", sponsorship: "possible", salaryFrom: 60000, postedWithin: 7,
+  };
+  const roundTrip = filtersFromParams(new URLSearchParams(searchParams(everyRequirement, 1)));
+  for (const key of Object.keys(everyRequirement)) {
+    if (String(roundTrip[key]) !== String(everyRequirement[key])) {
+      failures.push("the requirement \"" + key + "\" does not survive the trip to the route: "
+        + "set to \"" + everyRequirement[key] + "\", it arrives as \"" + roundTrip[key] + "\". "
+        + "The person sets a control that changes nothing.");
+    }
+  }
   const back = filtersFromParams(params);
   for (const key of ["what", "where", "country", "language", "contract", "salaryFrom"]) {
     if (String(back[key]) !== String(filters[key])) {
