@@ -78,6 +78,7 @@ const SUITES = [
   ["a sentence is a search", "./a-sentence-is-a-search.mjs"],
   ["the best fit comes first", "./the-best-fit-comes-first.mjs"],
   ["applications sent is the number", "./applications-sent-is-the-number.mjs"],
+  ["a shared link opens the door", "./a-shared-link-opens-the-door.mjs"],
   ["a link is a door", "./a-link-is-a-door.mjs"],
   ["the extension fills the form", "./the-extension-fills-the-form.mjs"],
   ["a breakage reaches the owner", "./a-breakage-reaches-the-owner.mjs"],

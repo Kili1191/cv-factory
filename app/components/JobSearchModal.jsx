@@ -22,6 +22,7 @@ import {
 } from "../../lib/searchFromASentence.js";
 import { NO_FILTERS, activeFilters } from "../../lib/jobFilters.js";
 import { rankByFit, fitKey } from "../../lib/jobFit.js";
+import { shareLink } from "../../lib/shareLink.js";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
@@ -66,6 +67,13 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   // control rather than a silent reorder: an order the person cannot switch
   // off is an order they cannot check.
   const [sortBy, setSortBy] = useState("fit");
+  // THE DOOR HAD NO HANDLE ON THE INSIDE
+  //
+  // thenuvi.com/<the ad's address> has opened the app with that ad already
+  // read since the day it shipped, and nothing in the product has ever made
+  // one. A loop only a person who already knew the trick could use is a loop
+  // nobody uses. Keyed by job so one card says "copied" and not all of them.
+  const [shared, setShared] = useState("");
   const [tracked, setTracked] = useState({});
 
   const L = locale === "en" ? {
@@ -95,6 +103,8 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     noSalary: (n) => n + " of these do not state a salary",
     noDate: (n) => n + " of these do not state a date",
     sortFit: "Best fit first", sortSource: "As found",
+    sendLink: "Send as a Nuvi link", linkCopied: "Link copied",
+    linkHere: "Copy this link:",
     // A count, never a mark on its own. The repo settled that once on the
     // match panel: a score nobody can explain is a score nobody should act
     // on, so the card says what was counted and the share only sorts.
@@ -149,6 +159,8 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     noSalary: (n) => n + " d'entre elles n'annoncent pas de salaire",
     noDate: (n) => n + " d'entre elles n'annoncent pas de date",
     sortFit: "Correspondance d'abord", sortSource: "Ordre des sources",
+    sendLink: "Envoyer en lien Nuvi", linkCopied: "Lien copie",
+    linkHere: "Copie ce lien :",
     fitCount: (p, d) => d + " expressions dans l'annonce, " + p + " dans ton CV",
     notMeasured: (n) => (n === 1
       ? "1 annonce en dit trop peu pour etre mesuree, elle garde l'ordre de sa source"
@@ -294,6 +306,10 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   // whole list is ranked in a few milliseconds and costs nothing per search.
   // Keyed on the list, so turning a page re-ranks what has accumulated
   // instead of only the slice that just arrived.
+  // The product's own address as this browser knows it: a link built on a
+  // preview deployment has to open that deployment, and one built in the test
+  // harness must not send anybody to production.
+  const origin = typeof window === "undefined" ? "" : window.location.origin;
   const fit = useMemo(() => rankByFit(cv, jobs), [cv, jobs]);
   // The sort only exists if something can be sorted. A control that reorders
   // nothing, on a search run before a CV was imported, is a control that
@@ -533,12 +549,47 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             }}
           >{tracked[job.source + job.id] ? L.tracked : L.track}</button>
 
-          {job.url && (
-            <a href={job.url} target="_blank" rel="noopener noreferrer" style={{
-              display: "block", textAlign: "center", marginTop: 7,
-              fontSize: 12, color: InkMuted, textDecoration: "none",
-            }}>{L.open}</a>
-          )}
+          <div style={{
+            display: "flex", gap: 14, justifyContent: "center",
+            alignItems: "center", marginTop: 7, flexWrap: "wrap",
+          }}>
+            {job.url && (
+              <a href={job.url} target="_blank" rel="noopener noreferrer" style={{
+                fontSize: 12, color: InkMuted, textDecoration: "none",
+              }}>{L.open}</a>
+            )}
+            {shareLink(job.url, origin) ? (
+              <button
+                type="button"
+                data-nuvi="partager-offre"
+                onClick={async () => {
+                  const lien = shareLink(job.url, origin);
+                  try {
+                    await navigator.clipboard.writeText(lien);
+                    setShared(fitKey(job, 0));
+                  } catch {
+                    // The clipboard is refused in plenty of places, and a
+                    // button that silently does nothing is the failure this
+                    // repo knows best. So the link comes out on screen and
+                    // the person copies it themselves.
+                    setShared("manuel:" + fitKey(job, 0));
+                  }
+                }}
+                style={{
+                  ...B({
+                    padding: 0, minHeight: 0, background: "none", border: "none",
+                    fontFamily: Sans, fontSize: 12, color: InkMuted,
+                    textDecoration: "underline", cursor: "pointer",
+                  }),
+                }}
+              >{shared === fitKey(job, 0) ? L.linkCopied : L.sendLink}</button>
+            ) : null}
+          </div>
+          {shared === "manuel:" + fitKey(job, 0) ? (
+            <div style={{ marginTop: 6, fontSize: 11.5, color: InkMuted, wordBreak: "break-all" }}>
+              {L.linkHere} {shareLink(job.url, origin)}
+            </div>
+          ) : null}
         </div>
       ))}
 

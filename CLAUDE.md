@@ -130,6 +130,30 @@ by resolved address, and at every redirect: a public page that redirects to
 catch-all, an address that is not one returns the 404 it used to.
 `tests/a-link-is-a-door.mjs`.
 
+**And the door had no handle on the inside.** That link has worked since the
+day it shipped, and the paragraph above says in its own words that it is
+shareable. Nothing in the product has ever produced one: the loop could only
+be used by somebody who already knew the trick, which is nobody. The
+competitor grows through 73 search pages, all under `/remote/`, which needs
+Google's permission and a year; this needs one person to send one job to one
+friend, which happens in every group chat every day. What was missing was a
+link worth sending, and a recipient who lands in a tool that has already read
+the ad instead of on a home page asking them to sign up.
+
+`lib/shareLink.js` builds it, and refuses everything the door would refuse,
+one step earlier: a private host, a loopback, the cloud metadata address, an
+address a browser cannot open as a page, Nuvi's own host. A button that makes
+a link which dies on somebody else's screen is worse than no button, because
+neither of them can see why. It takes the product's address from the browser
+rather than hard coding it, so a link built on a preview opens that preview
+and one built by the harness never sends anyone to production.
+`tests/a-shared-link-opens-the-door.mjs` hands every link it builds to
+`adresseDepuisLeChemin`, the door's own parser, so the two cannot drift apart.
+A trailing slash is the one thing that cannot survive, and that is the router,
+which drops the empty last segment before the parser ever sees it: harmless,
+since the boards serve both forms or redirect, and the door follows redirects
+with its guard at every hop.
+
 The extension fills the form, and never submits it. Applying a hundred times
 is not a hundred decisions, it is the same twenty boxes typed a hundred times:
 first name, surname, email, phone, city, LinkedIn. That is exactly what the
