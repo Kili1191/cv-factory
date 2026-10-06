@@ -101,8 +101,20 @@ export async function run() {
     // Et comme pour les comptes : le nom exact de la variable, pas "la
     // configuration". Sans source d'offres et sans Stripe, ce sont ces
     // noms-la qu'il faut taper dans Vercel.
+    // LA RECHERCHE N'EST PLUS JAMAIS "NON CONFIGUREE", ET LE CONTROLE RESTE
+    //
+    // Depuis que les pages carriere sont une source, elles repondent sans
+    // cle : l'etat "aucune source" n'existe plus. La variable reste utile,
+    // parce que les agregateurs couvrent les employeurs sans ATS, donc la
+    // page doit toujours la NOMMER tant qu'elle est absente. Relacher cette
+    // assertion au lieu de la deplacer aurait fait disparaitre le seul
+    // endroit qui dit quoi taper dans Vercel.
     if (!/ADZUNA_APP_ID/.test(text)) {
-      failures.push("la page ne nomme pas ADZUNA_APP_ID quand aucune source d'offres ne repond");
+      failures.push(
+        "la page ne nomme pas ADZUNA_APP_ID alors qu'aucun agregateur n'est configure.\n"
+        + "      Les pages carriere repondent seules : utile, et insuffisant pour les "
+        + "employeurs sans ATS."
+      );
     }
     if (!/SUPABASE_SERVICE_ROLE_KEY/.test(text)) {
       failures.push("la page ne nomme pas SUPABASE_SERVICE_ROLE_KEY quand le paiement est absent");

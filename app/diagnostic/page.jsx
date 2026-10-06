@@ -52,11 +52,20 @@ function Verdict({ state, title, detail, fix }) {
   // Trois etats seulement, et le troisieme compte autant que les autres :
   // afficher "A CORRIGER" en rouge sur un point qu'on ne peut PAS corriger
   // envoie chercher une panne la ou il n'y en a pas.
+  //
+  // Un quatrieme est arrive avec les pages carriere : ca marche, et il
+  // manque quelque chose. La recherche d'offres repond desormais sans aucune
+  // cle, donc elle n'est jamais "a corriger" ; les agregateurs restent utiles
+  // pour les employeurs sans ATS, donc leurs variables doivent encore se
+  // lire quelque part. Les ranger en vert muet les effacerait, les ranger en
+  // rouge enverrait chercher une panne qui n'existe pas.
   const color =
-    state === "ok" ? "#2f7d4f" : state === "ko" ? "#b3261e" : MUTED;
+    state === "ok" ? "#2f7d4f" : state === "ko" ? "#b3261e"
+    : state === "partiel" ? "#9a6b00" : MUTED;
   const mark =
     state === "ok" ? "OK"
     : state === "ko" ? "A CORRIGER"
+    : state === "partiel" ? "INCOMPLET"
     : state === "blocked" ? "EN ATTENTE"
     : "…";
   return (
@@ -77,11 +86,13 @@ function Verdict({ state, title, detail, fix }) {
               wordBreak: "break-word",
             }}>{detail}</div>
           ) : null}
-          {state === "ko" && fix ? (
+          {(state === "ko" || state === "partiel") && fix ? (
             <div style={{
               fontSize: 13, marginTop: 8, padding: "10px 12px",
-              background: "rgba(179,38,30,.06)", borderRadius: 8,
-              borderLeft: "3px solid #b3261e", lineHeight: 1.5,
+              background: state === "ko" ? "rgba(179,38,30,.06)" : "rgba(154,107,0,.07)",
+              borderRadius: 8,
+              borderLeft: "3px solid " + (state === "ko" ? "#b3261e" : "#9a6b00"),
+              lineHeight: 1.5,
             }}>{fix}</div>
           ) : null}
         </div>
@@ -153,8 +164,26 @@ export default function Diagnostic() {
       .then((j) => {
         if (!alive) return;
         const sources = (j && j.sources) || [];
+        // LES PAGES CARRIERE NE DEMANDENT AUCUNE CLE, DONC CE CONTROLE A CHANGE DE SENS
+        //
+        // La recherche ne peut plus etre "non configuree" : lib/boards.js lit
+        // les pages carriere des entreprises sans cle, et c'est la meilleure
+        // source du produit. Ce que ce controle doit encore dire, c'est ce
+        // qui MANQUE : les agregateurs couvrent des employeurs qui n'ont pas
+        // d'ATS, et leurs cles restent utiles. Les nommer quand elles sont
+        // absentes, sans transformer leur absence en panne.
+        const agregateurs = sources.filter((x) => x !== "career pages");
         if (j && j.configured) {
-          setOffres({ state: "ok", detail: `sources actives : ${sources.join(", ") || "aucune nommee"}` });
+          setOffres({
+            state: agregateurs.length ? "ok" : "partiel",
+            detail: `sources actives : ${sources.join(", ") || "aucune nommee"}`,
+            fix: agregateurs.length ? "" :
+              "Les pages carriere repondent, et elles seules. Les agregateurs "
+              + "couvrent les employeurs sans ATS : Adzuna est gratuit "
+              + "(developer.adzuna.com), puis Vercel > Environment Variables > "
+              + "ADZUNA_APP_ID et ADZUNA_APP_KEY. Pour le Royaume-Uni, "
+              + "REED_API_KEY en plus.",
+          });
         } else {
           setOffres({
             state: "ko",
