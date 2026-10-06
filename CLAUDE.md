@@ -224,6 +224,18 @@ refuses, and only then does a city name count. State codes are tested in upper
 case, as they are written: without case, "ma", "in" and "or" would appear in
 legitimate locations.
 
+**And the state written out in full was never covered.** The two letter codes
+caught "Birmingham, AL". They did nothing for "Sheffield, Ohio", and that is
+how Carvana, a used car company in Tempe Arizona with 1831 American jobs,
+entered the British registry on 6 October 2026: one of its listings is in
+Sheffield, Ohio. Seven of eight American cities sharing a British name passed
+the same way, "Birmingham, Alabama", "Manchester, New Hampshire", "Reading,
+Pennsylvania", "Cambridge, Massachusetts" among them. The comma is what makes
+the fix safe: "City, State" is the American form, so a state name only counts
+after one, and a British town whose county follows the comma is untouched.
+Matching the bare word would have thrown away a real place to catch a foreign
+one.
+
 The price of that order is a multi-site string written with commas: the ECFR
 role open in "Berlin,Madrid,Paris,Sofia,London,Rome,Warsaw,Washington DC" is
 refused although it is also in London. That is the right side of the trade: an
@@ -251,6 +263,13 @@ is worth more than any of those: **aggregators name the employer on every
 ad**, and those are exactly the companies hiring in the person's market today.
 `scripts/find-job-boards.mjs --aggregator` takes them, so the registry grows
 with use rather than from a list copied out. The same free key opens both.
+
+**And the Hacker News seam is now mined out.** Re-run on 6 October 2026 after
+the first pass: 2412 pairs tried, 563 answered with no British job, and
+**one** new board, which was Carvana and American. The source that gave 172
+boards gives nothing a second time, because it is a fixed archive and the
+first pass took what was in it. Growing the registry further means a source
+that did not exist yesterday, not another sweep of this one.
 
 Then Hacker News beat all of it. "Ask HN: Who is hiring?" has run every month
 since 2011, and on 6 October 2026 that was 186 threads and 119,808 comments,

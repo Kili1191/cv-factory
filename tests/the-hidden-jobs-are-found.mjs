@@ -70,6 +70,32 @@ export async function run() {
     if (p.company !== "Test Ltd") failures.push(name + ": the company is lost");
   }
 
+  // --- 1a. AN AMERICAN STATE WRITTEN OUT IN FULL ------------------------
+  //
+  // The two letter codes caught "Birmingham, AL". They did nothing for
+  // "Sheffield, Ohio", which is how Carvana, a used car company in Tempe
+  // Arizona with 1831 American jobs, entered the British registry: one of its
+  // listings is in Sheffield, Ohio. Seven of eight American cities sharing a
+  // British name passed the same way.
+  for (const loc of ["Sheffield, Ohio", "Birmingham, Alabama", "Manchester, New Hampshire",
+    "Reading, Pennsylvania", "Cambridge, Massachusetts", "Bristol, Tennessee",
+    "Oxford, Mississippi", "Seattle, Washington"]) {
+    if (inTheMarket(loc, "gb")) {
+      failures.push("\"" + loc + "\" counts as British. An American board in the "
+        + "registry costs more than a missing organisation: the person clicks and "
+        + "finds an employer on the wrong continent.");
+    }
+  }
+  // And the rule must not eat the real ones. The state name is tested only
+  // after a comma, so a British town whose county follows the comma is safe.
+  for (const loc of ["London, United Kingdom", "Sheffield, UK", "Cambridge, England",
+    "Reading, Berkshire", "Manchester", "Birmingham, West Midlands"]) {
+    if (!inTheMarket(loc, "gb")) {
+      failures.push("\"" + loc + "\" no longer counts as British: the guard against "
+        + "American namesakes has started refusing the places it exists to keep.");
+    }
+  }
+
   // --- 1b. WHAT THE CUT WOULD HAVE THROWN AWAY --------------------------
   //
   // The description is cut to 1200 characters for transport, and the sentence
