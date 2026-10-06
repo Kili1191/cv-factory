@@ -255,6 +255,23 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       +"- Garde chaque bullet sur une ligne de texte simple, avec un verbe d'action"
       +" et un chiffre quand il existe. Ni tableau, ni colonne, ni caractere"
       +" decoratif : le CV doit rester lisible par une machine.\n"
+      // LE COMMENT, QUAND LA PERSONNE L'A DEJA ECRIT
+      //
+      // La formule de Laszlo Bock, l'ancien patron des RH de Google :
+      // "Accomplished X as measured by Y, by doing Z". Le Z est ce qu'on
+      // demande en entretien : un chiffre se recite, une methode se raconte.
+      //
+      // Deux gardes, et elles comptent autant que la consigne. On ne
+      // l'invente jamais, parce qu'une methode fabriquee est un piege a la
+      // premiere question ; et on ne l'ajoute pas partout, parce qu'une
+      // ligne de plus par puce fait deborder la page.
+      +"- LE COMMENT : quand le CV source dit par quel moyen un resultat a ete"
+      +" obtenu, garde-le dans la puce (\"...en resserrant les pertes\","
+      +" \"...through structured pipeline management\"). C'est ce qu'un"
+      +" recruteur demande en entretien. N'en invente JAMAIS un : si le"
+      +" materiau ne dit pas comment, la puce s'arrete au resultat. Ne"
+      +" l'ajoute pas a toutes les puces non plus, le CV doit tenir sur sa"
+      +" page.\n"
       // Forme garantie par SCHEMA_MATCH : le gabarit qui tenait ici
       // decrivait l'analyse ET un CV complet, recopie a la main, alors que
       // l'API impose desormais les deux.

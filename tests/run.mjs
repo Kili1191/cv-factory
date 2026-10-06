@@ -108,6 +108,7 @@ const SUITES = [
   ["a photo of a CV is a CV", "./a-photo-of-a-cv-is-a-cv.mjs"],
   ["an ordinary CV costs nothing to import", "./an-ordinary-cv-costs-nothing.mjs"],
   ["the diagnosis costs nothing and does not move", "./the-diagnosis-costs-nothing.mjs"],
+  ["a bullet says how it was done", "./a-bullet-says-how-it-was-done.mjs"],
   ["an achievement is not a responsibility", "./an-achievement-is-not-a-responsibility.mjs"],
   ["Nuvi does not fill in your figure for you", "./nuvi-does-not-fill-in-your-figure.mjs"],
   ["Nuvi comes and says it to your face", "./nuvi-comes-and-says-it-to-your-face.mjs"],
