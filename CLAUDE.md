@@ -278,6 +278,18 @@ quelle que soit la taille du registre, et la réponse porte le compte
 (`index.lus` sur `index.tableaux`) que l'écran affiche, parce qu'une liste
 courte veut dire deux choses très différentes et qu'elles se lisent pareil.
 
+**Un bouton qui ne fait rien est pire qu'un bouton absent.** Mesuré sur la
+production le 6 octobre 2026, sans aucune clé d'agrégateur : une recherche à
+Londres rendait **800 offres de pages carrière dans une seule réponse**, en
+annonçait 831, et affichait « en voir plus ». La page deux ne rendait rien,
+parce que les pages carrière étaient servies en entier à la première page et
+volontairement absentes des suivantes. Elles se paginent donc comme le
+reste, cinquante par tranche prise dans l'index, et le bouton n'existe que
+s'il y a vraiment une suite. Tourner une page ne relit aucun tableau :
+l'index est déjà en mémoire, et seule la première page le rafraîchit.
+`tests/more-results-means-more-results.mjs` appelle la route directement
+avec `fetch` doublé, parce que le défaut n'apparaît qu'à la page deux.
+
 **Le plafond que la personne voyait n'était pas l'index, c'était vingt.**
 Adzuna et Reed étaient appelés avec vingt résultats de la première page, et
 jamais la suivante. Ils en ont des centaines de milliers derrière la même

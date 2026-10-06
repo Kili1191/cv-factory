@@ -109,8 +109,10 @@ export async function GET(request) {
   const warnings = [];
   const tasks = [];
   // Le total annonce par chaque agregateur, pour que l'ecran puisse dire
-  // "50 sur 64 000" au lieu de "50".
-  let total = 0;
+  // "50 sur 64 000" au lieu de "50". Les agregateurs comptent a part des
+  // pages carriere, parce qu'eux seuls se paginent cote source.
+  let totalAgregateurs = 0;
+  let totalAts = 0;
 
   if (franceTravailConfigured(env)) {
     tasks.push((async () => {
@@ -128,7 +130,7 @@ export async function GET(request) {
         if (res.status === 204) return [];
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        total += combienEnTout(data);
+        totalAgregateurs += combienEnTout(data);
         return franceTravailParse(data);
       } catch (err) {
         warnings.push(`France Travail indisponible (${err.message})`);
@@ -143,7 +145,7 @@ export async function GET(request) {
         const res = await fetch(adzunaUrl(env, { what, where, country, page }));
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        total += combienEnTout(data);
+        totalAgregateurs += combienEnTout(data);
         return adzunaParse(data);
       } catch (err) {
         warnings.push(`Adzuna indisponible (${err.message})`);
@@ -160,7 +162,7 @@ export async function GET(request) {
         });
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        total += combienEnTout(data);
+        totalAgregateurs += combienEnTout(data);
         return reedParse(data);
       } catch (err) {
         warnings.push(`Reed indisponible (${err.message})`);
@@ -171,16 +173,21 @@ export async function GET(request) {
 
   const boards = boardsDuMarche(country);
   let enAttente = 0;
-  // Les pages carriere ne se paginent pas : l'index rend tout ce qu'il a
-  // d'un coup. Les redemander page deux les renverrait a l'identique.
-  if (page === 1) tasks.push((async () => {
+  // LES PAGES CARRIERE SE PAGINENT ICI, PAS A LA SOURCE
+  //
+  // L'index est en memoire : il rend tout ce qu'il a d'un coup. Sur une
+  // recherche large a Londres, c'est 800 offres dans une seule reponse et
+  // 800 cartes a l'ecran. On tranche donc la liste comme une page, et on
+  // dit combien il y en a derriere. Le rafraichissement, lui, n'a lieu
+  // qu'a la premiere page : les suivantes doivent etre instantanees.
+  tasks.push((async () => {
     try {
-      enAttente = await rafraichir(boards, warnings);
+      if (page === 1) enAttente = await rafraichir(boards, warnings);
       const retenus = postesDeLIndex(boards)
         .filter((j) => lieuCorrespond(j.location, where))
         .filter((j) => titreCorrespond(j, what));
-      total += retenus.length;
-      return retenus;
+      totalAts = retenus.length;
+      return retenus.slice((page - 1) * 50, page * 50);
     } catch (err) {
       warnings.push("career pages unavailable (" + (err && err.message) + ")");
       return [];
@@ -216,8 +223,18 @@ export async function GET(request) {
   // la langue de la personne, et le cadre d'avertissement est corail. Un
   // index qui se remplit n'est pas une panne.
 
+  // LE BOUTON N'EXISTE QUE S'IL Y A VRAIMENT UNE SUITE
+  //
+  // La premiere version comparait le total a la page courante, tous
+  // comptes confondus. Sans cle d'agregateur, la recherche a Londres
+  // annonce 831 offres de pages carriere, le bouton s'affichait, et la
+  // page deux ne rendait rien : les pages carriere etaient alors servies
+  // en entier a la premiere page et absentes des suivantes. Un bouton qui
+  // ne fait rien est pire que pas de bouton.
+  const plus = page * 50 < totalAts || page * 50 < totalAgregateurs;
+
   return Response.json({
     jobs: unique, sources, warnings, index: index_etat, configured: true,
-    page, total, plus: unique.length > 0 && total > page * 50,
+    page, total: totalAts + totalAgregateurs, plus,
   });
 }
