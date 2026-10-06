@@ -580,6 +580,24 @@ exceeded 16px (`.vv-foot a` beat `.vv-foot__mark` by one class, and its
 stop at the end of every line. No suite saw any of them: the contrast was
 right, the words were there.
 
+**A test that looks for a button is a test of the button, not of the way out.**
+`tests/a-long-cv-keeps-its-size.mjs` went red for three suites and the product
+was right. It looked for `defauts-raccourcir`, a button the screen stopped
+rendering when the short version began preparing itself as the panel opens:
+clicking "Shorten" meant cutting text without having seen what gets cut, which
+is the blind click that screen exists to remove. On a CV that overflows all
+three of the old markers are absent for good reasons, "correct" because a CV
+that is too long does not get fixed in one click and "download anyway" because
+the rule forbids it, so the suite read a circuit that works as a CV leaving
+truncated in silence, which is the opposite failure. Measured by driving the
+real screen: 510mm, the panel opens, the short version arrives, the person
+keeps it and the PDF is one page holding the fourth job and not the twelfth.
+The suite now asserts the way out rather than the widget: the comparison
+appears, and "Keep" becomes clickable, which only the model's answer can do.
+So an "after" card that stayed empty for ever, the defect that matters, is red
+where before it was invisible, and the proof is that it does go red when the
+auto-prepare is disconnected.
+
 **3. The AI invents nothing, except when it is asked to.** Kilian's rule, on
 25 September 2026: *the AI invents when it is for the CV and when it is asked
 for*. Both conditions count, and it is the second one that holds everything

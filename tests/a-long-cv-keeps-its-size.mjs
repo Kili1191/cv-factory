@@ -125,31 +125,52 @@ async function exporter(browser, cv) {
     return px * 25.4 / 96;
   });
 
-  const out = { hauteurMm, erreurs, panneau: false, quandMeme: false, raccourcir: false,
-    raccourci: false, download: false, raison: null, pdf: null };
+  const out = { hauteurMm, erreurs, panneau: false, quandMeme: false, choixLongueur: false,
+    courtArrive: false, raccourci: false, download: false, raison: null, pdf: null };
 
   const attendreTelechargement = () => page.waitForEvent("download", { timeout: 90_000 })
     .catch((e) => { out.raison = e.message.split("\n")[0]; return null; });
 
-  let attente = attendreTelechargement();
+  const attente = attendreTelechargement();
   await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
   await page.waitForTimeout(1200);
 
-  out.panneau = (await page.locator('[data-nuvi="defauts-corriger"], [data-nuvi="defauts-raccourcir"], [data-nuvi="defauts-quand-meme"]').count()) > 0;
+  // CE QUE "LE CONTROLE A PARLE" VEUT DIRE DEPUIS QUE LA VERSION COURTE SE
+  // PREPARE TOUTE SEULE
+  //
+  // Ce test cherchait un bouton "Raccourcir". Il n'existe plus, et ce n'est
+  // pas une regression : on cliquait un bouton qui coupe du texte sans avoir
+  // vu ce qu'il coupe, exactement le clic a l'aveugle que cet ecran existe
+  // pour supprimer. La version courte part donc des que le panneau s'ouvre,
+  // et la personne choisit entre les deux documents cote a cote. Sur un CV
+  // qui deborde, le panneau parle par `choix-longueur` : les trois anciens
+  // boutons sont tous absents a raison, "corriger" parce qu'un CV trop long
+  // ne se corrige pas d'un clic, "quand meme" parce que la regle l'interdit.
+  // Cherchant trois absences legitimes, le test lisait un circuit qui marche
+  // comme un CV parti coupe en silence, pendant trois suites rouges.
+  out.panneau = (await page.locator('[data-nuvi="defauts-corriger"], [data-nuvi="defauts-raccourcir"],'
+    + ' [data-nuvi="defauts-quand-meme"], [data-nuvi="choix-longueur"]').count()) > 0;
   out.quandMeme = (await page.locator('[data-nuvi="defauts-quand-meme"]').count()) > 0;
-  out.raccourcir = (await page.locator('[data-nuvi="defauts-raccourcir"]').count()) > 0;
+  out.choixLongueur = (await page.locator('[data-nuvi="choix-longueur"]').count()) > 0;
 
-  if (out.raccourcir) {
-    // LE CIRCUIT DU RACCOURCI : le modele repond, le CV change, et le
-    // telechargement suivant part sur une feuille.
-    await page.locator('[data-nuvi="defauts-raccourcir"]').first().click({ timeout: 8_000 });
-    await page.waitForTimeout(2500);
-    out.raccourci = await page.evaluate(() =>
-      (document.getElementById("cv-print") || {}).innerText.includes("Hollybank")
-      && !(document.getElementById("cv-print") || {}).innerText.includes("Northgate"));
-    attente = attendreTelechargement();
-    await page.getByRole("button", { name: /Telecharger/i }).first().click({ timeout: 15_000 });
-    await page.waitForTimeout(1200);
+  if (out.choixLongueur) {
+    // LE CIRCUIT DU RACCOURCI, PAR OU LA PERSONNE PASSE VRAIMENT
+    //
+    // On choisit le document court, puis on le garde. "Garder" reste
+    // desactive tant que le modele n'a pas rendu sa version : c'est donc lui
+    // qui dit qu'elle est arrivee, et une carte "apres" qui resterait vide a
+    // jamais, le defaut qui compte ici, laisse ce bouton desactive.
+    await page.locator('[data-nuvi="choix-apres"]').first().click({ timeout: 8_000 }).catch(() => {});
+    out.courtArrive = await page
+      .waitForSelector('[data-nuvi="choix-garder"]:not([disabled])', { timeout: 30_000 })
+      .then(() => true).catch(() => false);
+    if (out.courtArrive) {
+      await page.locator('[data-nuvi="choix-garder"]').first().click({ timeout: 8_000 });
+      await page.waitForTimeout(1500);
+      out.raccourci = await page.evaluate(() =>
+        (document.getElementById("cv-print") || {}).innerText.includes("Hollybank")
+        && !(document.getElementById("cv-print") || {}).innerText.includes("Northgate"));
+    }
   }
 
   const confirmer = page.getByRole("button", { name: /A4|Standard|Telecharger/i });
@@ -188,12 +209,17 @@ export async function run() {
             + "propose sur un CV qui deborde. Un PDF de deux pages n'est pas "
             + "un choix a offrir : le produit ne le fabrique plus.");
         }
-        if (!r.raccourcir) {
-          failures.push(nom + " (" + h + "mm) : aucun bouton pour raccourcir. "
-            + "On a ferme la porte sans en ouvrir une autre.");
+        if (!r.choixLongueur) {
+          failures.push(nom + " (" + h + "mm) : aucune comparaison des deux "
+            + "longueurs. On a ferme la porte sans en ouvrir une autre.");
+        } else if (!r.courtArrive) {
+          failures.push(nom + " (" + h + "mm) : la version courte n'arrive "
+            + "jamais. \"Garder\" reste desactive, donc la carte \"apres\" est "
+            + "une promesse vide : le panneau dit que le CV deborde et ne "
+            + "laisse aucun moyen d'en sortir.");
         } else if (!r.raccourci) {
-          failures.push(nom + " : apres \"Raccourcir\", le CV a l'ecran n'est "
-            + "pas celui que le modele a rendu.");
+          failures.push(nom + " : apres avoir garde la version courte, le CV a "
+            + "l'ecran n'est pas celui que le modele a rendu.");
         }
       } else if (r.panneau) {
         failures.push(nom + " (" + h + "mm, cas \"" + cas + "\") : le controle "
