@@ -12,7 +12,7 @@
 import {
   franceTravailParse, adzunaParse, reedParse,
   availableSources, adzunaUrl, reedUrl, reedAuthHeader, totalAtTheSource,
-  keysTheServerCanSee, AGGREGATOR_KEYS,
+  keysTheServerCanSee, AGGREGATOR_KEYS, sourceSievesItself, FILTERS_AT_SOURCE,
 } from "../lib/jobSources.js";
 
 const REQUIRED = ["id", "source", "title", "company", "location", "url", "description"];
@@ -153,26 +153,69 @@ export async function run() {
   // that comes back usable, so the three requirements Adzuna understands are
   // sent to it. The three it has no parameter for stay local: sending a guess
   // would narrow the search in a way nothing on screen could explain.
-  const serre = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
+  const adzunaTight = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
     { what: "a", where: "b", country: "gb", page: 1,
       filters: { salaryFrom: 50000, postedWithin: 7, contract: "permanent" } });
-  if (!serre.includes("salary_min=50000")) failures.push("Adzuna: the salary floor is not asked of the source");
-  if (!serre.includes("max_days_old=7")) failures.push("Adzuna: the age is not asked of the source");
-  if (!serre.includes("permanent=1")) failures.push("Adzuna: the contract kind is not asked of the source");
+  if (!adzunaTight.includes("salary_min=50000")) failures.push("Adzuna: the salary floor is not asked of the source");
+  if (!adzunaTight.includes("max_days_old=7")) failures.push("Adzuna: the age is not asked of the source");
+  if (!adzunaTight.includes("permanent=1")) failures.push("Adzuna: the contract kind is not asked of the source");
 
-  const large = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
+  const adzunaWide = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
     { what: "a", where: "b", country: "gb", page: 1,
       filters: { salaryFrom: 0, postedWithin: 0, contract: "internship" } });
   for (const absent of ["salary_min", "max_days_old", "permanent=", "contract=", "part_time"]) {
-    if (large.includes(absent)) {
+    if (adzunaWide.includes(absent)) {
       failures.push("Adzuna: \"" + absent + "\" is sent for a requirement nobody set, which narrows"
         + " the search with nothing on screen to explain it");
     }
   }
   // An internship has no Adzuna flag. Mapping it onto the wrong one would
   // return permanent roles for a search that asked for internships.
-  if (/[?&](permanent|contract|part_time)=1/.test(large)) {
+  if (/[?&](permanent|contract|part_time)=1/.test(adzunaWide)) {
     failures.push("Adzuna: an internship is mapped onto another contract flag");
+  }
+
+  // --- REED TAKES WHAT IT TAKES, AND NOT WHAT IT DOES NOT ------------------
+  //
+  // Documented on reed.co.uk/developers: minimumSalary, permanent, contract,
+  // temp, partTime, fullTime, graduate. No parameter for how old an ad is,
+  // where Adzuna has max_days_old. The two aggregators disagree, which is why
+  // what a source can sieve is declared per source and not as one list.
+  const reedTight = reedUrl({ what: "a", where: "b", page: 1,
+    filters: { salaryFrom: 60000, contract: "permanent", postedWithin: 7 } });
+  if (!reedTight.includes("minimumSalary=60000")) failures.push("Reed: the salary floor is not asked of the source");
+  if (!reedTight.includes("permanent=true")) failures.push("Reed: the contract kind is not asked of the source");
+  if (/maxDaysOld|max_days_old|postedWithin/i.test(reedTight)) {
+    failures.push(
+      "Reed is sent an age parameter it does not document.\n" +
+      "      An unknown parameter is either ignored, which is a silent lie about what\n" +
+      "      was filtered, or an error, which loses the source entirely."
+    );
+  }
+  const reedWide = reedUrl({ what: "a", where: "b", page: 1,
+    filters: { salaryFrom: 0, contract: "internship", postedWithin: 0 } });
+  for (const absent of ["minimumSalary", "permanent", "contract=", "partTime"]) {
+    if (reedWide.includes(absent)) {
+      failures.push("Reed: \"" + absent + "\" is sent for a requirement nobody set");
+    }
+  }
+
+  // The declared table is what decides whether a total can be trusted, so it
+  // has to match what the URL builders actually do.
+  if (!sourceSievesItself("Adzuna", "postedWithin")) failures.push("Adzuna is not credited with the age it does send");
+  if (sourceSievesItself("Reed", "postedWithin")) {
+    failures.push(
+      "Reed is credited with sieving an age it cannot sieve.\n" +
+      "      The total would then claim to count a search Reed never made."
+    );
+  }
+  if (!sourceSievesItself("Reed", "salaryFrom")) failures.push("Reed is not credited with the salary floor it does send");
+  for (const local of ["workplace", "language", "level"]) {
+    for (const src of Object.keys(FILTERS_AT_SOURCE)) {
+      if (sourceSievesItself(src, local)) {
+        failures.push(src + " is credited with sieving \"" + local + "\", which is read from the prose of the ad");
+      }
+    }
   }
 
   // --- WHICH NAMES THE SERVER CAN SEE, AND NEVER A VALUE -------------------

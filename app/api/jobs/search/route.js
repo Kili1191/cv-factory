@@ -12,7 +12,7 @@ import {
   franceTravailConfigured, franceTravailToken, franceTravailParse,
   adzunaConfigured, adzunaUrl, adzunaParse,
   reedConfigured, reedUrl, reedAuthHeader, reedParse,
-  availableSources, totalAtTheSource, keysTheServerCanSee,
+  availableSources, totalAtTheSource, keysTheServerCanSee, sourceSievesItself,
 } from "../../../../lib/jobSources.js";
 import { readABoard, normalise, locationMatches, titleMatches } from "../../../../lib/ats.js";
 import { passesFilters, countTheUndecided, activeFilters } from "../../../../lib/jobFilters.js";
@@ -244,8 +244,10 @@ export async function GET(request) {
   if (reedConfigured(env)) {
     tasks.push((async () => {
       try {
-        const data = await cached("reed|" + what + "|" + where + "|" + page, async () => {
-          const res = await fetch(reedUrl({ what, where, page }), {
+        const key = "reed|" + what + "|" + where + "|" + page
+          + "|" + filters.salaryFrom + "|" + filters.contract;
+        const data = await cached(key, async () => {
+          const res = await fetch(reedUrl({ what, where, page, filters }), {
             headers: { Authorization: reedAuthHeader(env) },
           });
           if (!res.ok) throw new Error(`${res.status}`);
@@ -340,8 +342,15 @@ export async function GET(request) {
   // So the response says which it is, and the screen changes one word. A
   // count that cannot explain what it counted is the panel score mistake all
   // over again, and that one is written up in CLAUDE.md as settled.
-  const askedLocally = ["workplace", "language", "level"].filter((k) => filters[k]);
-  const totalExact = askedLocally.length === 0 || aggregatorTotal === 0;
+  // A requirement makes the total approximate as soon as ONE contributing
+  // aggregator could not sieve it itself. Reed takes no age, Adzuna does, so
+  // "posted this week" is exact with Adzuna alone and approximate the moment
+  // Reed also answers. Career pages are always sieved whole, so they never
+  // make a total approximate.
+  const contributing = availableSources(env);
+  const sievedLate = active.filter(
+    (f) => contributing.some((src) => !sourceSievesItself(src, f)));
+  const totalExact = sievedLate.length === 0 || aggregatorTotal === 0;
 
   // WHAT A FILTER COULD NOT DECIDE IS SAID OUT LOUD
   //

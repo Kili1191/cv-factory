@@ -356,9 +356,17 @@ qui compte n'est pas que le booléen soit juste, c'est qu'aucune valeur ne
 puisse sortir : il plante une chaîne secrète dans les cinq variables et
 refuse d'en voir le moindre morceau dans la réponse.
 
-**Et un total doit dire quelle recherche il a comptée.** Trois des six
-exigences partent à la source, donc son compte décrit la recherche faite.
-Les trois autres non. Mesuré sur la production à la minute où la clé est
+**Et un total doit dire quelle recherche il a comptée.** Une partie des
+exigences part à la source, donc son compte décrit la recherche faite. Le
+reste non, et **les agrégateurs ne sont pas d'accord entre eux** sur ce
+qu'ils savent tamiser : Adzuna accepte un âge (`max_days_old`), Reed n'en a
+aucun, les deux acceptent un plancher de salaire et un type de contrat, et
+aucun des deux ne sait rien du lieu de travail, de la langue ni du niveau,
+parce que ces trois-là ne sont pas des champs mais des phrases. `publiée
+cette semaine` est donc exact avec Adzuna seul et devient approximatif dès
+que Reed répond aussi. `FILTERS_AT_SOURCE` le déclare par source, et le
+total devient approximatif dès qu'**une** source qui a contribué n'a pas pu
+tamiser une exigence active. Mesuré sur la production à la minute où la clé est
 devenue vivante : « account manager à Londres, remote » affichait 13 offres
 et annonçait 6798. Ça se lit « 13 sur 6798 correspondent », et c'est faux :
 6798 est ce qui a été trouvé AVANT l'exigence, et personne ne sait combien le
