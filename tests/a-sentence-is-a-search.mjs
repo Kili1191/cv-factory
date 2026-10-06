@@ -165,6 +165,50 @@ export async function run() {
     );
   }
 
+  // --- 4b. SILENCE IS THE DEFAULT, NOT AN EXCLUSION ----------------------
+  //
+  // The shape of a real career page ad: it describes the job and never names
+  // its contract kind or its place of work, because permanent and in-office
+  // are what an ad means when it says nothing. Measured on production on
+  // 6 October 2026, "account manager in London, permanent" kept 24 of 120
+  // jobs and dropped all 23 career page ads on this exact silence.
+  const plainAd = job(
+    "Account Manager",
+    "You will own a portfolio of enterprise clients, grow existing accounts\n"
+    + "and work closely with our sales and product teams. 3+ years in a\n"
+    + "client facing commercial role. 25 days holiday and a pension."
+  );
+  if (contractKind(plainAd) !== "permanent") {
+    failures.push(
+      "an ad that names no contract kind is read as \"" + contractKind(plainAd) + "\".\n" +
+      "      Asking for a permanent role then drops every ad that does not print\n" +
+      "      the word, which on career pages is all of them."
+    );
+  }
+  if (!passesFilters(plainAd, { contract: "permanent" })) {
+    failures.push("an ad that says nothing about its contract is dropped by contract: permanent");
+  }
+  if (workplaceKind(plainAd) !== "onsite") {
+    failures.push("an ad that names no place of work is read as \"" + workplaceKind(plainAd) + "\" instead of the office");
+  }
+  if (!passesFilters(plainAd, { workplace: "onsite" })) {
+    failures.push("an ad that says nothing about remote work is dropped by workplace: onsite");
+  }
+  // And the asymmetry is the whole point: silence must still exclude the
+  // kinds that always announce themselves, or asking for an internship
+  // returns permanent roles.
+  for (const kind of ["internship", "parttime", "contract"]) {
+    if (passesFilters(plainAd, { contract: kind })) {
+      failures.push("an ad that says nothing passes contract: " + kind
+        + ", so that filter returns permanent roles");
+    }
+  }
+  for (const place of ["remote", "hybrid"]) {
+    if (passesFilters(plainAd, { workplace: place })) {
+      failures.push("an ad that never mentions remote work passes workplace: " + place);
+    }
+  }
+
   // --- 5. WHAT THE MODEL RETURNS IS PULLED BACK INTO RANGE ---------------
   const { filters, understood } = filtersFromTheModel({
     what: " Account Manager ", where: "London", country: "GB",

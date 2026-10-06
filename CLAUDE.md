@@ -427,6 +427,23 @@ repository knows best. So they pass, and `countTheUndecided` says how many
 they are so the screen can write "31 of these do not state a salary". Same for
 a missing date.
 
+**But silence is not undecided: it is the default, and the default has a
+name.** An ad states what deviates and assumes the rest. Remote and hybrid
+are written down because they are the selling point; an internship, a fixed
+term and part time are written down because they are what the candidate has
+to be warned about. Permanent, full office and mid level are never written
+down, because they are what you get when nothing is said. So a reader that
+returned nothing on silence, and let the filter turn that nothing into an
+exclusion, emptied the list: measured on production the day Reed went live,
+"account manager in London, permanent" kept 24 jobs of 120 and dropped all
+23 career page ads, not one of which prints the word "permanent" anywhere.
+`jobLevel` already read silence as "mid"; `workplaceKind` and `contractKind`
+read it as "onsite" and "permanent" for the same reason. The asymmetry is the
+point, and it is why this is not the rule above: asking for an internship
+still drops every ad that does not say so, because an ad that is one says so
+in its title. Found by connecting the second source and reading the numbers
+per source, not by a suite.
+
 And there is only one button. The first version had two, both named
 "Chercher": the sentence's and the fields'. A suite saw it before a human did,
 by clicking the first of the two and finding it disabled because the sentence
