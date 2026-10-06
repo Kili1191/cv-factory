@@ -223,13 +223,34 @@ faux sur une carte d'offre est pire qu'une carte absente : la personne
 clique et découvre un autre employeur, sur un produit dont toute la promesse
 est la crédibilité.
 
-Résultat de la passe londonienne : **21 tableaux gardés sur 1199 noms
-essayés, 2 %**, 56 écartés sur le lieu, 2 sur le nom, et 7 renommés par leur
-propre tableau. Le registre passe de 49 à 70 lignes. Le rendement dit
-surtout que Wikidata par ville est la mauvaise liste de départ, pleine
-d'ambassades, de clubs de football et de collèges ; filtrée par secteur elle
-rend de vraies entreprises de technologie, mais seulement trois cents pour
-le Royaume-Uni entier.
+**Et un nom de ville britannique existe aussi aux États-Unis.** La première
+liste de mots contenait « cambridge », et `greenhouse.io/serif`, Serif
+Biomedicines à Cambridge Massachusetts, est entré au registre comme
+britannique. Il y a un Boston, un Birmingham, un Manchester, un Bristol, un
+Reading et un Oxford aux États-Unis, et la forme américaine les écrit avec
+le code de l'État juste après. `dansLeMarche` teste donc dans cet ordre : le
+pays nommé gagne toujours (« New York, NY · London, United Kingdom » reste
+vrai), puis un marqueur d'ailleurs refuse, et seulement ensuite le nom de
+ville compte. Les codes d'État sont testés en majuscules, comme ils
+s'écrivent : sans la casse, « ma », « in » et « or » apparaîtraient dans des
+lieux légitimes.
+
+Le prix de cet ordre est une chaîne multi-sites écrite avec des virgules :
+l'offre de l'ECFR ouverte à « Berlin,Madrid,Paris,Sofia,London,Rome,Warsaw,
+Washington DC » est refusée alors qu'elle est aussi à Londres. C'est le bon
+sens du compromis : un tableau américain entré au registre coûte plus qu'une
+organisation absente, et elle rentre à la prochaine passe dès qu'elle publie
+un poste londonien.
+
+Résultat des deux passes du 6 octobre 2026 : Wikidata par ville a rendu
+**21 tableaux gardés sur 1199 noms, 2 %** (56 écartés sur le lieu, 2 sur le
+nom, 7 renommés par leur propre tableau) ; 1919 domaines d'entreprises
+britanniques filtrées par secteur ont rendu **27 sur 1 %**, mais de bien
+meilleure qualité, Octopus Energy, Sophos, Mulberry, Elsevier, Redgate,
+Castrol, NaturalMotion. Trois ont été retirés ensuite par la règle des
+homonymes. **Le registre passe de 49 à 94 lignes.** Le rendement dit surtout
+que Wikidata par ville est la mauvaise liste de départ, pleine d'ambassades,
+de clubs de football et de collèges.
 
 Les quarante-neuf premières lignes n'ont pas de marché et sont essayées pour
 tous, parce qu'un champ ajouté ne doit jamais retirer une ligne d'une

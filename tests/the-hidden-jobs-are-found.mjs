@@ -139,6 +139,17 @@ export async function run() {
     ["Mechelen, Vlaams Gewest, Belgium", "bbc.recruitee.com, qui n'est pas la BBC"],
     ["M\u00fcnchen", "web.jobs.personio.com, qui n'est pas a Londres"],
     ["Salt Lake City", "un tableau americain"],
+    // Il y a un Cambridge, un Boston, un Birmingham, un Manchester, un
+    // Bristol, un Reading et un Oxford aux Etats-Unis. La premiere liste de
+    // mots britanniques contenait "cambridge", et `greenhouse.io/serif`,
+    // Serif Biomedicines a Cambridge Massachusetts, est entre au registre
+    // comme britannique. Un marqueur d'ailleurs l'emporte sur un nom de
+    // ville : c'est le seul ordre qui ne se trompe pas.
+    ["Cambridge, MA", "Serif Biomedicines, qui est dans le Massachusetts"],
+    ["Boston, MA", "un homonyme du Lincolnshire"],
+    ["Reading, PA", "un homonyme du Berkshire"],
+    ["Toronto, Ontario, Canada", "le tableau canadien de Lush"],
+    ["Dublin, Ireland", "l'Irlande, qui n'est pas le Royaume-Uni"],
   ];
   for (const [lieu, quoi] of usurpateurs) {
     if (dansLeMarche(lieu, "gb")) {
@@ -148,7 +159,11 @@ export async function run() {
       );
     }
   }
-  for (const lieu of ["London, UK", "Manchester", "Remote, England", "Edinburgh, Scotland", "United Kingdom"]) {
+  // Le pays nomme gagne toujours, meme dans une chaine multi-sites : sinon
+  // une offre ouverte a New York ET a Londres serait perdue.
+  for (const lieu of ["London, UK", "Manchester", "Remote, England", "Edinburgh, Scotland",
+    "United Kingdom", "Cambridge, Cambridgeshire", "Reading, Berkshire",
+    "New York, NY \u00b7 London, United Kingdom"]) {
     if (!dansLeMarche(lieu, "gb")) {
       failures.push("\"" + lieu + "\" est refuse du marche britannique : de vraies entreprises seraient perdues");
     }
