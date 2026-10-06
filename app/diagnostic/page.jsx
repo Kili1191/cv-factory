@@ -159,7 +159,9 @@ export default function Diagnostic() {
           fix: "La route ne repond pas du tout. Tous les exports passent par la photo." });
       });
 
-    fetch("/api/jobs/search?what=&where=&country=gb")
+    // `only=sources` skips reading the boards: this page asks which sources
+    // exist, not for jobs, and a full search takes twelve seconds.
+    fetch("/api/jobs/search?only=sources&country=gb")
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
@@ -173,6 +175,23 @@ export default function Diagnostic() {
         // d'ATS, et leurs cles restent utiles. Les nommer quand elles sont
         // absentes, sans transformer leur absence en panne.
         const agregateurs = sources.filter((x) => x !== "career pages");
+
+        // QUELLES VARIABLES LE SERVEUR VOIT, NOM PAR NOM
+        //
+        // Le 6 octobre 2026, une cle Adzuna valide etait dans Vercel et la
+        // recherche repondait quand meme "career pages" seules. Trois causes
+        // se lisaient pareil : la variable absente (enregistree apres le
+        // redeploiement, ou cochee pour Preview et pas Production), le nom
+        // mal ecrit, ou la valeur fausse. Les nommer une par une les separe
+        // d'un coup d'oeil. Jamais une valeur, seulement un booleen.
+        const cles = (j && j.keys) || {};
+        const vues = Object.keys(cles).filter((k) => cles[k]);
+        const absentes = Object.keys(cles).filter((k) => !cles[k]);
+        const etatDesCles = Object.keys(cles).length
+          ? "Le serveur voit : " + (vues.join(", ") || "aucune")
+            + ". Il ne voit pas : " + (absentes.join(", ") || "aucune") + ". "
+          : "";
+
         if (j && j.configured) {
           setOffres({
             state: agregateurs.length ? "ok" : "partiel",
@@ -182,7 +201,15 @@ export default function Diagnostic() {
               + "couvrent les employeurs sans ATS : Adzuna est gratuit "
               + "(developer.adzuna.com), puis Vercel > Environment Variables > "
               + "ADZUNA_APP_ID et ADZUNA_APP_KEY. Pour le Royaume-Uni, "
-              + "REED_API_KEY en plus.",
+              + "REED_API_KEY en plus.\n\n"
+              + etatDesCles
+              + "Une variable que le serveur ne voit pas n'a pas ete livree a "
+              + "cette fonction : Vercel fige les variables au moment du "
+              + "deploiement, donc les enregistrer ne suffit pas, il faut "
+              + "redeployer APRES. Verifie aussi qu'elles sont cochees pour "
+              + "Production, et que le nom est exact. Une variable vue mais "
+              + "dont la valeur est fausse apparait autrement : la source est "
+              + "nommee ci-dessus et un avertissement dit son code HTTP.",
           });
         } else {
           setOffres({

@@ -39,6 +39,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   const [sources, setSources] = useState([]);
   const [indexState, setIndexState] = useState(null);
   const [total, setTotal] = useState(0);
+  const [totalExact, setTotalExact] = useState(true);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -75,6 +76,9 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     read: (n, t) => n + " of " + t + " career pages read",
     more: "Search again to read the rest.",
     of: (n, t) => n + " of " + t.toLocaleString("en-GB") + " matching",
+    // When a requirement is sieved here rather than at the source, the big
+    // number counts what was found BEFORE it, not what matches.
+    ofFound: (n, t) => n + " shown, from " + t.toLocaleString("en-GB") + " found",
     showMore: "Show more", showingMore: "Loading...",
     sentence: "Say what you are looking for",
     sentenceEx: "account manager in London, hybrid, permanent, posted this week",
@@ -112,6 +116,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     read: (n, t) => n + " pages carriere lues sur " + t,
     more: "Relance pour lire les autres.",
     of: (n, t) => n + " sur " + t.toLocaleString("fr-FR") + " qui correspondent",
+    ofFound: (n, t) => n + " affichees, sur " + t.toLocaleString("fr-FR") + " trouvees",
     showMore: "En voir plus", showingMore: "Chargement...",
     sentence: "Dis ce que tu cherches",
     sentenceEx: "gestion de comptes a Londres, hybride, CDI, publiee cette semaine",
@@ -164,6 +169,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       setWarnings(data.warnings || []);
       if (!more) setIndexState(data.index || null);
       setTotal(Number(data.total) || 0);
+      setTotalExact(data.totalExact !== false);
       setUndecided(data.undecided || {});
       setHasMore(!!data.hasMore && received.length > 0);
       setPage(n);
@@ -210,6 +216,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       setWarnings(data.warnings || []);
       setIndexState(data.index || null);
       setTotal(Number(data.total) || 0);
+      setTotalExact(data.totalExact !== false);
       setUndecided(data.undecided || {});
       setHasMore(!!data.hasMore);
       setState("done");

@@ -12,6 +12,7 @@
 import {
   franceTravailParse, adzunaParse, reedParse,
   availableSources, adzunaUrl, reedUrl, reedAuthHeader, totalAtTheSource,
+  keysTheServerCanSee, AGGREGATOR_KEYS,
 } from "../lib/jobSources.js";
 
 const REQUIRED = ["id", "source", "title", "company", "location", "url", "description"];
@@ -172,6 +173,37 @@ export async function run() {
   // return permanent roles for a search that asked for internships.
   if (/[?&](permanent|contract|part_time)=1/.test(large)) {
     failures.push("Adzuna: an internship is mapped onto another contract flag");
+  }
+
+  // --- WHICH NAMES THE SERVER CAN SEE, AND NEVER A VALUE -------------------
+  //
+  // A valid Adzuna key sat in Vercel on 6 October 2026 and the search still
+  // answered "career pages" only. Three causes read identically on screen:
+  // the variable absent, the name misspelt, or the value wrong. A boolean per
+  // name separates them. The danger of such a report is obvious, so the test
+  // that matters is the one that proves a value can never come out.
+  const vu = keysTheServerCanSee({ ADZUNA_APP_ID: "abc123", ADZUNA_APP_KEY: "" });
+  if (vu.ADZUNA_APP_ID !== true) failures.push("a variable that is set is not reported as seen");
+  if (vu.ADZUNA_APP_KEY !== false) failures.push("an empty variable is reported as seen");
+  if (vu.REED_API_KEY !== false) failures.push("a missing variable is not reported as absent");
+
+  const secret = "SUPER-SECRET-VALUE-0123456789";
+  const dehors = JSON.stringify(keysTheServerCanSee({
+    ADZUNA_APP_ID: secret, ADZUNA_APP_KEY: secret, REED_API_KEY: secret,
+    FRANCE_TRAVAIL_ID: secret, FRANCE_TRAVAIL_SECRET: secret,
+  }));
+  if (dehors.includes(secret) || dehors.includes(secret.slice(0, 6))) {
+    failures.push(
+      "the key report carries a value, or a piece of one.\n" +
+      "      This object is returned to the browser by /api/jobs/search. It may say\n" +
+      "      whether a name is set and nothing else, ever."
+    );
+  }
+  for (const v of Object.values(keysTheServerCanSee({ ADZUNA_APP_ID: secret }))) {
+    if (typeof v !== "boolean") failures.push("the key report returns something other than a boolean");
+  }
+  if (!AGGREGATOR_KEYS.includes("ADZUNA_APP_ID") || !AGGREGATOR_KEYS.includes("REED_API_KEY")) {
+    failures.push("the reported names do not cover the aggregators the setup page names");
   }
 
   if (!failures.length) {

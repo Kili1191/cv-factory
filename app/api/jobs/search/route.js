@@ -12,7 +12,7 @@ import {
   franceTravailConfigured, franceTravailToken, franceTravailParse,
   adzunaConfigured, adzunaUrl, adzunaParse,
   reedConfigured, reedUrl, reedAuthHeader, reedParse,
-  availableSources, totalAtTheSource,
+  availableSources, totalAtTheSource, keysTheServerCanSee,
 } from "../../../../lib/jobSources.js";
 import { readABoard, normalise, locationMatches, titleMatches } from "../../../../lib/ats.js";
 import { passesFilters, countTheUndecided, activeFilters } from "../../../../lib/jobFilters.js";
@@ -168,6 +168,24 @@ export async function GET(request) {
   // Career pages need no key, so this source always exists: the search never
   // returns "not configured" again.
   const sources = [...availableSources(env), "career pages"];
+
+  // ASKING WHICH SOURCES EXIST IS NOT ASKING FOR JOBS
+  //
+  // /diagnostic only ever reads `sources`, `configured` and `keys`. It was
+  // getting them by running a whole search, which since the budget went to
+  // twelve seconds means the setup page sits blank for twelve seconds before
+  // point 8 says anything, on the one page whose entire job is to tell you
+  // quickly what is wrong. A suite caught it first, by reading the page after
+  // six seconds and finding nothing, which is what a person would have found
+  // too.
+  if (url.searchParams.get("only") === "sources") {
+    return Response.json({
+      configured: true, sources, keys: keysTheServerCanSee(env),
+      jobs: [], warnings: [], total: 0, totalExact: true, page: 1,
+      hasMore: false, filters: [], undecided: {},
+      index: { boards: boardsForMarket(country).length, read: 0, pending: 0 },
+    });
+  }
   const warnings = [];
   const tasks = [];
   // The total each aggregator declares, so the screen can say "50 of 64,000"
@@ -305,6 +323,26 @@ export async function GET(request) {
   // button that does nothing is worse than no button.
   const hasMore = page * 50 < boardTotal || page * 50 < aggregatorTotal;
 
+  // WHEN THE TOTAL STOPS DESCRIBING THE SEARCH
+  //
+  // Three of the six requirements are asked of the aggregator, so its count
+  // describes the search that was made. The other three are not: Adzuna has
+  // no parameter for the place of work, the language or the level, so when
+  // one of those is set its count still describes the WIDER search, and only
+  // the page we fetched has been sieved.
+  //
+  // Measured on production on 6 October 2026, the minute the key went live:
+  // "account manager in London, remote" showed 13 jobs and announced 6798.
+  // That reads as "13 of 6798 match", and it is not true. 6798 is how many
+  // were found before the requirement was applied, and nobody knows how many
+  // of them are remote without fetching all 6798.
+  //
+  // So the response says which it is, and the screen changes one word. A
+  // count that cannot explain what it counted is the panel score mistake all
+  // over again, and that one is written up in CLAUDE.md as settled.
+  const askedLocally = ["workplace", "language", "level"].filter((k) => filters[k]);
+  const totalExact = askedLocally.length === 0 || aggregatorTotal === 0;
+
   // WHAT A FILTER COULD NOT DECIDE IS SAID OUT LOUD
   //
   // Half of ads do not state a salary, and a floor cannot settle them: they
@@ -315,7 +353,9 @@ export async function GET(request) {
 
   return Response.json({
     jobs: unique, sources, warnings, index: indexState, configured: true,
-    page, total: boardTotal + aggregatorTotal, hasMore,
+    page, total: boardTotal + aggregatorTotal, hasMore, totalExact,
     filters: active, undecided,
+    // Booleans only, never a value. See lib/jobSources.js.
+    keys: keysTheServerCanSee(env),
   });
 }

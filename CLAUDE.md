@@ -341,6 +341,32 @@ Rien de tout ça ne fait des millions d'offres sans les clés : sans
 pages carrière, et un registre de pages carrière ne sera jamais un
 agrégateur. `/diagnostic` le dit, point 8.
 
+**La clé était bonne, et l'écran ne savait pas le dire.** Kilian a créé une
+clé Adzuna le 6 octobre 2026, l'a mise dans Vercel, et la recherche a
+continué de répondre « career pages » seules. La clé marchait : lancée depuis
+un terminal contre la vraie API, 6794 offres. Trois causes se lisaient
+pareil, la variable absente, le nom mal écrit, la valeur fausse, et il a
+fallu un aller-retour pour trouver la bonne (Vercel fige les variables au
+moment du déploiement : les enregistrer ne suffit pas, il faut redéployer
+après). `/api/jobs/search` rend donc `keys`, **un booléen par nom et jamais
+une valeur**, et `/diagnostic` l'écrit. Un nom absent veut dire que Vercel ne
+le livre pas ; un nom présent avec une recherche qui échoue veut dire que la
+valeur est fausse, et ça arrive déjà comme un avertissement séparé. Le test
+qui compte n'est pas que le booléen soit juste, c'est qu'aucune valeur ne
+puisse sortir : il plante une chaîne secrète dans les cinq variables et
+refuse d'en voir le moindre morceau dans la réponse.
+
+**Et un total doit dire quelle recherche il a comptée.** Trois des six
+exigences partent à la source, donc son compte décrit la recherche faite.
+Les trois autres non. Mesuré sur la production à la minute où la clé est
+devenue vivante : « account manager à Londres, remote » affichait 13 offres
+et annonçait 6798. Ça se lit « 13 sur 6798 correspondent », et c'est faux :
+6798 est ce qui a été trouvé AVANT l'exigence, et personne ne sait combien le
+sont sans aller chercher les 6798. La réponse porte donc `totalExact`, et
+l'écran change un mot : « 13 affichées, sur 6798 trouvées ». C'est la même
+règle que le chiffre du panneau, qui est réglée plus bas depuis longtemps :
+un compte qui ne sait pas expliquer ce qu'il a compté ne vaut rien.
+
 Une phrase est une recherche, et le modèle ne cherche pas. Kilian, le
 6 octobre 2026, en donnant **un exemple** de ce qu'une personne taperait :
 « trouve-moi un job de francophone avec mon CV à Londres ». Non, ça ne

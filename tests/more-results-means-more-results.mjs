@@ -98,6 +98,34 @@ export async function run() {
     globalThis.fetch = realFetch;
   }
 
+  // --- A TOTAL SAYS WHICH SEARCH IT COUNTED ------------------------------
+  //
+  // Three of the six requirements are asked of the aggregator, so its count
+  // describes the search that was made. The other three are not, so when one
+  // of those is set the count still describes the wider search and only the
+  // fetched page has been sieved.
+  //
+  // Measured on production the minute the Adzuna key went live: "account
+  // manager in London, remote" showed 13 jobs and announced 6798. That reads
+  // as "13 of 6798 match" and it is false. The flag is what lets the screen
+  // say "13 shown, from 6798 found" instead.
+  //
+  // Here no aggregator key is configured, so the career page index is the
+  // only source and every requirement is sieved over the whole of it: the
+  // total is always exact, whichever requirement is set.
+  for (const q of ["", "&workplace=remote", "&language=french", "&salaryFrom=50000"]) {
+    const r = await GET(new Request(
+      "https://nuvi.invalid/api/jobs/search?what=&where=London&country=gb&page=1" + q));
+    const d = await r.json();
+    if (d.totalExact !== true) {
+      failures.push("with career pages as the only source, the total for \"" + (q || "no filter")
+        + "\" is reported as approximate, although the whole index was sieved");
+    }
+    if (typeof d.totalExact !== "boolean") {
+      failures.push("the response does not say whether its total counts the search that was made");
+    }
+  }
+
   // --- AN AGGREGATOR CALL IS A QUOTA, NOT A REQUEST ----------------------
   //
   // Adzuna and Reed are fast, so they had no cache: every search spent one

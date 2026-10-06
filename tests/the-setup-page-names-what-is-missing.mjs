@@ -37,7 +37,18 @@ export async function run() {
     await page.goto(`${BASE_URL}/diagnostic`, { waitUntil: "domcontentloaded" });
     // Les deux verifications reseau de la page ont besoin de repondre avant
     // qu'on lise le texte : sans cette attente le test lirait "en attente".
-    await page.waitForTimeout(6000);
+    // A FLAT WAIT MEASURES THE CLOCK, NOT THE PAGE
+    //
+    // This was six seconds. The job search route's budget then went to twelve
+    // for a 266 board registry, point 8 had not answered yet, and the suite
+    // went red on a page that was simply still loading. The flat wait had been
+    // right only by luck. It polls now, and the fix it waits for is the thing
+    // the assertions below actually read.
+    await page.waitForFunction(
+      () => /ADZUNA_APP_ID|Adzuna/.test(document.body.innerText),
+      null, { timeout: 25000 },
+    ).catch(() => {});
+    await page.waitForTimeout(500);
 
     const text = await page.innerText("main").catch(() => "");
 
