@@ -18,9 +18,9 @@ import React, { useCallback, useState } from "react";
 import { codeAdzuna } from "../../lib/conventions.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import {
-  SCHEMA_RECHERCHE, consigneDeRecherche, filtresDepuisLeModele, parametresDeRecherche,
-} from "../../lib/rechercheEnPhrase.js";
-import { FILTRES_VIDES, filtresActifs } from "../../lib/filtresDOffre.js";
+  SEARCH_SCHEMA, searchInstruction, filtersFromTheModel, searchParams,
+} from "../../lib/searchFromASentence.js";
+import { NO_FILTERS, activeFilters } from "../../lib/jobFilters.js";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
@@ -37,26 +37,26 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   const [state, setState] = useState("idle"); // idle | loading | done | off
   const [warnings, setWarnings] = useState([]);
   const [sources, setSources] = useState([]);
-  const [etatIndex, setEtatIndex] = useState(null);
+  const [indexState, setIndexState] = useState(null);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [plus, setPlus] = useState(false);
-  const [plusEnCours, setPlusEnCours] = useState(false);
-  // LA PHRASE, ET CE QUI EN A ETE COMPRIS
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // THE SENTENCE, AND WHAT WAS UNDERSTOOD OF IT
   //
-  // La phrase n'est pas la recherche : le modele la traduit en exigences, et
-  // `lu` dit lesquelles. On l'affiche toujours, et les exigences restent
-  // modifiables a cote, parce qu'une recherche qu'on ne peut pas corriger
-  // est une recherche a laquelle on ne peut pas faire confiance.
-  const [phrase, setPhrase] = useState("");
-  const [lu, setLu] = useState("");
-  // La phrase deja traduite. Sans elle, relancer apres avoir corrige un
-  // champ ferait repayer un appel au modele pour rien.
-  const [lue, setLue] = useState("");
-  const [filtres, setFiltres] = useState({ ...FILTRES_VIDES });
-  const [traduction, setTraduction] = useState(false);
-  const [exigences, setExigences] = useState(false);
-  const [indecis, setIndecis] = useState({});
+  // The sentence is not the search: the model turns it into requirements,
+  // and `understood` says which ones. It is always shown, and the
+  // requirements stay editable beside it, because a search you cannot
+  // correct is a search you cannot trust.
+  const [sentence, setSentence] = useState("");
+  const [understood, setUnderstood] = useState("");
+  // The sentence already read. Without it, searching again after correcting
+  // a field by hand would pay for a model call all over again for nothing.
+  const [sentenceRead, setSentenceRead] = useState("");
+  const [filters, setFilters] = useState({ ...NO_FILTERS });
+  const [reading, setReading] = useState(false);
+  const [showRequirements, setShowRequirements] = useState(false);
+  const [undecided, setUndecided] = useState({});
   const [tracked, setTracked] = useState({});
 
   const L = locale === "en" ? {
@@ -72,31 +72,31 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     from: "from",
     // The index fills over a few searches. Saying so costs one line and
     // stops a short list from reading as "nothing is hiring today".
-    lus: (n, t) => n + " of " + t + " career pages read",
-    encore: "Search again to read the rest.",
-    sur: (n, t) => n + " of " + t.toLocaleString("en-GB") + " matching",
-    plus: "Show more", plusEnCours: "Loading...",
-    phrase: "Say what you are looking for",
-    phraseEx: "a French speaking account manager role in London, from my CV",
-    traduisant: "Reading your sentence...",
-    exigences: "Requirements", masquer: "Hide",
-    sansSalaire: (n) => n + " of these do not state a salary",
-    sansDate: (n) => n + " of these do not state a date",
-    rien: "No requirement set. Every offer for this title and place.",
-    etiquettes: {
-      remote: "Place of work", langue: "The job requires", contrat: "Contract",
-      seniorite: "Level", salaireMin: "Salary from", depuisJours: "Posted within",
+    read: (n, t) => n + " of " + t + " career pages read",
+    more: "Search again to read the rest.",
+    of: (n, t) => n + " of " + t.toLocaleString("en-GB") + " matching",
+    showMore: "Show more", showingMore: "Loading...",
+    sentence: "Say what you are looking for",
+    sentenceEx: "a French speaking account manager role in London, from my CV",
+    readingSentence: "Reading your sentence...",
+    requirements: "Requirements", masquer: "Hide",
+    noSalary: (n) => n + " of these do not state a salary",
+    noDate: (n) => n + " of these do not state a date",
+    nothing: "No requirement set. Every offer for this title and place.",
+    labels: {
+      workplace: "Place of work", language: "The job requires", contract: "Contract",
+      level: "Level", salaryFrom: "Salary from", postedWithin: "Posted within",
     },
-    valeurs: {
-      remote: [["", "any"], ["remote", "remote"], ["hybride", "hybrid"], ["surplace", "on site"]],
-      langue: [["", "no language"], ["french", "French"], ["german", "German"], ["spanish", "Spanish"],
+    values: {
+      workplace: [["", "any"], ["remote", "remote"], ["hybrid", "hybrid"], ["onsite", "on site"]],
+      language: [["", "no language"], ["french", "French"], ["german", "German"], ["spanish", "Spanish"],
         ["italian", "Italian"], ["dutch", "Dutch"], ["portuguese", "Portuguese"],
         ["arabic", "Arabic"], ["mandarin", "Mandarin"]],
-      contrat: [["", "any"], ["cdi", "permanent"], ["mission", "contract"],
-        ["stage", "internship"], ["partiel", "part time"]],
-      seniorite: [["", "any"], ["junior", "junior"], ["confirme", "mid"],
+      contract: [["", "any"], ["permanent", "permanent"], ["contract", "contract"],
+        ["internship", "internship"], ["parttime", "part time"]],
+      level: [["", "any"], ["junior", "junior"], ["mid", "mid"],
         ["senior", "senior"], ["lead", "lead and above"]],
-      depuisJours: [["0", "any time"], ["3", "3 days"], ["7", "a week"], ["30", "a month"]],
+      postedWithin: [["0", "any time"], ["3", "3 days"], ["7", "a week"], ["30", "a month"]],
     },
   } : {
     eyebrow: "RECHERCHE D'OFFRES", title: "Trouver un poste",
@@ -109,99 +109,98 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     offTitle: "Aucune source d'offres branchee",
     offBody: "Branche Adzuna, France Travail ou Reed et les offres apparaissent ici. Voir docs/comptes.md.",
     from: "via",
-    lus: (n, t) => n + " pages carriere lues sur " + t,
-    encore: "Relance pour lire les autres.",
-    sur: (n, t) => n + " sur " + t.toLocaleString("fr-FR") + " qui correspondent",
-    plus: "En voir plus", plusEnCours: "Chargement...",
-    phrase: "Dis ce que tu cherches",
-    phraseEx: "un poste de gestion de comptes francophone a Londres, depuis mon CV",
-    traduisant: "Lecture de ta phrase...",
-    exigences: "Exigences", masquer: "Masquer",
-    sansSalaire: (n) => n + " d'entre elles n'annoncent pas de salaire",
-    sansDate: (n) => n + " d'entre elles n'annoncent pas de date",
-    rien: "Aucune exigence. Toutes les offres de ce poste a cet endroit.",
-    etiquettes: {
-      remote: "Lieu de travail", langue: "L'annonce exige", contrat: "Contrat",
-      seniorite: "Niveau", salaireMin: "Salaire a partir de", depuisJours: "Publiee depuis",
+    read: (n, t) => n + " pages carriere lues sur " + t,
+    more: "Relance pour lire les autres.",
+    of: (n, t) => n + " sur " + t.toLocaleString("fr-FR") + " qui correspondent",
+    showMore: "En voir plus", showingMore: "Chargement...",
+    sentence: "Dis ce que tu cherches",
+    sentenceEx: "un poste de gestion de comptes francophone a Londres, depuis mon CV",
+    readingSentence: "Lecture de ta sentence...",
+    requirements: "Exigences", masquer: "Masquer",
+    noSalary: (n) => n + " d'entre elles n'annoncent pas de salaire",
+    noDate: (n) => n + " d'entre elles n'annoncent pas de date",
+    nothing: "Aucune exigence. Toutes les offres de ce poste a cet endroit.",
+    labels: {
+      workplace: "Lieu de travail", language: "L'annonce exige", contract: "Contrat",
+      level: "Niveau", salaryFrom: "Salaire a partir de", postedWithin: "Publiee depuis",
     },
-    valeurs: {
-      remote: [["", "peu importe"], ["remote", "a distance"], ["hybride", "hybride"], ["surplace", "sur place"]],
-      langue: [["", "aucune langue"], ["french", "le francais"], ["german", "l'allemand"],
+    values: {
+      workplace: [["", "peu importe"], ["remote", "a distance"], ["hybrid", "hybride"], ["onsite", "sur place"]],
+      language: [["", "aucune langue"], ["french", "le francais"], ["german", "l'allemand"],
         ["spanish", "l'espagnol"], ["italian", "l'italien"], ["dutch", "le neerlandais"],
         ["portuguese", "le portugais"], ["arabic", "l'arabe"], ["mandarin", "le mandarin"]],
-      contrat: [["", "peu importe"], ["cdi", "CDI"], ["mission", "mission"],
-        ["stage", "stage"], ["partiel", "temps partiel"]],
-      seniorite: [["", "peu importe"], ["junior", "junior"], ["confirme", "confirme"],
+      contract: [["", "peu importe"], ["permanent", "CDI"], ["contract", "mission"],
+        ["internship", "stage"], ["parttime", "temps partiel"]],
+      level: [["", "peu importe"], ["junior", "junior"], ["mid", "confirme"],
         ["senior", "senior"], ["lead", "lead et au-dela"]],
-      depuisJours: [["0", "peu importe"], ["3", "3 jours"], ["7", "une semaine"], ["30", "un mois"]],
+      postedWithin: [["0", "peu importe"], ["3", "3 jours"], ["7", "une semaine"], ["30", "un mois"]],
     },
   };
 
-  // UNE SEULE FONCTION POUR LA PREMIERE PAGE ET POUR LES SUIVANTES
+  // ONE FUNCTION FOR THE FIRST PAGE AND FOR THE ONES AFTER
   //
-  // `suite` dit laquelle : la premiere remplace la liste et remonte, les
-  // autres l'allongent. Ecrire deux fonctions a double le risque qu'une des
-  // deux oublie de dedupliquer, et une offre affichee deux fois se lit comme
-  // deux offres.
-  const chercher = useCallback(async (suite) => {
-    const n = suite ? page + 1 : 1;
-    if (suite) setPlusEnCours(true); else { setState("loading"); setWarnings([]); }
+  // `more` says which: the first replaces the list, the others extend it.
+  // Writing two functions doubles the chance one of them forgets to
+  // deduplicate, and a job shown twice reads as two jobs.
+  const runSearch = useCallback(async (more) => {
+    const n = more ? page + 1 : 1;
+    if (more) setLoadingMore(true); else { setState("loading"); setWarnings([]); }
     try {
-      // Les deux champs du haut restent la verite : la phrase les remplit,
-      // la personne les corrige, et c'est ce qu'ils contiennent qui part.
-      const params = parametresDeRecherche({ ...filtres, what, where, country }, n);
+      // The two fields at the top stay the truth: the sentence fills them,
+      // the person corrects them, and what they hold is what gets sent.
+      const params = searchParams({ ...filters, what, where, country }, n);
       const res = await fetch(`/api/jobs/search?${params}`);
       const data = await res.json();
       if (!data.configured) { setState("off"); return; }
-      const recues = Array.isArray(data.jobs) ? data.jobs : [];
-      setJobs((avant) => {
-        if (!suite) return recues;
-        // Deux pages d'un agregateur se recouvrent quand une offre est
-        // publiee entre les deux appels : la cle est celle du serveur.
-        const vus = new Set(avant.map((j) => j.source + j.id));
-        return avant.concat(recues.filter((j) => !vus.has(j.source + j.id)));
+      const received = Array.isArray(data.jobs) ? data.jobs : [];
+      setJobs((before) => {
+        if (!more) return received;
+        // Two pages of an aggregator overlap when a job is published between
+        // the two calls: the key is the server's.
+        const seen = new Set(before.map((j) => j.source + j.id));
+        return before.concat(received.filter((j) => !seen.has(j.source + j.id)));
       });
       setSources(data.sources || []);
       setWarnings(data.warnings || []);
-      if (!suite) setEtatIndex(data.index || null);
+      if (!more) setIndexState(data.index || null);
       setTotal(Number(data.total) || 0);
-      setIndecis(data.indecis || {});
-      setPlus(!!data.plus && recues.length > 0);
+      setUndecided(data.undecided || {});
+      setHasMore(!!data.hasMore && received.length > 0);
       setPage(n);
       setState("done");
     } catch (err) {
       setWarnings([(err && err.message) || "recherche impossible"]);
       setState("done");
     } finally {
-      setPlusEnCours(false);
+      setLoadingMore(false);
     }
-  }, [what, where, country, page, filtres]);
+  }, [what, where, country, page, filters]);
 
 
-  // LA PHRASE DEVIENT UNE REQUETE, PUIS LA REQUETE CHERCHE
+  // THE SENTENCE BECOMES A QUERY, THEN THE QUERY SEARCHES
   //
-  // Le modele ne cherche pas et ne rend aucune offre : il traduit. Si la
-  // traduction echoue, la phrase part telle quelle dans le champ intitule,
-  // parce qu'une recherche approximative vaut mieux qu'un ecran qui ne fait
-  // rien, et l'avertissement le dit.
-  const traduire = useCallback(async () => {
-    const texte = phrase.trim();
-    if (!texte) return;
-    setTraduction(true);
+  // The model does not search and returns no jobs: it translates. If the
+  // reading fails, the sentence goes into the title field as it stands,
+  // because an approximate search beats a screen that does nothing, and the
+  // warning says so.
+  const readTheSentence = useCallback(async () => {
+    const text = sentence.trim();
+    if (!text) return;
+    setReading(true);
     setWarnings([]);
     try {
-      const txt = await aiCall(consigneDeRecherche(texte, locale), {
-        cv, schema: SCHEMA_RECHERCHE, task_name: "job-search-query", max_tokens: 500,
+      const txt = await aiCall(searchInstruction(text, locale), {
+        cv, schema: SEARCH_SCHEMA, task_name: "job-search-query", max_tokens: 500,
       });
-      const { filtres: f, lu: phraseLue } = filtresDepuisLeModele(parseJSON(txt));
-      setFiltres(f);
+      const { filters: f, understood: sentenceUnderstood } = filtersFromTheModel(parseJSON(txt));
+      setFilters(f);
       setWhat(f.what);
       setWhere(f.where);
       if (f.country) setCountry(f.country);
-      setLu(phraseLue);
-      setLue(texte);
+      setUnderstood(sentenceUnderstood);
+      setSentenceRead(text);
       setPage(1);
-      const params = parametresDeRecherche(f, 1);
+      const params = searchParams(f, 1);
       setState("loading");
       const res = await fetch(`/api/jobs/search?${params}`);
       const data = await res.json();
@@ -209,44 +208,43 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       setJobs(Array.isArray(data.jobs) ? data.jobs : []);
       setSources(data.sources || []);
       setWarnings(data.warnings || []);
-      setEtatIndex(data.index || null);
+      setIndexState(data.index || null);
       setTotal(Number(data.total) || 0);
-      setIndecis(data.indecis || {});
-      setPlus(!!data.plus);
+      setUndecided(data.undecided || {});
+      setHasMore(!!data.hasMore);
       setState("done");
     } catch (err) {
-      setWhat(texte);
-      setWarnings([(err && err.message) || "phrase non comprise"]);
+      setWhat(text);
+      setWarnings([(err && err.message) || "sentence not understood"]);
       setState("idle");
     } finally {
-      setTraduction(false);
+      setReading(false);
     }
-  }, [phrase, locale, cv]);
+  }, [sentence, locale, cv]);
 
-  // UN SEUL BOUTON, PARCE QU'IL N'Y A QU'UNE SEULE ACTION
+  // ONE BUTTON, BECAUSE THERE IS ONLY ONE ACTION
   //
-  // La premiere version en avait deux, tous les deux nommes "Chercher" :
-  // celui de la phrase et celui des champs. Une suite l'a vu avant un
-  // humain, en cliquant le premier des deux et en le trouvant desactive.
-  // Deux boutons du meme nom sur un ecran sont un defaut quel que soit le
-  // test : la personne ne sait pas lequel fait quoi. Donc un seul, et c'est
-  // lui qui decide : une phrase pas encore lue est lue d'abord, et la
-  // recherche suit avec ce qu'elle a rempli.
+  // The first version had two, both named "Chercher": the sentence's and the
+  // fields'. A suite saw it before a human did, by clicking the first of the
+  // two and finding it disabled. Two buttons with the same name on one
+  // screen are a defect whatever the test says, because the person cannot
+  // tell which does what. So one button, and it decides: a sentence not yet
+  // read is read first, and the search follows with what it filled in.
   const search = useCallback(() => {
-    if (phrase.trim() && phrase.trim() !== lue) return traduire();
-    return chercher(false);
-  }, [phrase, lue, traduire, chercher]);
+    if (sentence.trim() && sentence.trim() !== sentenceRead) return readTheSentence();
+    return runSearch(false);
+  }, [sentence, sentenceRead, readTheSentence, runSearch]);
 
-  const poserUneExigence = useCallback((cle, valeur) => {
-    setFiltres((avant) => ({
-      ...avant,
-      [cle]: cle === "salaireMin" || cle === "depuisJours"
-        ? Math.max(0, Math.round(Number(valeur) || 0))
-        : valeur,
+  const setRequirement = useCallback((key, value) => {
+    setFilters((before) => ({
+      ...before,
+      [key]: key === "salaryFrom" || key === "postedWithin"
+        ? Math.max(0, Math.round(Number(value) || 0))
+        : value,
     }));
   }, []);
 
-  const actives = filtresActifs(filtres);
+  const active = activeFilters(filters);
 
   const field = {
     width: "100%", minHeight: 46, padding: "0 13px",
@@ -261,25 +259,26 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         {L.sub}
       </p>
 
-      {/* LA PHRASE EN PREMIER, LES CHAMPS EN DESSOUS
-          Les deux champs restent : ils disent ce qui part vraiment, et une
-          phrase mal comprise se corrige la, sans relancer le modele. */}
+      {/* THE SENTENCE FIRST, THE FIELDS UNDER IT
+          The two fields stay: they say what actually gets sent, and a
+          sentence read wrong is corrected there, without calling the model
+          again. */}
       <div style={{ marginBottom: 10 }}>
-        <input value={phrase} onChange={e => setPhrase(e.target.value)}
+        <input value={sentence} onChange={e => setSentence(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") search(); }}
-          placeholder={L.phrase} data-nuvi="offres-phrase"
+          placeholder={L.sentence} data-nuvi="offres-sentence"
           style={{ ...field, minHeight: 50, fontSize: 15 }} />
         <div style={{ fontSize: 11.5, color: InkMuted, margin: "6px 2px 0", fontFamily: Sans, lineHeight: 1.45 }}>
-          {"\u201c" + L.phraseEx + "\u201d"}
+          {"\u201c" + L.sentenceEx + "\u201d"}
         </div>
       </div>
 
-      {lu && (
-        <div data-nuvi="offres-lu" style={{
+      {understood && (
+        <div data-nuvi="offres-understood" style={{
           padding: "10px 13px", marginBottom: 10, borderRadius: RadiusSm,
           background: CreamSoft, border: "0.5px solid " + Hairline,
           fontSize: 12.5, color: Ink, fontFamily: Sans, lineHeight: 1.5,
-        }}>{lu}</div>
+        }}>{understood}</div>
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
@@ -309,62 +308,62 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
             color: "#fff", fontSize: 13.5, fontWeight: 600, fontFamily: Sans,
           }),
-        }}>{traduction ? L.traduisant : state === "loading" ? L.searching : L.search}</button>
+        }}>{reading ? L.readingSentence : state === "loading" ? L.searching : L.search}</button>
       </div>
 
       {/* LES EXIGENCES, VISIBLES ET MODIFIABLES
           Un filtre pose par le modele doit pouvoir etre retire a la main :
           une recherche qu'on ne peut pas corriger est une recherche a
-          laquelle on ne peut pas faire confiance. Le compte dans le libelle
-          dit combien sont actives, pour qu'un filtre oublie ne reste pas a
+          laquelle on ne peut pas faire confiance. Le compte dans le label
+          dit combien sont active, pour qu'un filtre oublie ne reste pas a
           vider les resultats en silence. */}
       <div style={{ marginBottom: 14 }}>
-        <button onClick={() => setExigences(!exigences)} data-nuvi="offres-exigences" style={{
+        <button onClick={() => setShowRequirements(!showRequirements)} data-nuvi="offres-exigences" style={{
           ...B({
             padding: "7px 13px", minHeight: 36, borderRadius: RadiusPill,
-            background: actives.length ? Ink : Paper,
-            color: actives.length ? "#fff" : InkMuted,
-            border: "0.5px solid " + (actives.length ? Ink : Hairline),
+            background: active.length ? Ink : Paper,
+            color: active.length ? "#fff" : InkMuted,
+            border: "0.5px solid " + (active.length ? Ink : Hairline),
             fontSize: 12.5, fontWeight: 600, fontFamily: Sans,
           }),
         }}>
-          {(exigences ? L.masquer : L.exigences) + (actives.length ? " \u00b7 " + actives.length : "")}
+          {(showRequirements ? L.hide : L.requirements) + (active.length ? " \u00b7 " + active.length : "")}
         </button>
 
-        {exigences && (
+        {showRequirements && (
           <div style={{
             marginTop: 10, padding: "12px 14px", borderRadius: RadiusMd,
             background: CreamSoft, border: "0.5px solid " + Hairline,
             display: "grid", gap: 10, fontFamily: Sans,
           }}>
-            {["remote", "langue", "contrat", "seniorite", "depuisJours"].map((cle) => (
-              <label key={cle} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5 }}>
-                <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.etiquettes[cle]}</span>
+            {["workplace", "language", "contract", "level", "postedWithin"].map((key) => (
+              <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5 }}>
+                <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.labels[key]}</span>
                 <select
-                  value={String(filtres[cle] ?? "")}
-                  onChange={(e) => poserUneExigence(cle, e.target.value)}
+                  value={String(filters[key] ?? "")}
+                  onChange={(e) => setRequirement(key, e.target.value)}
                   style={{
                     flex: 1, minHeight: 38, padding: "0 9px", borderRadius: RadiusSm,
                     border: "1px solid " + Hairline, background: Paper, color: Ink,
                     fontSize: 13, fontFamily: Sans, boxSizing: "border-box",
                   }}
                 >
-                  {L.valeurs[cle].map(([v, libelle]) => (
-                    <option key={v} value={v}>{libelle}</option>
+                  {L.values[key].map(([v, label]) => (
+                    <option key={v} value={v}>{label}</option>
                   ))}
                 </select>
               </label>
             ))}
             <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5 }}>
-              <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.etiquettes.salaireMin}</span>
+              <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.labels.salaryFrom}</span>
               <input
                 type="number" min="0" step="1000" inputMode="numeric"
-                value={filtres.salaireMin || ""}
-                onChange={(e) => poserUneExigence("salaireMin", e.target.value)}
+                value={filters.salaryFrom || ""}
+                onChange={(e) => setRequirement("salaryFrom", e.target.value)}
                 style={{ ...field, flex: 1, minHeight: 38 }} />
             </label>
-            {!actives.length && (
-              <div style={{ fontSize: 11.5, color: InkMuted, lineHeight: 1.45 }}>{L.rien}</div>
+            {!active.length && (
+              <div style={{ fontSize: 11.5, color: InkMuted, lineHeight: 1.45 }}>{L.nothing}</div>
             )}
           </div>
         )}
@@ -392,18 +391,18 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         <p style={{ fontSize: 13.5, color: InkMuted, fontFamily: Sans }}>{L.none}</p>
       )}
 
-      {(jobs.length > 0 || (etatIndex && etatIndex.en_attente > 0)) && (
+      {(jobs.length > 0 || (indexState && indexState.pending > 0)) && (
         <div style={{ fontSize: 11, color: InkMuted, marginBottom: 10, fontFamily: Sans, lineHeight: 1.5 }}>
           {jobs.length > 0
             ? (total > jobs.length ? L.sur(jobs.length, total) : String(jobs.length))
               + " · " + L.from + " " + sources.join(", ")
             : null}
-          {indecis.sansSalaire ? <div>{L.sansSalaire(indecis.sansSalaire)}</div> : null}
-          {indecis.sansDate ? <div>{L.sansDate(indecis.sansDate)}</div> : null}
-          {etatIndex && etatIndex.tableaux ? (
+          {undecided.noSalary ? <div>{L.noSalary(undecided.noSalary)}</div> : null}
+          {undecided.noDate ? <div>{L.noDate(undecided.noDate)}</div> : null}
+          {indexState && indexState.boards ? (
             <div>
-              {L.lus(etatIndex.lus, etatIndex.tableaux)}
-              {etatIndex.en_attente > 0 ? " · " + L.encore : null}
+              {L.read(indexState.read, indexState.boards)}
+              {indexState.pending > 0 ? " · " + L.more : null}
             </div>
           ) : null}
         </div>
@@ -456,11 +455,11 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         </div>
       ))}
 
-      {plus && (
+      {hasMore && (
         <button
           type="button"
-          onClick={() => chercher(true)}
-          disabled={plusEnCours}
+          onClick={() => runSearch(true)}
+          disabled={loadingMore}
           data-nuvi="offres-plus"
           style={{
             ...B({
@@ -470,7 +469,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
               fontSize: 13.5, fontWeight: 600, fontFamily: Sans,
             }),
           }}
-        >{plusEnCours ? L.plusEnCours : L.plus}</button>
+        >{loadingMore ? L.showingMore : L.showMore}</button>
       )}
     </Sheet>
   );

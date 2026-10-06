@@ -1,50 +1,48 @@
-// UNE PHRASE EST UNE RECHERCHE, ET UN FILTRE NE DOIT RIEN AVALER EN SILENCE
+// A SENTENCE IS A SEARCH, AND A FILTER MUST SWALLOW NOTHING IN SILENCE
 //
-// Kilian, le 6 octobre 2026 : "si j'ecris trouve moi un job de francophone
-// avec mon CV a Londres, est-ce que ca cherche sur tout internet ?" La
-// recherche n'avait que deux champs, l'intitule et la ville : "francophone"
-// n'etait ni l'un ni l'autre, et c'est pourtant l'exigence qui compte le
-// plus pour lui. Une annonce londonienne qui demande le francais est une
-// annonce ou son profil passe devant les autres.
+// Kilian, 6 October 2026: "if I write find me a French speaker job with my
+// CV in London, does it search the whole internet?" The search had two
+// fields, a title and a city: "French speaker" was neither, and it is the
+// requirement that matters most to him. A London ad that asks for French is
+// an ad where his profile walks past the others.
 //
-// CE QUE CE TEST TIENT
+// WHAT THIS SUITE HOLDS
 //
-// Le modele traduit la phrase, il ne cherche pas, donc rien ici n'appelle
-// l'IA. Ce qui est a nous, c'est la lecture des exigences dans la prose de
-// l'annonce, et c'est la que tout se joue : un mot present ne veut pas dire
-// ce qu'on croit.
+// The model translates the sentence, it does not search, so nothing here
+// calls the AI. What is ours is reading the requirements out of the prose of
+// an ad, and that is where it all turns on:
 //
-//   1. "Fluent French essential" exige le francais. "We serve the French
-//      market" et "French fries on the menu" ne l'exigent pas. C'est la
-//      meme lecon que includes("account") dans "accounting".
-//   2. "This role is not remote" n'est pas une offre de remote, alors que la
-//      phrase contient le mot. Le refus se teste avant l'offre, comme le
-//      parrainage avant le droit de travailler dans extension/champs.js.
-//   3. Une annonce sans salaire PASSE un plancher, et le compte des indecis
-//      le dit. L'ecarter viderait la liste de ses meilleures offres sans
-//      qu'un mot le dise.
-//   4. Ce que le modele rend est ramene dans les clous : une enumeration
-//      inconnue devient vide, pas un filtre qui n'accepte rien.
+//   1. "Fluent French essential" requires French. "We serve the French
+//      market" and "French fries on the menu" do not. Same lesson as
+//      includes("account") inside "accounting".
+//   2. "This role is not remote" is not a remote job, although the sentence
+//      contains the word. The refusal is tested before the offer, like
+//      sponsorship before right to work in extension/champs.js.
+//   3. An ad with no salary PASSES a floor, and the undecided count says so.
+//      Dropping it would empty the list of its best offers with nothing
+//      saying so.
+//   4. What the model returns is pulled back into range: an unknown enum
+//      becomes empty, not a filter that accepts nothing.
 
 import {
-  passeLesFiltres, compterLesIndecis, filtresActifs, formeDeTravail,
-  offreExigeLaLangue, plancherAnnonce, typeDeContrat, niveauDuPoste, FILTRES_VIDES,
-} from "../lib/filtresDOffre.js";
+  passesFilters, countTheUndecided, activeFilters, workplaceKind,
+  jobRequiresLanguage, advertisedFloor, contractKind, jobLevel, NO_FILTERS,
+} from "../lib/jobFilters.js";
 import {
-  filtresDepuisLeModele, parametresDeRecherche, filtresDepuisLesParametres,
-  consigneDeRecherche, SCHEMA_RECHERCHE,
-} from "../lib/rechercheEnPhrase.js";
+  filtersFromTheModel, searchParams, filtersFromParams,
+  searchInstruction, SEARCH_SCHEMA,
+} from "../lib/searchFromASentence.js";
 
-const offre = (titre, texte, extra = {}) => ({
-  id: "1", source: "ats", title: titre, company: "Test Ltd", location: "London, UK",
-  url: "https://example.invalid/1", description: texte, ...extra,
+const job = (title, text, extra = {}) => ({
+  id: "1", source: "ats", title, company: "Test Ltd", location: "London, UK",
+  url: "https://example.invalid/1", description: text, ...extra,
 });
 
 export async function run() {
   const failures = [];
 
-  // --- 1. LA LANGUE EXIGEE, PAS LA LANGUE MENTIONNEE ---------------------
-  const exige = [
+  // --- 1. THE LANGUAGE REQUIRED, NOT THE LANGUAGE MENTIONED --------------
+  const required = [
     "Fluent French is essential for this role.",
     "We are looking for a French speaker.",
     "French-speaking candidates only.",
@@ -53,161 +51,162 @@ export async function run() {
     "Francais courant exige.",
     "Maitrise du francais indispensable.",
   ];
-  for (const t of exige) {
-    if (!offreExigeLaLangue(offre("Account Manager", t), "french")) {
-      failures.push("\"" + t + "\" n'est pas lu comme une exigence de francais");
+  for (const t of required) {
+    if (!jobRequiresLanguage(job("Account Manager", t), "french")) {
+      failures.push("\"" + t + "\" is not read as a French requirement");
     }
   }
-  const mentionne = [
+  const mentioned = [
     "We serve the French market from London.",
     "Our French office opened in 2024.",
     "French fries are on the canteen menu.",
     "You will report to the French CEO.",
     "Experience with French GAAP is a plus.",
   ];
-  for (const t of mentionne) {
-    if (offreExigeLaLangue(offre("Account Manager", t), "french")) {
+  for (const t of mentioned) {
+    if (jobRequiresLanguage(job("Account Manager", t), "french")) {
       failures.push(
-        "\"" + t + "\" est lu comme une exigence de francais.\n" +
-        "      C'est la lecon d'includes(\"account\") dans \"accounting\" : le mot est la,\n" +
-        "      l'exigence n'y est pas, et la personne postule a un poste qui ne la cherche pas."
+        "\"" + t + "\" is read as a French requirement.\n" +
+        "      Same lesson as includes(\"account\") inside \"accounting\": the word is\n" +
+        "      there, the requirement is not, and the person applies to a role that is\n" +
+        "      not looking for them."
       );
     }
   }
-  if (offreExigeLaLangue(offre("Account Manager", "Fluent French essential."), "german")) {
-    failures.push("une annonce en francais est rendue pour une recherche en allemand");
+  if (jobRequiresLanguage(job("Account Manager", "Fluent French essential."), "german")) {
+    failures.push("an ad requiring French is returned for a German search");
   }
 
-  // --- 2. LA NEGATION CONTIENT LE MOT -----------------------------------
-  const formes = [
+  // --- 2. THE NEGATION CONTAINS THE WORD ---------------------------------
+  const shapes = [
     ["This role is fully remote.", "remote"],
     ["Work from home, UK based.", "remote"],
-    ["Hybrid: 3 days a week in the office.", "hybride"],
-    ["This role is not remote.", "surplace"],
-    ["On-site only, central London.", "surplace"],
+    ["Hybrid: 3 days a week in the office.", "hybrid"],
+    ["This role is not remote.", "onsite"],
+    ["On-site only, central London.", "onsite"],
   ];
-  for (const [t, attendu] of formes) {
-    const vu = formeDeTravail(offre("Account Manager", t));
-    if (vu !== attendu) {
-      failures.push("\"" + t + "\" est lu \"" + vu + "\" au lieu de \"" + attendu + "\"");
+  for (const [t, expected] of shapes) {
+    const seen = workplaceKind(job("Account Manager", t));
+    if (seen !== expected) {
+      failures.push("\"" + t + "\" is read as \"" + seen + "\" instead of \"" + expected + "\"");
     }
   }
-  // Quelqu'un qui veut du remote prend l'hybride. L'inverse n'est pas vrai.
-  if (!passeLesFiltres(offre("x", "Hybrid, 2 days a week in the office."), { remote: "remote" })) {
-    failures.push("une offre hybride est refusee a qui cherche du remote : trois jours chez soi valent mieux que rien");
+  // Someone who wants remote will take hybrid. The reverse is not true.
+  if (!passesFilters(job("x", "Hybrid, 2 days a week in the office."), { workplace: "remote" })) {
+    failures.push("a hybrid job is refused to someone looking for remote: three days at home beats nothing");
   }
-  if (passeLesFiltres(offre("x", "This role is not remote."), { remote: "remote" })) {
-    failures.push("une offre explicitement sur place est rendue a qui cherche du remote");
+  if (passesFilters(job("x", "This role is not remote."), { workplace: "remote" })) {
+    failures.push("an explicitly on-site job is returned to someone looking for remote");
   }
 
-  // --- 3. UN FILTRE QUI NE PEUT PAS TRANCHER N'EXCLUT PAS ----------------
-  const muette = offre("Account Manager", "A great role.", { salary: null });
-  if (!passeLesFiltres(muette, { salaireMin: 50000 })) {
+  // --- 3. A FILTER THAT CANNOT DECIDE DOES NOT EXCLUDE -------------------
+  const silent = job("Account Manager", "A great role.", { salary: null });
+  if (!passesFilters(silent, { salaryFrom: 50000 })) {
     failures.push(
-      "une annonce sans salaire est ecartee par un plancher.\n" +
-      "      La moitie des annonces ne le disent pas : demander 50 000 viderait la liste\n" +
-      "      de ses meilleures offres sans qu'un mot le dise."
+      "an ad with no salary is dropped by a floor.\n" +
+      "      Half of ads do not state one: asking for 50,000 would empty the list of\n" +
+      "      its best offers with nothing saying so."
     );
   }
-  if (passeLesFiltres(offre("x", "", { salary: "28000 - 32000" }), { salaireMin: 50000 })) {
-    failures.push("un salaire annonce sous le plancher passe quand meme : le filtre ne filtre rien");
+  if (passesFilters(job("x", "", { salary: "28000 - 32000" }), { salaryFrom: 50000 })) {
+    failures.push("an advertised salary below the floor passes anyway: the filter filters nothing");
   }
-  if (plancherAnnonce({ salary: "45k-60k" }) !== 45000) failures.push('"45k-60k" n\'est pas lu comme 45000');
-  if (plancherAnnonce({ salary: "GBP 50,000" }) !== 50000) failures.push('"GBP 50,000" n\'est pas lu');
-  if (plancherAnnonce({ salary: "Competitive" }) !== null) failures.push('"Competitive" devrait rendre null');
-  if (plancherAnnonce({ salary: "500 per day" }) !== null) {
-    failures.push("un taux journalier est compare a un plancher annuel : toutes les missions seraient refusees");
+  if (advertisedFloor({ salary: "45k-60k" }) !== 45000) failures.push('"45k-60k" is not read as 45000');
+  if (advertisedFloor({ salary: "GBP 50,000" }) !== 50000) failures.push('"GBP 50,000" is not read');
+  if (advertisedFloor({ salary: "Competitive" }) !== null) failures.push('"Competitive" should return null');
+  if (advertisedFloor({ salary: "500 per day" }) !== null) {
+    failures.push("a day rate is compared to an annual floor: every contract role would be refused");
   }
-  const indecis = compterLesIndecis([muette, offre("x", "", { salary: "60000" })], { salaireMin: 50000 });
-  if (indecis.sansSalaire !== 1) {
-    failures.push("le compte des annonces sans salaire est " + indecis.sansSalaire + " au lieu de 1 :"
-      + " sans lui, la personne croit que toutes tiennent son plancher");
+  const undecided = countTheUndecided([silent, job("x", "", { salary: "60000" })], { salaryFrom: 50000 });
+  if (undecided.noSalary !== 1) {
+    failures.push("the count of ads with no salary is " + undecided.noSalary + " instead of 1:"
+      + " without it the person believes they all clear the floor");
   }
 
-  // Une date absente passe aussi, pour la meme raison.
-  if (!passeLesFiltres(offre("x", "", { created: "" }), { depuisJours: 7 })) {
-    failures.push("une annonce sans date est ecartee par un filtre de fraicheur");
+  // A missing date passes too, for the same reason.
+  if (!passesFilters(job("x", "", { created: "" }), { postedWithin: 7 })) {
+    failures.push("an ad with no date is dropped by a freshness filter");
   }
-  const vieille = offre("x", "", { created: new Date(Date.now() - 40 * 86400000).toISOString() });
-  if (passeLesFiltres(vieille, { depuisJours: 7 })) failures.push("une annonce de 40 jours passe un filtre de 7 jours");
+  const old = job("x", "", { created: new Date(Date.now() - 40 * 86400000).toISOString() });
+  if (passesFilters(old, { postedWithin: 7 })) failures.push("a 40 day old ad passes a 7 day filter");
 
-  // --- 4. LE CONTRAT ET LE NIVEAU ---------------------------------------
-  if (typeDeContrat(offre("x", "A full-time internship in our London office.")) !== "stage") {
-    failures.push("\"full-time internship\" est lu comme un CDI : l'ordre des motifs compte");
+  // --- 4. THE CONTRACT AND THE LEVEL -------------------------------------
+  if (contractKind(job("x", "A full-time internship in our London office.")) !== "internship") {
+    failures.push("\"full-time internship\" is read as permanent: the order of the patterns matters");
   }
-  if (typeDeContrat(offre("x", "6 month fixed-term contract.")) !== "mission") {
-    failures.push("un CDD n'est pas lu comme une mission");
+  if (contractKind(job("x", "6 month fixed-term contract.")) !== "contract") {
+    failures.push("a fixed-term contract is not read as contract work");
   }
-  if (niveauDuPoste(offre("Head of Partnerships", "")) !== "lead") failures.push("\"Head of\" n'est pas un niveau lead");
-  if (niveauDuPoste(offre("Account Manager", "You will work with senior stakeholders and report to the Head of Sales.")) !== "confirme") {
+  if (jobLevel(job("Head of Partnerships", "")) !== "lead") failures.push("\"Head of\" is not a lead level");
+  if (jobLevel(job("Account Manager", "You will work with senior stakeholders and report to the Head of Sales.")) !== "mid") {
     failures.push(
-      "le niveau est lu dans le corps de l'annonce.\n" +
-      "      Toute annonce dit \"senior stakeholders\" et \"report to the Head of\" :\n" +
-      "      le niveau du poste est dans son intitule, pas dans sa prose."
+      "the level is read from the body of the ad.\n" +
+      "      Every ad says \"senior stakeholders\" and \"report to the Head of\": the\n" +
+      "      level of a role is in its title, not in its prose."
     );
   }
 
-  // --- 5. CE QUE LE MODELE REND EST RAMENE DANS LES CLOUS ----------------
-  const { filtres, lu } = filtresDepuisLeModele({
+  // --- 5. WHAT THE MODEL RETURNS IS PULLED BACK INTO RANGE ---------------
+  const { filters, understood } = filtersFromTheModel({
     what: " Account Manager ", where: "London", country: "GB",
-    langue: "french", remote: "n'importe quoi", contrat: "cdi",
-    salaireMin: "55000", depuisJours: -3, seniorite: "inconnu",
-    lu: "Postes de gestion de comptes a Londres qui exigent le francais.",
+    language: "french", workplace: "anything at all", contract: "permanent",
+    salaryFrom: "55000", postedWithin: -3, level: "unknown",
+    understood: "Account management roles in London that require French.",
   });
-  if (filtres.what !== "Account Manager") failures.push("l'intitule n'est pas nettoye");
-  if (filtres.country !== "gb") failures.push("le pays n'est pas ramene en minuscules");
-  if (filtres.remote !== "") {
-    failures.push("une valeur hors enumeration est gardee : le filtre n'accepterait plus aucune offre");
+  if (filters.what !== "Account Manager") failures.push("the title is not trimmed");
+  if (filters.country !== "gb") failures.push("the country is not lower cased");
+  if (filters.workplace !== "") {
+    failures.push("a value outside the enum is kept: the filter would accept no job at all");
   }
-  if (filtres.seniorite !== "") failures.push("un niveau inconnu est garde");
-  if (filtres.salaireMin !== 55000) failures.push("un nombre en chaine n'est pas lu");
-  if (filtres.depuisJours !== 0) failures.push("un nombre negatif de jours n'est pas ramene a zero");
-  if (!lu) failures.push("la phrase comprise n'est pas rendue : l'ecran ne peut rien montrer a corriger");
-  const { filtres: vide } = filtresDepuisLeModele(null);
-  if (vide.what !== "" || vide.country !== "gb") {
-    failures.push("une reponse vide du modele ne donne pas une recherche vide mais une exception");
+  if (filters.level !== "") failures.push("an unknown level is kept");
+  if (filters.salaryFrom !== 55000) failures.push("a number sent as a string is not read");
+  if (filters.postedWithin !== 0) failures.push("a negative number of days is not pulled back to zero");
+  if (!understood) failures.push("the understood sentence is not returned: the screen has nothing to show for correction");
+  const { filters: empty } = filtersFromTheModel(null);
+  if (empty.what !== "" || empty.country !== "gb") {
+    failures.push("an empty model response gives an exception rather than an empty search");
   }
 
-  // --- 6. LA REQUETE FAIT L'ALLER ET LE RETOUR --------------------------
-  const params = parametresDeRecherche(filtres, 3);
-  if (params.get("page") !== "3") failures.push("la page n'est pas transmise");
-  if (params.get("langue") !== "french") failures.push("la langue exigee n'est pas transmise a la route");
-  if (params.has("remote")) failures.push("un filtre vide est transmis : la route le lirait comme une exigence");
-  const retour = filtresDepuisLesParametres(params);
-  for (const cle of ["what", "where", "country", "langue", "contrat", "salaireMin"]) {
-    if (String(retour[cle]) !== String(filtres[cle])) {
-      failures.push("le filtre \"" + cle + "\" ne survit pas a l'aller-retour (" + retour[cle] + ")");
+  // --- 6. THE QUERY SURVIVES THE ROUND TRIP ------------------------------
+  const params = searchParams(filters, 3);
+  if (params.get("page") !== "3") failures.push("the page is not passed on");
+  if (params.get("language") !== "french") failures.push("the required language is not passed to the route");
+  if (params.has("workplace")) failures.push("an empty filter is passed on: the route would read it as a requirement");
+  const back = filtersFromParams(params);
+  for (const key of ["what", "where", "country", "language", "contract", "salaryFrom"]) {
+    if (String(back[key]) !== String(filters[key])) {
+      failures.push("the filter \"" + key + "\" does not survive the round trip (" + back[key] + ")");
     }
   }
-  const injecte = filtresDepuisLesParametres(new URLSearchParams({ langue: "'; DROP--", seniorite: "x" }));
-  if (injecte.langue !== "" || injecte.seniorite !== "") {
-    failures.push("une valeur inventee dans l'adresse devient un filtre");
+  const injected = filtersFromParams(new URLSearchParams({ language: "'; DROP--", level: "x" }));
+  if (injected.language !== "" || injected.level !== "") {
+    failures.push("a made up value in the URL becomes a filter");
   }
 
-  // --- 7. AUCUNE EXIGENCE, AUCUN FILTRE ---------------------------------
-  if (filtresActifs({ ...FILTRES_VIDES, what: "x", where: "y" }).length) {
-    failures.push("l'intitule et la ville comptent comme des exigences : le panneau s'afficherait toujours actif");
+  // --- 7. NO REQUIREMENT, NO FILTER --------------------------------------
+  if (activeFilters({ ...NO_FILTERS, what: "x", where: "y" }).length) {
+    failures.push("the title and the city count as requirements: the panel would always look active");
   }
-  if (!passeLesFiltres(offre("Anything", "Anything at all."), {})) {
-    failures.push("sans aucune exigence, une offre est ecartee");
+  if (!passesFilters(job("Anything", "Anything at all."), {})) {
+    failures.push("with no requirement at all, a job is dropped");
   }
 
-  // --- 8. LA CONSIGNE DIT AU MODELE DE NE RIEN AJOUTER ------------------
-  const consigne = consigneDeRecherche("a French speaking role in London", "en");
-  if (!/do not invent/i.test(consigne) || !/silence/i.test(consigne)) {
+  // --- 8. THE INSTRUCTION FORBIDS ADDING ANYTHING ------------------------
+  const instruction = searchInstruction("a French speaking role in London", "en");
+  if (!/do not invent/i.test(instruction) || !/silence/i.test(instruction)) {
     failures.push(
-      "la consigne n'interdit pas d'ajouter une exigence que la personne n'a pas dite.\n" +
-      "      Un filtre invente retire des offres sans qu'un mot le dise, et c'est la\n" +
-      "      panne que ce depot connait le mieux."
+      "the instruction does not forbid adding a requirement the person did not state.\n" +
+      "      An invented filter removes jobs with nothing saying so, and that is the\n" +
+      "      failure this repo knows best."
     );
   }
-  if (!SCHEMA_RECHERCHE.required.includes("lu")) {
-    failures.push("le schema ne rend pas obligatoire la phrase comprise : l'ecran n'aurait rien a montrer");
+  if (!SEARCH_SCHEMA.required.includes("understood")) {
+    failures.push("the schema does not require the understood sentence: the screen would have nothing to show");
   }
 
   if (!failures.length) {
-    console.log("      une phrase devient des exigences, le francais exige se distingue du francais"
-      + " mentionne, et une annonce muette n'est jamais ecartee en silence");
+    console.log("      a sentence becomes requirements, required French is told apart from"
+      + " mentioned French, and a silent ad is never dropped in silence");
   }
   return failures;
 }

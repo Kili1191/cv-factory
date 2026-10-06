@@ -1,44 +1,41 @@
-// LES OFFRES QUI NE SONT SUR AUCUN SITE D'EMPLOI
+// THE JOBS THAT ARE ON NO JOB SITE
 //
-// Kilian, le 6 octobre 2026, en montrant careerhound.io : "on peut faire
-// pareil ?" Ce produit vend une seule chose, les postes publies sur le site
-// des entreprises et nulle part ailleurs, et son argument est juste : une
-// annonce sur un agregateur a deux cents candidats dans l'heure, l'employeur
-// paie une commission, et il prefere les candidatures directes.
+// Kilian, 6 October 2026, showing careerhound.io: "can we do the same?" That
+// product sells exactly one thing, roles posted on a company's own site and
+// nowhere else, and its argument is right: an ad on an aggregator has two
+// hundred applicants within the hour, the employer pays a commission, and
+// they prefer direct applications.
 //
-// Techniquement c'est a notre portee pour une raison qu'on avait deja
-// mesuree sans la voir : Indeed et LinkedIn repondent 401 a un serveur, et
-// les ATS servent tout en JSON public, sans cle. Les offres que Nuvi ne
-// pourra jamais lire sont celles qu'il ne faut pas viser ; celles qu'il lit
-// sans effort sont celles ou la candidature compte.
+// Technically it is within reach for a reason we had already measured
+// without seeing it: Indeed and LinkedIn answer 401 to a server, and the
+// ATSs serve everything as public JSON with no key. The jobs Nuvi will never
+// read are the ones not worth aiming at; the ones it reads effortlessly are
+// the ones where an application counts.
 //
-// CE QUE CE TEST TIENT, SANS RESEAU
+// WHAT THIS SUITE HOLDS, WITH NO NETWORK
 //
-// Les lectures reelles appartiennent a la CI d'une entreprise tierce, pas a
-// la notre : un tableau Greenhouse qui change de forme un mardi ne doit pas
-// rendre cette suite rouge. On tient donc ce qui est a nous, et qui est
-// aussi ce qui s'est casse pendant l'ecriture :
+// The real reads belong to a third party's CI, not ours: a Greenhouse board
+// changing shape on a Tuesday must not turn this suite red. So it holds what
+// is ours, which is also what broke while it was being written:
 //
-//   1. Chaque ATS est lu dans la forme qu'il rend vraiment, relevee le jour
-//      de l'ecriture sur un vrai tableau.
-//   2. "account manager" ne rend pas "Senior Manager, Accounting". C'est le
-//      defaut de la premiere version : includes() trouve "account" dans
-//      "accounting", et trois des dix premiers resultats etaient de la
-//      comptabilite.
-//   3. Un intitule maison est quand meme trouve, mais seulement si l'annonce
-//      ecrit l'expression entiere. "Client Partner" chez Deliveroo est un
-//      poste de gestion de comptes et son titre ne le dit pas. La regle
-//      d'avant acceptait les deux mots n'importe ou dans le corps, et toute
-//      annonce de manager contient "account" une fois : vingt resultats sur
-//      vingt-neuf etaient du mauvais metier.
-//   4. Le registre ne contient que des entreprises verifiees, avec un ATS
-//      connu. Une ligne devinee serait une recherche plus lente pour rien.
+//   1. Every ATS is read in the shape it really returns, taken from a real
+//      board on the day this was written.
+//   2. "account manager" does not return "Senior Manager, Accounting". That
+//      was the first version's defect: includes() finds "account" inside
+//      "accounting", and three of the first ten results were accountancy.
+//   3. A house job title is still found, but only if the ad writes the whole
+//      phrase. "Client Partner" at Deliveroo is an account management role
+//      and its title does not say so. The earlier rule accepted the two
+//      words anywhere in the body, and every manager ad contains "account"
+//      once: twenty results out of twenty-nine were the wrong trade.
+//   4. The registry holds only verified companies with a known ATS. A
+//      guessed line would be a slower search for nothing.
 
-import { ATS, NOMS_ATS, normaliser, lieuCorrespond, titreCorrespond, lireUnBoard, dansLeMarche, MARCHES } from "../lib/ats.js";
-import { BOARDS, nomDeLEntreprise, boardsDuMarche } from "../lib/boards.js";
+import { ATS, ATS_NAMES, normalise, locationMatches, titleMatches, readABoard, inTheMarket, MARKETS } from "../lib/ats.js";
+import { BOARDS, companyName, boardsForMarket } from "../lib/boards.js";
 
-// Les formes relevees sur de vrais tableaux le 6 octobre 2026.
-const REPONSES = {
+// The shapes taken from real boards on 6 October 2026.
+const RESPONSES = {
   greenhouse: { jobs: [{ title: "Corporate Account Manager", location: { name: "London, UK" },
     absolute_url: "https://job-boards.greenhouse.io/x/jobs/1", updated_at: "2026-10-01", content: "Own a portfolio." }] },
   lever: [{ text: "Account Manager", categories: { location: "London" },
@@ -56,167 +53,166 @@ const REPONSES = {
 export async function run() {
   const failures = [];
 
-  // --- 1. CHAQUE ATS EST LU DANS SA FORME REELLE ------------------------
-  for (const nom of NOMS_ATS) {
-    const postes = ATS[nom].lire(REPONSES[nom]);
-    if (postes.length !== 1) {
-      failures.push(nom + " : " + postes.length + " poste lu au lieu d'un, sur la forme que cet ATS rend vraiment");
+  // --- 1. EVERY ATS IS READ IN THE SHAPE IT REALLY RETURNS --------------
+  for (const name of ATS_NAMES) {
+    const posts = ATS[name].read(RESPONSES[name]);
+    if (posts.length !== 1) {
+      failures.push(name + ": " + posts.length + " jobs read instead of one, from the shape this ATS really returns");
       continue;
     }
-    const p = normaliser(postes[0], "Test Ltd", "ats");
-    if (!/account manager/i.test(p.title)) failures.push(nom + " : l'intitule n'est pas lu (\"" + p.title + "\")");
-    if (!/london/i.test(p.location)) failures.push(nom + " : le lieu n'est pas lu (\"" + p.location + "\")");
+    const p = normalise(posts[0], "Test Ltd", "ats");
+    if (!/account manager/i.test(p.title)) failures.push(name + ": the title is not read (\"" + p.title + "\")");
+    if (!/london/i.test(p.location)) failures.push(name + ": the location is not read (\"" + p.location + "\")");
     if (!/^https?:\/\//.test(p.url)) {
-      failures.push(nom + " : aucune adresse pour postuler.\n" +
-        "      Une offre sans lien est une offre qu'on ne peut pas prendre.");
+      failures.push(name + ": no address to apply at.\n" +
+        "      A job with no link is a job nobody can take.");
     }
-    if (p.company !== "Test Ltd") failures.push(nom + " : l'entreprise est perdue");
+    if (p.company !== "Test Ltd") failures.push(name + ": the company is lost");
   }
 
-  // --- 2. LA COMPTABILITE N'EST PAS LA GESTION DE COMPTES ---------------
-  const comptable = { title: "Senior Manager, Accounting", description: "Month end close and reporting." };
-  if (titreCorrespond(comptable, "account manager")) {
+  // --- 2. ACCOUNTANCY IS NOT ACCOUNT MANAGEMENT -------------------------
+  const accountant = { title: "Senior Manager, Accounting", description: "Month end close and reporting." };
+  if (titleMatches(accountant, "account manager")) {
     failures.push(
-      "\"Senior Manager, Accounting\" est rendu pour \"account manager\".\n" +
-      "      includes() trouve \"account\" dans \"accounting\" : trois des dix premiers resultats\n" +
-      "      de la premiere version etaient du mauvais metier."
+      "\"Senior Manager, Accounting\" is returned for \"account manager\".\n" +
+      "      includes() finds \"account\" inside \"accounting\": three of the first ten\n" +
+      "      results of the first version were the wrong trade."
     );
   }
 
-  // --- 3. UN INTITULE MAISON EST QUAND MEME TROUVE ----------------------
-  const maison = { title: "Client Partner",
+  // --- 3. A HOUSE JOB TITLE IS STILL FOUND ------------------------------
+  const house = { title: "Client Partner",
     description: "Own a portfolio of SME accounts, acting as their account manager day to day." };
-  if (!titreCorrespond(maison, "account manager")) {
+  if (!titleMatches(house, "account manager")) {
     failures.push(
-      "\"Client Partner\" n'est pas trouve pour \"account manager\".\n" +
-      "      C'est le poste de gestion de comptes de Deliveroo ; son titre ne le dit pas, et\n" +
-      "      c'est exactement le genre d'offre que personne ne voit."
+      "\"Client Partner\" is not found for \"account manager\".\n" +
+      "      That is Deliveroo's account management role; its title does not say so, and\n" +
+      "      it is exactly the kind of job nobody sees."
     );
   }
-  const loin = { title: "Data Science Manager",
+  const far = { title: "Data Science Manager",
     description: "You will work with the credit account teams. Reports to the senior manager." };
-  if (titreCorrespond(loin, "account manager")) {
+  if (titleMatches(far, "account manager")) {
     failures.push(
-      "\"Data Science Manager\" est rendu pour \"account manager\".\n" +
-      "      Les deux mots sont dans le corps a trois paragraphes d'ecart, ce que contient\n" +
-      "      toute annonce de manager : vingt resultats sur vingt-neuf etaient du mauvais metier."
+      "\"Data Science Manager\" is returned for \"account manager\".\n" +
+      "      The two words sit three paragraphs apart in the body, which every manager ad\n" +
+      "      does: twenty results out of twenty-nine were the wrong trade."
     );
   }
 
-  // --- 4. UN LIEU EST UNE CHAINE LIBRE ----------------------------------
-  for (const lieu of ["London", "London, United Kingdom", "London, England", "UK - London", "Remote, UK"]) {
-    if (!lieuCorrespond(lieu, "London")) {
-      failures.push("\"" + lieu + "\" n'est pas reconnu comme Londres : chaque ATS l'ecrit autrement");
+  // --- 4. A LOCATION IS FREE TEXT ---------------------------------------
+  for (const location of ["London", "London, United Kingdom", "London, England", "UK - London", "Remote, UK"]) {
+    if (!locationMatches(location, "London")) {
+      failures.push("\"" + location + "\" is not recognised as London: every ATS writes it differently");
     }
   }
-  if (lieuCorrespond("Paris, France", "London")) failures.push("Paris est rendu pour une recherche a Londres");
+  if (locationMatches("Paris, France", "London")) failures.push("Paris is returned for a London search");
 
-  // --- 5. LE REGISTRE NE CONTIENT QUE DU VERIFIE ------------------------
+  // --- 5. THE REGISTRY HOLDS ONLY VERIFIED LINES ------------------------
   if (BOARDS.length < 20) {
-    failures.push("le registre ne porte que " + BOARDS.length + " entreprises : trop peu pour que la recherche vaille");
+    failures.push("the registry carries only " + BOARDS.length + " companies: too few for the search to be worth anything");
   }
   const slugs = new Set();
   for (const b of BOARDS) {
-    if (!NOMS_ATS.includes(b.ats)) failures.push(b.slug + " : ATS inconnu \"" + b.ats + "\"");
-    if (!b.slug || !b.nom) failures.push(JSON.stringify(b) + " : ligne incomplete");
-    if (slugs.has(b.slug)) failures.push(b.slug + " : en double dans le registre");
+    if (!ATS_NAMES.includes(b.ats)) failures.push(b.slug + ': unknown ATS "' + b.ats + '"');
+    if (!b.slug || !b.name) failures.push(JSON.stringify(b) + ": incomplete line");
+    if (slugs.has(b.slug)) failures.push(b.slug + ": duplicated in the registry");
     slugs.add(b.slug);
   }
-  if (nomDeLEntreprise("monzo") === "monzo") {
-    failures.push("le nom lisible de monzo n'est pas renseigne : la liste affichera un identifiant");
+  if (companyName("monzo") === "monzo") {
+    failures.push("monzo has no readable name: the list would show an identifier");
   }
 
-  // --- 6. REPONDRE N'EST PAS APPARTENIR --------------------------------
+  // --- 6. ANSWERING IS NOT BELONGING ------------------------------------
   //
-  // Un identifiant d'ATS est mondial et court, donc il se partage. Les deux
-  // chaines ci-dessous sont celles qu'on a vraiment lues le 6 octobre 2026
-  // en devinant des noms d'entreprises londoniennes : `bbc.recruitee.com`
-  // publie a Mechelen, en Belgique, et `web.jobs.personio.com` a Munich.
-  // Les deux avaient repondu avec des postes, et la regle "une ligne ecrite
-  // est une ligne qui a repondu" les aurait inscrites comme la BBC et comme
-  // une universite de Londres.
-  const usurpateurs = [
-    ["Mechelen, Vlaams Gewest, Belgium", "bbc.recruitee.com, qui n'est pas la BBC"],
-    ["M\u00fcnchen", "web.jobs.personio.com, qui n'est pas a Londres"],
-    ["Salt Lake City", "un tableau americain"],
-    // Il y a un Cambridge, un Boston, un Birmingham, un Manchester, un
-    // Bristol, un Reading et un Oxford aux Etats-Unis. La premiere liste de
-    // mots britanniques contenait "cambridge", et `greenhouse.io/serif`,
-    // Serif Biomedicines a Cambridge Massachusetts, est entre au registre
-    // comme britannique. Un marqueur d'ailleurs l'emporte sur un nom de
-    // ville : c'est le seul ordre qui ne se trompe pas.
-    ["Cambridge, MA", "Serif Biomedicines, qui est dans le Massachusetts"],
-    ["Boston, MA", "un homonyme du Lincolnshire"],
-    ["Reading, PA", "un homonyme du Berkshire"],
-    ["Toronto, Ontario, Canada", "le tableau canadien de Lush"],
-    ["Dublin, Ireland", "l'Irlande, qui n'est pas le Royaume-Uni"],
+  // An ATS identifier is global and short, so it gets shared. The strings
+  // below are the ones really read on 6 October 2026 while guessing London
+  // company names: `bbc.recruitee.com` posts in Mechelen, Belgium, and
+  // `web.jobs.personio.com` in Munich. Both answered with jobs, and the rule
+  // "a line written is a line that answered" would have recorded them as the
+  // BBC and as a London university.
+  const impostors = [
+    ["Mechelen, Vlaams Gewest, Belgium", "bbc.recruitee.com, which is not the BBC"],
+    ["M\u00fcnchen", "web.jobs.personio.com, which is not in London"],
+    ["Salt Lake City", "an American board"],
+    // There is a Cambridge, a Boston, a Birmingham, a Manchester, a Bristol,
+    // a Reading and an Oxford in the United States. The first list of British
+    // words contained "cambridge", and `greenhouse.io/serif`, Serif
+    // Biomedicines in Cambridge Massachusetts, entered the registry as
+    // British. A marker from elsewhere beats a city name: that is the only
+    // order that does not get it wrong.
+    ["Cambridge, MA", "Serif Biomedicines, which is in Massachusetts"],
+    ["Boston, MA", "a namesake of the Lincolnshire one"],
+    ["Reading, PA", "a namesake of the Berkshire one"],
+    ["Toronto, Ontario, Canada", "Lush's Canadian board"],
+    ["Dublin, Ireland", "Ireland, which is not the United Kingdom"],
   ];
-  for (const [lieu, quoi] of usurpateurs) {
-    if (dansLeMarche(lieu, "gb")) {
+  for (const [location, what] of impostors) {
+    if (inTheMarket(location, "gb")) {
       failures.push(
-        "\"" + lieu + "\" passe pour du marche britannique : " + quoi + " entrerait au registre.\n" +
-        "      Le filtre par lieu est la seule chose qui distingue un homonyme d'une entreprise."
+        "\"" + location + "\" passes as the British market: " + what + " would enter the registry.\n" +
+        "      The location filter is the only thing telling a namesake from a company."
       );
     }
   }
-  // Le pays nomme gagne toujours, meme dans une chaine multi-sites : sinon
-  // une offre ouverte a New York ET a Londres serait perdue.
-  for (const lieu of ["London, UK", "Manchester", "Remote, England", "Edinburgh, Scotland",
+  // The named country always wins, even inside a multi-site string:
+  // otherwise a job open in New York AND London would be lost.
+  for (const location of ["London, UK", "Manchester", "Remote, England", "Edinburgh, Scotland",
     "United Kingdom", "Cambridge, Cambridgeshire", "Reading, Berkshire",
     "New York, NY \u00b7 London, United Kingdom"]) {
-    if (!dansLeMarche(lieu, "gb")) {
-      failures.push("\"" + lieu + "\" est refuse du marche britannique : de vraies entreprises seraient perdues");
+    if (!inTheMarket(location, "gb")) {
+      failures.push("\"" + location + "\" is refused from the British market: real companies would be lost");
     }
   }
-  // Un marche inconnu ne doit rien filtrer : sinon ajouter un pays au
-  // registre viderait sa recherche en silence, et rien ne le dirait.
-  if (!dansLeMarche("Sao Paulo", "br")) {
-    failures.push("un marche absent de MARCHES filtre tout : la recherche se vide sans le dire");
+  // An unknown market must filter nothing: otherwise adding a country to the
+  // registry would empty its search in silence, with nothing saying so.
+  if (!inTheMarket("Sao Paulo", "br")) {
+    failures.push("a market missing from MARKETS filters everything: the search empties without saying so");
   }
-  if (Object.keys(MARCHES).length < 4) failures.push("MARCHES ne couvre presque aucun pays");
+  if (Object.keys(MARKETS).length < 4) failures.push("MARKETS covers almost no country");
 
-  // --- 7. UN CHAMP AJOUTE NE RETIRE PERSONNE ----------------------------
+  // --- 7. A FIELD THAT GETS ADDED REMOVES NOBODY ------------------------
   //
-  // Les quarante-neuf premieres lignes n'ont pas de marche. Si le filtre les
-  // ecartait, la recherche d'hier rendrait moins que celle d'avant-hier, et
-  // c'est exactement le genre de regression qu'aucun ecran ne montre.
-  const sansMarche = BOARDS.filter((b) => !b.marche);
+  // The first forty-nine lines have no market. If the filter dropped them,
+  // yesterday's search would return less than the day before's, and that is
+  // exactly the kind of regression no screen shows.
+  const noMarket = BOARDS.filter((b) => !b.market);
   for (const code of ["gb", "fr", "us", "zz"]) {
-    const retenus = boardsDuMarche(code);
-    for (const b of sansMarche) {
-      if (!retenus.some((x) => x.slug === b.slug)) {
-        failures.push(b.slug + " disparait de la recherche " + code
-          + " alors que sa ligne ne declare aucun marche");
+    const kept = boardsForMarket(code);
+    for (const b of noMarket) {
+      if (!kept.some((x) => x.slug === b.slug)) {
+        failures.push(b.slug + " disappears from the " + code
+          + " search although its line declares no market");
         break;
       }
     }
   }
-  const gb = boardsDuMarche("gb");
-  if (BOARDS.some((b) => b.marche === "fr") && gb.some((b) => b.marche === "fr")) {
-    failures.push("un tableau declare francais est lu par une recherche britannique : le marche ne filtre rien");
+  const gb = boardsForMarket("gb");
+  if (BOARDS.some((b) => b.market === "fr") && gb.some((b) => b.market === "fr")) {
+    failures.push("a board declared French is read by a British search: the market filters nothing");
   }
   for (const b of BOARDS) {
-    if (b.marche && !MARCHES[b.marche]) {
-      failures.push(b.slug + ' porte le marche "' + b.marche + '", que dansLeMarche ne connait pas :'
-        + " sa ligne ne sera jamais filtree sur le lieu");
+    if (b.market && !MARKETS[b.market]) {
+      failures.push(b.slug + ' carries the market "' + b.market + '", which inTheMarket does not know:'
+        + " its line will never be filtered on location");
     }
   }
 
-  // --- 8. UN TABLEAU MUET NE CASSE PAS LA RECHERCHE ---------------------
+  // --- 8. A SILENT BOARD DOES NOT BREAK THE SEARCH ----------------------
   //
-  // Une entreprise change d'ATS, et son identifiant ne repond plus. Si cette
-  // lecture levait, les quarante-huit autres seraient perdues avec elle.
-  const mort = await lireUnBoard("nexistepas", "greenhouse", async () => { throw new Error("ENOTFOUND"); });
-  if (!mort.erreur || mort.postes.length) {
-    failures.push("un tableau injoignable ne se declare pas en erreur : la recherche entiere tombe avec lui");
+  // A company changes ATS and its identifier stops answering. If this read
+  // threw, the other forty-eight would be lost with it.
+  const dead = await readABoard("doesnotexist", "greenhouse", async () => { throw new Error("ENOTFOUND"); });
+  if (!dead.error || dead.posts.length) {
+    failures.push("an unreachable board does not report an error: the whole search falls with it");
   }
-  const inconnu = await lireUnBoard("x", "pasunats", async () => { throw new Error("jamais appele"); });
-  if (!inconnu.erreur) failures.push("un ATS inconnu n'est pas refuse");
+  const unknown = await readABoard("x", "notanats", async () => { throw new Error("never called"); });
+  if (!unknown.error) failures.push("an unknown ATS is not refused");
 
   if (!failures.length) {
-    console.log("      " + BOARDS.length + " pages carriere verifiees ("
-      + boardsDuMarche("gb").length + " pour le marche britannique), six ATS lus dans leur forme reelle, "
-      + "et ni la comptabilite ni les homonymes n'entrent dans les resultats");
+    console.log("      " + BOARDS.length + " verified career pages ("
+      + boardsForMarket("gb").length + " for the British market), six ATSs read in their real shape, "
+      + "and neither accountancy nor namesakes reach the results");
   }
   return failures;
 }

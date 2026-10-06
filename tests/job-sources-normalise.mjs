@@ -11,7 +11,7 @@
 
 import {
   franceTravailParse, adzunaParse, reedParse,
-  availableSources, adzunaUrl, reedUrl, reedAuthHeader, combienEnTout,
+  availableSources, adzunaUrl, reedUrl, reedAuthHeader, totalAtTheSource,
 } from "../lib/jobSources.js";
 
 const REQUIRED = ["id", "source", "title", "company", "location", "url", "description"];
@@ -117,37 +117,37 @@ export async function run() {
     failures.push("Reed : en-tete d'authentification mal formee");
   }
 
-  // --- LE PLAFOND QUE LA PERSONNE VOIT -------------------------------------
+  // --- THE CEILING THE PERSON ACTUALLY SEES --------------------------------
   //
-  // La premiere version demandait vingt resultats de la premiere page, et
-  // jamais la suivante. Les agregateurs ont des centaines de milliers
-  // d'annonces derriere la meme requete, et elles etaient inatteignables :
-  // le plafond n'etait pas l'index, c'etait vingt.
+  // The first version asked for twenty results from page one, and never the
+  // next. Aggregators hold hundreds of thousands of ads behind the same
+  // query, and they were unreachable: the ceiling was not the index, it was
+  // twenty.
   const p2 = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
     { what: "a", where: "b", country: "gb", page: 3 });
-  if (!p2.includes("/search/3?")) failures.push("Adzuna : la page demandee est ignoree");
+  if (!p2.includes("/search/3?")) failures.push("Adzuna: the requested page is ignored");
   if (!p2.includes("results_per_page=50")) {
-    failures.push("Adzuna : moins de cinquante resultats par page, alors que c'est son maximum");
+    failures.push("Adzuna: fewer than fifty results per page, when fifty is its maximum");
   }
   const r3 = reedUrl({ what: "a", where: "b", page: 3 });
   if (!r3.includes("resultsToSkip=100")) {
-    failures.push("Reed : la page demandee n'avance pas le curseur, les memes offres reviennent");
+    failures.push("Reed: the requested page does not move the cursor, the same jobs come back");
   }
   if (reedUrl({ what: "a" }).includes("resultsToSkip=50")) {
-    failures.push("Reed : la premiere page saute des offres");
+    failures.push("Reed: the first page skips jobs");
   }
 
-  // Le total annonce par la source. Sans lui on ecrit "50", ce qui se lit
-  // comme la fin du gisement au lieu du debut.
-  if (combienEnTout({ count: 64321 }) !== 64321) failures.push("Adzuna : le total n'est pas lu");
-  if (combienEnTout({ totalResults: 812 }) !== 812) failures.push("Reed : le total n'est pas lu");
-  if (combienEnTout(null) !== 0 || combienEnTout({}) !== 0) {
-    failures.push("une reponse sans total doit donner zero, pas une exception");
+  // The total the source declares. Without it we write "50", which reads as
+  // the end of the seam instead of the start of it.
+  if (totalAtTheSource({ count: 64321 }) !== 64321) failures.push("Adzuna: the total is not read");
+  if (totalAtTheSource({ totalResults: 812 }) !== 812) failures.push("Reed: the total is not read");
+  if (totalAtTheSource(null) !== 0 || totalAtTheSource({}) !== 0) {
+    failures.push("a response with no total must give zero, not an exception");
   }
 
   if (!failures.length) {
-    console.log("      3 sources, meme forme en sortie, cinquante par page qui se tourne, "
-      + "et rien ne casse sur une reponse vide");
+    console.log("      3 sources, the same shape out, fifty per page that turns, "
+      + "and nothing breaks on an empty response");
   }
   return failures;
 }

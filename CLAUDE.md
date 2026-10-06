@@ -181,7 +181,7 @@ Le registre des pages carriere se fabrique, et il ne tient pas dans une
 requête. Les offres qui ne sont sur aucun site d'emploi sont servies en JSON
 public par les six grands ATS : lire un tableau est trivial, savoir qu'il
 existe ne l'est pas, et c'est la seule part de cette fonctionnalité qui coûte
-du temps à un concurrent. `scripts/trouver-des-tableaux.mjs` prend donc les
+du temps à un concurrent. `scripts/find-job-boards.mjs` prend donc les
 noms chez Wikidata, qui rend les entreprises par siège social avec leur site
 officiel, sans clé : 1201 pour Londres en une seconde avec le prédicat direct
 `wdt:P159` (le chemin transitif `wdt:P131*`, « dans le Grand Londres », met
@@ -228,7 +228,7 @@ liste de mots contenait « cambridge », et `greenhouse.io/serif`, Serif
 Biomedicines à Cambridge Massachusetts, est entré au registre comme
 britannique. Il y a un Boston, un Birmingham, un Manchester, un Bristol, un
 Reading et un Oxford aux États-Unis, et la forme américaine les écrit avec
-le code de l'État juste après. `dansLeMarche` teste donc dans cet ordre : le
+le code de l'État juste après. `inTheMarket` teste donc dans cet ordre : le
 pays nommé gagne toujours (« New York, NY · London, United Kingdom » reste
 vrai), puis un marqueur d'ailleurs refuse, et seulement ensuite le nom de
 ville compte. Les codes d'État sont testés en majuscules, comme ils
@@ -263,7 +263,7 @@ les sitemaps de Greenhouse, Lever et Ashby sont 301, 404 ou du HTML vide.
 Ce qui reste, et qui vaut mieux que tout ça : **les agrégateurs nomment
 l'employeur sur chaque annonce**, et ce sont exactement les entreprises qui
 embauchent dans le marché de la personne aujourd'hui.
-`scripts/trouver-des-tableaux.mjs --agregateur` les reprend, donc le
+`scripts/find-job-boards.mjs --aggregator` les reprend, donc le
 registre grandit avec l'usage au lieu d'une liste recopiée. La même clé
 gratuite ouvre les deux.
 
@@ -312,7 +312,7 @@ l'exigence qui compte le plus pour lui, parce qu'une annonce londonienne qui
 demande le français est une annonce où son profil passe devant les autres,
 et aucun site d'emploi ne sait la trouver.
 
-`lib/rechercheEnPhrase.js` fait traduire la phrase par le modèle en
+`lib/searchFromASentence.js` fait traduire la phrase par le modèle en
 exigences, et c'est la recherche qui cherche. La distinction est tout : un
 modèle qui « trouverait des offres » les inventerait, et une offre inventée
 est la seule chose que ce produit ne peut pas se permettre. La phrase
@@ -324,7 +324,7 @@ prendre là est du choix dans le matériau de la personne, pas de l'invention.
 Ce que le modèle ne fait jamais : ajouter une exigence qu'on ne lui a pas
 demandée, parce qu'un filtre inventé retire des offres en silence.
 
-`lib/filtresDOffre.js` lit les six exigences dans la prose de l'annonce, et
+`lib/jobFilters.js` lit les six exigences dans la prose de l'annonce, et
 c'est exactement ce qu'un agrégateur ne sait pas faire : `what` et `where`
 partent à la source, « l'annonce exige le français » se lit dans le texte.
 Deux règles portent tout le fichier.
@@ -345,7 +345,7 @@ niveau se lit dans l'intitulé seulement, parce que toute annonce dit
 ne disent pas le salaire. Si un plancher les écartait, demander 50 000
 viderait la liste de ses meilleures offres sans qu'un mot le dise, et c'est
 la panne silencieuse que ce dépôt connaît le mieux. Elles passent donc, et
-`compterLesIndecis` dit combien elles sont pour que l'écran écrive « dont 31
+`countTheUndecided` dit combien elles sont pour que l'écran écrive « dont 31
 sans salaire annoncé ». Idem pour une date absente.
 
 Et il n'y a qu'un bouton. La première version en avait deux, tous les deux
@@ -734,6 +734,15 @@ y a exactement le même statut qu'avant.
 l'a en tête, parce que dans six mois personne ne l'aura. Ça ne change pas avec
 la langue : un commentaire anglais qui se contente de répéter la ligne de code
 en dessous ne vaut pas mieux que son équivalent français.
+
+Le 6 octobre 2026, tout ce qui a été écrit dans la journée l'a été en
+français, puis retraduit en anglais sur un rappel de Kilian : la recherche
+d'offres, `lib/ats.js`, `lib/boards.js`, `lib/jobFilters.js`,
+`lib/searchFromASentence.js`, les deux scripts de découverte et leurs suites.
+Les identifiants aussi, pas seulement les commentaires. Ce qui n'a pas été
+traduit est le français qui précède le 30 août 2026, dans les fichiers que ce
+travail n'a fait que traverser, et les textes que l'utilisateur lit, qui
+restent bilingues par choix produit.
 
 **Pas d'accents ni de caractères non ASCII dans les commentaires de code.**
 `docs/` et ce fichier sont accentués. Les commentaires dans `.js`, `.jsx` et

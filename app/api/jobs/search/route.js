@@ -1,114 +1,113 @@
-// Recherche d'offres, cote serveur.
+// Job search, server side.
 //
-// Les cles des sources sont des secrets : elles ne doivent jamais atteindre le
-// navigateur. Cette route interroge les sources configurees en parallele et
-// rend une liste unique, de forme identique quelle que soit l'origine.
+// The source keys are secrets: they must never reach the browser. This route
+// queries every configured source in parallel and returns a single list,
+// identical in shape whatever it came from.
 //
-// Une source non configuree est simplement absente. Une source en panne est
-// signalee sans empecher les autres de repondre : mieux vaut vingt offres et
-// un avertissement que rien du tout.
+// A source that is not configured is simply absent. A source that is down is
+// reported without stopping the others from answering: twenty jobs and a
+// warning beat nothing at all.
 
 import {
   franceTravailConfigured, franceTravailToken, franceTravailParse,
   adzunaConfigured, adzunaUrl, adzunaParse,
   reedConfigured, reedUrl, reedAuthHeader, reedParse,
-  availableSources, combienEnTout,
+  availableSources, totalAtTheSource,
 } from "../../../../lib/jobSources.js";
-import { lireUnBoard, normaliser, lieuCorrespond, titreCorrespond } from "../../../../lib/ats.js";
-import { passeLesFiltres, compterLesIndecis, filtresActifs } from "../../../../lib/filtresDOffre.js";
-import { filtresDepuisLesParametres } from "../../../../lib/rechercheEnPhrase.js";
-import { boardsDuMarche, nomDeLEntreprise } from "../../../../lib/boards.js";
+import { readABoard, normalise, locationMatches, titleMatches } from "../../../../lib/ats.js";
+import { passesFilters, countTheUndecided, activeFilters } from "../../../../lib/jobFilters.js";
+import { filtersFromParams } from "../../../../lib/searchFromASentence.js";
+import { boardsForMarket, companyName } from "../../../../lib/boards.js";
 
 export const maxDuration = 30;
 
-// LES TABLEAUX D'OFFRES SONT UNE SOURCE QUI NE DEMANDE AUCUNE CLE
+// CAREER BOARDS ARE A SOURCE THAT ASKS FOR NO KEY
 //
-// Les trois sources au-dessus sont des agregateurs : ils publient ce que les
-// entreprises leur paient pour publier, et une annonce y recoit deux cents
-// candidatures dans l'heure. Les ATS, eux, servent la page carriere de
-// l'entreprise elle-meme, en JSON public. C'est la ou se trouvent les postes
-// que personne ne voit, et c'est gratuit.
+// The three sources above are aggregators: they publish what companies pay
+// them to publish, and an ad there collects two hundred applications within
+// the hour. The ATSs serve the company's own careers page, as public JSON.
+// That is where the jobs nobody sees are, and it is free.
 //
-// POURQUOI UN INDEX ET PLUS UN CACHE
+// WHY AN INDEX AND NO LONGER A CACHE
 //
-// La premiere version lisait les cinquante tableaux a chaque fois que le
-// cache expirait, dix en vol, et tenait dans les trente secondes de la
-// fonction. Elle ne tient plus a cinq cents : cinquante passes en serie
-// depassent le delai et la recherche rend une liste vide, ce qui se lit
-// comme "aucune offre" et non comme une panne. Et le registre doit grandir
-// jusqu'a des milliers de lignes, c'est tout son interet.
+// The first version read all fifty boards whenever the cache expired, ten in
+// flight, and fitted inside the function's thirty seconds. It does not fit
+// at five hundred: fifty serial passes overrun the deadline and the search
+// returns an empty list, which reads as "no jobs" rather than as a failure.
+// And the registry has to grow to thousands of lines; that is the whole
+// point of it.
 //
-// Donc l'inverse : chaque recherche sert l'index entier, et en profite pour
-// rafraichir les tableaux les plus vieux, dans un budget de temps fixe. Le
-// cout par recherche est borne quelle que soit la taille du registre, et
-// l'index se remplit en quelques recherches au lieu d'une seule tres lente.
-// Une recherche ne rend donc jamais moins que ce que l'instance sait deja.
-const FRAICHEUR_MS = 30 * 60 * 1000;
+// So the opposite: every search serves the whole index, and takes the
+// opportunity to refresh the stalest boards within a fixed time budget. The
+// cost per search is bounded whatever the registry's size, and the index
+// fills over a few searches instead of one very slow one. A search therefore
+// never returns less than what the instance already knows.
+const FRESH_FOR_MS = 30 * 60 * 1000;
 
-// LE BUDGET EST MESURE, PAS CHOISI
+// THE BUDGET IS MEASURED, NOT CHOSEN
 //
-// Le 6 octobre 2026, contre les vrais ATS : a douze requetes en vol,
-// 30 ms par tableau sur un echantillon de soixante ; a vingt-quatre, 16 ms ;
-// a quarante, 14 ms, et aucun tableau muet dans les trois cas. Au-dela de
-// quarante le gain disparait et le risque de 429 chez Greenhouse reste.
+// On 6 October 2026, against the real ATSs: at twelve requests in flight,
+// 30 ms per board over a sample of sixty; at twenty-four, 16 ms; at forty,
+// 14 ms, and no silent board in any of the three. Past forty the gain
+// disappears and the risk of a 429 from Greenhouse remains.
 //
-// Mais l'echantillon mentait : les 266 lignes entieres prennent 8,8 s a
-// vingt-quatre, pas les 4,2 s que l'extrapolation annoncait, parce que les
-// gros tableaux sont lents et qu'ils ne sont pas repartis uniformement. Le
-// budget est donc de douze secondes, mesure sur le registre complet et non
-// sur un bout. Il est paye une fois par instance et par demi-heure ; les
-// recherches suivantes lisent l'index et ne coutent rien.
+// But the sample lied: the full 266 lines take 8.8 s at twenty-four, not the
+// 4.2 s the extrapolation promised, because the big boards are slow and they
+// are not spread evenly. So the budget is twelve seconds, measured on the
+// whole registry and not on a slice of it. It is paid once per instance per
+// half hour; later searches read the index and cost nothing.
 //
-// Quand le registre depassera ce que douze secondes couvrent, l'index se
-// remplira sur deux recherches au lieu d'une, et l'ecran le dira. Le vrai
-// remede est le magasin partage, qui demande la cle service de Supabase.
+// When the registry outgrows what twelve seconds cover, the index will fill
+// over two searches instead of one, and the screen will say so. The real
+// remedy is the shared store, which needs the Supabase service key.
 const BUDGET_MS = 12_000;
-const EN_VOL = 24;
+const IN_FLIGHT = 24;
 
-// slug -> { lu, postes }. En memoire d'instance, comme le compteur de
-// middleware.js : assez pour qu'une personne qui cherche trois fois de suite
-// ne paie qu'une fois, pas un index partage. Le magasin partage viendra avec
-// le rafraichissement quotidien, qui demande la cle service de Supabase.
+// slug -> { read, posts }. In instance memory, like the counter in
+// middleware.js: enough that someone searching three times in a row pays
+// once, not a shared index. The shared store comes with the daily refresh,
+// which needs the Supabase service key.
 const index = new Map();
 
-async function rafraichir(boards, warnings) {
+async function refreshTheIndex(boards, warnings) {
   const t0 = Date.now();
-  // Les jamais lus d'abord, puis les plus vieux : a froid l'index se
-  // remplit, a chaud il tourne.
-  const file = boards
-    .map((b) => ({ b, lu: (index.get(b.slug) || { lu: 0 }).lu }))
-    .filter((x) => Date.now() - x.lu > FRAICHEUR_MS)
-    .sort((x, y) => x.lu - y.lu);
+  // Never read first, then the stalest: cold, the index fills; warm, it
+  // rotates.
+  const queue = boards
+    .map((b) => ({ b, read: (index.get(b.slug) || { read: 0 }).read }))
+    .filter((x) => Date.now() - x.read > FRESH_FOR_MS)
+    .sort((x, y) => x.read - y.read);
 
-  const muets = [];
+  const silent = [];
   let i = 0;
-  async function ouvrier() {
-    while (i < file.length && Date.now() - t0 < BUDGET_MS) {
-      const { b } = file[i++];
-      const r = await lireUnBoard(b.slug, b.ats);
-      if (r.erreur) {
-        // Un tableau muet est note comme lu : sans ca il reste en tete de
-        // file et vole son tour a un tableau qui repond, a chaque recherche.
-        index.set(b.slug, { lu: Date.now(), postes: [] });
-        muets.push(b.slug);
+  async function worker() {
+    while (i < queue.length && Date.now() - t0 < BUDGET_MS) {
+      const { b } = queue[i++];
+      const r = await readABoard(b.slug, b.ats);
+      if (r.error) {
+        // A silent board is recorded as read: without that it stays at the
+        // head of the queue and steals the turn of a board that answers, on
+        // every single search.
+        index.set(b.slug, { read: Date.now(), posts: [] });
+        silent.push(b.slug);
         continue;
       }
       index.set(b.slug, {
-        lu: Date.now(),
-        postes: r.postes.map((p) => normaliser(p, nomDeLEntreprise(b.slug), "ats")),
+        read: Date.now(),
+        posts: r.posts.map((p) => normalise(p, companyName(b.slug), "ats")),
       });
     }
   }
-  await Promise.all(Array.from({ length: EN_VOL }, ouvrier));
-  if (muets.length) warnings.push(muets.length + " career pages did not answer");
-  return file.length - i;
+  await Promise.all(Array.from({ length: IN_FLIGHT }, worker));
+  if (silent.length) warnings.push(silent.length + " career pages did not answer");
+  return queue.length - i;
 }
 
-function postesDeLIndex(boards) {
+function postsFromTheIndex(boards) {
   const out = [];
   for (const b of boards) {
     const e = index.get(b.slug);
-    if (e) out.push(...e.postes);
+    if (e) out.push(...e.posts);
   }
   return out;
 }
@@ -118,33 +117,33 @@ export async function GET(request) {
   const what = url.searchParams.get("what") || "";
   const where = url.searchParams.get("where") || "";
   const country = url.searchParams.get("country") || "fr";
-  // La page est ce qui ouvre le gisement. Sans elle, la recherche plafonne a
-  // la premiere poignee de resultats quoi qu'il y ait derriere.
+  // The page is what opens the seam. Without it the search is capped at the
+  // first handful of results whatever lies behind them.
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
 
-  // LES EXIGENCES QUI NE SE DEMANDENT PAS A LA SOURCE
+  // THE REQUIREMENTS YOU CANNOT ASK THE SOURCE FOR
   //
-  // `what` et `where` partent a l'agregateur, qui sait les lire. Le reste,
-  // "l'annonce exige le francais", "pas de mission", "publiee cette
-  // semaine", aucun agregateur ne sait le filtrer : ca se lit dans la prose
-  // de l'annonce. On le fait donc ici, sur ce que les sources rendent, et
-  // c'est precisement ce qu'un site d'emploi ne peut pas faire.
-  const filtres = filtresDepuisLesParametres(url.searchParams);
-  const actifs = filtresActifs(filtres);
-  const garde = (j) => (actifs.length ? passeLesFiltres(j, filtres) : true);
+  // `what` and `where` go to the aggregator, which knows how to read them.
+  // The rest, "the ad requires French", "no contract work", "posted this
+  // week", no aggregator can filter on: it is read from the prose of the ad.
+  // So we do it here, on what the sources return, and that is precisely what
+  // a job site cannot do.
+  const filters = filtersFromParams(url.searchParams);
+  const active = activeFilters(filters);
+  const keep = (j) => (active.length ? passesFilters(j, filters) : true);
 
   const env = process.env;
 
-  // Les pages carriere ne demandent pas de cle, donc cette source existe
-  // toujours : la recherche ne rend plus jamais "non configuree".
+  // Career pages need no key, so this source always exists: the search never
+  // returns "not configured" again.
   const sources = [...availableSources(env), "career pages"];
   const warnings = [];
   const tasks = [];
-  // Le total annonce par chaque agregateur, pour que l'ecran puisse dire
-  // "50 sur 64 000" au lieu de "50". Les agregateurs comptent a part des
-  // pages carriere, parce qu'eux seuls se paginent cote source.
-  let totalAgregateurs = 0;
-  let totalAts = 0;
+  // The total each aggregator declares, so the screen can say "50 of 64,000"
+  // instead of "50". Aggregators are counted apart from career pages,
+  // because they alone paginate at the source.
+  let aggregatorTotal = 0;
+  let boardTotal = 0;
 
   if (franceTravailConfigured(env)) {
     tasks.push((async () => {
@@ -162,8 +161,8 @@ export async function GET(request) {
         if (res.status === 204) return [];
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        totalAgregateurs += combienEnTout(data);
-        return franceTravailParse(data).filter(garde);
+        aggregatorTotal += totalAtTheSource(data);
+        return franceTravailParse(data).filter(keep);
       } catch (err) {
         warnings.push(`France Travail indisponible (${err.message})`);
         return [];
@@ -177,8 +176,8 @@ export async function GET(request) {
         const res = await fetch(adzunaUrl(env, { what, where, country, page }));
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        totalAgregateurs += combienEnTout(data);
-        return adzunaParse(data).filter(garde);
+        aggregatorTotal += totalAtTheSource(data);
+        return adzunaParse(data).filter(keep);
       } catch (err) {
         warnings.push(`Adzuna indisponible (${err.message})`);
         return [];
@@ -194,8 +193,8 @@ export async function GET(request) {
         });
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
-        totalAgregateurs += combienEnTout(data);
-        return reedParse(data).filter(garde);
+        aggregatorTotal += totalAtTheSource(data);
+        return reedParse(data).filter(keep);
       } catch (err) {
         warnings.push(`Reed indisponible (${err.message})`);
         return [];
@@ -203,26 +202,25 @@ export async function GET(request) {
     })());
   }
 
-  const boards = boardsDuMarche(country);
-  let enAttente = 0;
-  // LES PAGES CARRIERE SE PAGINENT ICI, PAS A LA SOURCE
+  const boards = boardsForMarket(country);
+  let pending = 0;
+  // CAREER PAGES PAGINATE HERE, NOT AT THE SOURCE
   //
-  // L'index est en memoire : il rend tout ce qu'il a d'un coup. Sur une
-  // recherche large a Londres, c'est 800 offres dans une seule reponse et
-  // 800 cartes a l'ecran. On tranche donc la liste comme une page, et on
-  // dit combien il y en a derriere. Le rafraichissement, lui, n'a lieu
-  // qu'a la premiere page : les suivantes doivent etre instantanees.
+  // The index is in memory: it returns everything it has at once. On a broad
+  // London search that is 800 jobs in a single response and 800 cards on
+  // screen. So we slice the list into a page, and say how many are behind
+  // it. The refresh only happens on page one: later pages must be instant.
   tasks.push((async () => {
     try {
-      if (page === 1) enAttente = await rafraichir(boards, warnings);
-      // Le filtre passe AVANT la tranche : sinon une page entiere peut
-      // etre vide alors que des offres retenues attendent plus loin.
-      const retenus = postesDeLIndex(boards)
-        .filter((j) => lieuCorrespond(j.location, where))
-        .filter((j) => titreCorrespond(j, what))
-        .filter(garde);
-      totalAts = retenus.length;
-      return retenus.slice((page - 1) * 50, page * 50);
+      if (page === 1) pending = await refreshTheIndex(boards, warnings);
+      // The filter runs BEFORE the slice: otherwise a whole page can come
+      // back empty while kept jobs are waiting further down.
+      const kept = postsFromTheIndex(boards)
+        .filter((j) => locationMatches(j.location, where))
+        .filter((j) => titleMatches(j, what))
+        .filter(keep);
+      boardTotal = kept.length;
+      return kept.slice((page - 1) * 50, page * 50);
     } catch (err) {
       warnings.push("career pages unavailable (" + (err && err.message) + ")");
       return [];
@@ -232,8 +230,8 @@ export async function GET(request) {
   const groups = await Promise.all(tasks);
   const jobs = groups.flat().filter(j => j.title);
 
-  // Deux sources publient souvent la meme offre. On rapproche sur le couple
-  // intitule + entreprise, en minuscules, pour ne pas la proposer deux fois.
+  // Two sources often publish the same job. We match on title + company in
+  // lower case, so as not to offer it twice.
   const seen = new Set();
   const unique = [];
   for (const job of jobs) {
@@ -243,42 +241,41 @@ export async function GET(request) {
     unique.push(job);
   }
 
-  // L'ETAT DE L'INDEX EST DIT, PAS DEVINE
+  // THE STATE OF THE INDEX IS STATED, NOT GUESSED
   //
-  // Une liste courte peut vouloir dire "peu d'offres correspondent" ou
-  // "l'index n'a pas encore lu la moitie du registre". Les deux se lisent
-  // pareil a l'ecran, et c'est exactement la panne silencieuse que ce depot
-  // connait le mieux. La reponse porte donc le compte.
-  const index_etat = {
-    tableaux: boards.length,
-    lus: boards.filter((b) => index.has(b.slug)).length,
-    en_attente: enAttente,
+  // A short list can mean "few jobs match" or "the index has not read half
+  // the registry yet". Both read the same on screen, and that is exactly the
+  // silent failure this repo knows best. So the response carries the count.
+  //
+  // No warning for the pending part: the screen says it under the count, in
+  // the person's language, and the warning frame is coral. An index that is
+  // filling is not a failure.
+  const indexState = {
+    boards: boards.length,
+    read: boards.filter((b) => index.has(b.slug)).length,
+    pending,
   };
-  // Pas d'avertissement pour l'attente : l'ecran la dit sous le compte, dans
-  // la langue de la personne, et le cadre d'avertissement est corail. Un
-  // index qui se remplit n'est pas une panne.
 
-  // LE BOUTON N'EXISTE QUE S'IL Y A VRAIMENT UNE SUITE
+  // THE BUTTON ONLY EXISTS IF THERE IS REALLY MORE
   //
-  // La premiere version comparait le total a la page courante, tous
-  // comptes confondus. Sans cle d'agregateur, la recherche a Londres
-  // annonce 831 offres de pages carriere, le bouton s'affichait, et la
-  // page deux ne rendait rien : les pages carriere etaient alors servies
-  // en entier a la premiere page et absentes des suivantes. Un bouton qui
-  // ne fait rien est pire que pas de bouton.
-  const plus = page * 50 < totalAts || page * 50 < totalAgregateurs;
+  // The first version compared the total to the current page, all counts
+  // mixed together. With no aggregator key, a London search announces 831
+  // career page jobs, the button appeared, and page two returned nothing:
+  // career pages were served whole on page one and absent from the rest. A
+  // button that does nothing is worse than no button.
+  const hasMore = page * 50 < boardTotal || page * 50 < aggregatorTotal;
 
-  // CE QU'UN FILTRE A ECARTE SE DIT
+  // WHAT A FILTER COULD NOT DECIDE IS SAID OUT LOUD
   //
-  // La moitie des annonces ne disent pas le salaire, et un plancher ne peut
-  // pas les trancher : elles passent (lib/filtresDOffre.js). Si l'ecran
-  // n'ecrit pas combien elles sont, la personne croit que les trente et une
-  // offres affichees tiennent son plancher, et elle en ouvre une a 28 000.
-  const indecis = actifs.length ? compterLesIndecis(unique, filtres) : {};
+  // Half of ads do not state a salary, and a floor cannot settle them: they
+  // pass (lib/jobFilters.js). If the screen does not write how many they
+  // are, the person believes all thirty-one shown clear their floor, and
+  // opens one paying 28,000.
+  const undecided = active.length ? countTheUndecided(unique, filters) : {};
 
   return Response.json({
-    jobs: unique, sources, warnings, index: index_etat, configured: true,
-    page, total: totalAts + totalAgregateurs, plus,
-    filtres: actifs, indecis,
+    jobs: unique, sources, warnings, index: indexState, configured: true,
+    page, total: boardTotal + aggregatorTotal, hasMore,
+    filters: active, undecided,
   });
 }
