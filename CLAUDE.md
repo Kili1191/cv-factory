@@ -450,6 +450,28 @@ doubt we will sponsor the right candidate" into a refusal, which deletes
 exactly the employer the filter exists to find. The refusal is tested before
 the offer, for the third time in this repository.
 
+**And the ad we read is not the ad that was written.** Measured on production
+the moment the filter went live: of 120 London results, **not one** carried
+the word "sponsor" in the text that reached the browser, so the filter saw
+silence 120 times out of 120. The ads are truncated, and by all three sources:
+Adzuna at exactly 500 characters, Reed at 452, and our own career pages at
+1200 in `normalise`. The sentence about visas is at the bottom of an ad, so
+the cut removes precisely what this filter needs. A Reed ad plainly said "No
+sponsorship is offered" in the part that had been cut away.
+
+Two things followed. The stance is now read in `lib/ats.js`, where the whole
+board text is still in hand and already paid for, and only the verdict travels
+(`visaStance`): a dozen bytes instead of the whole ad, nothing added to the
+index's memory or to the response. And the immigration guard was too strict
+for truncated text, because that Reed ad never says "visa" at all. What tells
+the two uses apart is grammar, not vocabulary: the bare noun "sponsorship" in
+a job ad is the visa, while the verb with a direct object is anything an
+employer can sponsor, a qualification, a charity, a marathon. So the noun
+decides alone and only the verb has to prove it is about immigration.
+Aggregated ads arrive already cut by their source and cannot be rescued this
+way, which is exactly why the career pages, the one source we own, have to be
+right.
+
 **The filter shipped once doing nothing.** It appeared in the requirements,
 the person set it, and `searchParams` never carried it, because that function
 named its filters in a list written out by hand: a control that changes

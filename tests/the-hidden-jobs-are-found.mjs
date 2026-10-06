@@ -70,6 +70,31 @@ export async function run() {
     if (p.company !== "Test Ltd") failures.push(name + ": the company is lost");
   }
 
+  // --- 1b. WHAT THE CUT WOULD HAVE THROWN AWAY --------------------------
+  //
+  // The description is cut to 1200 characters for transport, and the sentence
+  // about visas sits at the bottom of an ad, so the cut removes exactly what
+  // the filter needs. Measured on production: of 120 London results, not one
+  // carried the word "sponsor" in the text that reached the browser, while a
+  // Reed ad plainly said "No sponsorship is offered" in the part that had
+  // been truncated away. So the stance is read here, where the text is still
+  // whole, and only the verdict travels.
+  {
+    const far = "<p>" + "Responsibilities and benefits. ".repeat(60)
+      + " We are unable to offer visa sponsorship for this role.</p>";
+    const read = normalise({ title: "Account Manager", text: far, url: "https://e.invalid/1", location: "London" },
+      "Test Ltd", "ats");
+    if (/sponsor/i.test(read.description)) {
+      failures.push("the fixture is wrong: the refusal survived the cut, so this "
+        + "assertion proves nothing. Make the ad longer.");
+    }
+    if (read.visaStance !== "refuses") {
+      failures.push("a refusal written past the 1200 character cut is read as \""
+        + read.visaStance + "\". The whole ad is in hand at this point and we paid "
+        + "for it: reading it after the cut throws the answer away.");
+    }
+  }
+
   // --- 2. ACCOUNTANCY IS NOT ACCOUNT MANAGEMENT -------------------------
   const accountant = { title: "Senior Manager, Accounting", description: "Month end close and reporting." };
   if (titleMatches(accountant, "account manager")) {
