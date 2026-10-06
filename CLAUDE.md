@@ -456,6 +456,37 @@ is corrected by hand.
 `tests/a-sentence-is-a-search.mjs` does not call the AI: what is ours is the
 reading of the requirements, not the translation.
 
+**Volume is not a feature until it is ranked.** One London query went from 20
+results to 8781 the day the second aggregator went live, and nobody reads
+8781 ads: sorted by date, the best match for this person sits at position 400.
+Every job site sorts by recency or by keyword because that is all it holds.
+Nuvi holds the CV, so `lib/jobFit.js` sorts by the share of the ad's phrases
+the person's own experience already covers, reusing `couverture` rather than
+inventing a second measurement. It runs in the browser: the CV never goes into
+a request or into the route's cache key, and since `couverture` is plain
+string work the whole accumulated list is ranked in milliseconds and costs
+nothing per search. It measures against the CV as it is, not an adapted one,
+because the question here is "which of these fits what I have already done",
+asked of 120 ads at once, where adapting each would be 120 calls to the model
+for one scroll.
+
+**And an ad that says too little is not a bad match.** `couverture` returns
+nothing under six required phrases, and half of aggregated ads are a title, a
+salary and a contract type. Scored zero they would fall below a job in another
+trade entirely, so a real opportunity would disappear for the sole reason that
+its ad is short, which is this repository's oldest failure. They are not
+scored and not dropped: they keep the order their source gave them, after the
+measured ones, and the screen says how many they are. The card shows the count
+and never the share alone, for the reason written under the panel's number: a
+score nobody can explain is a score nobody should act on, and the percentage
+only ever decides the order. The sort is a control, not a silent reorder, and
+it only appears when there is a CV and something was measured, because a
+button that reorders nothing lies about what the screen knows.
+`tests/the-best-fit-comes-first.mjs` holds both directions, and the fixture
+order is the test: with the measured 0% ad placed first, an implementation
+that scores the silent ones zero passed on the tie-break alone, green on the
+very defect the suite exists for.
+
 The panel's number is counted. `match_score` was a free field on the schema:
 the model filled it however it felt, nothing computed it, nothing checked it,
 and two passes over the same ad/CV pair did not give the same number.

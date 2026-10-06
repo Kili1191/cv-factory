@@ -14,13 +14,14 @@
 // suivi et leur adaptation de CV sont deux outils separes, et l'utilisateur
 // fait le pont a la main, en recollant l'annonce a chaque etape.
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { codeAdzuna } from "../../lib/conventions.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import {
   SEARCH_SCHEMA, searchInstruction, filtersFromTheModel, searchParams,
 } from "../../lib/searchFromASentence.js";
 import { NO_FILTERS, activeFilters } from "../../lib/jobFilters.js";
+import { rankByFit, fitKey } from "../../lib/jobFit.js";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
@@ -58,6 +59,13 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   const [reading, setReading] = useState(false);
   const [showRequirements, setShowRequirements] = useState(false);
   const [undecided, setUndecided] = useState({});
+  // THE ONLY ANSWER TO EIGHT THOUSAND RESULTS
+  //
+  // Sorting by what the person's own CV covers is the one thing a job board
+  // cannot do. It is on by default because it is the point, and it is a
+  // control rather than a silent reorder: an order the person cannot switch
+  // off is an order they cannot check.
+  const [sortBy, setSortBy] = useState("fit");
   const [tracked, setTracked] = useState({});
 
   const L = locale === "en" ? {
@@ -86,6 +94,14 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     requirements: "Requirements", masquer: "Hide",
     noSalary: (n) => n + " of these do not state a salary",
     noDate: (n) => n + " of these do not state a date",
+    sortFit: "Best fit first", sortSource: "As found",
+    // A count, never a mark on its own. The repo settled that once on the
+    // match panel: a score nobody can explain is a score nobody should act
+    // on, so the card says what was counted and the share only sorts.
+    fitCount: (p, d) => d + " phrases in this ad, " + p + " in your CV",
+    notMeasured: (n) => (n === 1
+      ? "1 ad says too little to measure, and keeps its source's order"
+      : n + " ads say too little to measure, and keep their source's order"),
     nothing: "No requirement set. Every offer for this title and place.",
     labels: {
       workplace: "Place of work", language: "The job requires", contract: "Contract",
@@ -124,6 +140,11 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     requirements: "Exigences", masquer: "Masquer",
     noSalary: (n) => n + " d'entre elles n'annoncent pas de salaire",
     noDate: (n) => n + " d'entre elles n'annoncent pas de date",
+    sortFit: "Correspondance d'abord", sortSource: "Ordre des sources",
+    fitCount: (p, d) => d + " expressions dans l'annonce, " + p + " dans ton CV",
+    notMeasured: (n) => (n === 1
+      ? "1 annonce en dit trop peu pour etre mesuree, elle garde l'ordre de sa source"
+      : n + " annonces en disent trop peu pour etre mesurees, elles gardent l'ordre de leur source"),
     nothing: "Aucune exigence. Toutes les offres de ce poste a cet endroit.",
     labels: {
       workplace: "Lieu de travail", language: "L'annonce exige", contract: "Contrat",
@@ -252,6 +273,20 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   }, []);
 
   const active = activeFilters(filters);
+
+  // RANKING BY WHAT THE CV ALREADY COVERS
+  //
+  // Measured here rather than on the route, for two reasons: the CV never
+  // leaves the device for it, and `couverture` is plain string work, so the
+  // whole list is ranked in a few milliseconds and costs nothing per search.
+  // Keyed on the list, so turning a page re-ranks what has accumulated
+  // instead of only the slice that just arrived.
+  const fit = useMemo(() => rankByFit(cv, jobs), [cv, jobs]);
+  // The sort only exists if something can be sorted. A control that reorders
+  // nothing, on a search run before a CV was imported, is a control that
+  // lies about what the screen knows.
+  const canSortByFit = Boolean(cv) && fit.measured > 0;
+  const shown = canSortByFit && sortBy === "fit" ? fit.ranked : jobs;
 
   const field = {
     width: "100%", minHeight: 46, padding: "0 13px",
@@ -409,6 +444,23 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             : null}
           {undecided.noSalary ? <div>{L.noSalary(undecided.noSalary)}</div> : null}
           {undecided.noDate ? <div>{L.noDate(undecided.noDate)}</div> : null}
+          {canSortByFit && sortBy === "fit" && fit.unmeasured > 0
+            ? <div>{L.notMeasured(fit.unmeasured)}</div> : null}
+          {canSortByFit ? (
+            <div style={{ display: "flex", gap: 6, marginTop: 7 }}>
+              {[["fit", L.sortFit], ["source", L.sortSource]].map(([key, label]) => (
+                <button key={key} type="button" onClick={() => setSortBy(key)} style={{
+                  ...B({
+                    minHeight: 30, padding: "0 11px", borderRadius: RadiusPill,
+                    background: sortBy === key ? Ink : Paper,
+                    color: sortBy === key ? Paper : InkMuted,
+                    border: "0.5px solid " + (sortBy === key ? Ink : Hairline),
+                    fontFamily: Sans, fontSize: 11.5, fontWeight: 600,
+                  }),
+                }}>{label}</button>
+              ))}
+            </div>
+          ) : null}
           {indexState && indexState.boards ? (
             <div>
               {L.read(indexState.read, indexState.boards)}
@@ -418,7 +470,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         </div>
       )}
 
-      {jobs.map((job) => (
+      {shown.map((job) => (
         <div key={job.source + job.id} style={{
           padding: "14px 16px", marginBottom: 10,
           background: Paper, borderRadius: RadiusMd,
@@ -439,6 +491,17 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             {job.salary && <span>{job.salary}</span>}
             <span style={{ opacity: .7 }}>{job.source}</span>
           </div>
+
+          {/* What was counted, not a mark out of 100. The number that sorts
+              the list is the share; what the person reads is the count, so
+              the order is explainable without inviting anyone to optimise a
+              score instead of their CV. */}
+          {canSortByFit && fit.fits.get(fitKey(job, 0)) ? (
+            <div style={{ fontSize: 11.5, color: InkMuted, marginTop: 6 }}>
+              {L.fitCount(fit.fits.get(fitKey(job, 0)).present,
+                fit.fits.get(fitKey(job, 0)).demandees)}
+            </div>
+          ) : null}
 
           <button
             onClick={() => { onTrack(job); setTracked(t => ({ ...t, [job.source + job.id]: true })); }}
