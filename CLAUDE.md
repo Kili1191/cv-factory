@@ -320,6 +320,22 @@ rétrécirait la recherche sans que l'écran puisse l'expliquer. Un stage n'a
 pas de drapeau et se lit dans la prose, parce que le mapper sur un autre
 rendrait des CDI à qui cherche un stage.
 
+**Une fourchette a deux nombres, et c'est celui du haut qui répond.** La
+première version prenait le premier et l'appelait le plancher. Mesuré contre
+une vraie clé Adzuna le 6 octobre 2026 : demander 60 000 rend des annonces
+dont la fourchette commence à 35 000, parce qu'Adzuna lit `salary_min` comme
+« cette fourchette atteint 60 000 ». Notre filtre local aurait alors jeté ces
+mêmes annonces parce qu'elles commencent en dessous. Une annonce à 35 000 -
+65 000 peut payer quelqu'un 65 000, et la jeter perd une vraie occasion sans
+qu'un mot le dise. La question qu'un plancher pose est « ce poste peut-il
+atteindre mon chiffre », et la réponse est le haut de la fourchette.
+`advertisedReach`. C'est aussi ce que la source a fait pour produire son
+compte, donc le chiffre affiché et la liste en dessous décrivent la même
+recherche : mesuré sur la clé réelle, 50 rendues, 50 gardées, 0 jetée.
+
+Ce défaut ne pouvait pas se voir sans clé. C'est la raison de brancher une
+source réelle avant de la déclarer finie, pas après.
+
 Rien de tout ça ne fait des millions d'offres sans les clés : sans
 `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` et `REED_API_KEY`, la recherche n'a que les
 pages carrière, et un registre de pages carrière ne sera jamais un

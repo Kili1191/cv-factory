@@ -27,7 +27,7 @@
 
 import {
   passesFilters, countTheUndecided, activeFilters, workplaceKind,
-  jobRequiresLanguage, advertisedFloor, contractKind, jobLevel, NO_FILTERS,
+  jobRequiresLanguage, advertisedReach, contractKind, jobLevel, NO_FILTERS,
 } from "../lib/jobFilters.js";
 import {
   filtersFromTheModel, searchParams, filtersFromParams,
@@ -112,10 +112,28 @@ export async function run() {
   if (passesFilters(job("x", "", { salary: "28000 - 32000" }), { salaryFrom: 50000 })) {
     failures.push("an advertised salary below the floor passes anyway: the filter filters nothing");
   }
-  if (advertisedFloor({ salary: "45k-60k" }) !== 45000) failures.push('"45k-60k" is not read as 45000');
-  if (advertisedFloor({ salary: "GBP 50,000" }) !== 50000) failures.push('"GBP 50,000" is not read');
-  if (advertisedFloor({ salary: "Competitive" }) !== null) failures.push('"Competitive" should return null');
-  if (advertisedFloor({ salary: "500 per day" }) !== null) {
+
+  // A BAND IS TWO NUMBERS AND THE TOP ONE ANSWERS THE QUESTION
+  //
+  // Measured against a real Adzuna key on 6 October 2026: asking for 60 000
+  // returns ads whose band starts at 35 000, because the source reads it as
+  // "this band reaches 60 000". Taking the first number would have thrown
+  // those same ads away, and a job advertised at 35 000 to 65 000 can pay
+  // someone 65 000.
+  if (!passesFilters(job("x", "", { salary: "35000 - 65000" }), { salaryFrom: 60000 })) {
+    failures.push(
+      "a band of 35 000 to 65 000 is refused for a floor of 60 000.\n" +
+      "      It can pay 65 000. Dropping it loses a real opportunity, silently, and\n" +
+      "      disagrees with the count the source produced for the same search."
+    );
+  }
+  if (passesFilters(job("x", "", { salary: "35000 - 45000" }), { salaryFrom: 60000 })) {
+    failures.push("a band that never reaches the floor passes: the filter filters nothing");
+  }
+  if (advertisedReach({ salary: "45k-60k" }) !== 60000) failures.push('"45k-60k" does not reach 60000');
+  if (advertisedReach({ salary: "GBP 50,000" }) !== 50000) failures.push('"GBP 50,000" is not read');
+  if (advertisedReach({ salary: "Competitive" }) !== null) failures.push('"Competitive" should return null');
+  if (advertisedReach({ salary: "500 per day" }) !== null) {
     failures.push("a day rate is compared to an annual floor: every contract role would be refused");
   }
   const undecided = countTheUndecided([silent, job("x", "", { salary: "60000" })], { salaryFrom: 50000 });
