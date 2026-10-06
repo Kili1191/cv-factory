@@ -236,6 +236,16 @@ after one, and a British town whose county follows the comma is untouched.
 Matching the bare word would have thrown away a real place to catch a foreign
 one.
 
+**The whole registry was then re-read against the corrected rule**, 266
+British boards, and it found exactly one more line that the broken rule had
+let in: `avride`, Avride, 77 jobs every one of them American, carried in by a
+single listing in **Oxford, Mississippi**. One board in 266 is the measure of
+how much the hole cost, and it is the argument for re-reading a registry after
+fixing the rule that built it rather than trusting the lines already in it.
+**The registry stands at 282 lines: 216 marked British, 17 French, and the 49
+early ones that carry no market and are tried for every one, so 265 boards are
+read for a British search.**
+
 The price of that order is a multi-site string written with commas: the ECFR
 role open in "Berlin,Madrid,Paris,Sofia,London,Rome,Warsaw,Washington DC" is
 refused although it is also in London. That is the right side of the trade: an
