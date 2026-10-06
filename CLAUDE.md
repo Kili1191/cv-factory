@@ -671,6 +671,36 @@ stays in the total, out of the week, and is counted out loud, which is the
 missing salary rule applied to the person's own work.
 `tests/applications-sent-is-the-number.mjs`.
 
+**An alert that repeats itself is switched off within a week.** Every job site
+has alerts and this product had none, which was the one piece of table stakes
+missing outright: job hunting is a daily habit and whoever lands in the habit
+owns the search. The part worth getting right is not the sending, it is
+deciding what counts as new, and `lib/digest.js` does only that, so the same
+answer can later feed an email without being written twice.
+
+Three rules, each of which is a way this goes wrong. **The first run arms the
+watch and reports nothing**: every job is unseen on a first run, so a literal
+reading sends fifty, which is not a digest but the search results with a stamp
+on them, and it teaches the person the message is noise before the second one
+arrives. They have just run that search by hand anyway. **A capped memory must
+not resurrect an old job**: the seen list keeps the most recent thousand, and
+once it trims, a posting from months ago is no longer in it and would come
+back as new, so a date older than the watch itself refuses it whatever the
+memory has forgotten; an ad with no date keeps the benefit of the doubt, since
+half of aggregated ads have none, and the digest counts them. **And the digest
+says what it looked at**: "nothing new" after reading 265 boards is a fact,
+"nothing new" because the search broke is a failure, and the two read the same
+from the number alone.
+
+It runs on the device today, one watch per search under `cvf_vl`, because
+"account manager in London" and "account manager in Manchester" are two
+questions and somebody running both has to be told about both. Page one only:
+turning a page is still reading the same search, and marking page two as seen
+would hide those jobs from tomorrow. **Sending it as an email needs two things
+the deployment does not have yet**, a mail provider key and a server side
+store the cron can read, so that half is not built and the screen carries the
+digest meanwhile. `tests/an-alert-tells-you-what-is-new.mjs`.
+
 The money arrives through `app/api/billing`. The plan is set in `lib/plans.js`
 (24 euros a month, 49 for three months, three free adaptations with an
 account); `lib/facturation.js` talks to Stripe and to Supabase with the

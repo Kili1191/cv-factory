@@ -23,6 +23,8 @@ import {
 import { NO_FILTERS, activeFilters } from "../../lib/jobFilters.js";
 import { rankByFit, fitKey } from "../../lib/jobFit.js";
 import { shareLink } from "../../lib/shareLink.js";
+import { whatIsNew, digestSummary, watchKey, storeWatch } from "../../lib/digest.js";
+import { jobId as digestId } from "../../lib/digest.js";
 import Sheet from "./Sheet";
 import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
@@ -74,6 +76,14 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   // one. A loop only a person who already knew the trick could use is a loop
   // nobody uses. Keyed by job so one card says "copied" and not all of them.
   const [shared, setShared] = useState("");
+  // WHAT IS NEW SINCE THIS SEARCH WAS LAST RUN
+  //
+  // Every job site has alerts and this one had none. The sending needs a
+  // server and a mail provider; deciding what counts as new does not, and
+  // that is the part worth getting right. So the same module that will feed
+  // an email already answers it on screen, from the device, today.
+  const [digest, setDigest] = useState(null);
+  const [freshIds, setFreshIds] = useState(() => new Set());
   const [tracked, setTracked] = useState({});
 
   const L = locale === "en" ? {
@@ -105,6 +115,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     sortFit: "Best fit first", sortSource: "As found",
     sendLink: "Send as a Nuvi link", linkCopied: "Link copied",
     linkHere: "Copy this link:",
+    isNew: "new",
     // A count, never a mark on its own. The repo settled that once on the
     // match panel: a score nobody can explain is a score nobody should act
     // on, so the card says what was counted and the share only sorts.
@@ -161,6 +172,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     sortFit: "Correspondance d'abord", sortSource: "Ordre des sources",
     sendLink: "Envoyer en lien Nuvi", linkCopied: "Lien copie",
     linkHere: "Copie ce lien :",
+    isNew: "nouveau",
     fitCount: (p, d) => d + " expressions dans l'annonce, " + p + " dans ton CV",
     notMeasured: (n) => (n === 1
       ? "1 annonce en dit trop peu pour etre mesuree, elle garde l'ordre de sa source"
@@ -211,6 +223,26 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         const seen = new Set(before.map((j) => j.source + j.id));
         return before.concat(received.filter((j) => !seen.has(j.source + j.id)));
       });
+      // THE DIGEST, ON PAGE ONE ONLY
+      //
+      // Turning a page must not re-arm the watch: the person is still reading
+      // the same search, and marking page two's jobs as seen would hide them
+      // from tomorrow's digest. Storage can refuse in a private window, so
+      // nothing here is allowed to cost the person their results.
+      if (!more) {
+        try {
+          const key = watchKey({ what, where, country });
+          const all = JSON.parse(localStorage.getItem("cvf_vl") || "{}");
+          const result = whatIsNew(received, all[key], Date.now());
+          localStorage.setItem("cvf_vl", JSON.stringify(storeWatch(all, key, result.watch)));
+          setDigest(result);
+          setFreshIds(new Set(result.fresh.map((j) => digestId(j))));
+        } catch {
+          // No watch is not a broken search: the list is still right.
+          setDigest(null);
+          setFreshIds(new Set());
+        }
+      }
       setSources(data.sources || []);
       setWarnings(data.warnings || []);
       if (!more) setIndexState(data.index || null);
@@ -474,6 +506,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
           {undecided.noSalary ? <div>{L.noSalary(undecided.noSalary)}</div> : null}
           {undecided.noDate ? <div>{L.noDate(undecided.noDate)}</div> : null}
           {undecided.noSponsorship ? <div>{L.noSponsorship(undecided.noSponsorship)}</div> : null}
+          {digest ? <div>{digestSummary(digest, locale)}</div> : null}
           {canSortByFit && sortBy === "fit" && fit.unmeasured > 0
             ? <div>{L.notMeasured(fit.unmeasured)}</div> : null}
           {canSortByFit ? (
@@ -520,6 +553,13 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             {job.location && <span>{job.location}</span>}
             {job.salary && <span>{job.salary}</span>}
             <span style={{ opacity: .7 }}>{job.source}</span>
+            {freshIds.has(digestId(job)) ? (
+              <span data-nuvi="offre-nouvelle" style={{
+                padding: "1px 7px", borderRadius: RadiusPill,
+                background: Green, color: "#fff", fontSize: 10.5, fontWeight: 700,
+                letterSpacing: "0.02em", textTransform: "uppercase",
+              }}>{L.isNew}</span>
+            ) : null}
           </div>
 
           {/* What was counted, not a mark out of 100. The number that sorts
