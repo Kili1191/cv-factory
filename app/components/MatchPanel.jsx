@@ -255,23 +255,45 @@ function MatchPanel({ cv, versions = [], setCVFn, notify, apiKey, T, locale = "e
       +"- Garde chaque bullet sur une ligne de texte simple, avec un verbe d'action"
       +" et un chiffre quand il existe. Ni tableau, ni colonne, ni caractere"
       +" decoratif : le CV doit rester lisible par une machine.\n"
-      // LE COMMENT, QUAND LA PERSONNE L'A DEJA ECRIT
+      // LE COMMENT, ET LA REGLE DE LA MAISON QUI S'Y APPLIQUE
       //
       // La formule de Laszlo Bock, l'ancien patron des RH de Google :
       // "Accomplished X as measured by Y, by doing Z". Le Z est ce qu'on
       // demande en entretien : un chiffre se recite, une methode se raconte.
       //
-      // Deux gardes, et elles comptent autant que la consigne. On ne
-      // l'invente jamais, parce qu'une methode fabriquee est un piege a la
-      // premiere question ; et on ne l'ajoute pas partout, parce qu'une
-      // ligne de plus par puce fait deborder la page.
+      // PREMIERE VERSION : "N'EN INVENTE JAMAIS". C'ETAIT FAUX.
+      //
+      // Kilian l'a relevee aussitot : "on a deja dit qu'elle peut". Sa regle,
+      // du 25 septembre 2026, est dans CLAUDE.md et elle a deux faces :
+      // l'IA invente quand c'est pour le CV ET quand c'est demande. Un
+      // "jamais" absolu en supprime une, et c'est exactement le travers que
+      // QUI_DECIDE existe pour empecher : decider a la place de la personne,
+      // dans le sens du refus cette fois.
+      //
+      // Ici, on adapte un CV existant : personne n'a rien demande, donc on
+      // travaille avec ce qui est la. C'est la premiere face de la regle, et
+      // la seule qui s'applique a ce bouton.
+      //
+      // La seconde vit ailleurs, et elle marche deja. Le coach porte
+      // QUI_DECIDE, qui lui ordonne d'executer une demande explicite en
+      // entier ; "ecrire le CV depuis l'annonce" remplit tout ce que le
+      // poste implique et le liste dans `deduit`. Rien a changer la-bas.
+      //
+      // On ne parle donc pas de `deduit` ici : SCHEMA_MATCH retire ce champ
+      // de cv_optimized, parce que cette fonction reecrit un CV existant au
+      // lieu de combler des trous. Demander au modele de remplir un champ
+      // que le schema refuse produirait une reponse invalide.
+      //
+      // Le risque reste vrai, et il se dit a la personne, pas au modele :
+      // une methode qu'on n'a pas employee se defait a la premiere question
+      // d'entretien. C'est une information, pas un veto.
       +"- LE COMMENT : quand le CV source dit par quel moyen un resultat a ete"
       +" obtenu, garde-le dans la puce (\"...en resserrant les pertes\","
       +" \"...through structured pipeline management\"). C'est ce qu'un"
-      +" recruteur demande en entretien. N'en invente JAMAIS un : si le"
-      +" materiau ne dit pas comment, la puce s'arrete au resultat. Ne"
-      +" l'ajoute pas a toutes les puces non plus, le CV doit tenir sur sa"
-      +" page.\n"
+      +" recruteur demande en entretien. De ta propre initiative, n'en"
+      +" fabrique pas : si le materiau ne dit pas comment, la puce s'arrete"
+      +" au resultat. Ne l'ajoute pas a toutes les puces non plus, le CV doit"
+      +" tenir sur sa page.\n"
       // Forme garantie par SCHEMA_MATCH : le gabarit qui tenait ici
       // decrivait l'analyse ET un CV complet, recopie a la main, alors que
       // l'API impose desormais les deux.

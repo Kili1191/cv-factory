@@ -138,10 +138,28 @@ export async function run() {
   if (!/LE COMMENT/.test(consigne)) {
     failures.push("la consigne d'adaptation ne demande pas le comment");
   }
-  if (!/N'en invente JAMAIS/.test(consigne)) {
+  // LA GARDE EST DE SA PROPRE INITIATIVE, PAS UN "JAMAIS"
+  //
+  // Premiere version de cette consigne : "n'en invente JAMAIS". Kilian l'a
+  // relevee aussitot, "on a deja dit qu'elle peut", et il avait raison : sa
+  // regle du 25 septembre a deux faces, l'IA invente quand c'est pour le CV
+  // ET quand c'est demande. Un absolu en supprime une, dans le sens du refus,
+  // ce qui est le meme travers que decider a la place de la personne.
+  //
+  // Ce bouton adapte un CV existant : personne n'a rien demande, donc la
+  // premiere face s'applique seule. La seconde vit dans le coach et dans
+  // "ecrire depuis l'annonce", qui portent deja QUI_DECIDE.
+  if (!/De ta propre initiative, n'en\s*"?\s*\+?\s*"?\s*fabrique pas/.test(consigne.replace(/\s+/g, " "))) {
     failures.push(
-      "la consigne demande le comment sans interdire de l'inventer.\n" +
-      "      Une methode fabriquee est un piege a la premiere question d'entretien."
+      "la consigne n'ecarte pas la fabrication spontanee d'une methode.\n" +
+      "      De sa propre initiative le modele travaille avec ce qui est la ; sur demande\n" +
+      "      explicite il execute. Un \"jamais\" absolu supprimerait la seconde face de la regle."
+    );
+  }
+  if (/N'en invente JAMAIS/.test(consigne)) {
+    failures.push(
+      "la consigne porte un interdit absolu d'inventer une methode.\n" +
+      "      La regle de la maison en autorise une quand la personne la demande."
     );
   }
   if (!/tenir sur sa\s*\"?\s*\+?\s*\"?\s*page/.test(consigne.replace(/\s+/g, " "))) {
