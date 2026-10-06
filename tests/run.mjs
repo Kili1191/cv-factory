@@ -73,6 +73,7 @@ const SUITES = [
   ["the money arrives", "./the-money-arrives.mjs"],
   ["the PDF carries no trace of Nuvi", "./the-pdf-carries-no-trace-of-nuvi.mjs"],
   ["a link in the ad box is read or named", "./a-link-in-the-ad-box-is-read-or-named.mjs"],
+  ["the hidden jobs are found", "./the-hidden-jobs-are-found.mjs"],
   ["a link is a door", "./a-link-is-a-door.mjs"],
   ["the extension fills the form", "./the-extension-fills-the-form.mjs"],
   ["a breakage reaches the owner", "./a-breakage-reaches-the-owner.mjs"],
