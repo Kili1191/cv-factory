@@ -15,6 +15,8 @@ import {
   availableSources, combienEnTout,
 } from "../../../../lib/jobSources.js";
 import { lireUnBoard, normaliser, lieuCorrespond, titreCorrespond } from "../../../../lib/ats.js";
+import { passeLesFiltres, compterLesIndecis, filtresActifs } from "../../../../lib/filtresDOffre.js";
+import { filtresDepuisLesParametres } from "../../../../lib/rechercheEnPhrase.js";
 import { boardsDuMarche, nomDeLEntreprise } from "../../../../lib/boards.js";
 
 export const maxDuration = 30;
@@ -42,8 +44,26 @@ export const maxDuration = 30;
 // l'index se remplit en quelques recherches au lieu d'une seule tres lente.
 // Une recherche ne rend donc jamais moins que ce que l'instance sait deja.
 const FRAICHEUR_MS = 30 * 60 * 1000;
-const BUDGET_MS = 7000;
-const EN_VOL = 12;
+
+// LE BUDGET EST MESURE, PAS CHOISI
+//
+// Le 6 octobre 2026, contre les vrais ATS : a douze requetes en vol,
+// 30 ms par tableau sur un echantillon de soixante ; a vingt-quatre, 16 ms ;
+// a quarante, 14 ms, et aucun tableau muet dans les trois cas. Au-dela de
+// quarante le gain disparait et le risque de 429 chez Greenhouse reste.
+//
+// Mais l'echantillon mentait : les 266 lignes entieres prennent 8,8 s a
+// vingt-quatre, pas les 4,2 s que l'extrapolation annoncait, parce que les
+// gros tableaux sont lents et qu'ils ne sont pas repartis uniformement. Le
+// budget est donc de douze secondes, mesure sur le registre complet et non
+// sur un bout. Il est paye une fois par instance et par demi-heure ; les
+// recherches suivantes lisent l'index et ne coutent rien.
+//
+// Quand le registre depassera ce que douze secondes couvrent, l'index se
+// remplira sur deux recherches au lieu d'une, et l'ecran le dira. Le vrai
+// remede est le magasin partage, qui demande la cle service de Supabase.
+const BUDGET_MS = 12_000;
+const EN_VOL = 24;
 
 // slug -> { lu, postes }. En memoire d'instance, comme le compteur de
 // middleware.js : assez pour qu'une personne qui cherche trois fois de suite
@@ -101,6 +121,18 @@ export async function GET(request) {
   // La page est ce qui ouvre le gisement. Sans elle, la recherche plafonne a
   // la premiere poignee de resultats quoi qu'il y ait derriere.
   const page = Math.max(1, Number(url.searchParams.get("page")) || 1);
+
+  // LES EXIGENCES QUI NE SE DEMANDENT PAS A LA SOURCE
+  //
+  // `what` et `where` partent a l'agregateur, qui sait les lire. Le reste,
+  // "l'annonce exige le francais", "pas de mission", "publiee cette
+  // semaine", aucun agregateur ne sait le filtrer : ca se lit dans la prose
+  // de l'annonce. On le fait donc ici, sur ce que les sources rendent, et
+  // c'est precisement ce qu'un site d'emploi ne peut pas faire.
+  const filtres = filtresDepuisLesParametres(url.searchParams);
+  const actifs = filtresActifs(filtres);
+  const garde = (j) => (actifs.length ? passeLesFiltres(j, filtres) : true);
+
   const env = process.env;
 
   // Les pages carriere ne demandent pas de cle, donc cette source existe
@@ -131,7 +163,7 @@ export async function GET(request) {
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
         totalAgregateurs += combienEnTout(data);
-        return franceTravailParse(data);
+        return franceTravailParse(data).filter(garde);
       } catch (err) {
         warnings.push(`France Travail indisponible (${err.message})`);
         return [];
@@ -146,7 +178,7 @@ export async function GET(request) {
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
         totalAgregateurs += combienEnTout(data);
-        return adzunaParse(data);
+        return adzunaParse(data).filter(garde);
       } catch (err) {
         warnings.push(`Adzuna indisponible (${err.message})`);
         return [];
@@ -163,7 +195,7 @@ export async function GET(request) {
         if (!res.ok) throw new Error(`${res.status}`);
         const data = await res.json();
         totalAgregateurs += combienEnTout(data);
-        return reedParse(data);
+        return reedParse(data).filter(garde);
       } catch (err) {
         warnings.push(`Reed indisponible (${err.message})`);
         return [];
@@ -183,9 +215,12 @@ export async function GET(request) {
   tasks.push((async () => {
     try {
       if (page === 1) enAttente = await rafraichir(boards, warnings);
+      // Le filtre passe AVANT la tranche : sinon une page entiere peut
+      // etre vide alors que des offres retenues attendent plus loin.
       const retenus = postesDeLIndex(boards)
         .filter((j) => lieuCorrespond(j.location, where))
-        .filter((j) => titreCorrespond(j, what));
+        .filter((j) => titreCorrespond(j, what))
+        .filter(garde);
       totalAts = retenus.length;
       return retenus.slice((page - 1) * 50, page * 50);
     } catch (err) {
@@ -233,8 +268,17 @@ export async function GET(request) {
   // ne fait rien est pire que pas de bouton.
   const plus = page * 50 < totalAts || page * 50 < totalAgregateurs;
 
+  // CE QU'UN FILTRE A ECARTE SE DIT
+  //
+  // La moitie des annonces ne disent pas le salaire, et un plancher ne peut
+  // pas les trancher : elles passent (lib/filtresDOffre.js). Si l'ecran
+  // n'ecrit pas combien elles sont, la personne croit que les trente et une
+  // offres affichees tiennent son plancher, et elle en ouvre une a 28 000.
+  const indecis = actifs.length ? compterLesIndecis(unique, filtres) : {};
+
   return Response.json({
     jobs: unique, sources, warnings, index: index_etat, configured: true,
     page, total: totalAts + totalAgregateurs, plus,
+    filtres: actifs, indecis,
   });
 }

@@ -4,6 +4,7 @@
 //   node scripts/trouver-des-tableaux.mjs --ville Q90 --limite 800
 //   node scripts/trouver-des-tableaux.mjs --fichier noms.txt
 //   node scripts/trouver-des-tableaux.mjs --agregateur --marche gb
+//   node scripts/trouver-des-tableaux.mjs --hn --marche gb
 //   node scripts/trouver-des-tableaux.mjs --ecrire
 //
 // `decouvrir-des-boards.mjs` essaie des noms qu'on lui donne, un par ligne.
@@ -61,6 +62,7 @@ const marche = option("marche", "gb");
 const limite = Number(option("limite", "1200"));
 const fichier = option("fichier", "");
 const agregateur = args.includes("--agregateur");
+const hn = args.includes("--hn");
 const AGENT = "Mozilla/5.0 (compatible; Nuvi/1.0; +https://thenuvi.com)";
 
 // ----------------------------------------------------------------- les noms
@@ -88,6 +90,86 @@ async function depuisWikidata() {
     nom: b.label.value,
     site: (b.site && b.site.value) || "",
   }));
+}
+
+// LA MEILLEURE LISTE EST CELLE OU LES GENS ONT DEJA COLLE LEURS LIENS
+//
+// "Ask HN: Who is hiring?" tourne chaque mois depuis 2011. Mesure le
+// 6 octobre 2026 : 186 fils, 119 808 commentaires, et chaque commentaire
+// est une entreprise qui recrute avec, le plus souvent, le lien direct vers
+// son tableau. L'API Algolia de Hacker News les rend par fil, gratuitement
+// et sans cle.
+//
+// Rendement : **2633 couples identifiant/ATS uniques**, contre 23 tableaux
+// pour 1199 noms chez Wikidata. Et la difference n'est pas que le volume :
+// ici l'ATS est DEJA connu, parce qu'il est dans l'adresse. Il n'y a plus
+// rien a deviner, donc une requete par couple au lieu de dix-huit, et plus
+// aucun homonyme venu d'une devinette.
+//
+// Beaucoup de ces liens ont dix ans et sont morts. C'est sans importance :
+// la verification est la meme pour tous, un poste ouvert dans le marche et
+// un tableau qui dit de qui il est, et un tableau mort echoue a la premiere.
+async function depuisHackerNews() {
+  const MOTIFS = [
+    [/boards\.greenhouse\.io\/(?:embed\/job_board\?for=)?([A-Za-z0-9_-]{2,40})/g, "greenhouse"],
+    [/job-boards\.greenhouse\.io\/([A-Za-z0-9_-]{2,40})/g, "greenhouse"],
+    [/jobs\.lever\.co\/([A-Za-z0-9_-]{2,40})/g, "lever"],
+    [/jobs\.ashbyhq\.com\/([A-Za-z0-9_.-]{2,40})/g, "ashby"],
+    [/([A-Za-z0-9-]{2,40})\.recruitee\.com/g, "recruitee"],
+    [/([A-Za-z0-9-]{2,40})\.teamtailor\.com/g, "teamtailor"],
+    [/([A-Za-z0-9-]{2,40})\.jobs\.personio\.(?:com|de)/g, "personio"],
+  ];
+  // Les morceaux d'adresse qui ne sont pas des identifiants.
+  const BRUIT = new Set(["embed", "jobs", "job", "job_board", "www", "api", "careers", "search", "en", "us", "app"]);
+
+  async function algolia(url) {
+    const r = await fetch(url, { headers: { Accept: "application/json", "User-Agent": AGENT },
+      signal: AbortSignal.timeout(60_000) });
+    if (!r.ok) throw new Error("Algolia HTTP " + r.status);
+    return r.json();
+  }
+
+  const fils = [];
+  for (let page = 0; page < 6; page += 1) {
+    const d = await algolia("https://hn.algolia.com/api/v1/search?tags=story,author_whoishiring"
+      + "&query=" + encodeURIComponent("Ask HN: Who is hiring?") + "&hitsPerPage=100&page=" + page);
+    const h = d.hits || [];
+    if (!h.length) break;
+    for (const x of h) fils.push(x.objectID);
+    if (page + 1 >= (d.nbPages || 1)) break;
+  }
+  console.log(fils.length + " fils \"Who is hiring\" a lire");
+
+  const vus = new Map();
+  let f = 0;
+  async function lecteur() {
+    while (f < fils.length) {
+      const id = fils[f++];
+      for (let page = 0; page < 3; page += 1) {
+        let d;
+        try {
+          d = await algolia("https://hn.algolia.com/api/v1/search?tags=comment,story_"
+            + id + "&hitsPerPage=1000&page=" + page);
+        } catch { break; }
+        const h = d.hits || [];
+        if (!h.length) break;
+        const blob = JSON.stringify(h);
+        for (const [re, ats] of MOTIFS) {
+          re.lastIndex = 0;
+          let m;
+          while ((m = re.exec(blob)) !== null) {
+            const slug = m[1].toLowerCase();
+            if (BRUIT.has(slug) || /^\d+$/.test(slug)) continue;
+            vus.set(slug + " " + ats, { nom: "", site: "", slug, ats });
+          }
+        }
+        if (page + 1 >= (d.nbPages || 1)) break;
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: 12 }, lecteur));
+  console.log(vus.size + " couples identifiant/ATS releves");
+  return [...vus.values()];
 }
 
 // LA SOURCE QUI SE NOURRIT DE L'USAGE
@@ -187,6 +269,13 @@ function retenu(postes) {
   if (postes.some((p) => dansLeMarche(p.lieu, marche))) return true;
   horsMarche += 1;
   return false;
+}
+
+// Un couple identifiant/ATS releve dans une adresse : il n'y a rien a
+// deviner, une seule requete suffit, et le filtre du marche reste le meme.
+async function tableauConnu({ slug, ats }) {
+  const postes = await postesDe(slug, ats);
+  return retenu(postes) ? { slug, ats, postes: postes.length, par: "lien", lus: postes } : null;
 }
 
 async function parLeNom(entreprise) {
@@ -321,11 +410,14 @@ async function parLaPageCarriere({ site }) {
 
 // ------------------------------------------------------------------- la course
 
-const entreprises = agregateur
-  ? await depuisLesAgregateurs()
+const entreprises = hn
+  ? await depuisHackerNews()
+  : agregateur ? await depuisLesAgregateurs()
   : fichier ? depuisUnFichier(fichier) : await depuisWikidata();
 const connus = new Set(BOARDS.map((b) => b.slug));
-const aEssayer = entreprises.filter((e) => !identifiants(e).some((s) => connus.has(s)));
+const aEssayer = entreprises.filter((e) => (e.slug
+  ? !connus.has(e.slug)
+  : !identifiants(e).some((s) => connus.has(s))));
 console.log(entreprises.length + " entreprises, " + aEssayer.length + " a essayer");
 
 // Seize en vol : au-dela, Greenhouse repond 429 et on perd des entreprises
@@ -338,7 +430,11 @@ let i = 0, faits = 0, sansNom = 0;
 async function ouvrier() {
   while (i < aEssayer.length) {
     const e = aEssayer[i++];
-    const hit = (await parLeNom(e)) || (await parLaPageCarriere(e));
+    // Un candidat venu d'un lien porte deja son ATS : une requete suffit.
+    // Un candidat venu d'une liste de noms n'a rien, et il faut deviner.
+    const hit = e.slug && e.ats
+      ? await tableauConnu(e)
+      : (await parLeNom(e)) || (await parLaPageCarriere(e));
     faits += 1;
     if (hit && !connus.has(hit.slug)) {
       connus.add(hit.slug);
@@ -356,10 +452,12 @@ async function ouvrier() {
 await Promise.all(Array.from({ length: EN_VOL }, ouvrier));
 
 const postes = trouves.reduce((s, t) => s + t.postes, 0);
-const parNom = trouves.filter((t) => t.par === "nom").length;
+const parChemin = { nom: 0, page: 0, lien: 0 };
+for (const t of trouves) parChemin[t.par] = (parChemin[t.par] || 0) + 1;
 console.log("\n" + trouves.length + " tableaux sur " + aEssayer.length + " essayees ("
   + Math.round((trouves.length / Math.max(1, aEssayer.length)) * 100) + " %), " + postes + " postes");
-console.log(parNom + " par le nom, " + (trouves.length - parNom) + " par la page carriere");
+console.log(parChemin.lien + " par un lien releve, " + parChemin.nom + " par le nom devine, "
+  + parChemin.page + " par la page carriere");
 console.log(horsMarche + " tableaux ecartes : ils ont repondu, sans un poste dans " + marche);
 console.log(sansNom + " tableaux ecartes : ils ne disent pas de qui ils sont");
 

@@ -8649,6 +8649,9 @@ export default function App() {
         <Suspense fallback={null}>
           <JobSearchModal
             T={T} locale={locale} marche={auditCountry}
+            // Le CV sert a la recherche en une phrase : "avec mon CV" veut
+            // dire que le metier, le niveau et les langues sont deja ecrits.
+            cv={cv}
             onClose={() => setShowJobs(false)}
             onTrack={(job) => {
               // Le geste qui ferme la boucle. L'offre devient une candidature

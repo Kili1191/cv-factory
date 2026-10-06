@@ -304,6 +304,62 @@ Rien de tout ça ne fait des millions d'offres sans les clés : sans
 pages carrière, et un registre de pages carrière ne sera jamais un
 agrégateur. `/diagnostic` le dit, point 8.
 
+Une phrase est une recherche, et le modèle ne cherche pas. Kilian, le
+6 octobre 2026 : « si j'écris trouve-moi un job de francophone avec mon CV à
+Londres, est-ce que ça cherche ? » Non : il y avait deux champs, l'intitulé
+et la ville, et « francophone » n'était ni l'un ni l'autre. C'est pourtant
+l'exigence qui compte le plus pour lui, parce qu'une annonce londonienne qui
+demande le français est une annonce où son profil passe devant les autres,
+et aucun site d'emploi ne sait la trouver.
+
+`lib/rechercheEnPhrase.js` fait traduire la phrase par le modèle en
+exigences, et c'est la recherche qui cherche. La distinction est tout : un
+modèle qui « trouverait des offres » les inventerait, et une offre inventée
+est la seule chose que ce produit ne peut pas se permettre. La phrase
+comprise revient dans le champ `lu` et s'affiche toujours, les exigences
+restent modifiables à la main, parce qu'une recherche qu'on ne peut pas
+corriger est une recherche à laquelle on ne peut pas faire confiance. « Avec
+mon CV » veut dire que le métier et le niveau y sont déjà écrits : les
+prendre là est du choix dans le matériau de la personne, pas de l'invention.
+Ce que le modèle ne fait jamais : ajouter une exigence qu'on ne lui a pas
+demandée, parce qu'un filtre inventé retire des offres en silence.
+
+`lib/filtresDOffre.js` lit les six exigences dans la prose de l'annonce, et
+c'est exactement ce qu'un agrégateur ne sait pas faire : `what` et `where`
+partent à la source, « l'annonce exige le français » se lit dans le texte.
+Deux règles portent tout le fichier.
+
+**Un mot présent ne veut pas dire ce qu'on croit**, la leçon
+d'`includes("account")` dans « accounting ». « Fluent French essential »
+exige le français ; « We serve the French market », « French fries on the
+menu » et « report to the French CEO » ne l'exigent pas. Le nom de la langue
+doit donc être à quinze caractères d'un mot qui dit la parler, et les
+lettres comptent dans ces quinze : « Maîtrise du français » a un « du » au
+milieu, qu'une classe de ponctuation seule rate. De même « This role is not
+remote » contient « remote » : le refus se teste avant l'offre, comme le
+parrainage avant le droit de travailler dans `extension/champs.js`. Et le
+niveau se lit dans l'intitulé seulement, parce que toute annonce dit
+« senior stakeholders » et « report to the Head of ».
+
+**Un filtre qui ne peut pas trancher n'exclut pas.** La moitié des annonces
+ne disent pas le salaire. Si un plancher les écartait, demander 50 000
+viderait la liste de ses meilleures offres sans qu'un mot le dise, et c'est
+la panne silencieuse que ce dépôt connaît le mieux. Elles passent donc, et
+`compterLesIndecis` dit combien elles sont pour que l'écran écrive « dont 31
+sans salaire annoncé ». Idem pour une date absente.
+
+Et il n'y a qu'un bouton. La première version en avait deux, tous les deux
+nommés « Chercher » : celui de la phrase et celui des champs. Une suite l'a
+vu avant un humain, en cliquant le premier des deux et en le trouvant
+désactivé parce que la phrase était vide. Deux boutons du même nom sur un
+écran sont un défaut quel que soit le test, la personne ne sait pas lequel
+fait quoi, donc un seul : une phrase pas encore lue est lue d'abord, et la
+recherche suit avec ce qu'elle a rempli. Une phrase déjà lue ne repart pas
+au modèle quand on corrige un champ à la main.
+
+`tests/a-sentence-is-a-search.mjs` n'appelle pas l'IA : ce qui est à nous est
+la lecture des exigences, pas la traduction.
+
 Le chiffre du panneau se compte. `match_score` etait un champ libre du
 schema : le modele le remplissait comme il le sentait, rien ne le calculait,
 rien ne le verifiait, et deux passages sur le meme couple annonce/CV ne
