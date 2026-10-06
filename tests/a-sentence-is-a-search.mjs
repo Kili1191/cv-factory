@@ -1,10 +1,11 @@
 // A SENTENCE IS A SEARCH, AND A FILTER MUST SWALLOW NOTHING IN SILENCE
 //
-// Kilian, 6 October 2026: "if I write find me a French speaker job with my
-// CV in London, does it search the whole internet?" The search had two
-// fields, a title and a city: "French speaker" was neither, and it is the
-// requirement that matters most to him. A London ad that asks for French is
-// an ad where his profile walks past the others.
+// Kilian, 6 October 2026, giving one example of what a person would type:
+// "find me a French speaker job with my CV in London". The search had two
+// fields, a title and a city, and most of that sentence was neither. The
+// example is not a niche: what people ask for is a title, a place and two or
+// three conditions, and the conditions are what disqualify an ad in a line.
+// French below is a test value, not the product.
 //
 // WHAT THIS SUITE HOLDS
 //

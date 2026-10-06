@@ -77,7 +77,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     of: (n, t) => n + " of " + t.toLocaleString("en-GB") + " matching",
     showMore: "Show more", showingMore: "Loading...",
     sentence: "Say what you are looking for",
-    sentenceEx: "a French speaking account manager role in London, from my CV",
+    sentenceEx: "account manager in London, hybrid, permanent, posted this week",
     readingSentence: "Reading your sentence...",
     requirements: "Requirements", masquer: "Hide",
     noSalary: (n) => n + " of these do not state a salary",
@@ -114,7 +114,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     of: (n, t) => n + " sur " + t.toLocaleString("fr-FR") + " qui correspondent",
     showMore: "En voir plus", showingMore: "Chargement...",
     sentence: "Dis ce que tu cherches",
-    sentenceEx: "un poste de gestion de comptes francophone a Londres, depuis mon CV",
+    sentenceEx: "gestion de comptes a Londres, hybride, CDI, publiee cette semaine",
     readingSentence: "Lecture de ta sentence...",
     requirements: "Exigences", masquer: "Masquer",
     noSalary: (n) => n + " d'entre elles n'annoncent pas de salaire",
@@ -268,6 +268,9 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
           onKeyDown={e => { if (e.key === "Enter") search(); }}
           placeholder={L.sentence} data-nuvi="offres-sentence"
           style={{ ...field, minHeight: 50, fontSize: 15 }} />
+        {/* The example carries a title, a place and three conditions, because
+            that is the shape of a real request. An example built around one
+            requirement reads as the only thing the box accepts. */}
         <div style={{ fontSize: 11.5, color: InkMuted, margin: "6px 2px 0", fontFamily: Sans, lineHeight: 1.45 }}>
           {"\u201c" + L.sentenceEx + "\u201d"}
         </div>

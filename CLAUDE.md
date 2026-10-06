@@ -305,12 +305,19 @@ pages carrière, et un registre de pages carrière ne sera jamais un
 agrégateur. `/diagnostic` le dit, point 8.
 
 Une phrase est une recherche, et le modèle ne cherche pas. Kilian, le
-6 octobre 2026 : « si j'écris trouve-moi un job de francophone avec mon CV à
-Londres, est-ce que ça cherche ? » Non : il y avait deux champs, l'intitulé
-et la ville, et « francophone » n'était ni l'un ni l'autre. C'est pourtant
-l'exigence qui compte le plus pour lui, parce qu'une annonce londonienne qui
-demande le français est une annonce où son profil passe devant les autres,
-et aucun site d'emploi ne sait la trouver.
+6 octobre 2026, en donnant **un exemple** de ce qu'une personne taperait :
+« trouve-moi un job de francophone avec mon CV à Londres ». Non, ça ne
+cherchait pas : il y avait deux champs, l'intitulé et la ville, et presque
+toute la phrase n'était ni l'un ni l'autre.
+
+L'exemple n'est pas la fonctionnalité, et surtout pas un créneau. Il a fallu
+que Kilian le dise, parce que la session d'avant en avait fait le
+positionnement du produit, « le poste londonien qui veut un francophone »,
+ce qui est une niche qu'il n'a jamais demandée. Ce qu'une personne réclame
+est rarement un intitulé et un lieu : c'est un intitulé, un lieu et deux ou
+trois conditions, et ce sont les conditions qui disqualifient une annonce en
+une ligne. La langue est l'une des six, et le français était une valeur
+d'exemple.
 
 `lib/searchFromASentence.js` fait traduire la phrase par le modèle en
 exigences, et c'est la recherche qui cherche. La distinction est tout : un
@@ -328,6 +335,11 @@ demandée, parce qu'un filtre inventé retire des offres en silence.
 c'est exactement ce qu'un agrégateur ne sait pas faire : `what` et `where`
 partent à la source, « l'annonce exige le français » se lit dans le texte.
 Deux règles portent tout le fichier.
+
+La langue exigée mérite une ligne pour une raison qui n'a rien à voir avec
+un marché : une annonce qui demande une langue le dit dans une phrase, jamais
+dans un champ, donc aucun site d'emploi ne sait filtrer dessus. C'est vrai
+des huit langues, et c'est vrai des cinq autres exigences.
 
 **Un mot présent ne veut pas dire ce qu'on croit**, la leçon
 d'`includes("account")` dans « accounting ». « Fluent French essential »
