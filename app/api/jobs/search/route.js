@@ -103,6 +103,37 @@ async function refreshTheIndex(boards, warnings) {
   return queue.length - i;
 }
 
+// AN AGGREGATOR CALL IS A QUOTA, NOT A REQUEST
+//
+// The career page index exists because reading 266 boards is slow. The
+// aggregators are fast, so they had no cache at all: every search spent one
+// Adzuna call and one Reed call. Their free tiers are counted per month, and
+// a handful of people searching a few times each would exhaust a month in a
+// day. When the quota runs out the route catches the error and the search
+// quietly loses half its sources, which is the failure this repo keeps
+// finding: it still answers, with less.
+//
+// So the same answer as the boards, bounded: an identical query inside the
+// window is served from memory. Thirty minutes, because an ad posted this
+// morning is still findable this morning, and the cap keeps a bot typing
+// random words from growing the map without end.
+const AGGREGATOR_FRESH_MS = 30 * 60 * 1000;
+const AGGREGATOR_MAX = 200;
+const aggregatorCache = new Map();
+
+async function cached(key, fetchIt) {
+  const hit = aggregatorCache.get(key);
+  if (hit && Date.now() - hit.at < AGGREGATOR_FRESH_MS) return hit.value;
+  const value = await fetchIt();
+  // The oldest entry goes first. A Map keeps insertion order, so the first
+  // key it yields is the oldest written.
+  if (aggregatorCache.size >= AGGREGATOR_MAX) {
+    aggregatorCache.delete(aggregatorCache.keys().next().value);
+  }
+  aggregatorCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
 function postsFromTheIndex(boards) {
   const out = [];
   for (const b of boards) {
@@ -153,14 +184,17 @@ export async function GET(request) {
         const params = new URLSearchParams({ range: debut + "-" + (debut + 49) });
         if (what) params.set("motsCles", what);
         if (where) params.set("commune", where);
-        const res = await fetch(
-          `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        // 204 signifie "aucun resultat", ce n'est pas une erreur.
-        if (res.status === 204) return [];
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
+        const data = await cached("ft|" + what + "|" + where + "|" + page, async () => {
+          const res = await fetch(
+            `https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search?${params}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+          // 204 means "no results", it is not an error.
+          if (res.status === 204) return null;
+          if (!res.ok) throw new Error(`${res.status}`);
+          return res.json();
+        });
+        if (data === null) return [];
         aggregatorTotal += totalAtTheSource(data);
         return franceTravailParse(data).filter(keep);
       } catch (err) {
@@ -173,9 +207,13 @@ export async function GET(request) {
   if (adzunaConfigured(env)) {
     tasks.push((async () => {
       try {
-        const res = await fetch(adzunaUrl(env, { what, where, country, page }));
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
+        const key = "adzuna|" + country + "|" + what + "|" + where + "|" + page
+          + "|" + filters.salaryFrom + "|" + filters.postedWithin + "|" + filters.contract;
+        const data = await cached(key, async () => {
+          const res = await fetch(adzunaUrl(env, { what, where, country, page, filters }));
+          if (!res.ok) throw new Error(`${res.status}`);
+          return res.json();
+        });
         aggregatorTotal += totalAtTheSource(data);
         return adzunaParse(data).filter(keep);
       } catch (err) {
@@ -188,11 +226,13 @@ export async function GET(request) {
   if (reedConfigured(env)) {
     tasks.push((async () => {
       try {
-        const res = await fetch(reedUrl({ what, where, page }), {
-          headers: { Authorization: reedAuthHeader(env) },
+        const data = await cached("reed|" + what + "|" + where + "|" + page, async () => {
+          const res = await fetch(reedUrl({ what, where, page }), {
+            headers: { Authorization: reedAuthHeader(env) },
+          });
+          if (!res.ok) throw new Error(`${res.status}`);
+          return res.json();
         });
-        if (!res.ok) throw new Error(`${res.status}`);
-        const data = await res.json();
         aggregatorTotal += totalAtTheSource(data);
         return reedParse(data).filter(keep);
       } catch (err) {

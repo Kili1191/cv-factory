@@ -98,9 +98,41 @@ export async function run() {
     globalThis.fetch = realFetch;
   }
 
+  // --- AN AGGREGATOR CALL IS A QUOTA, NOT A REQUEST ----------------------
+  //
+  // Adzuna and Reed are fast, so they had no cache: every search spent one
+  // call each. Their free tiers are counted per month, and a few people
+  // searching a few times each would exhaust a month in a day. When the
+  // quota runs out the route catches the error and the search quietly loses
+  // half its sources: it still answers, with less, which is this repo's
+  // favourite failure.
+  //
+  // The keys are not configured in the harness, so this measures the career
+  // page index, which shares the same rule: an identical query inside the
+  // window costs nothing.
+  const vrai = globalThis.fetch;
+  let appels = 0;
+  globalThis.fetch = async () => { appels += 1; return greenhouseResponse(); };
+  try {
+    await search(1);
+    const apres = appels;
+    await search(1);
+    await search(1);
+    if (appels > apres) {
+      failures.push(
+        "repeating the same search spent " + (appels - apres) + " more calls.\n" +
+        "      A free aggregator tier is counted per month: without this, a handful of\n" +
+        "      people searching a few times each exhaust a month in a day, and the\n" +
+        "      search then quietly loses half its sources."
+      );
+    }
+  } finally {
+    globalThis.fetch = vrai;
+  }
+
   if (!failures.length) {
     console.log("      fifty per page, the next one without re-reading a board, "
-      + "and no button when there is nothing left");
+      + "no button when there is nothing left, and the same search twice costs nothing");
   }
   return failures;
 }

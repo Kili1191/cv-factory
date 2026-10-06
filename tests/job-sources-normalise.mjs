@@ -145,6 +145,35 @@ export async function run() {
     failures.push("a response with no total must give zero, not an exception");
   }
 
+  // --- THREE OF THE SIX ASKED OF THE SOURCE --------------------------------
+  //
+  // A free Adzuna tier is counted per call, per month. A call that comes back
+  // with fifty results the filter then discards costs exactly as much as one
+  // that comes back usable, so the three requirements Adzuna understands are
+  // sent to it. The three it has no parameter for stay local: sending a guess
+  // would narrow the search in a way nothing on screen could explain.
+  const serre = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
+    { what: "a", where: "b", country: "gb", page: 1,
+      filters: { salaryFrom: 50000, postedWithin: 7, contract: "permanent" } });
+  if (!serre.includes("salary_min=50000")) failures.push("Adzuna: the salary floor is not asked of the source");
+  if (!serre.includes("max_days_old=7")) failures.push("Adzuna: the age is not asked of the source");
+  if (!serre.includes("permanent=1")) failures.push("Adzuna: the contract kind is not asked of the source");
+
+  const large = adzunaUrl({ ADZUNA_APP_ID: "x", ADZUNA_APP_KEY: "y" },
+    { what: "a", where: "b", country: "gb", page: 1,
+      filters: { salaryFrom: 0, postedWithin: 0, contract: "internship" } });
+  for (const absent of ["salary_min", "max_days_old", "permanent=", "contract=", "part_time"]) {
+    if (large.includes(absent)) {
+      failures.push("Adzuna: \"" + absent + "\" is sent for a requirement nobody set, which narrows"
+        + " the search with nothing on screen to explain it");
+    }
+  }
+  // An internship has no Adzuna flag. Mapping it onto the wrong one would
+  // return permanent roles for a search that asked for internships.
+  if (/[?&](permanent|contract|part_time)=1/.test(large)) {
+    failures.push("Adzuna: an internship is mapped onto another contract flag");
+  }
+
   if (!failures.length) {
     console.log("      3 sources, the same shape out, fifty per page that turns, "
       + "and nothing breaks on an empty response");

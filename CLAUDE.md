@@ -299,6 +299,27 @@ l'écran écrit « 50 sur 64 000 » avec un bouton qui ouvre la suite. Les pages
 carrière ne se paginent pas : l'index rend tout ce qu'il a d'un coup, et les
 redemander page deux les renverrait à l'identique.
 
+**Un appel d'agrégateur est un quota, pas une requête.** Les pages carrière
+ont un index parce que lire 266 tableaux est lent ; les agrégateurs sont
+rapides, donc ils n'avaient aucun cache et chaque recherche dépensait un
+appel Adzuna et un appel Reed. Leurs offres gratuites se comptent au mois :
+quelques personnes cherchant quelques fois épuisent un mois en un jour, et
+quand le quota tombe la route attrape l'erreur et la recherche perd la
+moitié de ses sources sans rien dire. Même règle que les tableaux, donc :
+une requête identique dans les trente minutes est servie de mémoire, deux
+cents entrées au plus.
+
+Et trois des six exigences sont demandées à la source. Adzuna accepte un
+plancher de salaire, un âge et un type de contrat (`salary_min`,
+`max_days_old`, `permanent=1`), donc les cinquante résultats qu'il rend sont
+cinquante résultats qui peuvent survivre au filtre au lieu de cinquante
+qu'on jettera, et son `count` décrit la recherche qu'on a vraiment faite.
+Les trois autres restent locales : Adzuna n'a aucun paramètre pour le lieu
+de travail, la langue ni le niveau, et envoyer une approximation
+rétrécirait la recherche sans que l'écran puisse l'expliquer. Un stage n'a
+pas de drapeau et se lit dans la prose, parce que le mapper sur un autre
+rendrait des CDI à qui cherche un stage.
+
 Rien de tout ça ne fait des millions d'offres sans les clés : sans
 `ADZUNA_APP_ID`, `ADZUNA_APP_KEY` et `REED_API_KEY`, la recherche n'a que les
 pages carrière, et un registre de pages carrière ne sera jamais un
