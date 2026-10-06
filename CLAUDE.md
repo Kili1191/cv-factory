@@ -472,6 +472,17 @@ Aggregated ads arrive already cut by their source and cannot be rescued this
 way, which is exactly why the career pages, the one source we own, have to be
 right.
 
+**And the measurement that settled it, taken the same hour.** Graphcore closes
+its ads with "Applicants for this position must hold the right to work in the
+UK. Unfortunately at this time, we are unable to provide visa sponsorship or
+support for visa applications". That sentence starts at character 5968 of
+6021: the last line of the ad, 4768 characters past the cut, invisible to
+anything reading the description that travels. Three of its roles came back in
+one London search and all three are now read as refusals. **71 of Graphcore's
+178 ads state a visa stance**, so on a first party board this is four listings
+in ten, not an edge case, and it is only reachable because the board gives the
+whole ad.
+
 **The filter shipped once doing nothing.** It appeared in the requirements,
 the person set it, and `searchParams` never carried it, because that function
 named its filters in a list written out by hand: a control that changes
