@@ -80,6 +80,7 @@ const SUITES = [
   ["applications sent is the number", "./applications-sent-is-the-number.mjs"],
   ["a shared link opens the door", "./a-shared-link-opens-the-door.mjs"],
   ["an alert tells you what is new", "./an-alert-tells-you-what-is-new.mjs"],
+  ["the alert says what is missing", "./the-alert-says-what-is-missing.mjs"],
   ["a link is a door", "./a-link-is-a-door.mjs"],
   ["the extension fills the form", "./the-extension-fills-the-form.mjs"],
   ["a breakage reaches the owner", "./a-breakage-reaches-the-owner.mjs"],

@@ -18,6 +18,7 @@ import { readABoard, normalise, locationMatches, titleMatches } from "../../../.
 import { passesFilters, countTheUndecided, activeFilters } from "../../../../lib/jobFilters.js";
 import { filtersFromParams } from "../../../../lib/searchFromASentence.js";
 import { boardsForMarket, companyName } from "../../../../lib/boards.js";
+import { alertKeysTheServerCanSee } from "../../../../lib/alertMail.js";
 
 export const maxDuration = 30;
 
@@ -181,6 +182,12 @@ export async function GET(request) {
   if (url.searchParams.get("only") === "sources") {
     return Response.json({
       configured: true, sources, keys: keysTheServerCanSee(env),
+      // The alert keys ride on the same answer, for the same reason the
+      // aggregator ones do: when a key is added, the only question that
+      // matters is whether the server can see it, and Vercel freezes
+      // variables into a build, so saving one changes nothing until a
+      // deployment is made afterwards. One boolean per name, never a value.
+      alerts: alertKeysTheServerCanSee(env),
       jobs: [], warnings: [], total: 0, totalExact: true, page: 1,
       hasMore: false, filters: [], undecided: {},
       index: { boards: boardsForMarket(country).length, read: 0, pending: 0 },

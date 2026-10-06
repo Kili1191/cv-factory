@@ -696,10 +696,31 @@ It runs on the device today, one watch per search under `cvf_vl`, because
 "account manager in London" and "account manager in Manchester" are two
 questions and somebody running both has to be told about both. Page one only:
 turning a page is still reading the same search, and marking page two as seen
-would hide those jobs from tomorrow. **Sending it as an email needs two things
-the deployment does not have yet**, a mail provider key and a server side
-store the cron can read, so that half is not built and the screen carries the
-digest meanwhile. `tests/an-alert-tells-you-what-is-new.mjs`.
+would hide those jobs from tomorrow. `tests/an-alert-tells-you-what-is-new.mjs`.
+
+**The mail layer is written and the two pieces that are missing are named.**
+`lib/alertMail.js` composes the message and posts it to a provider, with
+`fetch` injected so the circuit is proved against a double the way the billing
+circuit is proved without Stripe. The subject line carries the count, because
+a digest is read in a list of subject lines and "Your job alert" every morning
+is indistinguishable from yesterday's; an empty digest is never composed at
+all, since a message that says nothing teaches the person to stop opening the
+one that matters. What the ad wrote is escaped: a job title is a stranger's
+text and it would otherwise run as markup inside somebody's mail client. The
+four variables are reported by `GET /api/jobs/search?only=sources` under
+`alerts`, **one boolean per name and never a value**, the same rule and the
+same reason as the Adzuna key, and the test that matters is that a secret
+planted in all four cannot be found anywhere in the answer. `docs/alertes.md`.
+
+**And two pieces are deliberately not written.** A send route the browser can
+call with any recipient is a spam relay: anybody would post mail from Nuvi's
+domain and the domain would be blacklisted inside a day, so the recipient has
+to be the signed in account's own address and not an address in the request.
+The scheduled run and its table have nothing to read until the watches live
+somewhere a cron can reach, and a schedule that runs and reads nothing is
+exactly the silent failure this repository spends its time hunting. Both are
+short to write the day the four variables exist; everything underneath them
+already does.
 
 The money arrives through `app/api/billing`. The plan is set in `lib/plans.js`
 (24 euros a month, 49 for three months, three free adaptations with an
