@@ -14,7 +14,7 @@ import {
   reedConfigured, reedUrl, reedAuthHeader, reedParse,
   availableSources, totalAtTheSource, keysTheServerCanSee, sourceSievesItself,
 } from "../../../../lib/jobSources.js";
-import { readABoard, normalise, locationMatches, titleMatches } from "../../../../lib/ats.js";
+import { readABoard, normalise, locationMatches, titleMatches, namesSomewhereElse } from "../../../../lib/ats.js";
 import { passesFilters, countTheUndecided, activeFilters } from "../../../../lib/jobFilters.js";
 import { filtersFromParams } from "../../../../lib/searchFromASentence.js";
 import { boardsForMarket, companyName } from "../../../../lib/boards.js";
@@ -284,6 +284,12 @@ export async function GET(request) {
       // back empty while kept jobs are waiting further down.
       const kept = postsFromTheIndex(boards)
         .filter((j) => locationMatches(j.location, where))
+        // With no city asked, `locationMatches` lets everything through, and
+        // a board enters the registry on its market but the jobs it serves
+        // were never checked again. That is how a Toronto role reached a
+        // British search. Only what names another country is refused: half of
+        // ads say "Remote" and naming nothing is not naming elsewhere.
+        .filter((j) => !namesSomewhereElse(j.location, country))
         .filter((j) => titleMatches(j, what))
         .filter(keep);
       boardTotal = kept.length;

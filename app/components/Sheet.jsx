@@ -30,7 +30,25 @@ import {
 // NuviLogo importe en dynamic (ssr:false) pour eviter mismatch hydratation
 const NuviLogo = dynamic(() => import("./NuviLogo"), { ssr: false });
 
-export default function Sheet({ title, eyebrow, onClose, children, showLogo = true }) {
+// `plein` : la feuille prend tout l'ecran, avec un retour explicite.
+//
+// WHY A PANEL ASKS FOR THE WHOLE SCREEN
+//
+// A bottom sheet is right for a short panel. It is wrong for a list of a
+// hundred job ads: at 840 by 62vh the reading window was a letterbox on a
+// 1440 screen, and the person scrolled a long list through a small hole.
+// Measured on 7 October 2026 on the job search, which is the only panel in
+// the product whose content has no natural end.
+//
+// Full screen also removes the backdrop a person would click to get out, so
+// it has to carry its own way back, named rather than a bare cross.
+export default function Sheet({
+  title, eyebrow, onClose, children, showLogo = true, plein = false,
+  // The word on the way back. Passed in rather than guessed: the Sheet has
+  // no locale of its own and the caller always does, and a label in the
+  // wrong language is the leak this repo has a whole agent for.
+  retour = "Back",
+}) {
   // [Fix] Escape ferme la sheet. Chaque modale ajoutait son propre ecouteur,
   // et trois d'entre elles l'avaient oublie : Versions, Activite et les
   // feuilles d'edition ne se fermaient qu'au bouton ou au clic sur le fond.
@@ -64,17 +82,25 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
       <div style={{
         position: "absolute", inset: 0,
         background: "rgba(10,10,10,.55)",
-        backdropFilter: "blur(8px)",
-        WebkitBackdropFilter: "blur(8px)",
+        // A FULL SCREEN BLUR IS PAID FOR ON EVERY FRAME
+        //
+        // `backdrop-filter` keeps a composited layer the size of the window
+        // and is the first thing to blame when a long list judders. Under a
+        // full screen sheet it blurs what nobody can see, so it goes.
+        ...(plein ? null : {
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+        }),
         animation: "cvfFadeIn 200ms ease-out",
-      }} onClick={onClose} />
+      }} onClick={plein ? undefined : onClose} />
 
       {/* Sheet container */}
       <div className="nuvi-feuille" style={{
         position: "relative",
         background: CreamSoft,
-        borderRadius: "32px 32px 0 0",
-        maxHeight: "92vh",
+        borderRadius: plein ? 0 : "32px 32px 0 0",
+        maxHeight: plein ? "100vh" : "92vh",
+        height: plein ? "100vh" : undefined,
         // UN PLANCHER DE HAUTEUR SUR ORDINATEUR
         //
         // La hauteur suivait le contenu. Un panneau peu rempli - le suivi des
@@ -90,26 +116,60 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
         // Exprime en vh ET en pixels : sur un portable bas, une valeur fixe
         // deborderait ; sur un grand ecran, une valeur relative seule ferait
         // demesure. Le maxHeight au-dessus reste la borne haute.
-        minHeight: surOrdinateur ? "min(62vh, 560px)" : undefined,
+        minHeight: plein ? "100vh" : (surOrdinateur ? "min(62vh, 560px)" : undefined),
         display: "flex", flexDirection: "column",
-        boxShadow: "0 -20px 60px rgba(0,0,0,.2)",
+        // Full screen has no edge to cast a shadow onto, and the shadow is
+        // another layer to paint while the list scrolls.
+        boxShadow: plein ? "none" : "0 -20px 60px rgba(0,0,0,.2)",
         animation: "cvfSlideUp 280ms cubic-bezier(.32,.72,0,1)",
         width: "100%",
-        maxWidth: 840,
+        maxWidth: plein ? "100%" : 840,
         marginLeft: "auto", marginRight: "auto",
       }}>
-        {/* Handle iOS */}
-        <div style={{
+        {/* Handle iOS: a sheet you pull down. Full screen is not one. */}
+        {!plein && <div style={{
           width: 40, height: 4,
           background: Hairline,
           borderRadius: RadiusPill,
           margin: "10px auto 6px",
           flexShrink: 0,
-        }} />
+        }} />}
+
+        {/* THE WAY BACK, NAMED
+            Full screen covers the backdrop, so the click that used to get
+            somebody out is gone. A bare cross in a corner is not the same
+            thing: this says where it goes. */}
+        {plein && (
+          <div style={{
+            maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto",
+            boxSizing: "border-box", padding: "12px 24px 0", flexShrink: 0,
+          }}>
+            <button onClick={onClose} data-nuvi="feuille-retour" style={{
+              ...B({
+                display: "inline-flex", alignItems: "center", gap: 7,
+                minHeight: 40, padding: "0 14px 0 10px",
+                borderRadius: RadiusPill,
+                background: Paper, color: Ink,
+                border: "0.5px solid " + Hairline,
+                fontFamily: Sans, fontSize: 13, fontWeight: 600,
+                transition: Trans(["background", "border-color"], "fast"),
+              })
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" strokeWidth="1.8"
+                strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              {retour}
+            </button>
+          </div>
+        )}
 
         {/* [Nuvi v2] Logo wordmark en haut a gauche */}
         {showLogo && (
           <div style={{
+            ...(plein ? { maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto", boxSizing: "border-box" } : null),
             padding: "8px 24px 0",
             display: "flex", alignItems: "center",
             flexShrink: 0,
@@ -120,6 +180,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
 
         {/* Header editorial : eyebrow + titre + close */}
         <div style={{
+          ...(plein ? { maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto", boxSizing: "border-box" } : null),
           padding: showLogo ? "10px 24px 14px" : "6px 24px 14px",
           borderBottom: "0.5px solid " + Hairline,
           flexShrink: 0,
@@ -141,8 +202,11 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
             }}>{title}</div>
           </div>
 
-          {/* [Nuvi v2] Close button : SVG icon */}
-          <button onClick={onClose} aria-label="close" style={{
+          {/* [Nuvi v2] Close button : SVG icon.
+              Gone in full screen: "Back" is already there, and two controls
+              doing the same thing under two names make the person choose
+              between them for nothing. */}
+          {!plein && <button onClick={onClose} aria-label="close" style={{
             ...B({
               background: Paper,
               borderRadius: "50%",
@@ -160,7 +224,7 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
-          </button>
+          </button>}
         </div>
 
         {/* Body scrollable.
@@ -170,6 +234,13 @@ export default function Sheet({ title, eyebrow, onClose, children, showLogo = tr
           overflowY: "auto",
           padding: "18px 24px 48px",
           flex: 1,
+          // FULL SCREEN IS ROOM, NOT A WIDER LINE
+          //
+          // At 1440 the cards ran the whole width and a job title sat alone
+          // on a 1400px line. The window takes the screen so the list has
+          // somewhere to go; the reading column keeps a measure, the same
+          // one the sheet had before, a little wider.
+          ...(plein ? { maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto" } : null),
         }}>
           {children}
         </div>

@@ -31,7 +31,7 @@
 //   4. The registry holds only verified companies with a known ATS. A
 //      guessed line would be a slower search for nothing.
 
-import { ATS, ATS_NAMES, normalise, locationMatches, titleMatches, readABoard, inTheMarket, MARKETS } from "../lib/ats.js";
+import { ATS, ATS_NAMES, normalise, locationMatches, titleMatches, readABoard, inTheMarket, namesSomewhereElse, MARKETS } from "../lib/ats.js";
 import { BOARDS, companyName, boardsForMarket } from "../lib/boards.js";
 
 // The shapes taken from real boards on 6 October 2026.
@@ -94,6 +94,40 @@ export async function run() {
       failures.push("\"" + loc + "\" no longer counts as British: the guard against "
         + "American namesakes has started refusing the places it exists to keep.");
     }
+  }
+
+  // --- 1a2. A JOB THAT NAMES ANOTHER COUNTRY IS NOT IN THIS SEARCH ------
+  //
+  // The market is checked when a board ENTERS the registry and was never
+  // checked again on the jobs it serves. With no city in the request,
+  // `locationMatches` lets everything through, so a British board posting in
+  // Toronto reached a British search: measured on production on 7 October
+  // 2026, and Kilian saw the card.
+  //
+  // This is the other direction from `inTheMarket`, and it follows the rule
+  // the filters live by: refuse only what names somewhere else. Most ads say
+  // "Remote" or a town nobody listed, and demanding a positive British sign
+  // would throw all of them away.
+  for (const loc of ["Toronto, Canada", "New York, NY", "Berlin, Germany", "Paris, France",
+    "Austin, Texas"]) {
+    if (!namesSomewhereElse(loc, "gb")) {
+      failures.push("\"" + loc + "\" is served to a British search: the person asked for one "
+        + "country and is shown another, on a product whose promise is credibility.");
+    }
+  }
+  for (const loc of ["London", "Remote", "Hybrid - Manchester", "Woolstanwood, Crewe",
+    "Edinburgh", "", "Remote (UK)"]) {
+    if (namesSomewhereElse(loc, "gb")) {
+      failures.push("\"" + loc + "\" is refused from a British search. Naming nothing is not "
+        + "naming elsewhere, and half of ads name no city at all.");
+    }
+  }
+  // A role open in two places, one of them the market asked for, stays. The
+  // board rule accepts losing it; a job shown to a person must not be lost,
+  // because it really is in London and nothing on screen would say why.
+  if (namesSomewhereElse("London and Toronto, Canada", "gb")) {
+    failures.push("a role open in London and Toronto is refused from a London search, "
+      + "although it is in London.");
   }
 
   // --- 1b. WHAT THE CUT WOULD HAVE THROWN AWAY --------------------------

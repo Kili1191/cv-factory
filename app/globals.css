@@ -1484,7 +1484,19 @@ html {
  *
  * Le rang s'arrete a huit, comme ailleurs : au-dela tout arrive ensemble.
  */
-.nuvi-sheet-corps > * {
+/* L'ENTREE NE VAUT QUE POUR LE HAUT DU PANNEAU
+ *
+ * La regle portait sur TOUS les enfants directs. Dans la recherche d'offres
+ * les cartes sont des enfants directs : cent vingt elements animes, chacun
+ * sur sa propre couche, et le defilement saccade. Kilian l'a dit le
+ * 7 octobre 2026, et c'etait visible des la premiere liste longue.
+ *
+ * Les sept premiers suffisent : c'est ce qu'on voit a l'ouverture, et le
+ * delai etait deja plafonne au huitieme. Au-dela, l'animation ne se voyait
+ * pas et se payait quand meme.
+ *
+ * `prefers-reduced-motion` la retire entierement, plus bas dans ce fichier. */
+.nuvi-sheet-corps > *:nth-child(-n+7) {
   animation: nuviEntree 240ms cubic-bezier(.22, 1, .36, 1) backwards;
 }
 .nuvi-sheet-corps > *:nth-child(1) { animation-delay: 0ms; }
@@ -1494,7 +1506,7 @@ html {
 .nuvi-sheet-corps > *:nth-child(5) { animation-delay: 180ms; }
 .nuvi-sheet-corps > *:nth-child(6) { animation-delay: 225ms; }
 .nuvi-sheet-corps > *:nth-child(7) { animation-delay: 270ms; }
-.nuvi-sheet-corps > *:nth-child(n+8) { animation-delay: 315ms; }
+/* Plus d'animation au-dela du septieme, donc plus de delai a poser. */
 
 /* LE LIEN D'EVITEMENT
  *

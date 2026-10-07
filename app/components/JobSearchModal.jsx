@@ -113,6 +113,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     noSalary: (n) => n + " of these do not state a salary",
     noDate: (n) => n + " of these do not state a date",
     sortFit: "Best fit first", sortSource: "As found",
+    back: "Back",
     sendLink: "Send as a Nuvi link", linkCopied: "Link copied",
     linkHere: "Copy this link:",
     isNew: "new",
@@ -170,6 +171,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     noSalary: (n) => n + " d'entre elles n'annoncent pas de salaire",
     noDate: (n) => n + " d'entre elles n'annoncent pas de date",
     sortFit: "Correspondance d'abord", sortSource: "Ordre des sources",
+    back: "Retour",
     sendLink: "Envoyer en lien Nuvi", linkCopied: "Lien copie",
     linkHere: "Copie ce lien :",
     isNew: "nouveau",
@@ -276,7 +278,30 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       const txt = await aiCall(searchInstruction(text, locale), {
         cv, schema: SEARCH_SCHEMA, task_name: "job-search-query", max_tokens: 500,
       });
-      const { filters: f, understood: sentenceUnderstood } = filtersFromTheModel(parseJSON(txt));
+      const { filters: lu, understood: sentenceUnderstood } = filtersFromTheModel(parseJSON(txt));
+
+      // WHAT THE PERSON TYPED IS NOT A SUGGESTION
+      //
+      // The comment on `runSearch` says it already: the two fields at the top
+      // stay the truth. This path did not honour it. It sent the model's
+      // reading and nothing else, so a city typed by hand was overwritten
+      // AND left out of the request when the model named none.
+      //
+      // Measured on production on 7 October 2026, which is how it was found:
+      // with the city empty the search returns Skegness, Crewe, Bedford and a
+      // Toronto job from a career page, because `locationMatches` lets
+      // everything through on an empty wanted value and the aggregators widen
+      // on their own. Kilian typed London and got Toronto. The list was not
+      // wrong about the search, the search was wrong about him.
+      //
+      // So the model fills the blanks and never empties a field: on anything
+      // it did not name, what is on screen stands.
+      const f = {
+        ...lu,
+        what: lu.what || what,
+        where: lu.where || where,
+        country: lu.country || country,
+      };
       setFilters(f);
       setWhat(f.what);
       setWhere(f.where);
@@ -305,7 +330,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     } finally {
       setReading(false);
     }
-  }, [sentence, locale, cv]);
+  }, [sentence, locale, cv, what, where, country]);
 
   // ONE BUTTON, BECAUSE THERE IS ONLY ONE ACTION
   //
@@ -357,7 +382,13 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   };
 
   return (
-    <Sheet eyebrow={L.eyebrow} title={L.title} onClose={onClose}>
+    // FULL SCREEN, BECAUSE THIS LIST HAS NO NATURAL END
+    //
+    // A bottom sheet suits a short panel. At 840 by 62vh a hundred job ads
+    // were read through a letterbox on a 1440 screen, and Kilian said so on
+    // 7 October 2026: it judders and the window is too small. Full screen
+    // covers the backdrop, so the sheet carries its own way back.
+    <Sheet eyebrow={L.eyebrow} title={L.title} onClose={onClose} plein retour={L.back}>
       <p style={{ fontSize: 13, color: InkMuted, lineHeight: 1.5, margin: "0 0 16px", fontFamily: Sans }}>
         {L.sub}
       </p>

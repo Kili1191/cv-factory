@@ -77,6 +77,7 @@ const SUITES = [
   ["more results means more results", "./more-results-means-more-results.mjs"],
   ["a big total does not crash the app", "./a-big-total-does-not-crash-the-app.mjs"],
   ["a dropped cv is imported", "./a-dropped-cv-is-imported.mjs"],
+  ["the city you typed is the city searched", "./the-city-you-typed-is-the-city-searched.mjs"],
   ["a sentence is a search", "./a-sentence-is-a-search.mjs"],
   ["the best fit comes first", "./the-best-fit-comes-first.mjs"],
   ["applications sent is the number", "./applications-sent-is-the-number.mjs"],

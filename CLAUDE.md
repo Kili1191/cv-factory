@@ -586,6 +586,46 @@ the next filter added cannot be left behind, and
 the route and back. Found by driving the real screen and reading the query
 string, not by a suite.
 
+**The city you typed is the city that gets searched.** Kilian, 7 October 2026:
+"I put London in the city field and it gives me Toronto". The list was not
+wrong about the search, the search was wrong about him: the request went out
+with no city at all. Two defects, and only together do they produce a Canadian
+job.
+
+The sentence path sent the model's reading and nothing else. The comment on
+`runSearch` already says the two fields at the top stay the truth; that path
+did not honour it, so a city typed by hand was overwritten AND left out of the
+request whenever the model named none. The model now fills the blanks and
+never empties a field: on anything it did not name, what is on screen stands.
+
+And with no city, `locationMatches` lets everything through. A board enters
+the registry on its market and the jobs it serves were never checked again, so
+a British board posting in Toronto reached a British search. `namesSomewhereElse`
+closes it, and it is the other direction from `inTheMarket` on purpose: that
+one wants a positive sign, which is right for a board and wrong for a job,
+since most ads say "Remote" or a town nobody listed. So only what names
+another country is refused, and a role open in London AND Toronto stays,
+because the board rule can afford to lose it and a person asking for London
+cannot. Measured on production the same hour: with the city empty the search
+returned Skegness, Crewe, Bedford and that Toronto role; with London it
+returned London postcodes and London districts.
+`tests/the-city-you-typed-is-the-city-searched.mjs`.
+
+**And the panel takes the screen.** "It judders when I scroll and the window
+is too small." A bottom sheet suits a short panel; at 840 by 62vh a hundred
+job ads were read through a letterbox on a 1440 screen. The judder had two
+causes, both paid on every frame: `.nuvi-sheet-corps > *` applied the entry
+animation to **every** direct child, and the cards are direct children, so a
+long list put a hundred and twenty animated layers on the compositor; and a
+full window `backdrop-filter: blur(8px)` sat under all of it. Only the first
+seven children animate now, which is what a person sees on opening and where
+the delay was already capped, and full screen drops the blur it would be
+blurring behind nothing. Full screen covers the backdrop a person clicks to
+get out, so the sheet carries its own way back, named rather than a bare
+cross, and the cross goes: two controls doing one thing under two names make
+somebody choose between them for nothing. The window takes the screen, the
+reading column keeps a measure.
+
 **A filter that cannot decide does not exclude.** Half of ads do not state a
 salary. If a floor dropped them, asking for 50,000 would empty the list of its
 best offers with nothing saying so, and that is the silent failure this
