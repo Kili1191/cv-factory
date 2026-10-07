@@ -75,6 +75,7 @@ const SUITES = [
   ["a link in the ad box is read or named", "./a-link-in-the-ad-box-is-read-or-named.mjs"],
   ["the hidden jobs are found", "./the-hidden-jobs-are-found.mjs"],
   ["more results means more results", "./more-results-means-more-results.mjs"],
+  ["a big total does not crash the app", "./a-big-total-does-not-crash-the-app.mjs"],
   ["a sentence is a search", "./a-sentence-is-a-search.mjs"],
   ["the best fit comes first", "./the-best-fit-comes-first.mjs"],
   ["applications sent is the number", "./applications-sent-is-the-number.mjs"],

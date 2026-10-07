@@ -353,6 +353,32 @@ index is already in memory, and only page one refreshes it.
 `tests/more-results-means-more-results.mjs` calls the route directly with
 `fetch` doubled, because the defect only appears on page two.
 
+**A defect can ship green and wait for a key.** On 7 October 2026 `/app` was
+replaced, whole, by "Application error: a client-side exception has occurred".
+Not the job search: the product. The results line called `L.sur(...)`, a
+string that had been split into `of` and `ofFound` while the call site kept
+the name they used to share, so `L.sur` was undefined, calling it threw, and
+React unmounted the tree.
+
+Nothing caught it, and the reasons are all on this page already. The lint
+carries one rule, `no-undef`, and `L.sur` is a property on an object rather
+than an undefined identifier, which is the `lang is not defined` lesson one
+level deeper. The build passed. **Every suite passed**, because the branch only
+runs when the total is bigger than the page, and with career pages alone the
+two are equal: no test and no person had ever executed that line. The hour
+Adzuna and Reed went live the total became 8781 against 120 shown and it fired
+on every search. A key turned a dormant line into an outage.
+
+So the fixture that was missing is the one every aggregator produces: a source
+declaring far more than it returns.
+`tests/a-big-total-does-not-crash-the-app.mjs` drives the real screen with
+8781 against 12, exact and approximate, and fails on the error page rather
+than on the absence of a string, because what went wrong was not a wrong
+number, it was no product. It also refuses a crash traded for a silence: the
+line has to carry both numbers afterwards. Found by a console line, not by a
+suite, and the measurement that mattered was the one nobody can run locally,
+since it needed the key.
+
 **The ceiling the person saw was not the index, it was twenty.** Adzuna and
 Reed were called for twenty results of page one, and never the next. They hold
 hundreds of thousands behind the same query. So the search paginates, fifty

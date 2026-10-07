@@ -500,7 +500,25 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       {(jobs.length > 0 || (indexState && indexState.pending > 0)) && (
         <div style={{ fontSize: 11, color: InkMuted, marginBottom: 10, fontFamily: Sans, lineHeight: 1.5 }}>
           {jobs.length > 0
-            ? (total > jobs.length ? L.sur(jobs.length, total) : String(jobs.length))
+            /* `L.sur` did not exist. The two strings are `of` and `ofFound`:
+               the call site kept the name they shared before they were split
+               in two, so this threw `L.sur is not a function` and took the
+               whole app down. A client side exception is not a broken panel,
+               it is the error page instead of the product.
+
+               It was dormant for a day. The branch only runs when the total
+               is bigger than the page, and with career pages alone the two
+               were equal. The hour Adzuna and Reed went live the total became
+               8781 against 120 shown and it fired on every search: a defect
+               can ship green and wait for a key.
+
+               Which of the two is right is decided elsewhere already:
+               `totalExact` goes false as soon as one contributing source
+               could not sieve an active requirement, and the number then
+               describes a wider search than the list under it. */
+            ? (total > jobs.length
+              ? (totalExact ? L.of(jobs.length, total) : L.ofFound(jobs.length, total))
+              : String(jobs.length))
               + " · " + L.from + " " + sources.join(", ")
             : null}
           {undecided.noSalary ? <div>{L.noSalary(undecided.noSalary)}</div> : null}
