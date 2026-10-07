@@ -32,6 +32,13 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
 
   // Les deux champs du chemin "je pars de l'annonce". Ils vivent ici parce
   // qu'ils ne servent qu'a cet ecran et ne survivent pas a sa fermeture.
+  // DROPPING A FILE ON THE IMPORT CARD
+  //
+  // The card was a button with a single onClick, while FileDrop has handled
+  // dropping from the start and serves eight other panels. So the most
+  // important screen in the product, the one the CV arrives on, was the only
+  // one refusing the gesture everybody tries first on a computer.
+  const [survoleFichier, setSurvoleFichier] = useState(false);
   const [offreTexte, setOffreTexte] = useState("");
   const [parcoursTexte, setParcoursTexte] = useState("");
 
@@ -482,6 +489,25 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
         {/* Big upload card (paper, dashed accent terracotta) */}
         <button
           onClick={() => fileInputRef.current && fileInputRef.current.click()}
+          data-nuvi="ob-depot-cv"
+          // Dropping doubles the click, it does not replace it: on a phone
+          // the gesture does not exist, and a phone is where this product is
+          // most often read.
+          onDragOver={(e) => { e.preventDefault(); setSurvoleFichier(true); }}
+          onDragEnter={(e) => { e.preventDefault(); setSurvoleFichier(true); }}
+          onDragLeave={() => setSurvoleFichier(false)}
+          onDrop={async (e) => {
+            // WITHOUT THIS preventDefault THE BROWSER OPENS THE PDF
+            //
+            // A file dropped on a page that intercepts nothing makes the
+            // browser leave the application to display the file. The person
+            // loses the screen they were on and nothing says why.
+            e.preventDefault();
+            setSurvoleFichier(false);
+            const liste = (e.dataTransfer && e.dataTransfer.files) || [];
+            if (!liste.length) return;
+            await chargerFichier(liste[0], setRaw);
+          }}
           style={{
             ...B({
               // Elle prend toute sa colonne. En grille, un bouton se reduit
@@ -491,8 +517,10 @@ function OnboardScreen({ T, locale, setLocale, apiKey, mode, setMode,
               width:"100%", boxSizing:"border-box",
               padding:"clamp(28px, 5vh, 48px) 18px",
               borderRadius:RadiusMd,
-              background:Paper,
-              border:"1.5px dashed "+accent,
+              // The card has to answer, or nothing says it can be let go of
+              // and the person goes back to clicking.
+              background:survoleFichier ? accentSoft : Paper,
+              border:(survoleFichier ? "2px solid " : "1.5px dashed ")+accent,
               color:accent,
               fontWeight:600, fontSize:14,
               display:"flex", flexDirection:"column",

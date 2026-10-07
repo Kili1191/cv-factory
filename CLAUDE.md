@@ -154,6 +154,21 @@ which drops the empty last segment before the parser ever sees it: harmless,
 since the boards serve both forms or redirect, and the door follows redirects
 with its guard at every hop.
 
+**And the import card was the one place a file could not be dropped.**
+`FileDrop` has caught a dropped file since it shipped and serves eight
+panels; the card on the import screen was a button with a single `onClick`.
+So the most important screen in the product, the one the CV arrives on,
+refused the first thing anybody does with a file on a computer. It now takes
+the drop, says so in both languages, and answers while the file is held over
+it, because a target nobody is told about is a target nobody uses.
+
+The defect worth the suite is the `preventDefault`. A file dropped on a page
+that intercepts nothing makes the browser leave the application to display
+the file: the person loses the screen they were on, the CV is not imported,
+and it reads as a crash. `tests/a-dropped-cv-is-imported.mjs` drops a real CV
+on the real screen and asserts the import screen is still there afterwards,
+not only that the field filled.
+
 The extension fills the form, and never submits it. Applying a hundred times
 is not a hundred decisions, it is the same twenty boxes typed a hundred times:
 first name, surname, email, phone, city, LinkedIn. That is exactly what the

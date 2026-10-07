@@ -220,7 +220,7 @@ const EN_T = {
   ob_import_sub_adapt:"Nuvi will first structure your CV, then you'll paste the posting.",
   ob_import_sub_boost:"Nuvi will read your CV and restructure it automatically.",
   ob_import_format:"Accepted: PDF, Word, text - or a photo of your CV.",
-  ob_pick_file:"Click to select my CV",
+  ob_pick_file:"Drop your CV here, or click to choose it",
   ob_pick_file_hint:"PDF, Word, text - or a photo",
   ob_or_paste:"or copy and paste the content",
   ob_file_reading:"Reading",
