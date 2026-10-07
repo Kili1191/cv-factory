@@ -321,10 +321,10 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               fontFamily:Serif, fontWeight:500,
               fontSize:16, letterSpacing:"-0.01em",
               color:"#fff", marginBottom:3,
-            }}>{T.iv_btn || "Preparer l'entretien"}</div>
+            }}>{T.iv_btn || "Prepare for interview"}</div>
             <div style={{
               fontSize:11, color:"rgba(255,255,255,0.85)", lineHeight:1.4,
-            }}>{T.iv_btn_desc || "Nuvi simule le recruteur typique de ton marche"}</div>
+            }}>{T.iv_btn_desc || "Nuvi simulates the typical recruiter for your market"}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke="#fff" strokeWidth="2.5"
@@ -372,10 +372,10 @@ function TargetHub({ T, cvIsEmpty, offerResult, locale,
               fontFamily:Serif, fontWeight:500,
               fontSize:16, letterSpacing:"-0.01em",
               color:Ink, marginBottom:3,
-            }}>{T.mc_btn || "Quel CV envoyer ?"}</div>
+            }}>{T.mc_btn || "Which CV to send?"}</div>
             <div style={{
               fontSize:11, color:InkMuted, lineHeight:1.4,
-            }}>{T.mc_btn_desc || "Nuvi recommande la meilleure version"}</div>
+            }}>{T.mc_btn_desc || "Nuvi recommends the best version for this offer"}</div>
           </div>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
             stroke={Coral} strokeWidth="2.5"

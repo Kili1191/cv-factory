@@ -88,7 +88,7 @@ function Flashcard({ T, q }) {
             letterSpacing:"0.12em", textTransform:"uppercase",
             color:CoralText, marginBottom:4,
             fontFamily:Sans,
-          }}>{T.iv_star_tip || "Conseil"}</div>
+          }}>{T.iv_star_tip || "Tip"}</div>
           <div style={{
             fontFamily:Serif, fontStyle:"italic",
             fontSize:13, color:Ink, lineHeight:1.5,
@@ -177,15 +177,15 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
       <div style={{
         fontSize:11, fontWeight:700, letterSpacing:"0.12em",
         textTransform:"uppercase", color:CoralText, marginBottom:6, fontFamily:Sans,
-      }}>{T.iv_proof_eyebrow || "On va te le faire prouver"}</div>
+      }}>{T.iv_proof_eyebrow || "They will make you prove it"}</div>
       <div style={{
         fontFamily:Serif, fontSize:19, fontWeight:400, color:Ink,
         letterSpacing:"-0.02em", lineHeight:1.2, marginBottom:6,
-      }}>{T.iv_proof_title || "Les lignes de ton CV qu'un recruteur va creuser"}</div>
+      }}>{T.iv_proof_title || "The lines a recruiter will dig into"}</div>
       <div style={{
         fontSize:12.5, color:InkMuted, lineHeight:1.55, marginBottom:14,
       }}>{T.iv_proof_sub
-        || "Ce sont tes lignes qui affirment un resultat. Un chiffre sur un CV appelle toujours la meme question : d'ou il sort. Prepare-la maintenant, pas dans le bureau."}</div>
+        || "These are your lines that claim a result. A figure on a CV always draws the same question: where did it come from. Get it ready now, not in the room."}</div>
 
       {!result && !loading && (
         <button onClick={onRun} style={{
@@ -196,7 +196,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
             fontFamily:Sans, fontWeight:600, fontSize:13,
             transition: Trans(["background","color","opacity"], "fast"),
           })
-        }}>{T.iv_proof_run || "Preparer mes preuves"}</button>
+        }}>{T.iv_proof_run || "Prepare my proof"}</button>
       )}
 
       {loading && (
@@ -211,7 +211,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
             borderRadius:"50%", animation:"cvfSpin 1s linear infinite",
           }}/>
           <div style={{ fontSize:12.5, color:InkMuted }}>
-            {T.iv_proof_loading || "Nuvi relit tes chiffres comme un recruteur"}
+            {T.iv_proof_loading || "Nuvi is rereading your figures like a recruiter"}
           </div>
         </div>
       )}
@@ -225,7 +225,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
           background:CoralSoft, borderRadius:RadiusSm, padding:"14px 16px",
           fontSize:13, color:Ink, lineHeight:1.6,
         }}>{T.iv_proof_none
-          || "Aucune ligne de ton CV n'affirme de resultat, donc il n'y a rien a te faire prouver. Ce n'est pas une bonne nouvelle : c'est aussi ce qui fait qu'on ne te rappelle pas. Repasse par le diagnostic, axe Resultats obtenus."}</div>
+          || "No line on your CV claims a result, so there is nothing to make you prove. That is not good news: it is also why you are not being called back. Go back to the diagnostic, the Results achieved axis."}</div>
       )}
 
       {lignes.map((l, i) => (
@@ -245,7 +245,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
             <div style={{
               fontSize:10, fontWeight:700, letterSpacing:"0.1em",
               textTransform:"uppercase", color:CoralText, marginBottom:5,
-            }}>{T.iv_proof_probe || "Ce qu'on va te demander"}</div>
+            }}>{T.iv_proof_probe || "What they will ask"}</div>
             <div style={{ fontSize:13.5, color:Ink, lineHeight:1.5, fontWeight:600 }}>
               {l.probe}
             </div>
@@ -255,7 +255,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
             <div style={{
               fontSize:10, fontWeight:700, letterSpacing:"0.1em",
               textTransform:"uppercase", color:GreenText, marginBottom:5,
-            }}>{T.iv_proof_prepare || "A avoir pret"}</div>
+            }}>{T.iv_proof_prepare || "Have this ready"}</div>
             <div style={{ fontSize:13, color:Ink, lineHeight:1.55 }}>{l.prepare}</div>
           </div>
 
@@ -265,7 +265,7 @@ function ProofSection({ T, loading, result, hasMainResult, onRun }) {
               fontSize:12, color:Ink, lineHeight:1.5,
             }}>
               <strong style={{ fontWeight:600 }}>
-                {T.iv_proof_weak || "Par ou ca casse"}{" : "}
+                {T.iv_proof_weak || "Where it breaks"}{" : "}
               </strong>
               {l.faible}
             </div>
@@ -1052,7 +1052,7 @@ function CheatSheetCard({ T, cv, loading, result, hasMainResult, onRun, notify }
       return;
     }
     w.document.write(
-      '<html><head><title>' + (T.iv_cs_card_title || "Pense-bete") + '</title>'
+      '<html><head><title>' + (T.iv_cs_card_title || "A4 cheat sheet") + '</title>'
       + '<style>'
       + '@page { size: A4 portrait; margin: 12mm; }'
       + '* { box-sizing: border-box; }'
@@ -1856,9 +1856,9 @@ export default function InterviewModal({
                     fontSize:11, fontWeight:600,
                     letterSpacing:"0.1em", textTransform:"uppercase",
                     color:CoralText, marginBottom:8, fontFamily:Sans,
-                  }}>{T.iv_cv_label || "Preparer sur quel CV"}</div>
+                  }}>{T.iv_cv_label || "Prepare on which CV"}</div>
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                    {[{ id:null, name:T.iv_cv_current || "CV en cours" }]
+                    {[{ id:null, name:T.iv_cv_current || "Current CV" }]
                       .concat(versions.map(v => ({ id:v.id, name:v.name })))
                       .map(o => {
                         const actif = (cvId || null) === (o.id || null);
@@ -1880,7 +1880,7 @@ export default function InterviewModal({
                   <div style={{
                     fontSize:11, color:InkMuted, lineHeight:1.5, marginTop:7,
                   }}>{T.iv_cv_why
-                    || "Le recruteur a une seule version sous les yeux. Prepare sur celle-la, pas sur celle que tu viens de retoucher."}</div>
+                    || "The recruiter has one version in front of them. Prepare on that one, not on the one you just reworked."}</div>
                 </div>
               )}
 

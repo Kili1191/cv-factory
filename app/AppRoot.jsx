@@ -24,7 +24,7 @@ import { estTelephone } from "../lib/breakpoint.js";
 import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
 import { EMPTY, san, sanDeep, normCV, structureDuCv } from "../lib/cvSchema";
-import { LAYOUTS, LAYOUT_META, metaGabarit, DEMO_CV, DEMO_THEME } from "../lib/gabarits";
+import { LAYOUTS, LAYOUT_META, metaGabarit, DEMO_THEME } from "../lib/gabarits";
 import ApercuGabarit from "./components/ApercuGabarit";
 import { aiCall, parseJSON, jetonDuCompte } from "../lib/ai";
 import { contrastRatio, wcagLevel, distanceHex } from "../lib/contrasteCv";
@@ -1148,7 +1148,11 @@ function Shimmer() {
 // Conserve la signature de l'ancien `Sheet({title,onClose,children})`
 // pour que tous les Sheet*/Modals existants l'heritent automatiquement.
 // Optionnel : `eyebrow` pour le pre-titre style editorial gold-deep.
-function Sheet({ title, eyebrow, onClose, children, dock = false }) {
+// closeLabel : le libelle que seul un lecteur d'ecran entend. Il etait fige
+// en "Fermer" pour les trois feuilles que porte cette primitive. Le defaut
+// est anglais parce que c'est la langue dans laquelle le produit s'ouvre ;
+// les trois appels passent le leur.
+function Sheet({ title, eyebrow, onClose, children, dock = false, closeLabel = "Close" }) {
   // ESCAPE FERME, ICI AUSSI
   //
   // components/Sheet.jsx ecoute Echap pour toutes les feuilles qu'il porte.
@@ -1238,7 +1242,7 @@ function Sheet({ title, eyebrow, onClose, children, dock = false }) {
               width:40, height:4, background:"rgba(10,10,10,0.15)",
               borderRadius:2, marginBottom:8,
             }}/>
-            <button onClick={onClose} aria-label="Fermer" style={{
+            <button onClick={onClose} aria-label={closeLabel} style={{
               position:"absolute", top:10, right:18,
               width: 44, height: 44, borderRadius:"50%",
               background:"rgba(10,10,10,0.05)", border:"none", cursor:"pointer",
@@ -1518,7 +1522,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
   const go = () => {
     if (!cvIsEmpty) {
       const ok = window.confirm(
-        T.ai_overwrite_warn || "Tu as deja un CV. Generer va l'ecraser. Continuer ?"
+        T.ai_overwrite_warn || "You already have a CV. Generating will overwrite it. Continue?"
       );
       if (!ok) return;
     }
@@ -1565,7 +1569,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
           fontFamily:Sans, fontSize:12.5, lineHeight:1.35, color:Gray600,
         }}>
           <span style={{ flex:"1 1 180px", minWidth:0 }}>
-            {T.ai_existing_msg || "Generer va ecraser ton CV actuel. Tu veux plutot l'ajuster ?"}
+            {T.ai_existing_msg || "Generating will overwrite your current CV. Want to adjust it with a free instruction instead?"}
           </span>
           <button onClick={onSwitchToAdjust} style={{
             ...B({
@@ -1579,7 +1583,7 @@ function AIPanel({ onGen, loading, apiKey, T, cvIsEmpty, onSwitchToAdjust }) {
               flexShrink:0,
             })
           }}>
-            {T.ai_existing_btn || "Aller a Ajuster"}
+            {T.ai_existing_btn || "Go to Adjust"}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none"
               stroke="currentColor" strokeWidth="2.5"
               strokeLinecap="round" strokeLinejoin="round">
@@ -1796,6 +1800,7 @@ function OfferSheet({ T, locale, pays, cv, setCVFn, notify, apiKey, pushH, versi
   onCreateFromOffer, onUndo, onDownload }) {
   return (
     <Sheet
+      closeLabel={T.a11y_close || "Close"}
       title={
         <>
           {T.off_title_a}{" "}
@@ -3106,6 +3111,7 @@ function CustomizeSheet({ T, cv, theme, cvCustom, setCvCustom, setCvFn,
   return (
     <Sheet
       dock={true}
+      closeLabel={T.a11y_close || "Close"}
       eyebrow={T.cust_eyebrow}
       title={
         <>
@@ -5818,7 +5824,7 @@ export default function App() {
       company, role,
       date: new Date().toISOString().slice(0, 10),
       status: "prepared",
-      notes: T.ap_tracked_note || "",
+      notes: T.ap_tracked_note || "CV adapted with Nuvi. Mark it as applied once you have sent it.",
       link: "",
       offer: texte,
       cv: garde,
@@ -5839,7 +5845,7 @@ export default function App() {
     addApplication(app);
     logActivity(ACT.APPLICATION_ADDED, (locale === "en" ? "Prepared: " : "Preparee : ")
       + ([role, company].filter(Boolean).join(" - ") || texte.slice(0, 60)));
-    notify((T.ap_tracked_from_cv || "") + ([company, role].filter(Boolean).join(", ") || (locale === "en" ? "this ad" : "cette annonce")));
+    notify((T.ap_tracked_from_cv || "Saved in your applications: ") + ([company, role].filter(Boolean).join(", ") || (locale === "en" ? "this ad" : "cette annonce")));
     return app;
   }, [applications, addApplication, updateApplication, T, locale, notify, logActivity, layout]);
 
@@ -6492,7 +6498,7 @@ export default function App() {
         period: reformatPeriodToYearOnly(e.period || ""),
       })),
     }));
-    notify(T.gr_strat_year_done || "Dates reformatees en annees");
+    notify(T.gr_strat_year_done || "Dates reformatted to years");
   }, [pushH, setCVFn, notify, T]);
 
   // Strategie 2 : etend la fin de l'experience "before" pour qu'elle finisse juste
@@ -6525,7 +6531,7 @@ export default function App() {
       exps[targetIdx] = { ...target, period: newPeriod };
       return { ...p, experience: exps };
     });
-    notify(T.gr_strat_extend_done || "Date etendue");
+    notify(T.gr_strat_extend_done || "Date extended");
   }, [pushH, setCVFn, notify, T]);
 
   // Strategie 3 : fusionne plusieurs experiences en une seule ligne avec dates en couverture.
@@ -6576,7 +6582,7 @@ export default function App() {
       });
       return { ...p, experience: newExps };
     });
-    notify(T.gr_strat_group_done || "Experiences fusionnees");
+    notify(T.gr_strat_group_done || "Experiences merged");
   }, [locale, pushH, setCVFn, notify, T]);
 
   // v17 chantier 6 : Interview Continuity.
@@ -6636,7 +6642,7 @@ export default function App() {
 
   const runInterviewPrep = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     setInterviewLoading(true);
     setInterviewResult(null);
     setAskRecruiterResult(null); // reset ask-recruiter quand on regenere le main
@@ -6799,7 +6805,7 @@ export default function App() {
 
   const runProof = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     setProofLoading(true);
     setProofResult(null);
     try {
@@ -6879,7 +6885,7 @@ export default function App() {
   // Board = vision/leadership).
   const runAskRecruiter = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     setAskRecruiterLoading(true);
     setAskRecruiterResult(null);
     try {
@@ -6942,9 +6948,9 @@ export default function App() {
   // Retourne { subject, body } pret a copier-coller dans Gmail/Outlook.
   const runEmail = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     if (!afterContext.recap || !afterContext.recap.trim()) {
-      notify(T.iv_af_recap_required || "Decris d'abord comment ca s'est passe");
+      notify(T.iv_af_recap_required || "This field is required to generate a precise email or debrief.");
       return;
     }
     setEmailLoading(true);
@@ -7023,9 +7029,9 @@ export default function App() {
   // - Next steps recommandees
   const runDebrief = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     if (!afterContext.recap || !afterContext.recap.trim()) {
-      notify(T.iv_af_recap_required || "Decris d'abord comment ca s'est passe");
+      notify(T.iv_af_recap_required || "This field is required to generate a precise email or debrief.");
       return;
     }
     setDebriefLoading(true);
@@ -7092,7 +7098,7 @@ export default function App() {
   // - Checklist last-minute (5 items pratiques)
   const runCheatSheet = useCallback(async () => {
     if (!apiKey) { notify(T.nk); return; }
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     setCheatSheetLoading(true);
     setCheatSheetResult(null);
     try {
@@ -7148,9 +7154,9 @@ export default function App() {
   // dans un PDF multi-pages telechargable.
   // Utilise html2pdf.js qui est deja dans le projet pour CV export.
   const runPackPDF = useCallback(async () => {
-    if (cvIsEmpty) { notify(T.iv_no_cv || "Charge d'abord un CV"); return; }
+    if (cvIsEmpty) { notify(T.iv_no_cv || "Load a CV first"); return; }
     if (!interviewResult || !Array.isArray(interviewResult.questions) || interviewResult.questions.length === 0) {
-      notify(T.iv_pk_empty || "Genere d'abord les questions");
+      notify(T.iv_pk_empty || "Generate the pack first (questions to receive + questions to ask).");
       return;
     }
     setPackPdfLoading(true);
@@ -7162,9 +7168,9 @@ export default function App() {
       const container = document.createElement("div");
       container.style.cssText = "padding:30px 36px; font-family:Inter, Helvetica, Arial, sans-serif; color:#0a0a0a; max-width:780px;";
 
-      const title = T.iv_pk_pdf_title || "Preparation entretien";
-      const sectionRecv = T.iv_pk_pdf_section_recv || "Questions probables et reponses STAR";
-      const sectionAsk = T.iv_pk_pdf_section_ask || "Tes questions a poser au recruteur";
+      const title = T.iv_pk_pdf_title || "Interview preparation";
+      const sectionRecv = T.iv_pk_pdf_section_recv || "Likely questions and STAR answers";
+      const sectionAsk = T.iv_pk_pdf_section_ask || "Your questions to ask the recruiter";
 
       let html = "";
 
@@ -7996,8 +8002,8 @@ export default function App() {
     const text = payload && payload.text;
     if (!text || !text.trim()) {
       notify(kind === "summary"
-        ? (T.bts_empty || "Ecris d'abord une accroche a transformer")
-        : (T.bt_empty || "Ecris d'abord un bullet a transformer"));
+        ? (T.bts_empty || "Write a summary first to transform it")
+        : (T.bt_empty || "Write a bullet first to transform"));
       return;
     }
     setBt({
@@ -8113,7 +8119,7 @@ export default function App() {
       const r = parseJSON(txt);
       setBt(s => s ? { ...s, levels: r, loading: false } : null);
     } catch (err) {
-      notify((T.bt_err || "Erreur transformation: ") + (err.message || ""));
+      notify((T.bt_err || "Transform error: ") + (err.message || ""));
       setBt(null);
     }
   }, [apiKey, notify, T]);
@@ -8129,7 +8135,7 @@ export default function App() {
       if (!curr) return null;
       if (curr.kind === "summary") {
         setCVFn(p => ({ ...p, summary: newText }));
-        notify(T.bts_adopted || "Accroche adoptee");
+        notify(T.bts_adopted || "Summary adopted");
       } else {
         setCVFn(p => ({
           ...p,
@@ -8139,7 +8145,7 @@ export default function App() {
               : e
           )
         }));
-        notify(T.bt_adopted || "Version adoptee");
+        notify(T.bt_adopted || "Version adopted");
       }
       return null;
     });
@@ -8617,6 +8623,7 @@ export default function App() {
       )}
       {showScore && (
         <Sheet
+          closeLabel={T.a11y_close || "Close"}
           eyebrow={T.fin_score_eyebrow}
           title={T.fin_score_btn}
           onClose={()=>setShowScore(false)}
@@ -9128,6 +9135,7 @@ export default function App() {
       {showPourquoi && (
         <Suspense fallback={null}>
         <LiquidGlassModal
+          closeLabel={T.a11y_close || "Close"}
           open={showPourquoi}
           onClose={() => setShowPourquoi(false)}
           width={640}
@@ -9625,7 +9633,7 @@ export default function App() {
                 }
                 else if (subKey === "gap")   {
                   if ((cv.experience || []).length < 2) {
-                    notify(T.gr_no_gaps_title || "Aucun trou detecte");
+                    notify(T.gr_no_gaps_title || "No gap detected.");
                   } else {
                     ouvrirSeul(setShowGapRepair);
                   }
@@ -9869,7 +9877,13 @@ export default function App() {
               </button>
               <button
                 onClick={handleDownloadClick}
-                aria-label="Telecharger CV"
+                aria-label={T.a11y_dl_cv || "Download CV"}
+                // The suites find this button by its marker, not by its words.
+                // The aria-label used to be "Telecharger CV" in both
+                // languages, which is what seven of them keyed on; now that it
+                // is translated, a label-based selector would follow the
+                // setting instead of the button.
+                data-nuvi="download-cv"
                 // L'ACTION PRINCIPALE RECOPIAIT LE SYSTEME AU LIEU DE S'EN SERVIR
                 // Le degrade etait reecrit a la main, la police en clair, le
                 // rayon en 999 : trois valeurs qui existent deja sous un nom.
@@ -10401,7 +10415,8 @@ export default function App() {
               </button>
             )}
             {!cvIsEmpty && (
-              <button onClick={handleDownloadClick} aria-label="Telecharger CV" style={{
+              <button onClick={handleDownloadClick} aria-label={T.a11y_dl_cv || "Download CV"}
+                data-nuvi="download-cv" style={{
                 ...B({
                   background:"linear-gradient(135deg, #5b3df5 0%, #b91c8c 100%)",
                   color:"#fff",
@@ -10616,7 +10631,7 @@ export default function App() {
             else if (key === "pos") { runPositioning && runPositioning(); }
             else if (key === "gap") {
               if ((cv.experience || []).length < 2) {
-                notify(T.gr_no_gaps_title || "Aucun trou detecte");
+                notify(T.gr_no_gaps_title || "No gap detected.");
               } else {
                 ouvrirSeul(setShowGapRepair);
               }

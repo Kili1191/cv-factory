@@ -34,9 +34,13 @@
   .tiny { font-size: 11.5px; margin: 8px 0 0; text-align: center; }
 </style>
 <h1>Nuvi</h1>
-<p class="muted" id="sub">Lecture de l'annonce...</p>
+<!-- English is what the product opens in, so it is what this markup
+     carries. popup.js reads the language the person chose on thenuvi.com,
+     which bridge.js already carries into the extension, and rewrites these
+     three strings before anything else happens. -->
+<p class="muted" id="sub">Reading the ad...</p>
 <div id="out"></div>
-<button id="go" disabled>Envoyer vers Nuvi</button>
-<button id="fill" class="second">Remplir ce formulaire</button>
-<p class="muted tiny" id="fillout">Nuvi remplit, c'est toi qui envoies.</p>
+<button id="go" disabled>Send to Nuvi</button>
+<button id="fill" class="second">Fill this form</button>
+<p class="muted tiny" id="fillout">Nuvi fills it in, you are the one who sends it.</p>
 <script src="popup.js" type="module"></script>

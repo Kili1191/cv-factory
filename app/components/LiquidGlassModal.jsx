@@ -43,6 +43,12 @@ export default function LiquidGlassModal({
   children,
   closeOnEscape = true,
   noPadding = false,
+  // THE LABEL ONLY A SCREEN READER HEARS STILL HAS A LANGUAGE
+  //
+  // It was frozen as "Fermer". This shell has no locale of its own, so the
+  // caller passes the word; the default is English because English is what
+  // the product opens in. Both call sites pass their own T.
+  closeLabel = "Close",
 }) {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -107,6 +113,7 @@ export default function LiquidGlassModal({
               headerActions={headerActions}
               footer={footer}
               onClose={onClose}
+              closeLabel={closeLabel}
               layout="side"
               noPadding={noPadding}
             >
@@ -170,6 +177,7 @@ export default function LiquidGlassModal({
             headerActions={headerActions}
             footer={footer}
             onClose={onClose}
+            closeLabel={closeLabel}
             layout="bottom"
             noPadding={noPadding}
           >
@@ -183,7 +191,7 @@ export default function LiquidGlassModal({
 
 function ModalContent({
   eyebrow, title, titleAccent, subtitle,
-  headerActions, footer, onClose, children, layout, noPadding,
+  headerActions, footer, onClose, children, layout, noPadding, closeLabel,
 }) {
   return (
     <div style={{
@@ -251,7 +259,7 @@ function ModalContent({
           {onClose && (
             <button
               onClick={onClose}
-              aria-label="Fermer"
+              aria-label={closeLabel}
               style={{
                 background: CARD_BG,
                 borderRadius: "50%",

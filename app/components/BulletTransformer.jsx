@@ -89,8 +89,8 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
   const cards = [
     {
       key:"simple",
-      label: isSummary ? (T.bts_sobre || "Sobre") : T.bt_simple,
-      hint:  isSummary ? (T.bts_sobre_hint || "Factuel, sans superlatifs") : T.bt_simple_hint,
+      label: isSummary ? (T.bts_sobre || "Plain") : T.bt_simple,
+      hint:  isSummary ? (T.bts_sobre_hint || "Factual, no superlatives") : T.bt_simple_hint,
       tagBg: Gray100, tagColor: Gray600,
     },
     {
@@ -114,7 +114,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
     {
       key:"impact",
       label: isSummary ? (T.bts_story || "Storytelling") : T.bt_impact,
-      hint:  isSummary ? (T.bts_story_hint || "Narration fil rouge") : T.bt_impact_hint,
+      hint:  isSummary ? (T.bts_story_hint || "Narrative through-line") : T.bt_impact_hint,
       tagBg: "rgba(255,90,54,.12)", tagColor: Coral,
     },
   ];
@@ -164,19 +164,19 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
               letterSpacing:"0.12em", textTransform:"uppercase",
               color:GoldDeep, marginBottom:4,
             }}>
-              {isSummary ? (T.bts_eyebrow || "Accroche") : (T.bt_eyebrow || "Bullet")}
+              {isSummary ? (T.bts_eyebrow || "Summary") : (T.bt_eyebrow || "Bullet")}
             </div>
             <div style={{
               fontFamily:Serif, fontWeight:400, fontSize:22,
               letterSpacing:"-0.02em", color:Ink, lineHeight:1.15,
             }}>
-              {isSummary ? (T.bts_title || "5 angles, ton choix.") : T.bt_modal_title}
+              {isSummary ? (T.bts_title || "5 angles, your pick.") : T.bt_modal_title}
             </div>
             <div style={{
               fontSize:12, color:Gray600, marginTop:4,
               lineHeight:1.5,
             }}>
-              {isSummary ? (T.bts_sub || "5 reformulations de ton accroche, registres differents.") : T.bt_modal_sub}
+              {isSummary ? (T.bts_sub || "5 rewrites of your summary, different registers.") : T.bt_modal_sub}
             </div>
           </div>
           <button onClick={onClose} aria-label="close" disabled={loading} style={{
@@ -309,7 +309,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                     fontSize:12, color:Ink, fontWeight:600,
                     lineHeight:1.45, marginBottom:9,
                   }}>{levels.impact_question || T.bt_trou_q
-                      || "Ce chiffre, c'etait plutot combien ?"}</div>
+                      || "Roughly what was that figure?"}</div>
 
                   {propositions.length > 0 && (
                     <div style={{
@@ -341,11 +341,11 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                       display:"block", fontSize:11, fontWeight:600,
                       letterSpacing:"0.08em", textTransform:"uppercase",
                       color:Gray600, marginBottom:5,
-                    }}>{T.bt_trou_label || "Ou ton chiffre exact"}</span>
+                    }}>{T.bt_trou_label || "Or your exact figure"}</span>
                     <input
                       value={chiffres[c.key] || ""}
                       onChange={(e)=>setChiffres(p => ({ ...p, [c.key]: e.target.value }))}
-                      placeholder={T.bt_trou_ph || "12 %, 80 couverts, 3 semaines"}
+                      placeholder={T.bt_trou_ph || "12%, 30 cases, 3 weeks"}
                       style={{
                         width:"100%", padding:"10px 12px",
                         borderRadius:RadiusSm, border:"1px solid "+Gray200,
@@ -356,7 +356,7 @@ export default function BulletTransformer({ kind = "bullet", original, levels, l
                   <div style={{
                     fontSize:11, color:Gray600, lineHeight:1.5, marginTop:7,
                   }}>{T.bt_trou_why
-                    || "Nuvi propose ce chiffre d'apres ton metier. Verifie qu'il est "
+                    || "Nuvi suggests this figure from your trade. Check that it is right: it is the one a recruiter will ask you to explain."
                      + "juste : c'est celui qu'un recruteur te demandera d'expliquer."}</div>
                 </div>
               )}

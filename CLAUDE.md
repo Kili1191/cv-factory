@@ -1184,6 +1184,92 @@ One thing does not change: **the text the user reads stays bilingual**, in
 product choice, not a code convention, and French has exactly the same status
 there as before.
 
+**But bilingual means both, and the English side had holes.** Kilian, on
+7 October 2026: everything in English, on the website too. The product already
+opens in English on both sides and asks the question once, so the defect was
+not the default: it was French reaching an English reader with nothing saying
+so, in four shapes, and every one of them was invisible to a key by key
+comparison of the two dictionaries.
+
+**The sample CV in the template previews.** `DEMO_CV` was one French document,
+and it fills the six previews: the gallery on the shop window and the
+appearance picker in the app. The labels around it had been translated long
+ago, in `ApercuGabarit`, with a comment saying why, somebody picking a layout
+in English was reading "Formation" and "Competences". The CV inside them had
+not, so an English visitor judged the product on six French documents,
+"Reduction du churn de 18% en 6 mois", "Langue maternelle", a degree from HEC
+Paris and a +33 phone number, on the page where the decision to try the tool
+is made. `cvDemo(locale)` replaces it, and there is deliberately no bare
+`DEMO_CV`: a sample CV with no language asked for is the defect itself. The
+English one is not a translation, it is a London CV, because that is the
+market and a sample is a promise about the shape of the document somebody is
+about to get.
+
+**Four keys that existed in neither dictionary.** `sh_eyebrow_id`, `_ex`,
+`_ed`, `_sk`: the eyebrow above every edit sheet, on the screen a person spends
+the most time on, so the French literal in the `||` fallback rendered whatever
+the setting said. Three more in the application pack and one in the tracker's
+ad field. Comparing `fr.js` with `en.js` finds none of them, because a key
+missing from both sides is in parity. The check that finds them reads the call
+sites instead: every `T.key || "..."` whose key is in no dictionary is a string
+with one hardcoded language. Four of the twelve pointed the other way, the
+length picker's labels frozen in English, which a French reader got
+untranslated.
+
+**And the fallback literal is now always the English one**, fifty-five of them
+realigned in one pass. The key existing is what makes a fallback dead code, and
+the day somebody renames one it stops being dead: that is the `L.sur` lesson,
+and its consequence here was French on an English screen rather than a crash.
+The rule is one line, the fallback says what `en.js` says.
+
+**The labels only a screen reader hears.** `aria-label="Fermer"` and
+`"Telecharger CV"`, frozen, in the modal shell and on the main action. Seven
+suites keyed on those exact words to find the download button, which is why
+they were never translated, and the repository already knows the answer to
+that: a test that breaks when the words get better punishes the work. The
+button carries `data-nuvi="download-cv"` now and the suites follow the marker.
+
+**And `/diagnostic` was 526 lines of French with no way out.** It is a page on
+the website, it is in no dictionary and has no switch, so it offered one
+language and it was not the one the product opens in. Translated whole,
+identifiers included.
+
+**The extension's popup was the same, and it had the answer already.** Every
+string in it was French, on a surface with no language setting: somebody using
+Nuvi in English pressed a button that answered them in French, on a job board,
+with an application half filled. Nothing had to be invented. `bridge.js`
+already carries the chosen language into the extension's storage, under
+`nuvi_cv.locale`, because the PDF printer needs it; the popup only had to read
+it. It does, before it writes anything to the screen, and `popup.html` carries
+the English strings so a storage read that fails leaves a correct popup rather
+than an empty one.
+
+`tests/the-english-site-is-in-english.mjs` is the one that would have caught
+all of it, and the method is the point: every assertion in this repository
+that reads text says which language it expects and then looks for one string
+it already knows, so none of them can see a string nobody listed. This one
+reads **every visible word** on the English screens, the shop window, the app,
+each edit sheet, plus the labels only a screen reader hears, and refuses
+French. It is the readability sweep's method pointed at language instead of
+contrast. The CV it seeds is English on purpose: the harness `SAMPLE_CV` is a
+French product manager, and seeding it would make the suite red for the
+person's own content, which is theirs to write in any language they like. The
+word list is short and specific rather than a list of French stop words,
+because the first version called "Manchester College" French for containing
+"colle", which is `includes("account")` inside "accounting" for the third time
+in this repository.
+
+**And its static half is the one with teeth.** Driving the screen finds French
+on the screens it opens, and it cannot open all of them. So the suite also
+reads no browser at all: every key the code reads from the shared dictionary
+has to exist in **both**, which is precisely the check that was missing, since
+a key absent from both sides is in parity. Files that build their own
+`{ fr, en }` pair are skipped, because treating their keys as missing would
+fill the report with noise until somebody switched it off. It stands at zero,
+and the two French hints it found last are the reason `nextAction` now takes a
+locale: they are built from a number, so they cannot be one string in the
+dictionary, and their fallback was French with no branch.
+
 **Comments explain why, and take the room they need.** The CI's
 `timeout-minutes: 90` comes with six lines saying why 90 and not 60. That is
 the house style: you write the reason while you still have it, because in six

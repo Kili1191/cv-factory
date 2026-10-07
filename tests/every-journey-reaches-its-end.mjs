@@ -170,13 +170,20 @@ async function cliquerTexte(page, motif, delai = 900) {
 //
 // SUR TELEPHONE LE BOUTON N'A PAS DE TEXTE
 //
-// Il n'a qu'une icone et un aria-label, "Telecharger CV", dans les deux
-// langues. Une premiere version ne cherchait que le texte : les trois
-// parcours qui finissent sur un telephone se sont arretes sur "aucun bouton
-// Telecharger" alors qu'il etait a l'ecran. On cherche donc les deux.
+// Il n'a qu'une icone et un aria-label. Une premiere version ne cherchait que
+// le texte : les trois parcours qui finissent sur un telephone se sont
+// arretes sur "aucun bouton Telecharger" alors qu'il etait a l'ecran. On
+// cherche donc les deux.
+//
+// AND THE LABEL IS NO LONGER THE SAME IN BOTH LANGUAGES
+//
+// It used to read "Telecharger CV" whatever the setting, which was the leak
+// fixed on 7 October 2026: an English reader's screen reader said it in
+// French. So the button now carries a marker, and that is what this looks
+// for first. The text branch stays, for a desktop run where the word shows.
 async function boutonTelecharger(page) {
-  const parLabel = page.locator('button[aria-label="Telecharger CV"]');
-  if (await parLabel.count()) return parLabel.first();
+  const parMarqueur = page.locator('[data-nuvi="download-cv"]');
+  if (await parMarqueur.count()) return parMarqueur.first();
   const parTexte = page.locator('button, [role="button"]').filter({ hasText: /^\s*(Telecharger|Download)\s*$/i });
   return (await parTexte.count()) ? parTexte.first() : null;
 }

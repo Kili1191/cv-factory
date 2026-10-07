@@ -107,7 +107,7 @@ export default function PourquoiPanel({
       const lues = (lu && Array.isArray(lu.annonces)) ? lu.annonces : [];
       setRes(pourquoiPasDentretien(lues));
     } catch (err) {
-      notify((T.ea || "Erreur") + ": " + (err && err.message ? err.message : ""));
+      notify((T.ea || "Error - check API key.") + ": " + (err && err.message ? err.message : ""));
     }
     setLoad(false);
   };

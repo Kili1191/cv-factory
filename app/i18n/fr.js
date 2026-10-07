@@ -7,6 +7,9 @@
 // de scripts Python qui injectaient T. dans les valeurs.
 
 const FR_T = {
+  // Les libelles que seul un lecteur d'ecran entend. Ils etaient figes en
+  // francais dans AppRoot et dans la coquille des fenetres.
+  a11y_close:"Fermer", a11y_dl_cv:"Telecharger le CV",
   appName:"Nuvi", appSub:"Sors de la pile.",
   tab_ai:"Nuvi", tab_edit:"Editer", tab_design:"Design",
   tab_score:"Score", tab_tools:"Outils",
@@ -62,6 +65,14 @@ const FR_T = {
   edit_id:"Identite et Contact", edit_ex:"Experiences",
   edit_ed:"Formations", edit_sk:"Competences et Langues",
   edit_tip:"Appuyez sur le texte du CV pour modifier.",
+  // Le surtitre de chaque feuille d'edition. Il etait fige en francais dans
+  // EditSheets, sur l'ecran ou on passe le plus de temps.
+  sh_eyebrow_id:"Identite", sh_eyebrow_ex:"Experiences",
+  sh_eyebrow_ed:"Formations", sh_eyebrow_sk:"Competences",
+  // Le choix de longueur. Ses libelles etaient figes en anglais, le meme
+  // defaut dans l'autre sens : un lecteur francais les lisait non traduits.
+  ch_eyebrow:"LAQUELLE TU ENVOIES",
+  ch_preparing:"Preparation...", ch_kept:"Choisie", ch_keep:"Je garde celle-la",
   t_api:"Cle API Anthropic", t_aph:"sk-ant-...",
   t_ahi:"Stockee localement",
   t_exp:"Export", t_pdf:"Exporter en PDF",
@@ -683,6 +694,11 @@ const FR_T = {
   pk_tab_nego:"Negocier",
   pk_email_subject:"Objet",
   pk_email_body:"Corps",
+  // Ces trois phrases n'etaient dans aucun dictionnaire : leur repli
+  // francais s'affichait quel que soit le reglage.
+  pk_followup_hint:"A envoyer 7 a 10 jours apres, sans reponse. Elle apporte un element nouveau, elle ne quemande pas.",
+  pk_ask_hint:"A poser en fin d'entretien. Aucune n'a sa reponse sur leur site : c'est le but.",
+  pk_nego_hint:"Une fourchette qu'on sait defendre vaut mieux qu'un chiffre lance au hasard.",
   pk_objections_hint:"Les doutes qu'un recruteur aura en lisant ton CV pour ce poste. Mieux vaut les avoir prepares que les decouvrir en entretien.",
   pk_objection_doubt:"Son doute",
   pk_objection_answer:"Ta reponse",
@@ -823,7 +839,11 @@ const FR_T = {
   ap_to_follow_one:"candidature attend une relance.",
   ap_to_follow_many:"candidatures attendent une relance.",
   ap_to_follow_hint:"C'est le seul geste qui les fait repartir.",
+  // Les trois etapes du suivi d'une candidature. Elles etaient lues dans le
+  // dictionnaire et n'y etaient pas : seul leur repli s'affichait.
+  ap_step_sent:"Envoyee", ap_step_reply:"Reponse", ap_step_interview:"Entretien",
   ap_field_offer:"Annonce (colle le texte)",
+  ap_offer_hint:"Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance.",
   ap_offer_ready:"Annonce enregistree, les actions suivantes sont debloquees",
   ap_do_offer:"Coller l'annonce",
   ap_do_offer_hint:"Debloque le CV adapte, la relance et l'entretien",

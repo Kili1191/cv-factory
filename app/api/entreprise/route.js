@@ -119,10 +119,10 @@ export async function POST(request) {
     // Un pays sans registre ouvert n'est pas une entreprise suspecte : c'est
     // une verification qu'on ne sait pas faire, et le produit le dit.
     if (!exp.pays) {
-      return { ...exp, etat: "inconnue", pourquoi: "pas de registre ouvert pour ce pays" };
+      return { ...exp, etat: "inconnue", pourquoi: "no open registry for this country" };
     }
     if (exp.pays === "uk" && !ukConfigured(env)) {
-      return { ...exp, etat: "inconnue", pourquoi: "registre britannique non configure" };
+      return { ...exp, etat: "inconnue", pourquoi: "the British registry is not configured" };
     }
     const clef = exp.pays + ":" + exp.company.toLowerCase().trim();
     const connu = duCache(clef);
@@ -135,7 +135,7 @@ export async function POST(request) {
       auCache(clef, v);
       return { ...exp, ...v };
     } catch (err) {
-      return { ...exp, etat: "inconnue", pourquoi: "registre injoignable (" + err.message + ")" };
+      return { ...exp, etat: "inconnue", pourquoi: "registry unreachable (" + err.message + ")" };
     }
   }));
 

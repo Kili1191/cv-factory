@@ -7,6 +7,9 @@
 // injecting T. references into values.
 
 const EN_T = {
+  // The labels only a screen reader hears. They were frozen in French in
+  // AppRoot and in the modal shell, so an English reader heard "Fermer".
+  a11y_close:"Close", a11y_dl_cv:"Download CV",
   appName:"Nuvi", appSub:"Make the shortlist.",
   tab_ai:"Nuvi", tab_edit:"Edit", tab_design:"Design",
   tab_score:"Score", tab_tools:"Tools",
@@ -61,6 +64,14 @@ const EN_T = {
   edit_id:"Identity and Contact", edit_ex:"Experience",
   edit_ed:"Education", edit_sk:"Skills and Languages",
   edit_tip:"Tap any CV text to edit inline.",
+  // The eyebrow on each edit sheet. It was frozen in French in EditSheets,
+  // on the screen somebody spends the most time on.
+  sh_eyebrow_id:"Identity", sh_eyebrow_ex:"Experience",
+  sh_eyebrow_ed:"Education", sh_eyebrow_sk:"Skills",
+  // The length picker. Its labels were frozen in English, which is the same
+  // defect pointing the other way: a French reader got them untranslated.
+  ch_eyebrow:"WHICH ONE DO YOU SEND",
+  ch_preparing:"Preparing...", ch_kept:"Selected", ch_keep:"Choose this one",
   t_api:"Anthropic API Key", t_aph:"sk-ant-...",
   t_ahi:"Stored locally",
   t_exp:"Export", t_pdf:"Export as PDF",
@@ -688,6 +699,11 @@ const EN_T = {
   pk_tab_nego:"Negotiate",
   pk_email_subject:"Subject",
   pk_email_body:"Body",
+  // These three hints existed in no dictionary at all, so their French
+  // fallback rendered whatever the setting said.
+  pk_followup_hint:"Send it 7 to 10 days later, with no reply. It brings something new, it does not beg.",
+  pk_ask_hint:"Ask these at the end of the interview. None of them is answered on their website: that is the point.",
+  pk_nego_hint:"A range you can defend beats a number thrown out at random.",
   pk_objections_hint:"The doubts a recruiter will have reading your CV for this job. Better to have them ready than to discover them in the interview.",
   pk_objection_doubt:"Their doubt",
   pk_objection_answer:"Your answer",
@@ -832,7 +848,11 @@ const EN_T = {
   ap_to_follow_one:"application is waiting for a nudge.",
   ap_to_follow_many:"applications are waiting for a nudge.",
   ap_to_follow_hint:"It is the one move that starts them again.",
+  // The three steps on an application's track. They were read from the
+  // dictionary and were in neither, so their fallback was all that rendered.
+  ap_step_sent:"Sent", ap_step_reply:"Reply", ap_step_interview:"Interview",
   ap_field_offer:"The ad (paste the text)",
+  ap_offer_hint:"Paste the ad here: it is what fits your CV, prepares the interview and writes the nudge.",
   ap_offer_ready:"Ad saved. The next steps are unlocked.",
   ap_do_offer:"Paste the ad",
   ap_do_offer_hint:"Unlocks the fitted CV, the nudge and the interview",

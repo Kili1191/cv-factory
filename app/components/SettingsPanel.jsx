@@ -566,7 +566,7 @@ export default function SettingsPanel({
             display:"flex", flexDirection:"column", gap:10,
           }}>
             <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={4}
-              placeholder={T.rp_placeholder || ""}
+              placeholder={T.rp_placeholder || "What happened, and what you expected."}
               aria-label={T.set_report || "Report a problem"}
               style={{
                 width:"100%", boxSizing:"border-box", resize:"vertical",
@@ -576,7 +576,7 @@ export default function SettingsPanel({
             <label style={{display:"flex", alignItems:"flex-start", gap:10, fontSize:12, color:InkMuted, lineHeight:1.4, cursor:"pointer"}}>
               <input type="checkbox" checked={avecForme} onChange={(e) => setAvecForme(e.target.checked)}
                 style={{marginTop:2, width:16, height:16, flexShrink:0}}/>
-              <span>{T.rp_shape || ""}</span>
+              <span>{T.rp_shape || "Include the shape of my CV: section names and counts, never the text"}</span>
             </label>
             <div style={{display:"flex", alignItems:"center", gap:12}}>
               <button onClick={envoyer} disabled={envoi === "encours" || (!note.trim() && !avecForme)} style={{
@@ -587,7 +587,7 @@ export default function SettingsPanel({
                 })
               }}>{T.rp_send || "Send"}</button>
               <span role="status" style={{fontSize:12, color:InkMuted}}>
-                {envoi === "ok" ? (T.rp_sent || "Sent.") : envoi === "echec" ? (T.rp_failed || "Could not send.") : ""}
+                {envoi === "ok" ? (T.rp_sent || "Sent. Thank you.") : envoi === "echec" ? (T.rp_failed || "Could not send. Try again in a minute.") : ""}
               </span>
             </div>
           </div>

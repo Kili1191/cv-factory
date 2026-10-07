@@ -189,10 +189,10 @@ export async function POST(req) {
   try { corps = await req.json(); } catch { corps = null; }
   const cv = corps && corps.cv;
   if (!cv || typeof cv !== "object") {
-    return Response.json({ error: "cv manquant" }, { status: 400 });
+    return Response.json({ error: "cv missing" }, { status: 400 });
   }
   if (JSON.stringify(cv).length > 400_000) {
-    return Response.json({ error: "cv trop lourd" }, { status: 413 });
+    return Response.json({ error: "cv too large" }, { status: 413 });
   }
   const format = FORMATS[corps.format] ? corps.format : "a4";
   const f = FORMATS[format];

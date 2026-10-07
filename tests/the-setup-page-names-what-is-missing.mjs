@@ -95,11 +95,14 @@ export async function run() {
     //
     // C'est exactement le genre de panne que cette page existe pour nommer,
     // et elle ne les nommait pas.
+    // The page moved to English on 7 October 2026, with the rest of the site:
+    // it was the one page with prose in a single language and no switch. These
+    // four patterns follow its headings, so they moved too.
     for (const [quoi, motif] of [
-      ["le PDF natif", /PDF telecharge est du vrai texte/],
-      ["la recherche d'offres", /recherche d'offres a une source/],
-      ["le paiement", /Quelqu'un peut payer/],
-      ["l'assistant live", /assistant live peut entendre/],
+      ["the native PDF", /downloaded PDF is real text/i],
+      ["the job search", /job search has a source/i],
+      ["payment", /Somebody can pay/i],
+      ["the live assistant", /live assistant can hear/i],
     ]) {
       if (!motif.test(text)) {
         failures.push(

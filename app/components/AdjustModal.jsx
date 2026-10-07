@@ -562,6 +562,7 @@ export default function AdjustModal({
 
   return (
     <LiquidGlassModal
+      closeLabel={T.a11y_close || "Close"}
       open={open}
       onClose={onClose}
       layout="side"

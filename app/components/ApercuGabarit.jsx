@@ -10,7 +10,7 @@
 
 import React, { Component, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { DEMO_CV, DEMO_THEME } from "../../lib/gabarits";
+import { cvDemo, DEMO_THEME } from "../../lib/gabarits";
 
 const charger = (nom) => dynamic(() => import("./CVLayouts").then((m) => m[nom]), { ssr: false, loading: () => null });
 const COMPOSANTS = {
@@ -47,7 +47,7 @@ class LayoutPreviewErrorBoundary extends Component {
 
 // LA MEME VIGNETTE, SUR UN VRAI CV
 //
-// Elle ne montrait que DEMO_CV, coupe aux deux tiers, parce qu'elle
+// Elle ne montrait que le CV de demonstration, coupe aux deux tiers, parce qu'elle
 // n'existait que pour choisir une forme. Mettre deux longueurs d'un CV cote
 // a cote demande exactement la meme chose sur le document de la personne, et
 // la page entiere : ce qu'on veut voir, c'est justement ce qui manque en
@@ -152,7 +152,7 @@ export default function ApercuGabarit({ kind, locale = "fr", cv, theme, part = 0
           userSelect: "none",
         }}>
           <Comp
-            cv={cv || DEMO_CV}
+            cv={cv || cvDemo(locale)}
             set={() => {}}
             t={theme || DEMO_THEME}
             T={T}

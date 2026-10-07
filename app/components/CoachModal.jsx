@@ -650,7 +650,7 @@ function Bubble({ T, msg, onAdopt, onAction, onRestore }) {
               border: "0.5px solid " + Hairline, color: InkMuted,
               fontSize: 11, fontWeight: 600, fontFamily: Sans,
             }),
-          }}>{T.co_restore || "Put the previous one back"}</button>
+          }}>{T.co_restore || "Put this version back"}</button>
         )}
 
         {msg.quickReplies && msg.quickReplies.length > 0 && onAction && (

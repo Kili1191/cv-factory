@@ -28,7 +28,7 @@ async function verifier(browser, { viewport, locale, attendu }, failures) {
   if (label !== attendu) failures.push(etiquette + ": aria-label \"" + label + "\" instead of \"" + attendu + "\"");
 
   // Download must still be there, next to it.
-  const dl = await page.$('button[aria-label="Telecharger CV"]');
+  const dl = await page.$('[data-nuvi="download-cv"]');
   if (!dl || !(await dl.isVisible())) failures.push(etiquette + ": Download disappeared next to the letter");
 
   await bouton.click();

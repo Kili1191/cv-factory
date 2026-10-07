@@ -52,7 +52,7 @@ async function telecharger(browser, layout, { sansServeur = false } = {}) {
   }
   await seedApp(page, CV, { locale: "en", layout });
   const attente = page.waitForEvent("download", { timeout: 90_000 }).catch(() => null);
-  await page.locator('button[aria-label="Telecharger CV"]').first().click({ timeout: 15_000 });
+  await page.locator('[data-nuvi="download-cv"]').first().click({ timeout: 15_000 });
   await page.waitForTimeout(1200);
   const quandMeme = page.locator('[data-nuvi="defauts-quand-meme"]');
   if (await quandMeme.count()) await quandMeme.click();

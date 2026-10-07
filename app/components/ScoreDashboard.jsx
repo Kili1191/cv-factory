@@ -160,7 +160,7 @@ function ScoreAxisCard({ T, axis, score, reco, expanded, onToggle, onCta, onExpl
                     minHeight: 40, marginRight: 8,
                     transition: Trans(["background","color","border-color"], "fast"),
                   })
-                }}>{T.cc_bouton || "Nuvi t'explique"}</button>
+                }}>{T.cc_bouton || "Nuvi explains"}</button>
             )}
             <button
               onClick={(e)=>{ e.stopPropagation(); onCta(axis.id); }}
@@ -551,7 +551,7 @@ export default function ScoreDashboard({ T, cv, apiKey, loading, result, onRun, 
                       display: "inline-flex", alignItems: "center", gap: 7,
                       transition: Trans(["background","color","opacity"], "fast"),
                     })
-                  }}>{T.cc_bouton || "Nuvi t'explique"}</button>
+                  }}>{T.cc_bouton || "Nuvi explains"}</button>
               )}
             </div>
           )}

@@ -1,25 +1,33 @@
 "use client";
 
-// LA PAGE QUI DIT CE QUI MANQUE
+// THE PAGE THAT SAYS WHAT IS MISSING
 //
-// Brancher les comptes demande six champs repartis dans deux tableaux de bord
-// differents. En rater un ne produit aucune erreur : le bouton de connexion
-// n'apparait pas, ou le lien recu par mail renvoie sur localhost. Rien ne
-// s'affiche, rien ne s'explique, et on cherche du cote du code alors que le
-// code va bien.
+// Wiring the accounts up takes six fields spread across two different
+// dashboards. Getting one wrong raises no error: the sign-in button simply
+// does not appear, or the link that arrives by mail sends you to localhost.
+// Nothing shows, nothing explains itself, and you go looking in the code
+// while the code is fine.
 //
-// Cette page fait les verifications a la place de celui qui installe, depuis
-// le site en ligne, et nomme le champ exact a corriger. Elle n'est reliee a
-// aucun bouton : on y va en tapant /diagnostic. C'est voulu - c'est un outil
-// d'installation, pas une fonctionnalite.
+// This page runs the checks on behalf of whoever is installing it, from the
+// live site, and names the exact field to correct. It is linked from no
+// button: you reach it by typing /diagnostic. That is deliberate, it is an
+// installation tool, not a feature.
 //
-// ELLE NE PEUT RIEN DIVULGUER
+// IT CAN LEAK NOTHING
 //
-// Tout ce qu'elle lit est deja public : l'adresse du projet et la cle dite
-// publiable voyagent dans chaque requete du navigateur. La cle n'est d'ailleurs
-// jamais affichee en entier. Ce qui protege les CV, ce n'est pas le secret de
-// ces deux valeurs, ce sont les regles RLS de la base - et cette page verifie
-// justement qu'elles repondent.
+// Everything it reads is already public: the project's address and the key
+// called publishable travel in every request the browser makes. The key is
+// never printed in full anyway. What protects the CVs is not the secrecy of
+// those two values, it is the database's RLS rules, and this page checks
+// precisely that they answer.
+//
+// IT IS WRITTEN IN ENGLISH, AND IT WAS NOT
+//
+// It was the one page on the website with French prose and no way out of it:
+// no dictionary, no switch, 526 lines of it. The language of the interface is
+// a product choice offered in both languages; this page offered one, and it
+// was not the one the product opens in. Translated on 7 October 2026 with the
+// rest of the English sweep.
 
 import { useEffect, useState } from "react";
 import { isCloudConfigured } from "../../lib/supabaseClient.js";
@@ -28,10 +36,10 @@ const CREAM = "#faf8f3";
 const INK = "#1a1a1a";
 const MUTED = "#6b6b6b";
 
-// Le domaine de production, ecrit en dur et NON deduit de la page consultee.
-// Ouvrir ce diagnostic depuis une preversion Vercel ne doit pas conseiller de
-// mettre l'adresse de la preversion en Site URL : c'est la que repartent tous
-// les liens de connexion, y compris ceux des vraies personnes.
+// The production domain, written down and NOT taken from the page being read.
+// Opening this diagnostic from a Vercel preview must not advise putting the
+// preview's address in Site URL: that is where every sign-in link goes back
+// to, including those of real people.
 const SITE_URL = "https://thenuvi.com";
 
 const URL_ENV = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
@@ -40,34 +48,34 @@ const KEY_ENV =
   || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
   || "";
 
-// On ne montre que les extremites : assez pour reconnaitre une faute de copie,
-// pas assez pour servir a quoi que ce soit dans une capture d'ecran.
+// Only the ends are shown: enough to spot a copy and paste mistake, not
+// enough to be any use in a screenshot.
 function masked(value) {
-  if (!value) return "absente";
+  if (!value) return "absent";
   if (value.length <= 14) return value;
-  return `${value.slice(0, 8)}…${value.slice(-4)} (${value.length} caracteres)`;
+  return `${value.slice(0, 8)}...${value.slice(-4)} (${value.length} characters)`;
 }
 
 function Verdict({ state, title, detail, fix }) {
-  // Trois etats seulement, et le troisieme compte autant que les autres :
-  // afficher "A CORRIGER" en rouge sur un point qu'on ne peut PAS corriger
-  // envoie chercher une panne la ou il n'y en a pas.
+  // Three states only, and the third counts as much as the other two:
+  // printing "TO FIX" in red on a point that CANNOT be fixed sends somebody
+  // looking for a fault where there is none.
   //
-  // Un quatrieme est arrive avec les pages carriere : ca marche, et il
-  // manque quelque chose. La recherche d'offres repond desormais sans aucune
-  // cle, donc elle n'est jamais "a corriger" ; les agregateurs restent utiles
-  // pour les employeurs sans ATS, donc leurs variables doivent encore se
-  // lire quelque part. Les ranger en vert muet les effacerait, les ranger en
-  // rouge enverrait chercher une panne qui n'existe pas.
+  // A fourth arrived with the career pages: it works, and something is
+  // missing. The job search now answers with no key at all, so it is never
+  // "to fix"; the aggregators stay useful for employers with no ATS, so their
+  // variables still have to be readable somewhere. Filing them under a quiet
+  // green would erase them, filing them under red would send somebody looking
+  // for a fault that does not exist.
   const color =
     state === "ok" ? "#2f7d4f" : state === "ko" ? "#b3261e"
     : state === "partiel" ? "#9a6b00" : MUTED;
   const mark =
     state === "ok" ? "OK"
-    : state === "ko" ? "A CORRIGER"
-    : state === "partiel" ? "INCOMPLET"
-    : state === "blocked" ? "EN ATTENTE"
-    : "…";
+    : state === "ko" ? "TO FIX"
+    : state === "partiel" ? "INCOMPLETE"
+    : state === "blocked" ? "WAITING"
+    : "...";
   return (
     <li style={{
       listStyle: "none", padding: "16px 0",
@@ -105,29 +113,29 @@ export default function Diagnostic() {
   const [origin, setOrigin] = useState("");
   const [reach, setReach] = useState({ state: "wait" });
   const [table, setTable] = useState({ state: "wait" });
-  // Le fournisseur Google : le seul point qui manquait, et exactement
-  // celui qui est casse aujourd'hui.
+  // The Google provider: the only point that was missing, and exactly the one
+  // that is broken today.
   const [google, setGoogle] = useState({ state: "wait" });
 
-  // CE QUI SE DEGRADE EN SILENCE
+  // WHAT DEGRADES WITHOUT SAYING ANYTHING
   //
-  // Les six points ci-dessus portent sur les comptes, et un compte qui manque
-  // finit par se voir : le bouton n'est pas la. Ces quatre-la sont pires,
-  // parce qu'ils ne se voient jamais. Chacun laisse le produit repondre, avec
-  // l'air de marcher, en rendant moins qu'il ne promet :
+  // The six points above are about the accounts, and a missing account ends
+  // up showing: the button is not there. These four are worse, because they
+  // never show. Each one lets the product answer, looking as though it works,
+  // while returning less than it promises:
   //
-  //   le PDF natif tombe sur la photo de secours, et personne ne le sait ;
-  //   la recherche d'offres rend une liste vide, comme s'il n'y avait pas
-  //     d'offres a Londres aujourd'hui ;
-  //   le paiement absent laisse tout gratuit, donc sans plafond sur la
-  //     facture Anthropic ;
-  //   l'assistant live ne peut pas entendre dans ce navigateur-ci.
+  //   the native PDF falls back to the picture, and nobody knows;
+  //   the job search returns an empty list, as though there were no jobs in
+  //     London today;
+  //   with no payment everything stays free, so nothing caps the Anthropic
+  //     bill;
+  //   the live assistant cannot hear in this particular browser.
   //
-  // Le dernier ne se verifie que d'ici : il depend du navigateur qui lit
-  // cette page, pas du serveur.
+  // The last one can only be checked from here: it depends on the browser
+  // reading this page, not on the server.
   const [pdf, setPdf] = useState({ state: "wait" });
-  const [offres, setOffres] = useState({ state: "wait" });
-  const [paiement, setPaiement] = useState({ state: "wait" });
+  const [jobs, setJobs] = useState({ state: "wait" });
+  const [payment, setPayment] = useState({ state: "wait" });
   const [live, setLive] = useState({ state: "wait" });
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
@@ -135,9 +143,9 @@ export default function Diagnostic() {
   useEffect(() => {
     let alive = true;
 
-    // Le GET de la route dit si le Chromium de la fonction demarre. Sans lui
-    // l'export retombe sur la photo doublee d'une couche de texte, ce qui
-    // reste lisible par une partie des ATS mais n'est plus le fichier promis.
+    // The route's GET says whether the function's Chromium starts. Without it
+    // the export falls back to the picture backed by a text layer, which a
+    // part of the ATSs still read but which is no longer the promised file.
     fetch("/api/pdf")
       .then((r) => r.json())
       .then((j) => {
@@ -147,16 +155,16 @@ export default function Diagnostic() {
         } else {
           setPdf({
             state: "ko",
-            detail: (j && j.erreur) || "la route ne rend pas de PDF",
-            fix: "Chaque telechargement retombe sur la photo du CV, sans que "
-               + "rien ne le dise. Regarde les journaux de la fonction /api/pdf "
-               + "sur Vercel : @sparticuz/chromium ne demarre pas.",
+            detail: (j && j.erreur) || "the route returns no PDF",
+            fix: "Every download falls back to the picture of the CV, with "
+               + "nothing saying so. Look at the /api/pdf function's logs on "
+               + "Vercel: @sparticuz/chromium is not starting.",
           });
         }
       })
       .catch((e) => {
         if (alive) setPdf({ state: "ko", detail: String(e).slice(0, 120),
-          fix: "La route ne repond pas du tout. Tous les exports passent par la photo." });
+          fix: "The route does not answer at all. Every export goes through the picture." });
       });
 
     // `only=sources` skips reading the boards: this page asks which sources
@@ -166,97 +174,97 @@ export default function Diagnostic() {
       .then((j) => {
         if (!alive) return;
         const sources = (j && j.sources) || [];
-        // LES PAGES CARRIERE NE DEMANDENT AUCUNE CLE, DONC CE CONTROLE A CHANGE DE SENS
+        // CAREER PAGES NEED NO KEY, SO THIS CHECK CHANGED MEANING
         //
-        // La recherche ne peut plus etre "non configuree" : lib/boards.js lit
-        // les pages carriere des entreprises sans cle, et c'est la meilleure
-        // source du produit. Ce que ce controle doit encore dire, c'est ce
-        // qui MANQUE : les agregateurs couvrent des employeurs qui n'ont pas
-        // d'ATS, et leurs cles restent utiles. Les nommer quand elles sont
-        // absentes, sans transformer leur absence en panne.
-        const agregateurs = sources.filter((x) => x !== "career pages");
+        // The search can no longer be "not configured": lib/boards.js reads
+        // companies' career pages with no key, and it is the product's best
+        // source. What this check still has to say is what is MISSING: the
+        // aggregators cover employers with no ATS, and their keys stay
+        // useful. Name them when they are absent, without turning their
+        // absence into a fault.
+        const aggregators = sources.filter((x) => x !== "career pages");
 
-        // QUELLES VARIABLES LE SERVEUR VOIT, NOM PAR NOM
+        // WHICH VARIABLES THE SERVER SEES, NAME BY NAME
         //
-        // Le 6 octobre 2026, une cle Adzuna valide etait dans Vercel et la
-        // recherche repondait quand meme "career pages" seules. Trois causes
-        // se lisaient pareil : la variable absente (enregistree apres le
-        // redeploiement, ou cochee pour Preview et pas Production), le nom
-        // mal ecrit, ou la valeur fausse. Les nommer une par une les separe
-        // d'un coup d'oeil. Jamais une valeur, seulement un booleen.
-        const cles = (j && j.keys) || {};
-        const vues = Object.keys(cles).filter((k) => cles[k]);
-        const absentes = Object.keys(cles).filter((k) => !cles[k]);
-        const etatDesCles = Object.keys(cles).length
-          ? "Le serveur voit : " + (vues.join(", ") || "aucune")
-            + ". Il ne voit pas : " + (absentes.join(", ") || "aucune") + ". "
+        // On 6 October 2026 a valid Adzuna key was in Vercel and the search
+        // still answered "career pages" alone. Three causes read the same
+        // way: the variable absent (saved after the deployment, or ticked for
+        // Preview and not Production), the name misspelt, or the value wrong.
+        // Naming them one by one separates them at a glance. Never a value,
+        // only a boolean.
+        const keyFlags = (j && j.keys) || {};
+        const seen = Object.keys(keyFlags).filter((k) => keyFlags[k]);
+        const missing = Object.keys(keyFlags).filter((k) => !keyFlags[k]);
+        const keyReport = Object.keys(keyFlags).length
+          ? "The server sees: " + (seen.join(", ") || "none")
+            + ". It does not see: " + (missing.join(", ") || "none") + ". "
           : "";
 
         if (j && j.configured) {
-          setOffres({
-            state: agregateurs.length ? "ok" : "partiel",
-            detail: `sources actives : ${sources.join(", ") || "aucune nommee"}`,
-            fix: agregateurs.length ? "" :
-              "Les pages carriere repondent, et elles seules. Les agregateurs "
-              + "couvrent les employeurs sans ATS : Adzuna est gratuit "
-              + "(developer.adzuna.com), puis Vercel > Environment Variables > "
-              + "ADZUNA_APP_ID et ADZUNA_APP_KEY. Pour le Royaume-Uni, "
-              + "REED_API_KEY en plus.\n\n"
-              + etatDesCles
-              + "Une variable que le serveur ne voit pas n'a pas ete livree a "
-              + "cette fonction : Vercel fige les variables au moment du "
-              + "deploiement, donc les enregistrer ne suffit pas, il faut "
-              + "redeployer APRES. Verifie aussi qu'elles sont cochees pour "
-              + "Production, et que le nom est exact. Une variable vue mais "
-              + "dont la valeur est fausse apparait autrement : la source est "
-              + "nommee ci-dessus et un avertissement dit son code HTTP.",
+          setJobs({
+            state: aggregators.length ? "ok" : "partiel",
+            detail: `active sources: ${sources.join(", ") || "none named"}`,
+            fix: aggregators.length ? "" :
+              "The career pages answer, and only them. The aggregators cover "
+              + "employers with no ATS: Adzuna is free "
+              + "(developer.adzuna.com), then Vercel > Environment Variables > "
+              + "ADZUNA_APP_ID and ADZUNA_APP_KEY. For the United Kingdom, "
+              + "REED_API_KEY as well.\n\n"
+              + keyReport
+              + "A variable the server does not see was not delivered to this "
+              + "function: Vercel freezes the variables at build time, so "
+              + "saving them is not enough, you have to redeploy AFTER. Check "
+              + "too that they are ticked for Production, and that the name is "
+              + "exact. A variable that is seen but whose value is wrong shows "
+              + "up differently: the source is named above and a warning gives "
+              + "its HTTP code.",
           });
         } else {
-          setOffres({
+          setJobs({
             state: "ko",
-            detail: "aucune source d'offres configuree",
-            fix: "La recherche rend une liste vide, ce qui se lit comme "
-               + "\"aucune offre aujourd'hui\" et non comme une panne. Adzuna est "
-               + "gratuit : developer.adzuna.com, puis Vercel > Environment "
-               + "Variables > ADZUNA_APP_ID et ADZUNA_APP_KEY, et redeploie. "
-               + "Pour le Royaume-Uni, REED_API_KEY en plus.",
+            detail: "no job source configured",
+            fix: "The search returns an empty list, which reads as \"no jobs "
+               + "today\" and not as a fault. Adzuna is free: "
+               + "developer.adzuna.com, then Vercel > Environment "
+               + "Variables > ADZUNA_APP_ID and ADZUNA_APP_KEY, and redeploy. "
+               + "For the United Kingdom, REED_API_KEY as well.",
           });
         }
       })
-      .catch(() => { if (alive) setOffres({ state: "ko", detail: "la route ne repond pas" }); });
+      .catch(() => { if (alive) setJobs({ state: "ko", detail: "the route does not answer" }); });
 
     fetch("/api/billing")
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
-        if (j && j.configured) setPaiement({ state: "ok", detail: "Stripe repond, les plans sont vendables" });
+        if (j && j.configured) setPayment({ state: "ok", detail: "Stripe answers, the plans can be sold" });
         else {
-          setPaiement({
+          setPayment({
             state: "ko",
-            detail: "tout est gratuit et sans compte",
-            fix: "Personne ne peut payer, et rien ne plafonne la facture "
-               + "Anthropic. Les six valeurs sont dans docs/facturation.md. "
-               + "SUPABASE_SERVICE_ROLE_KEY ne doit JAMAIS porter le prefixe "
-               + "NEXT_PUBLIC_ : elle ignore les regles de securite.",
+            detail: "everything is free and accountless",
+            fix: "Nobody can pay, and nothing caps the Anthropic bill. The six "
+               + "values are in docs/facturation.md. "
+               + "SUPABASE_SERVICE_ROLE_KEY must NEVER carry the NEXT_PUBLIC_ "
+               + "prefix: it ignores the security rules.",
           });
         }
       })
-      .catch(() => { if (alive) setPaiement({ state: "ko", detail: "la route ne repond pas" }); });
+      .catch(() => { if (alive) setPayment({ state: "ko", detail: "the route does not answer" }); });
 
-    // Celui-la porte sur le navigateur qui lit cette page.
-    const aLaVoix = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
-    const aLOnglet = Boolean(navigator.mediaDevices
+    // This one is about the browser reading this page.
+    const hasVoice = Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+    const hasTabCapture = Boolean(navigator.mediaDevices
       && typeof navigator.mediaDevices.getDisplayMedia === "function");
-    if (aLaVoix && aLOnglet) {
-      setLive({ state: "ok", detail: "transcription et capture d'onglet disponibles ici" });
+    if (hasVoice && hasTabCapture) {
+      setLive({ state: "ok", detail: "transcription and tab capture available here" });
     } else {
       setLive({
         state: "ko",
-        detail: [!aLaVoix ? "pas de transcription" : null,
-          !aLOnglet ? "pas de capture d'onglet" : null].filter(Boolean).join(", "),
-        fix: "Teste depuis Chrome ou Edge sur un ordinateur. Sur telephone la "
-           + "capture d'onglet n'existe pas, et l'assistant ne peut alors "
-           + "distinguer le recruteur de la personne.",
+        detail: [!hasVoice ? "no transcription" : null,
+          !hasTabCapture ? "no tab capture" : null].filter(Boolean).join(", "),
+        fix: "Try from Chrome or Edge on a computer. On a phone tab capture "
+           + "does not exist, and the assistant then cannot tell the recruiter "
+           + "from the person.",
       });
     }
 
@@ -265,7 +273,7 @@ export default function Diagnostic() {
 
   useEffect(() => {
     if (!URL_ENV || !KEY_ENV) {
-      const blocked = { state: "blocked", detail: "en attente des points 1 et 2" };
+      const blocked = { state: "blocked", detail: "waiting on points 1 and 2" };
       setReach(blocked);
       setTable(blocked);
       setGoogle(blocked);
@@ -273,81 +281,80 @@ export default function Diagnostic() {
     }
     let alive = true;
 
-    // 1. Le projet repond-il, et la cle est-elle acceptee ?
+    // 1. Does the project answer, and is the key accepted?
     fetch(`${URL_ENV}/auth/v1/settings`, { headers: { apikey: KEY_ENV } })
       .then(async (r) => {
         if (!alive) return;
         if (r.status === 401 || r.status === 403) {
           setReach({
             state: "ko",
-            detail: `le projet repond mais refuse la cle (HTTP ${r.status})`,
-            fix: "La cle ne correspond pas a ce projet. Reprends-la dans Supabase, "
-               + "Project Settings > API keys, colonne publishable / anon.",
+            detail: `the project answers but refuses the key (HTTP ${r.status})`,
+            fix: "The key does not belong to this project. Take it again from "
+               + "Supabase, Project Settings > API keys, publishable / anon column.",
           });
           return;
         }
         if (!r.ok) {
           setReach({
             state: "ko",
-            detail: `le projet a repondu HTTP ${r.status}`,
-            fix: "Un projet gratuit se met en pause apres une periode sans usage. "
-               + "Ouvre le tableau de bord Supabase : s'il propose Restore project, clique dessus.",
+            detail: `the project answered HTTP ${r.status}`,
+            fix: "A free project pauses itself after a period with no use. Open "
+               + "the Supabase dashboard: if it offers Restore project, click it.",
           });
           return;
         }
-        setReach({ state: "ok", detail: "le projet repond et accepte la cle" });
+        setReach({ state: "ok", detail: "the project answers and accepts the key" });
 
-        // LA REPONSE CONTENAIT DEJA CE QU'ON CHERCHAIT
+        // THE ANSWER ALREADY HELD WHAT WE WERE LOOKING FOR
         //
-        // Cette requete servait seulement a savoir si le projet repond, et
-        // son contenu partait a la poubelle. Or /auth/v1/settings dit
-        // exactement quels fournisseurs sont actifs - et c'est le seul point
-        // que cette page ne verifiait pas, alors que c'est precisement celui
-        // qui empeche de se connecter.
+        // This request only served to find out whether the project answers,
+        // and its body went in the bin. But /auth/v1/settings says exactly
+        // which providers are active, and that was the one point this page did
+        // not check, although it is precisely the one that stops people
+        // signing in.
         //
-        // Prudence : on n'affirme "absent" que si la reponse est lisible et
-        // dit clairement non. Une forme inattendue rend "non verifiable", pas
-        // "casse" - un faux diagnostic enverrait chercher la panne au mauvais
-        // endroit, ce qui coute plus cher que pas de diagnostic du tout.
-        let reglages = null;
-        try { reglages = await r.json(); } catch { /* corps illisible */ }
-        const ext = reglages && reglages.external;
+        // Carefully: we only assert "absent" if the answer is readable and
+        // plainly says no. An unexpected shape gives "not verifiable", not
+        // "broken". A wrong diagnosis sends somebody looking for the fault in
+        // the wrong place, which costs more than no diagnosis at all.
+        let settings = null;
+        try { settings = await r.json(); } catch { /* unreadable body */ }
+        const ext = settings && settings.external;
         if (!ext || typeof ext !== "object") {
           setGoogle({
             state: "wait",
-            detail: "le projet n'a pas annonce ses fournisseurs",
-            fix: "Verifie a la main : Supabase > Authentication > Sign In / Providers.",
+            detail: "the project did not declare its providers",
+            fix: "Check by hand: Supabase > Authentication > Sign In / Providers.",
           });
         } else if (ext.google) {
           setGoogle({
             state: "ok",
-            detail: "Google est actif sur le projet",
+            detail: "Google is active on the project",
             fix: "",
           });
         } else {
           setGoogle({
             state: "ko",
-            detail: "Google n'est pas actif sur ce projet",
-            fix: "Supabase > Authentication > Sign In / Providers > Google : "
-               + "active-le, puis colle le Client ID et le Client Secret pris "
-               + "dans Google Cloud Console. Sans ca, le bouton de connexion "
-               + "renvoie sur le site sans avoir cree de compte.",
+            detail: "Google is not active on this project",
+            fix: "Supabase > Authentication > Sign In / Providers > Google: "
+               + "turn it on, then paste the Client ID and the Client Secret "
+               + "taken from the Google Cloud Console. Without that, the "
+               + "sign-in button returns to the site having created no account.",
           });
         }
       })
       .catch(() => alive && setReach({
         state: "ko",
-        detail: "aucune reponse du projet",
-        fix: "Soit l'adresse est fausse, soit le projet est en pause. Ouvre le "
-           + "tableau de bord Supabase et verifie qu'il n'affiche pas Restore project.",
+        detail: "no answer from the project",
+        fix: "Either the address is wrong, or the project is paused. Open the "
+           + "Supabase dashboard and check it is not showing Restore project.",
       }));
 
-    // 2. La table repond-elle, et les regles RLS sont-elles bien en place ?
+    // 2. Does the table answer, and are the RLS rules really in place?
     //
-    // Sans etre connecte, une table protegee doit rendre une liste VIDE, pas une
-    // erreur et surtout pas des lignes. Des lignes ici voudraient dire que
-    // n'importe qui peut lire les CV de tout le monde : c'est le seul resultat
-    // de cette page qui soit une urgence.
+    // Signed out, a protected table has to return an EMPTY list, not an error
+    // and above all not rows. Rows here would mean anybody can read
+    // everybody's CV: it is the only result on this page that is an emergency.
     fetch(`${URL_ENV}/rest/v1/user_state?select=user_id&limit=1`, {
       headers: { apikey: KEY_ENV },
     })
@@ -356,30 +363,30 @@ export default function Diagnostic() {
         if (r.status === 404) {
           setTable({
             state: "ko",
-            detail: "la table user_state n'existe pas",
-            fix: "Supabase > SQL Editor : rejoue le script de creation "
-               + "(voir docs/mise-en-service.md).",
+            detail: "the user_state table does not exist",
+            fix: "Supabase > SQL Editor: run the creation script again "
+               + "(see docs/mise-en-service.md).",
           });
           return;
         }
         if (!r.ok) {
-          setTable({ state: "ko", detail: `la table a repondu HTTP ${r.status}` });
+          setTable({ state: "ko", detail: `the table answered HTTP ${r.status}` });
           return;
         }
         const rows = await r.json().catch(() => null);
         if (Array.isArray(rows) && rows.length > 0) {
           setTable({
             state: "ko",
-            detail: "DANGER : la table rend des lignes a un visiteur non connecte",
-            fix: "Les regles RLS sont desactivees. En l'etat, n'importe qui peut lire "
-               + "les CV de tout le monde. Supabase > SQL Editor : "
+            detail: "DANGER: the table returns rows to a visitor who is not signed in",
+            fix: "The RLS rules are off. As it stands, anybody can read "
+               + "everybody's CV. Supabase > SQL Editor: "
                + "alter table user_state enable row level security;",
           });
           return;
         }
-        setTable({ state: "ok", detail: "la table repond, et ne livre rien sans compte" });
+        setTable({ state: "ok", detail: "the table answers, and gives nothing without an account" });
       })
-      .catch(() => alive && setTable({ state: "ko", detail: "table injoignable" }));
+      .catch(() => alive && setTable({ state: "ko", detail: "table unreachable" }));
 
     return () => { alive = false; };
   }, []);
@@ -396,118 +403,117 @@ export default function Diagnostic() {
         <h1 style={{
           fontFamily: "Fraunces, Georgia, serif",
           fontSize: 30, fontWeight: 600, margin: "0 0 8px",
-        }}>Mise en service</h1>
+        }}>Setup</h1>
         <p style={{ color: MUTED, fontSize: 14, margin: "0 0 8px", lineHeight: 1.6 }}>
-          Cette page verifie, depuis ce site, ce dont les comptes ont besoin pour
-          fonctionner. Tout doit etre en OK.
+          This page checks, from this site, what the accounts need in order to
+          work. Everything has to read OK.
         </p>
         <p style={{ color: MUTED, fontSize: 13, margin: "0 0 28px" }}>
-          Page consultee depuis <strong style={{ color: INK }}>{origin || "…"}</strong>
+          Page read from <strong style={{ color: INK }}>{origin || "..."}</strong>
         </p>
 
         <ul style={{ margin: 0, padding: 0 }}>
           <Verdict
             state={URL_ENV ? "ok" : "ko"}
-            title="1. L'adresse du projet est dans la construction"
-            detail={URL_ENV || "NEXT_PUBLIC_SUPABASE_URL absente"}
-            fix={"Vercel > Settings > Environment Variables : ajoute "
-              + "NEXT_PUBLIC_SUPABASE_URL, cochee pour Production, Preview et "
-              + "Development. Puis Deployments > Redeploy : ces valeurs sont "
-              + "inscrites dans le code au moment de la construction, les ajouter "
-              + "ne suffit pas."}
+            title="1. The project's address is in the build"
+            detail={URL_ENV || "NEXT_PUBLIC_SUPABASE_URL absent"}
+            fix={"Vercel > Settings > Environment Variables: add "
+              + "NEXT_PUBLIC_SUPABASE_URL, ticked for Production, Preview and "
+              + "Development. Then Deployments > Redeploy: these values are "
+              + "written into the code at build time, adding them is not enough."}
           />
           <Verdict
             state={KEY_ENV ? "ok" : "ko"}
-            title="2. La cle publique est dans la construction"
+            title="2. The public key is in the build"
             detail={masked(KEY_ENV)}
-            fix={"Meme endroit : NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (ou "
-              + "NEXT_PUBLIC_SUPABASE_ANON_KEY, les deux noms sont acceptes). "
-              + "Jamais la cle service_role : elle ignore les regles de securite."}
+            fix={"Same place: NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY (or "
+              + "NEXT_PUBLIC_SUPABASE_ANON_KEY, both names are accepted). "
+              + "Never the service_role key: it ignores the security rules."}
           />
           <Verdict
             state={reach.state === "wait" ? "wait" : reach.state}
-            title="3. Le projet Supabase repond"
+            title="3. The Supabase project answers"
             detail={reach.detail}
             fix={reach.fix}
           />
           <Verdict
             state={table.state === "wait" ? "wait" : table.state}
-            title="4. La table est creee et protegee"
+            title="4. The table is created and protected"
             detail={table.detail}
             fix={table.fix}
           />
-          {/* Le fournisseur, avant la consequence : c'est lui qui casse la
-              connexion quand tout le reste est vert. */}
+          {/* The provider, before the consequence: it is the one that breaks
+              signing in when everything else is green. */}
           <Verdict
             state={google.state === "wait" ? "wait" : google.state}
-            title="5. Google est branche sur le projet"
+            title="5. Google is wired to the project"
             detail={google.detail}
             fix={google.fix}
           />
           <Verdict
             state={configured ? "ok" : "ko"}
-            title="6. L'application propose les comptes"
+            title="6. The application offers accounts"
             detail={configured
-              ? "le bouton de connexion s'affiche dans les reglages"
-              : "l'application fonctionne, mais sans comptes"}
-            fix="Consequence directe des points 1 et 2 : corrige-les, redeploie, reviens ici."
+              ? "the sign-in button shows up in Settings"
+              : "the application works, but with no accounts"}
+            fix="A direct consequence of points 1 and 2: fix those, redeploy, come back here."
           />
         </ul>
 
-        {/* CE QUI SE DEGRADE EN SILENCE
-            Les six points ci-dessus finissent par se voir : un compte qui
-            manque, c'est un bouton absent. Ces quatre-la ne se voient
-            jamais. Le produit repond, il a l'air de marcher, et il rend
-            moins qu'il ne promet. */}
+        {/* WHAT DEGRADES WITHOUT SAYING ANYTHING
+            The six points above end up showing: a missing account is a
+            missing button. These four never show. The product answers, it
+            looks as though it works, and it returns less than it promises. */}
         <h2 style={{
           fontFamily: "Fraunces, Georgia, serif",
           fontSize: 22, fontWeight: 600, margin: "40px 0 6px",
-        }}>Ce qui se degrade en silence</h2>
+        }}>What degrades without saying anything</h2>
         <p style={{ color: MUTED, fontSize: 13.5, margin: "0 0 12px", lineHeight: 1.6 }}>
-          Rien de ce qui suit ne leve d&apos;erreur. Le produit repond, il a
-          l&apos;air de marcher, et il rend moins qu&apos;il ne promet. Le
-          dernier point depend du navigateur qui lit cette page.
+          None of what follows raises an error. The product answers, it looks
+          as though it works, and it returns less than it promises. The last
+          point depends on the browser reading this page.
         </p>
 
         <ul style={{ margin: 0, padding: 0 }}>
           <Verdict
             state={pdf.state}
-            title="7. Le PDF telecharge est du vrai texte"
+            title="7. The downloaded PDF is real text"
             detail={pdf.detail}
             fix={pdf.fix}
           />
           <Verdict
-            state={offres.state}
-            title="8. La recherche d'offres a une source"
-            detail={offres.detail}
-            fix={offres.fix}
+            state={jobs.state}
+            title="8. The job search has a source"
+            detail={jobs.detail}
+            fix={jobs.fix}
           />
           <Verdict
-            state={paiement.state}
-            title="9. Quelqu'un peut payer"
-            detail={paiement.detail}
-            fix={paiement.fix}
+            state={payment.state}
+            title="9. Somebody can pay"
+            detail={payment.detail}
+            fix={payment.fix}
           />
           <Verdict
             state={live.state}
-            title="10. L'assistant live peut entendre, ici"
+            title="10. The live assistant can hear, here"
             detail={live.detail}
             fix={live.fix}
           />
         </ul>
 
-        {/* Le seul point qu'aucun code ne peut verifier, et donc le plus oublie. */}
+        {/* The one point no code can check, and therefore the most forgotten. */}
         <div style={{
           marginTop: 32, padding: "18px 20px", borderRadius: 12,
           background: "rgba(0,0,0,.035)", fontSize: 13, lineHeight: 1.65,
         }}>
           <div style={{ fontWeight: 700, marginBottom: 8 }}>
-            11. A verifier a la main : les adresses de retour
+            11. To check by hand: the return addresses
           </div>
           <p style={{ margin: "0 0 10px", color: MUTED }}>
-            Aucun test ne peut lire ce reglage depuis ici. S'il est faux, le lien
-            de connexion recu par mail renvoie sur <code>localhost</code> et ne
-            se termine jamais. Supabase &gt; Authentication &gt; URL Configuration :
+            No test can read this setting from here. If it is wrong, the
+            sign-in link that arrives by mail points at <code>localhost</code>
+            {" "}and never completes. Supabase &gt; Authentication &gt; URL
+            Configuration:
           </p>
           <div style={{
             fontFamily: "ui-monospace, monospace", fontSize: 12,

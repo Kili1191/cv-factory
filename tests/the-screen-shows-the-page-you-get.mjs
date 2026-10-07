@@ -238,7 +238,7 @@ export async function run() {
     await seedApp(page, CASSE, { locale: "en" });
     // The header button's accessible name is its aria-label, "Telecharger CV",
     // in both languages; its visible text is not what getByRole reads.
-    await page.locator('button[aria-label="Telecharger CV"]').first().click({ timeout: 15_000 });
+    await page.locator('[data-nuvi="download-cv"]').first().click({ timeout: 15_000 });
     await page.waitForTimeout(1200);
     const panneau = page.locator('[data-nuvi="defauts-corriger"]');
     if (!(await panneau.count())) {

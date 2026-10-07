@@ -15,16 +15,16 @@ import {
 // Format a parsed date for display.
 function fmt(d, T) {
   if (!d) return "?";
-  if (d.present) return T.gr_gap_present || "present";
+  if (d.present) return T.gr_gap_present || "today";
   if (!d.month) return String(d.year);
   return String(d.month).padStart(2, "0") + "/" + d.year;
 }
 
 // Format months count.
 function fmtMonths(n, T) {
-  if (n < 12) return n + " " + (T.gr_gap_months || "mois");
-  if (n < 24) return "1 " + (T.gr_gap_year || "an");
-  return Math.round(n / 12) + " " + (T.gr_gap_years || "ans");
+  if (n < 12) return n + " " + (T.gr_gap_months || "months");
+  if (n < 24) return "1 " + (T.gr_gap_year || "year");
+  return Math.round(n / 12) + " " + (T.gr_gap_years || "years");
 }
 
 // Petit composant : carte d'un gap detecte.
@@ -51,9 +51,9 @@ function GapCard({ gap, T }) {
         color:Ink, letterSpacing:"-0.01em", lineHeight:1.4,
         marginBottom:4,
       }}>
-        {(T.gr_gap_between || "entre")}
+        {(T.gr_gap_between || "between")}
         {" "}<em style={{fontStyle:"italic"}}>{fmt(gap.gap.start, T)}</em>
-        {" "}{(T.gr_gap_and || "et")}
+        {" "}{(T.gr_gap_and || "and")}
         {" "}<em style={{fontStyle:"italic"}}>{fmt(gap.gap.end, T)}</em>
       </div>
       <div style={{
@@ -325,8 +325,8 @@ export default function GapRepairModal({
                   T={T}
                   eyebrow={
                     yearStrategy.allDisappear
-                      ? (T.gr_strat_year_full || "Resout tous les trous")
-                      : (T.gr_strat_year_partial || "Resout certains trous")
+                      ? (T.gr_strat_year_full || "Years only format makes all your gaps vanish.")
+                      : (T.gr_strat_year_partial || "Years only format shrinks some gaps but not all.")
                   }
                   title={T.gr_strat_year}
                   sub={T.gr_strat_year_sub}

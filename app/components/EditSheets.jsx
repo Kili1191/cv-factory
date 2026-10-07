@@ -208,7 +208,7 @@ export function SheetId({ cv, set, onClose, onTransformSummary, T }) {
   return (
     <Sheet
       title={T.edit_id}
-      eyebrow={T.sh_eyebrow_id || "Identite"}
+      eyebrow={T.sh_eyebrow_id || "Identity"}
       onClose={onClose}
     >
       <FR label={T.sh_name} value={cv.name} onChange={u("name")} />
@@ -236,7 +236,7 @@ export function SheetId({ cv, set, onClose, onTransformSummary, T }) {
             <button
               onClick={() => onTransformSummary(cv.summary || "")}
               disabled={summaryEmpty}
-              title={T.bts_btn || "Transformer l'accroche avec Nuvi"}
+              title={T.bts_btn || "Transform summary"}
               style={{
                 ...B({
                   display: "inline-flex", alignItems: "center", gap: 6,
@@ -259,7 +259,7 @@ export function SheetId({ cv, set, onClose, onTransformSummary, T }) {
                 strokeLinecap="round" strokeLinejoin="round">
                 <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .962 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.582a.5.5 0 0 1 0 .962L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.962 0z" />
               </svg>
-              {T.bts_btn || "Transformer"}
+              {T.bts_btn || "Transform summary"}
             </button>
           )}
         </div>
@@ -354,7 +354,7 @@ export function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
         {onTransformBullet && (
           <TransformBtn
             onClick={() => onTransformBullet(expId, idx, value)}
-            title={T.bt_btn_title || "Transformer ce bullet avec Nuvi"}
+            title={T.bt_btn_title || "Transform this bullet into 5 versions"}
           />
         )}
         <XBtn onClick={() => db(expId, idx)} ariaLabel="supprimer bullet" />
@@ -365,7 +365,7 @@ export function SheetEx({ cv, set, onClose, onTransformBullet, T }) {
   return (
     <Sheet
       title={T.edit_ex}
-      eyebrow={T.sh_eyebrow_ex || "Experiences"}
+      eyebrow={T.sh_eyebrow_ex || "Experience"}
       onClose={onClose}
     >
       {cv.experience.map((ex, i) => (
@@ -436,7 +436,7 @@ export function SheetEd({ cv, set, onClose, T }) {
   return (
     <Sheet
       title={T.edit_ed}
-      eyebrow={T.sh_eyebrow_ed || "Formations"}
+      eyebrow={T.sh_eyebrow_ed || "Education"}
       onClose={onClose}
     >
       {cv.education.map((ed, i) => (
@@ -515,7 +515,7 @@ export function SheetSk({ cv, set, onClose, T }) {
   return (
     <Sheet
       title={T.edit_sk}
-      eyebrow={T.sh_eyebrow_sk || "Competences"}
+      eyebrow={T.sh_eyebrow_sk || "Skills"}
       onClose={onClose}
     >
       {/* Section Compétences */}

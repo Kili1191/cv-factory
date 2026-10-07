@@ -104,7 +104,7 @@ export async function run() {
       });
       await seedApp(page, CV, { locale: "en" });
 
-      await page.locator('button[aria-label="Telecharger CV"]').first().click({ timeout: 15_000 });
+      await page.locator('[data-nuvi="download-cv"]').first().click({ timeout: 15_000 });
       const dire = page.locator('[data-nuvi="defaut-dire"]');
       await dire.first().waitFor({ timeout: 8_000 }).catch(() => {});
       if (!(await dire.count())) {

@@ -274,7 +274,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           et la preparation d'entretien pour ce poste precis. */}
       <div style={{marginBottom:14}}>
         <label style={labelStyle}>
-          {T.ap_field_offer || "Annonce (colle le texte)"}
+          {T.ap_field_offer || "The ad (paste the text)"}
         </label>
         <textarea
           value={form.offer || ""}
@@ -292,7 +292,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           }}
           rows={4}
           placeholder={T.ap_offer_hint
-            || "Colle l'annonce ici : elle sert a adapter ton CV, preparer l'entretien et rediger la relance."}
+            || "Paste the ad here: it is what fits your CV, prepares the interview and writes the nudge."}
           style={{...inputStyle, resize:"vertical", minHeight:80}}/>
         {/* Une candidature se saisit souvent longtemps apres coup, quand
             l'annonce n'existe plus qu'en PDF enregistre ou en capture. */}
@@ -301,7 +301,7 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
           onTexte={(texte)=>u("offer")(joindreAuTexte(form.offer || "", nettoyerLAnnonce(texte)))}/>
         {form.offer && form.offer.trim().length > 0 && (
           <div style={{fontSize:11, color:GreenText, marginTop:5}}>
-            {(T.ap_offer_ready || "Annonce enregistree, les actions suivantes sont debloquees")}
+            {(T.ap_offer_ready || "Ad saved. The next steps are unlocked.")}
           </div>
         )}
       </div>
@@ -351,34 +351,45 @@ function ApplicationForm({ T, app, onSave, onCancel }) {
 //
 // C'est la boucle que personne n'a fermee : chez les concurrents, le suivi et
 // l'adaptation du CV sont deux outils separes qui ne se parlent pas.
-function nextAction(app, T) {
+// locale, and it was missing. These two hints are built from a number, so
+// they cannot be one string in the dictionary, and their fallback was written
+// in French with no branch: an English reader was told "Envoyee il y a 7
+// jours, c'est le moment". The two keys exist in neither dictionary, so that
+// fallback is what always rendered. The neighbour at the bottom of this file
+// already branches on the locale for the same reason; this one now does too.
+function nextAction(app, T, locale) {
   const hasOffer = Boolean(app.offer && app.offer.trim());
   if (!hasOffer) {
-    return { key:"offer", label:T.ap_do_offer || "Coller l'annonce",
-      hint:T.ap_do_offer_hint || "Debloque le CV adapte, la relance et l'entretien" };
+    return { key:"offer", label:T.ap_do_offer || "Paste the ad",
+      hint:T.ap_do_offer_hint || "Unlocks the fitted CV, the nudge and the interview" };
   }
   switch (app.status) {
     case "applied": {
       const days = daysSince(app.date);
       return {
         key:"followup",
-        label:T.ap_do_followup || "Rediger la relance",
+        label:T.ap_do_followup || "Write the nudge",
         hint: days === null ? null
-          : days >= 7 ? (T.ap_do_followup_due || `Envoyee il y a ${days} jours, c'est le moment`)
-          : (T.ap_do_followup_soon || `Envoyee il y a ${days} jour${days > 1 ? "s" : ""}`),
+          : days >= 7
+            ? (locale === "en"
+              ? `Sent ${days} days ago, now is the moment`
+              : `Envoyee il y a ${days} jours, c'est le moment`)
+            : (locale === "en"
+              ? `Sent ${days} day${days > 1 ? "s" : ""} ago`
+              : `Envoyee il y a ${days} jour${days > 1 ? "s" : ""}`),
         urgent: days !== null && days >= JOURS_AVANT_RELANCE,
       };
     }
     case "phone":
     case "interview":
-      return { key:"prepare", label:T.ap_do_prepare || "Preparer l'entretien",
-        hint:T.ap_do_prepare_hint || "Questions et reponses sur cette annonce" };
+      return { key:"prepare", label:T.ap_do_prepare || "Prepare the interview",
+        hint:T.ap_do_prepare_hint || "Questions and answers for this ad" };
     case "offer":
-      return { key:"negotiate", label:T.ap_do_negotiate || "Preparer la negociation",
+      return { key:"negotiate", label:T.ap_do_negotiate || "Prepare the negotiation",
         hint:null };
     default:
-      return { key:"tailor", label:T.ap_do_tailor || "Adapter mon CV",
-        hint:T.ap_do_tailor_hint || "Reecrit ton CV pour cette annonce" };
+      return { key:"tailor", label:T.ap_do_tailor || "Fit my CV",
+        hint:T.ap_do_tailor_hint || "Rewrites your CV for this ad" };
   }
 }
 
@@ -434,9 +445,9 @@ function health(app) {
 // lib/applicationFollowUp.js porte les deux.
 const daysSince = joursDepuis;
 
-function ApplicationCard({ T, app, onEdit, onDelete, onAction }) {
+function ApplicationCard({ T, app, onEdit, onDelete, onAction, locale }) {
   const badge = statusBadge(app.status, T);
-  const action = nextAction(app, T);
+  const action = nextAction(app, T, locale);
   const h = health(app);
   return (
     <div style={{
@@ -720,9 +731,9 @@ export default function ApplicationsTrackerModal({
         <div style={{marginBottom:16}}>
           <div style={{display:"flex", gap:8}}>
             {[
-              ["good",    T.ap_health_good    || "Ca avance", triage.good.length,    Green,  GreenSoft],
-              ["pending", T.ap_health_pending || "En cours",  triage.pending.length, Purple, PurpleSoft],
-              ["dead",    T.ap_health_dead    || "Mortes",    triage.dead.length,    InkMuted, Hairline],
+              ["good",    T.ap_health_good    || "Moving", triage.good.length,    Green,  GreenSoft],
+              ["pending", T.ap_health_pending || "Waiting",  triage.pending.length, Purple, PurpleSoft],
+              ["dead",    T.ap_health_dead    || "Dead",    triage.dead.length,    InkMuted, Hairline],
             ].map(([key, label, n, fg, bg]) => (
               <button
                 key={key}
@@ -756,10 +767,10 @@ export default function ApplicationsTrackerModal({
             }}>
               <strong>{triage.toFollow}</strong>{" "}
               {triage.toFollow > 1
-                ? (T.ap_to_follow_many || "candidatures attendent une relance.")
-                : (T.ap_to_follow_one || "candidature attend une relance.")}
+                ? (T.ap_to_follow_many || "applications are waiting for a nudge.")
+                : (T.ap_to_follow_one || "application is waiting for a nudge.")}
               {" "}
-              {T.ap_to_follow_hint || "C'est le seul geste qui les fait repartir."}
+              {T.ap_to_follow_hint || "It is the one move that starts them again."}
             </div>
           )}
         </div>
@@ -860,9 +871,9 @@ export default function ApplicationsTrackerModal({
             gap:0, maxWidth:340, margin:"0 auto",
           }}>
             {[
-              T.ap_step_sent || (locale === "en" ? "Sent" : "Envoyee"),
-              T.ap_step_reply || (locale === "en" ? "Reply" : "Reponse"),
-              T.ap_step_interview || (locale === "en" ? "Interview" : "Entretien"),
+              T.ap_step_sent || "Sent",
+              T.ap_step_reply || "Reply",
+              T.ap_step_interview || "Interview",
             ].map((etape, i, tout) => (
               <Fragment key={etape}>
                 <div style={{
@@ -891,7 +902,7 @@ export default function ApplicationsTrackerModal({
       )}
 
       {!showForm && visible.map(app => (
-        <ApplicationCard key={app.id} T={T} app={app}
+        <ApplicationCard key={app.id} T={T} app={app} locale={locale}
           onEdit={handleEdit} onDelete={handleDelete}
           onAction={onAction}/>
       ))}

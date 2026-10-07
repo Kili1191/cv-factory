@@ -109,7 +109,17 @@ export async function run() {
   // Interpoler vers ce mot-cle rend une matrice identite, qui cree un bloc
   // conteneur comme les autres. Seul "backwards" rend l'element a ses styles.
   const css = readFileSync("app/globals.css", "utf8");
-  for (const classe of ["nuvi-entree", "nuvi-sheet-corps > \\*"]) {
+  // AND THE SELECTOR MOVED, WHICH IS WHY THIS GUARD IS WRITTEN LOOSELY NOW
+  //
+  // It used to look for ".nuvi-sheet-corps > *" exactly. On 7 October 2026 the
+  // rule was narrowed to ":nth-child(-n+7)", because the entry animation was
+  // being applied to every direct child and a list of a hundred and twenty job
+  // cards put a hundred and twenty animated layers on the compositor. The
+  // animation stayed, the spelling changed, and this check went blind: it
+  // reported "no entry animation" on a rule that was right there. What it
+  // actually guards is the fill-mode, so it now matches the selector's prefix
+  // and leaves whatever follows it alone.
+  for (const classe of ["nuvi-entree", "nuvi-sheet-corps > \\*[^{]*"]) {
     const m = css.match(new RegExp("\\." + classe + "\\s*\\{[^}]*animation:[^;]*;", "m"));
     if (!m) {
       failures.push(`la regle .${classe.replace("\\", "")} n'a plus d'animation d'entree.`);

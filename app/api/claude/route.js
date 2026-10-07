@@ -249,8 +249,8 @@ export async function POST(request) {
       return new Response(
         JSON.stringify({
           error: {
-            message: "La reponse a ete coupee avant la fin : elle depassait "
-              + max_tokens + " jetons de sortie.",
+            message: "The answer was cut off before the end: it went past "
+              + max_tokens + " output tokens.",
             type: "reponse_coupee",
           },
         }),

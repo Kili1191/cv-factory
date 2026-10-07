@@ -100,7 +100,7 @@ export async function run() {
     await seedApp(page, SAMPLE_CV, { locale: "en", layout: "classic" });
     await page.evaluate(() => { try { localStorage.removeItem("nuvi-format-always"); localStorage.removeItem("nuvi-format-pref"); } catch (e) {} });
     await page.waitForTimeout(1200);
-    await page.click('button[aria-label="Telecharger CV"]');
+    await page.click('[data-nuvi="download-cv"]');
     await page.waitForTimeout(1200);
     const choisi = await page.evaluate(() => {
       const b = [...document.querySelectorAll("button, [role=button], label, div")].find((x) => /^Word\b/.test((x.textContent || "").trim()));

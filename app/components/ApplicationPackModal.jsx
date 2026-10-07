@@ -92,12 +92,12 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
     ...(pack && pack.interview_pitch ? [["pitch", T.pk_tab_pitch]] : []),
     ...(pack && pack.star_answers && pack.star_answers.length
       ? [["star", T.pk_tab_star]] : []),
-    ...(pack && pack.follow_up ? [["followup", T.pk_tab_followup || "Relance"]] : []),
+    ...(pack && pack.follow_up ? [["followup", T.pk_tab_followup || "Follow-up"]] : []),
     ...(pack && pack.objections && pack.objections.length
-      ? [["objections", T.pk_tab_objections || "Objections"]] : []),
+      ? [["objections", T.pk_tab_objections || "Their doubts"]] : []),
     ...(pack && pack.questions_to_ask && pack.questions_to_ask.length
-      ? [["ask", T.pk_tab_ask || "Tes questions"]] : []),
-    ...(pack && pack.negotiation ? [["nego", T.pk_tab_nego || "Negocier"]] : []),
+      ? [["ask", T.pk_tab_ask || "Your questions"]] : []),
+    ...(pack && pack.negotiation ? [["nego", T.pk_tab_nego || "Negotiate"]] : []),
   ];
   // Et l'onglet ouvert existe. "cover" est le defaut, mais c'est justement la
   // lettre qui manque quand l'appel des ecrits est celui qui est tombe : sans
@@ -321,14 +321,14 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             <>
               <p style={hintStyle}>
                 {T.pk_followup_hint
-                  || "A envoyer 7 a 10 jours apres, sans reponse. Elle apporte un element nouveau, elle ne quemande pas."}
+                  || "Send it 7 to 10 days later, with no reply. It brings something new, it does not beg."}
               </p>
               <Section T={T}
-                title={T.pk_email_subject || "Objet"}
+                title={T.pk_email_subject || "Subject"}
                 content={pack.follow_up.subject}
                 onCopy={onCopy} small/>
               <Section T={T}
-                title={T.pk_email_body || "Corps"}
+                title={T.pk_email_body || "Body"}
                 content={pack.follow_up.body}
                 onCopy={onCopy}/>
             </>
@@ -338,16 +338,16 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             <>
               <p style={hintStyle}>
                 {T.pk_objections_hint
-                  || "Les doutes qu'un recruteur aura en lisant ton CV pour ce poste. Mieux vaut les avoir prepares que les decouvrir en entretien."}
+                  || "The doubts a recruiter will have reading your CV for this job. Better to have them ready than to discover them in the interview."}
               </p>
               {pack.objections.map((o, i) => (
                 <div key={i} style={{marginBottom:14}}>
                   <Section T={T}
-                    title={(T.pk_objection_doubt || "Son doute") + " " + (i + 1)}
+                    title={(T.pk_objection_doubt || "Their doubt") + " " + (i + 1)}
                     content={o.doubt}
                     onCopy={onCopy} small/>
                   <Section T={T}
-                    title={T.pk_objection_answer || "Ta reponse"}
+                    title={T.pk_objection_answer || "Your answer"}
                     content={o.answer}
                     onCopy={onCopy}/>
                 </div>
@@ -359,7 +359,7 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             <>
               <p style={hintStyle}>
                 {T.pk_ask_hint
-                  || "A poser en fin d'entretien. Aucune n'a sa reponse sur leur site : c'est le but."}
+                  || "Ask these at the end of the interview. None of them is answered on their website: that is the point."}
               </p>
               {pack.questions_to_ask.map((q, i) => (
                 <Section key={i} T={T}
@@ -374,19 +374,19 @@ export default function ApplicationPackModal({ T, pack, loading, msgIdx, onClose
             <>
               <p style={hintStyle}>
                 {T.pk_nego_hint
-                  || "Une fourchette qu'on sait defendre vaut mieux qu'un chiffre lance au hasard."}
+                  || "A range you can defend beats a number thrown out at random."}
               </p>
               <Section T={T}
-                title={T.pk_nego_range || "Fourchette"}
+                title={T.pk_nego_range || "Range"}
                 content={pack.negotiation.range}
                 onCopy={onCopy} small/>
               <Section T={T}
-                title={T.pk_nego_argument || "Ton argument"}
+                title={T.pk_nego_argument || "Your argument"}
                 content={pack.negotiation.argument}
                 onCopy={onCopy}/>
               {pack.negotiation.levers && pack.negotiation.levers.length > 0 && (
                 <Section T={T}
-                  title={T.pk_nego_levers || "Leviers hors salaire"}
+                  title={T.pk_nego_levers || "Levers beyond salary"}
                   content={pack.negotiation.levers.map(l => "- " + l).join("\n")}
                   onCopy={onCopy}/>
               )}
