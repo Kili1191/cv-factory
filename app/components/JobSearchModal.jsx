@@ -89,7 +89,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   const L = locale === "en" ? {
     eyebrow: "JOB SEARCH", title: "Find a role",
     sub: "Search live listings, then turn one into a tracked application with its ad attached.",
-    what: "Job title or keywords", where: "City or region",
+    what: "Job title or keywords", where: "City, region or postcode",
     search: "Search", searching: "Searching...",
     none: "No results. Try fewer words, or a wider area.",
     track: "Track it and tailor my CV", tracked: "Tracked",
@@ -131,7 +131,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     labels: {
       workplace: "Place of work", language: "The job requires", contract: "Contract",
       level: "Level", salaryFrom: "Salary from", postedWithin: "Posted within",
-      sponsorship: "Visa sponsorship",
+      sponsorship: "Visa sponsorship", radiusKm: "No further than",
     },
     values: {
       workplace: [["", "any"], ["remote", "remote"], ["hybrid", "hybrid"], ["onsite", "on site"]],
@@ -147,11 +147,15 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       // Promising a sponsor we cannot know about would be the one kind of
       // invention this product cannot afford.
       sponsorship: [["", "any"], ["possible", "not ruled out"]],
+      // Kilometres, because that is what the person asked for. Reed is told
+      // in miles; the conversion lives in lib/jobSources.js and never here.
+      radiusKm: [["0", "any distance"], ["5", "5 km"], ["10", "10 km"],
+        ["25", "25 km"], ["50", "50 km"], ["100", "100 km"]],
     },
   } : {
     eyebrow: "RECHERCHE D'OFFRES", title: "Trouver un poste",
     sub: "Cherche des offres en direct, puis transforme-en une en candidature suivie, annonce comprise.",
-    what: "Intitule ou mots-cles", where: "Ville ou region",
+    what: "Intitule ou mots-cles", where: "Ville, region ou code postal",
     search: "Chercher", searching: "Recherche...",
     none: "Aucun resultat. Essaie moins de mots, ou une zone plus large.",
     track: "Suivre et adapter mon CV", tracked: "Suivie",
@@ -186,7 +190,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     labels: {
       workplace: "Lieu de travail", language: "L'annonce exige", contract: "Contrat",
       level: "Niveau", salaryFrom: "Salaire a partir de", postedWithin: "Publiee depuis",
-      sponsorship: "Parrainage de visa",
+      sponsorship: "Parrainage de visa", radiusKm: "Pas plus loin que",
     },
     values: {
       workplace: [["", "peu importe"], ["remote", "a distance"], ["hybrid", "hybride"], ["onsite", "sur place"]],
@@ -199,6 +203,8 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         ["senior", "senior"], ["lead", "lead et au-dela"]],
       postedWithin: [["0", "peu importe"], ["3", "3 jours"], ["7", "une semaine"], ["30", "un mois"]],
       sponsorship: [["", "peu importe"], ["possible", "pas exclu"]],
+      radiusKm: [["0", "peu importe"], ["5", "5 km"], ["10", "10 km"],
+        ["25", "25 km"], ["50", "50 km"], ["100", "100 km"]],
     },
   };
 
@@ -348,7 +354,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
   const setRequirement = useCallback((key, value) => {
     setFilters((before) => ({
       ...before,
-      [key]: key === "salaryFrom" || key === "postedWithin"
+      [key]: key === "salaryFrom" || key === "postedWithin" || key === "radiusKm"
         ? Math.max(0, Math.round(Number(value) || 0))
         : value,
     }));
@@ -419,10 +425,10 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-        <input value={what} onChange={e => setWhat(e.target.value)}
+        <input value={what} onChange={e => setWhat(e.target.value)} data-nuvi="offres-intitule"
           onKeyDown={e => { if (e.key === "Enter") search(); }}
           placeholder={L.what} style={{ ...field, flex: 2 }} />
-        <input value={where} onChange={e => setWhere(e.target.value)}
+        <input value={where} onChange={e => setWhere(e.target.value)} data-nuvi="offres-ville"
           onKeyDown={e => { if (e.key === "Enter") search(); }}
           placeholder={L.where} style={{ ...field, flex: 1 }} />
       </div>
@@ -473,7 +479,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
             background: CreamSoft, border: "0.5px solid " + Hairline,
             display: "grid", gap: 10, fontFamily: Sans,
           }}>
-            {["workplace", "language", "contract", "level", "sponsorship", "postedWithin"].map((key) => (
+            {["workplace", "language", "contract", "level", "sponsorship", "radiusKm", "postedWithin"].map((key) => (
               <label key={key} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12.5 }}>
                 <span style={{ color: InkMuted, minWidth: 124, flexShrink: 0 }}>{L.labels[key]}</span>
                 <select

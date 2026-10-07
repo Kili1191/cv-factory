@@ -70,9 +70,13 @@ export async function run() {
     await page.waitForTimeout(900);
 
     // A city typed by hand, and a sentence that says nothing about a place.
-    const champs = page.locator('input[placeholder="Ville ou region"]');
-    await champs.first().fill("London", { timeout: 8_000 });
-    await page.locator('input[placeholder="Dis ce que tu cherches"]').first()
+    //
+    // The fields are found by their marker and not by their placeholder: the
+    // first version of this suite keyed on the French wording and went red
+    // the hour that wording improved to mention a postcode. A test that
+    // breaks when the words get better is a test that punishes the work.
+    await page.locator('[data-nuvi="offres-ville"]').first().fill("London", { timeout: 8_000 });
+    await page.locator('[data-nuvi="offres-sentence"]').first()
       .fill("hospitality", { timeout: 8_000 });
     await page.getByRole("button", { name: /^Chercher$/i }).first().click({ timeout: 8_000 });
     await page.waitForTimeout(2500);
@@ -90,7 +94,7 @@ export async function run() {
     }
     // And it has to still be on screen afterwards, or the model quietly
     // emptied the field the person is looking at.
-    const surEcran = await page.locator('input[placeholder="Ville ou region"]').first()
+    const surEcran = await page.locator('[data-nuvi="offres-ville"]').first()
       .inputValue().catch(() => "");
     if (surEcran.toLowerCase() !== "london") {
       failures.push("the field now reads \"" + surEcran + "\": reading the sentence erased "

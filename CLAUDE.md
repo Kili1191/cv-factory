@@ -626,6 +626,35 @@ cross, and the cross goes: two controls doing one thing under two names make
 somebody choose between them for nothing. The window takes the screen, the
 reading column keeps a measure.
 
+**A postcode and a radius, and the unit is the whole trap.** "Also the option
+to put your postcode and a km range so you do not go too far." Both
+aggregators take a radius, so this is the one requirement asked entirely of
+the source: distance needs coordinates, a job ad carries a place name, and
+turning one into the other is a geocoder we do not have. `passesFilters`
+therefore ignores `radiusKm` on purpose, and `activeFilters` still counts it
+so the total goes approximate as soon as the career pages contribute, since
+they cannot sieve it. Their jobs stay: they matched the place by name, and
+dropping them for a filter we cannot compute is the silent loss.
+
+**Adzuna's `distance` is in kilometres and Reed's `distanceFromLocation` is in
+miles.** The same number sent to both searches half again as far at Reed,
+which is exactly what somebody setting "no further than 25 km" is trying to
+stop, and the jobs arriving too far away would read as the filter not
+working. The screen asks in kilometres, Adzuna takes the number as it stands,
+Reed is converted, and the conversion rounds up and never to zero: Reed reads
+0 as the postcode and nothing around it. Neither is sent without a place,
+because a radius with no centre is a number with nothing to compare against,
+and it does not count as an active requirement either.
+
+The city field says "City, region or postcode" in both languages, because a
+box that accepts a postcode and does not say so is a box nobody types one
+into.
+
+**And the suite keyed on that wording went red the hour it improved.** The
+fields now carry `offres-ville` and `offres-intitule`, markers rather than
+placeholders, which is what the sentence field already had: a test that breaks
+when the words get better punishes the work.
+
 **A filter that cannot decide does not exclude.** Half of ads do not state a
 salary. If a floor dropped them, asking for 50,000 would empty the list of its
 best offers with nothing saying so, and that is the silent failure this

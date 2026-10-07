@@ -14,11 +14,68 @@ import {
   availableSources, adzunaUrl, reedUrl, reedAuthHeader, totalAtTheSource,
   keysTheServerCanSee, AGGREGATOR_KEYS, sourceSievesItself, FILTERS_AT_SOURCE,
 } from "../lib/jobSources.js";
+import { NO_FILTERS, activeFilters } from "../lib/jobFilters.js";
 
 const REQUIRED = ["id", "source", "title", "company", "location", "url", "description"];
 
 export async function run() {
   const failures = [];
+
+  // --- THE RADIUS, AND THE UNIT THAT IS THE WHOLE TRAP ------------------
+  //
+  // Adzuna's `distance` is in kilometres, Reed's `distanceFromLocation` is
+  // in miles. The same number sent to both searches half again as far at
+  // Reed, which is exactly what a person setting "no further than 25 km" is
+  // trying to stop, and the jobs arriving too far away would look like the
+  // filter simply not working.
+  {
+    const env = { ADZUNA_APP_ID: "i", ADZUNA_APP_KEY: "k" };
+    const f = { ...NO_FILTERS, radiusKm: 16 };
+    const a = new URL(adzunaUrl(env, { what: "chef", where: "SW1A 1AA", country: "gb", page: 1, filters: f }));
+    const r = new URL(reedUrl({ what: "chef", where: "SW1A 1AA", page: 1, filters: f }));
+    if (a.searchParams.get("distance") !== "16") {
+      failures.push("Adzuna is sent a distance of " + a.searchParams.get("distance")
+        + " instead of the 16 km asked for.");
+    }
+    const miles = Number(r.searchParams.get("distanceFromLocation"));
+    if (!(miles >= 9 && miles <= 11)) {
+      failures.push("Reed is sent " + miles + " for 16 km. Its parameter is in MILES, so "
+        + "16 km is about 10: sending 16 searches 26 km and the person is shown jobs "
+        + "they said were too far.");
+    }
+    // A short radius must never round to nothing: Reed reads 0 as the place
+    // itself and nothing around it.
+    const tight = new URL(reedUrl({ what: "x", where: "SW1", page: 1, filters: { ...NO_FILTERS, radiusKm: 1 } }));
+    if (Number(tight.searchParams.get("distanceFromLocation")) < 1) {
+      failures.push("1 km becomes " + tight.searchParams.get("distanceFromLocation")
+        + " miles at Reed, which searches the postcode and nothing around it.");
+    }
+    // A radius with nowhere to measure from is not a requirement.
+    const nowhere = new URL(adzunaUrl(env, { what: "chef", where: "", country: "gb", page: 1, filters: f }));
+    if (nowhere.searchParams.get("distance")) {
+      failures.push("a distance is sent with no place to measure it from.");
+    }
+    const nowhereReed = new URL(reedUrl({ what: "chef", where: "", page: 1, filters: f }));
+    if (nowhereReed.searchParams.get("distanceFromLocation")) {
+      failures.push("Reed is sent a distance with no location.");
+    }
+    // Both sieve it, so with only these two the total still describes the
+    // search that was made.
+    if (!sourceSievesItself("Adzuna", "radiusKm") || !sourceSievesItself("Reed", "radiusKm")) {
+      failures.push("a source that takes the radius is not declared as taking it, so the "
+        + "total would be called approximate when it is exact.");
+    }
+    // And it is only active with a place, or the badge counts a requirement
+    // that changes nothing.
+    if (activeFilters({ ...NO_FILTERS, radiusKm: 25 }).includes("radiusKm")) {
+      failures.push("a radius with no place counts as an active requirement.");
+    }
+    if (!activeFilters({ ...NO_FILTERS, radiusKm: 25, where: "SW1A 1AA" }).includes("radiusKm")) {
+      failures.push("a radius with a postcode does not count as active, so the total would "
+        + "claim to be exact on a requirement the career pages cannot sieve.");
+    }
+  }
+
 
   const cases = [
     ["France Travail", franceTravailParse, {
