@@ -55,6 +55,7 @@ import Morph from "./Morph";
 import RevelationDeSecours from "./RevelationDeSecours";
 import ApercuGabarit from "./ApercuGabarit";
 import { LAYOUTS, metaGabarit } from "../../lib/gabarits";
+import { CLE_LANGUE, cleHorodatage } from "../../lib/langueDuSite.js";
 
 const T = {
   en: {
@@ -305,7 +306,15 @@ export default function Vitrine({ lang = "en", onLang }) {
   }, [menu, fermer]);
   useEffect(() => () => { document.documentElement.style.overflow = ""; }, []);
   const choisirLangue = (l) => {
-    try { localStorage.setItem("cvf_c", JSON.stringify(l)); } catch (e) { /* storage refused: the page still switches */ }
+    // The timestamp goes with the value. cvf_c is synced, and cloudSync settles
+    // a conflict by comparing <key>__at: an unstamped write is older than
+    // anything the account holds, so a language picked here would be handed
+    // back on the next pull, on a signed in browser only, with nothing saying
+    // why. It wrote no stamp before this line.
+    try {
+      localStorage.setItem(CLE_LANGUE, JSON.stringify(l));
+      localStorage.setItem(cleHorodatage(CLE_LANGUE), String(Date.now()));
+    } catch (e) { /* storage refused: the page still switches */ }
     if (onLang) onLang(l);
   };
 

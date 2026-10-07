@@ -24,6 +24,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { verifierUnPdf } from "../../lib/verifierUnPdf.js";
+import { langueDuSite } from "../../lib/langueDuSite.js";
 import { texteDuFichier } from "../../lib/lireUnFichier.js";
 import {
   Ink, Cream, CreamSoft, Paper, Coral, CoralSoft, Green, GreenSoft,
@@ -44,10 +45,9 @@ const FAISCEAU = "linear-gradient(90deg, transparent, " + Purple + " 35%, "
   + Magenta + " 65%, transparent)";
 const HALO = "0 0 26px 4px rgba(91,61,245,.42)";
 
-// La cle sous laquelle le reste du produit range la langue choisie. On la lit
-// plutot que d'en poser une autre : quelqu'un qui a repondu "francais" dans
-// l'application ne doit pas retrouver l'anglais ici.
-const CLE_LANGUE = "cvf_c";
+// La cle sous laquelle le reste du produit range la langue choisie vit
+// maintenant dans lib/langueDuSite.js, avec la lecture : quelqu'un qui a
+// repondu "francais" dans l'application ne doit pas retrouver l'anglais ici.
 
 const KEYFRAMES = `
 @keyframes vBeam {
@@ -256,11 +256,11 @@ export default function PageVerifier() {
   // et paie en re-rendu complet.
   const [langue, setLangue] = useState("en");
   useEffect(() => {
-    try {
-      const brut = window.localStorage.getItem(CLE_LANGUE);
-      const v = brut ? JSON.parse(brut) : null;
-      if (v === "fr" || v === "en") setLangue(v);
-    } catch { /* pas de stockage : l'anglais reste */ }
+    // Read through langueDuSite rather than the raw key: it is the one place
+    // that knows about the one time move of a stored "fr" to English, and
+    // three pages reading the key three ways is how they drift apart.
+    const v = langueDuSite(window.localStorage);
+    if (v) setLangue(v);
   }, []);
   const t = T[langue] || T.en;
 

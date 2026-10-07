@@ -1270,6 +1270,47 @@ and the two French hints it found last are the reason `nextAction` now takes a
 locale: they are built from a number, so they cannot be one string in the
 dictionary, and their fallback was French with no branch.
 
+**And a stored answer beats a default, which is why none of that reached
+him.** Kilian read French on every screen through the whole sweep above and
+asked for English twice: his browser held `"fr"` from the day he answered the
+language question, and English being the default changes nothing once an answer
+exists. The cause was a setting, not a missing translation, and no screen could
+have told him that. `lib/langueDuSite.js` moves a stored `"fr"` to English
+**once**, and the flag recording the move is the whole safety of it. A
+migration that kept running would hold a French speaker on English against
+their own choice, which is a worse product than the defect; the flag is written
+even when nothing is stored yet, so somebody answering "francais" after this
+shipped is never touched, which would otherwise read as the language question
+being broken. Nothing is lost either way: the control is one click in Settings.
+
+**The timestamp is not optional, and it is the half that would have failed
+silently.** `cvf_c` is in `SYNCED_KEYS`, and `decideKey` settles a conflict by
+comparing `<key>__at`: a local write with no stamp is older than anything the
+account holds, so the next pull hands `"fr"` straight back. That failure
+appears on a signed in browser only. The same line was missing from the shop
+window's own language switch, which had never written a stamp at all.
+`langueDuSite` spells the stamp's shape out rather than importing `cloudSync`,
+so the shop window does not pull Supabase into the page whose whole point is a
+fast first paint, and the suite asks `cloudSync` for its own `stampKey` and
+refuses a format that has drifted.
+
+`tests/the-language-setting-moves-to-english-once.mjs` has a pure half and a
+browser half, and the second one exists because the first passes while nothing
+calls the module, which is the visa filter's failure again: a correct decision
+that reaches no screen. It seeds a real browser with `"fr"` and no flag, the
+state every browser was in up to 7 October 2026, opens the real app and reads
+the screen. Proved red five ways: the move running on every load, the stamp
+missing, the flag skipped when nothing is stored, the stamp's format drifting
+from `cloudSync`, and the wiring disconnected.
+
+**What was not done, and why.** "Put English selected by default" could also
+have meant the job search's `language` requirement, and English is deliberately
+not one of its values. That filter deletes ads that do not state the language
+in their prose, which is most of them: set to English it would empty a London
+search of nearly everything, the silent loss this file spends its length on.
+The filter exists to find an ad that demands a language the market does not
+assume.
+
 **Comments explain why, and take the room they need.** The CI's
 `timeout-minutes: 90` comes with six lines saying why 90 and not 60. That is
 the house style: you write the reason while you still have it, because in six

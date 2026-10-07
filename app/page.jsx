@@ -31,18 +31,18 @@
 
 import { useEffect, useState } from "react";
 import Vitrine from "./components/Vitrine";
+import { langueDuSite } from "../lib/langueDuSite.js";
 
 export default function Accueil() {
   const [lang, setLang] = useState("en");
 
   useEffect(() => {
-    try {
-      const brut = localStorage.getItem("cvf_c");
-      if (brut) {
-        const v = JSON.parse(brut);
-        if (v === "fr" || v === "en") setLang(v);
-      }
-    } catch { /* stockage refuse : l'anglais par defaut */ }
+    // langueDuSite reads the stored choice and carries the one time move of a
+    // stored "fr" to English. It runs here as well as in the app because
+    // somebody who lands on the home page first would otherwise read French
+    // here and English one click later, which looks like two products.
+    const v = langueDuSite(window.localStorage);
+    if (v) setLang(v);
   }, []);
 
   return <Vitrine lang={lang} onLang={setLang}/>;

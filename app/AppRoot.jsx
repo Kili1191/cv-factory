@@ -25,6 +25,7 @@ import { nettoyerLAnnonce, ANNONCE_MINIMUM } from "../lib/pastedPosting";
 import { combienARelancer } from "../lib/applicationFollowUp";
 import { EMPTY, san, sanDeep, normCV, structureDuCv } from "../lib/cvSchema";
 import { LAYOUTS, LAYOUT_META, metaGabarit, DEMO_THEME } from "../lib/gabarits";
+import { langueDuSite } from "../lib/langueDuSite.js";
 import ApercuGabarit from "./components/ApercuGabarit";
 import { aiCall, parseJSON, jetonDuCompte } from "../lib/ai";
 import { contrastRatio, wcagLevel, distanceHex } from "../lib/contrasteCv";
@@ -3650,15 +3651,14 @@ export default function App() {
     if (savedLy !== GABARIT_PAR_DEFAUT) setLy_(savedLy);
     const savedKy = lsG(SK.KY, "");
     if (savedKy) setAK_(savedKy);
-    // ABSENT n'est pas la meme chose que "en". lsG rend la valeur par defaut
-    // dans les deux cas, donc on regarde la cle brute : tant qu'elle n'existe
-    // pas, personne n'a choisi, et on pose la question.
-    let lcBrut = null;
-    try { lcBrut = localStorage.getItem(SK.LC); } catch { /* stockage refuse */ }
-    if (lcBrut == null) {
+    // ABSENT is not the same thing as "en", and lsG returns the default in
+    // both cases. langueDuSite reads the raw key for that reason: null means
+    // nobody has chosen and the question gets asked. It also carries the one
+    // time move of a stored "fr" to English, and the reason is in its header.
+    const savedLc = langueDuSite(typeof window === "undefined" ? null : window.localStorage);
+    if (savedLc == null) {
       setAskLang(true);
     } else {
-      const savedLc = lsG(SK.LC, "en");
       if (savedLc !== "en") setLc_(savedLc);
     }
     const savedVs = lsG(SK.VS, []);
