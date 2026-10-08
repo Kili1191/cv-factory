@@ -709,6 +709,22 @@ row both carry it, so 980 was the width inside the 24px padding. Nothing showed
 it while the content was loose text on cream. The console has an edge, and the
 misalignment was the first thing visible on it.
 
+**One theme, one effect, and it was two.** The theme has two carriers:
+`[data-theme]` on `<html>`, which the tokens in `globals.css` key on, and
+`body.cvf-dark`, which the glass system injected from `AppRoot` keys on. They
+were set in two separate effects, so a render landed between them and the page
+was **half dark**: the glass panel already on its dark value while
+`--nuvi-ink` was still the light one, which is near black text on a dark
+surface. `tests/the-interface-can-be-read.mjs` measured it at 1.14:1 on the
+coach's own buttons on 8 October 2026, and passed on the next two runs. A
+defect that appears one run in three is read as a flaky test and then as noise,
+and the test was right every time: there really is a frame where the product
+looks like that, and somebody opening the coach can land on it. The fix is the
+cause, not the test: both carriers move in one effect, so nothing can observe
+the product between them. It is also the second time in two days that the two
+selectors cost a measurement, the first being a probe that drove only one of
+them and reported a contrast failure that was its own fault.
+
 **A filter that cannot decide does not exclude.** Half of ads do not state a
 salary. If a floor dropped them, asking for 50,000 would empty the list of its
 best offers with nothing saying so, and that is the silent failure this

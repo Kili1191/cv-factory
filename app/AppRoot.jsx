@@ -7903,23 +7903,29 @@ export default function App() {
       lsS(SK.DK, next);
       return next;
     });
-  }, []); // Applique le theme dark/light sur <html> (active les CSS variables dark).
-  useEffect(() => {
-    if (typeof document !== "undefined") {
-      document.documentElement.dataset.theme = darkMode ? "dark" : "light";
-    }
-  }, [darkMode]);
+  }, []);
 
-  // Sync class on body for dark mode CSS.
+  // ONE THEME, ONE EFFECT, AND IT WAS TWO
+  //
+  // The theme has two carriers: [data-theme] on <html>, which the tokens in
+  // globals.css key on, and body.cvf-dark, which the glass system injected
+  // from this file keys on. They were set in two separate effects, so a
+  // render landed between them and the page was HALF dark: the glass panel
+  // already on its dark value while --nuvi-ink was still the light one, which
+  // is near black text on a dark surface. Measured on 8 October 2026 at
+  // 1.14:1 on the coach's own buttons, by the readability suite, once in
+  // three runs. A defect that appears one run in three is read as a flaky
+  // test and then as noise, and the test was right every time: there really
+  // is a frame where the product looks like that, and somebody opening the
+  // coach can land on it.
+  //
+  // One effect, both carriers, in the same commit of the DOM. Nothing can
+  // observe the product between them any more.
   useEffect(() => {
     if (typeof document === "undefined") return;
-    if (darkMode) {
-      document.body.classList.add("cvf-dark");
-    } else {
-      document.body.classList.remove("cvf-dark");
-    }
+    document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    document.body.classList.toggle("cvf-dark", Boolean(darkMode));
     return () => {
-      // Cleanup au unmount
       document.body.classList.remove("cvf-dark");
     };
   }, [darkMode]);

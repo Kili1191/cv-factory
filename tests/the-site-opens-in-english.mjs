@@ -51,7 +51,23 @@ async function ouvrir(browser, { locale, choixDeja } = {}) {
   const page = await ctx.newPage();
   await page.goto(APP_URL, { waitUntil: "domcontentloaded" });
   if (choixDeja) {
-    await page.evaluate((lc) => localStorage.setItem("cvf_c", JSON.stringify(lc)), choixDeja);
+    // LE DRAPEAU DU PASSAGE A L'ANGLAIS FAIT PARTIE DU VISITEUR CONNU
+    //
+    // Depuis le 7 octobre 2026, lib/langueDuSite.js deplace UNE FOIS un
+    // "fr" enregistre vers l'anglais, et pose cvf_c_en pour ne jamais
+    // recommencer. Tout visiteur deja venu porte donc ce drapeau : c'est
+    // exactement ce que ce cas represente, quelqu'un qui a deja repondu.
+    // Sans lui le decor est celui d'un navigateur d'avant la migration, et
+    // ce fichier affirmerait le contraire de ce que le produit fait.
+    //
+    // Il enleve aussi une course : la page etait ouverte en
+    // "domcontentloaded", donc l'initialisation de l'application pouvait
+    // tomber entre l'ecriture et la relecture et deplacer la valeur sous le
+    // test. Vert une fois sur deux, pour une raison invisible.
+    await page.evaluate((lc) => {
+      localStorage.setItem("cvf_c_en", "1");
+      localStorage.setItem("cvf_c", JSON.stringify(lc));
+    }, choixDeja);
     const pose = await page.evaluate(() => localStorage.getItem("cvf_c"));
     if (pose !== JSON.stringify(choixDeja)) {
       throw new Error(`preparation du test impossible : cvf_c vaut ${pose}`);
