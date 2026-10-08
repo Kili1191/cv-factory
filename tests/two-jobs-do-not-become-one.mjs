@@ -108,7 +108,8 @@ export async function run() {
 
   // Le compte annonce a la personne suit la meme verite.
   const v = verifierUnPdf(cv("●"));
-  if (!/2 employeur/.test(v.champs.employeurs.fait)) {
+  // Lu dans les donnees, pour la meme raison que le controle des dates.
+  if (v.champs.employeurs.data.n !== 2) {
     failures.push(
       "la page de verification annonce \"" + v.champs.employeurs.fait
       + "\" sur un CV qui porte deux employeurs. Un outil de controle qui se "
@@ -129,7 +130,10 @@ export async function run() {
       + `"${r.cv.experience[0].period}". La personne devra la retaper.`
     );
   }
-  if (!/1 poste\(s\) sur 2/.test(v.champs.dates.fait)) {
+  // Lu dans les donnees et non dans la phrase : depuis le 8 octobre 2026
+  // chaque verdict porte un code et ses nombres, justement pour qu'un test
+  // n'ait plus a connaitre la langue dans laquelle il est ecrit.
+  if (v.champs.dates.data.avec !== 1 || v.champs.dates.data.total !== 2) {
     failures.push(
       "le controle des dates annonce \"" + v.champs.dates.fait + "\". Une annee "
       + "seule ne suffit pas a un analyseur : la retenir a l'import ne doit pas "

@@ -140,10 +140,35 @@ const T = {
     avantTitre: "What a program looks for, and loses.",
     vendeursTitre: "Workday, Taleo, iCIMS, SuccessFactors, Greenhouse, Lever",
     vendeursCorps: "Each has its own demands. Taleo loses whole blocks without a word; Greenhouse forgives more.",
+    bloqueSur: "Loses you on",
+    degradeSur: "Reads you, but ranks you lower on",
     libelles: {
       nom: "Your name", email: "Your email address", telephone: "Your phone number",
       rubriques: "Your section headings", dates: "The dates on each job",
       employeurs: "Your employers", ordre: "The reading order",
+    },
+    // THE MEASUREMENT, WRITTEN IN THE READER'S LANGUAGE
+    //
+    // verifierUnPdf returns the sentence in English, plus a code and the
+    // numbers behind it, so this page can write it either way. It used to
+    // print the module's French prose straight onto an English page.
+    faits: {
+      "name-read": (d) => 'read as "' + d.nom + '"',
+      "name-none": () => "no name found",
+      "email-read": (d) => d.email,
+      "email-none": () => "no readable address",
+      "phone-read": (d) => d.tel,
+      "phone-none": () => "no readable number",
+      "sections-read": (d) => d.n + " heading(s) recognised: " + d.liste,
+      "sections-none": () => "no heading recognised",
+      "dates-read": (d) => d.avec + " of " + d.total + " job(s) with a readable period",
+      "dates-none": () => "no job found",
+      "employers-read": (d) => d.n + " employer(s) found",
+      "employers-none": () => "no employer found",
+      "order-name-first": () => "the name comes first",
+      "order-contact-first": () => "the text starts with the contact block, the name comes after",
+      "order-name-missing": () => "the name does not appear in the extracted text",
+      "no-text": () => "no text to read",
     },
     pourquoi: {
       nom: "A program that cannot find your name creates a record with no candidate in it.",
@@ -192,10 +217,30 @@ const T = {
     avantTitre: "Ce qu'un logiciel cherche, et perd.",
     vendeursTitre: "Workday, Taleo, iCIMS, SuccessFactors, Greenhouse, Lever",
     vendeursCorps: "Chacun a ses exigences. Taleo perd des blocs entiers sans rien signaler ; Greenhouse pardonne davantage.",
+    bloqueSur: "Te perd sur",
+    degradeSur: "Te lit, mais te classe plus bas sur",
     libelles: {
       nom: "Ton nom", email: "Ton adresse e-mail", telephone: "Ton numero",
       rubriques: "Les intitules de rubrique", dates: "Les periodes de chaque poste",
       employeurs: "Les employeurs", ordre: "L'ordre de lecture",
+    },
+    faits: {
+      "name-read": (d) => 'lu comme "' + d.nom + '"',
+      "name-none": () => "aucun nom retrouve",
+      "email-read": (d) => d.email,
+      "email-none": () => "aucune adresse lisible",
+      "phone-read": (d) => d.tel,
+      "phone-none": () => "aucun numero lisible",
+      "sections-read": (d) => d.n + " rubrique(s) reconnue(s) : " + d.liste,
+      "sections-none": () => "aucune rubrique reconnue",
+      "dates-read": (d) => d.avec + " poste(s) sur " + d.total + " avec une periode lisible",
+      "dates-none": () => "aucun poste retrouve",
+      "employers-read": (d) => d.n + " employeur(s) retrouve(s)",
+      "employers-none": () => "aucun employeur retrouve",
+      "order-name-first": () => "le nom vient en premier",
+      "order-contact-first": () => "le texte commence par le bloc contact, le nom arrive apres",
+      "order-name-missing": () => "le nom n'apparait pas dans le texte extrait",
+      "no-text": () => "aucun texte a lire",
     },
     pourquoi: {
       nom: "Un logiciel qui ne retrouve pas ton nom cree une fiche sans candidat.",
@@ -213,7 +258,7 @@ const DEMO = [
   { t: "Camille Marchetti", gros: true },
   { t: "Bar Manager" },
   { t: "CONTACT", faible: true },
-  { t: "k@exemple.com" },
+  { t: "camille.marchetti@example.com" },
   { t: "EXPERIENCE", faible: true },
   { t: "Bar Manager, Taj Exotica" },
   { t: "2021 - 2024" },
@@ -328,6 +373,13 @@ export default function PageVerifier() {
     if (f) lire(f);
   }, [lire]);
 
+  // A code with no entry falls back to the module's own English sentence:
+  // a missing translation must degrade to a readable line, never to a blank.
+  const dire = (x) => {
+    const f = x && x.code && t.faits && t.faits[x.code];
+    return f ? f(x.data || {}) : (x && x.fait) || "";
+  };
+
   const passent = resultat && resultat.profils
     ? resultat.profils.filter((p) => p.passe).length : 0;
   const montreDemo = etat === "attente" || etat === "erreur";
@@ -417,7 +469,7 @@ export default function PageVerifier() {
             marginTop: 18, paddingTop: 14, borderTop: "1px dashed " + Hair,
             fontFamily: Mono, fontSize: 11, color: Muted, lineHeight: 1.7,
           }}>
-            Camille Marchetti / Bar Manager / k@exemple.com /<br />
+            Camille Marchetti / Bar Manager / camille.marchetti@example.com /<br />
             Bar Manager, Taj Exotica / 2021-2024
           </div>
           <div style={{ ...tag, fontSize: 10, marginTop: 8 }}>{t.demoReste}</div>
@@ -566,11 +618,38 @@ export default function PageVerifier() {
                       padding: "5px 10px", borderRadius: 999, whiteSpace: "nowrap",
                     }}>{p.passe ? t.lit : t.perd}</span>
                   </div>
-                  {p.bloquants.concat(p.passe ? p.degradations : []).map((b) => (
-                    <div key={b.quoi} style={{ fontSize: 12.5, lineHeight: 1.55, color: Muted }}>
-                      {t.libelles[b.quoi] || b.quoi} : {b.fait}
+                  {/* BLOCKED AND DEGRADED ARE NOT THE SAME LIST
+                      They were printed identically, so a card reading "READS
+                      YOU" came with four lines under it that looked exactly
+                      like the four under a card that loses you. Same shape,
+                      opposite meaning, and the reader has to guess which. A
+                      vendor that passes is showing what still costs it
+                      ranking; a vendor that fails is showing why. */}
+                  {p.bloquants.length > 0 && (
+                    <div style={{
+                      fontFamily: Mono, fontSize: 9, fontWeight: 700, color: Coral,
+                      letterSpacing: "0.09em", textTransform: "uppercase", marginBottom: 4,
+                    }}>{t.bloqueSur}</div>
+                  )}
+                  {p.bloquants.map((b) => (
+                    <div key={b.quoi} style={{ fontSize: 12.5, lineHeight: 1.55, color: Ink }}>
+                      {t.libelles[b.quoi] || b.quoi} : {dire(b)}
                     </div>
                   ))}
+                  {p.passe && p.degradations.length > 0 && (
+                    <>
+                      <div style={{
+                        fontFamily: Mono, fontSize: 9, fontWeight: 700, color: Muted,
+                        letterSpacing: "0.09em", textTransform: "uppercase",
+                        marginTop: p.bloquants.length ? 10 : 0, marginBottom: 4,
+                      }}>{t.degradeSur}</div>
+                      {p.degradations.map((b) => (
+                        <div key={b.quoi} style={{ fontSize: 12.5, lineHeight: 1.55, color: Muted }}>
+                          {t.libelles[b.quoi] || b.quoi} : {dire(b)}
+                        </div>
+                      ))}
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -599,7 +678,7 @@ export default function PageVerifier() {
                   }}>{v.ok ? t.retrouve : t.perdu}</span>
                 </div>
                 <div style={{ fontSize: 13.5, color: Ink, lineHeight: 1.6, paddingLeft: 26, marginTop: 5 }}>
-                  {v.fait}
+                  {dire(v)}
                 </div>
                 {!v.ok && (
                   <div style={{ fontSize: 12.5, color: Muted, lineHeight: 1.6, paddingLeft: 26, marginTop: 5 }}>

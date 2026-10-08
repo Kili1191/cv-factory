@@ -66,6 +66,27 @@ const CV_EN = {
   labels: {},
 };
 
+// A CV as plain text, for the free check's own file input. English, for the
+// same reason CV_EN is: anything French on that screen has to be the
+// product's, never the person's own document.
+const CV_PLAIN = [
+  "Camille Marchetti",
+  "Account Manager",
+  "camille.marchetti@example.com",
+  "07700900123",
+  "London, United Kingdom",
+  "",
+  "EXPERIENCE",
+  "Account Manager, Northwind, 2021 - 2026",
+  "Owned a portfolio worth 3.2m in annual recurring revenue.",
+  "",
+  "EDUCATION",
+  "BA Business, University of Leeds, 2014 - 2017",
+  "",
+  "SKILLS",
+  "Salesforce, HubSpot, renewals, forecasting",
+].join("\n");
+
 // Words that cannot be English, and that this repository has actually shipped
 // onto an English screen. Short and specific on purpose: a long list of
 // French stop words turns every proper noun into a failure and the suite gets
@@ -81,6 +102,18 @@ const FRENCH_WORDS = [
   "premiere annee", "equipe de", "une seule", "beaucoup de", "tout tient",
   "ton ", "tes ", "ta ", "votre ", "vos ", "mon ", "mes ",
   "d'un", "d'une", "qu'un", "qu'une", "c'est", "n'a ", "l'ordre", "la plus",
+  // AND THE WORDS THIS LIST DID NOT KNOW
+  //
+  // On 8 October 2026 the French put back on /verifier on purpose, to prove
+  // this suite could see it, did not turn it red: "rubrique(s) reconnue(s)"
+  // and "employeur(s) retrouve(s)" contain no word that was on this list. The
+  // coverage was real, the sieve was not, and a suite that reads the right
+  // screen and knows the wrong words passes exactly as loudly as one that
+  // works. A word list only ever catches the words somebody thought of, which
+  // is the limit to remember before trusting a green here.
+  "rubrique", "rubriques", "reconnue", "reconnues", "employeur", "employeurs",
+  "retrouve", "retrouves", "periode", "periodes", "lisible", "adresse",
+  "numero", "extrait", "intitule", "intitules",
 ];
 // Accented letters are French here whatever the word: the English dictionary
 // has none, by convention in this repository.
@@ -263,6 +296,54 @@ export async function run() {
           + [...new Set(frenchCards)].slice(0, 5).join(", ")
           + "). The sample CV is what a visitor judges the product's output on.");
       }
+    }
+
+    // 2 bis. /verifier, THE PAGE THIS SUITE DID NOT COVER AND SHOULD HAVE
+    //
+    // It judges a dropped CV against six named ATSs and writes the
+    // measurement that justifies each verdict. Those sentences were built in
+    // lib/verifierUnPdf.js in French and printed straight onto this English
+    // page: five of the seven lines in the field by field section. The sweep
+    // of 7 October translated the page's own strings and never saw them,
+    // because a suite only reads the screens it opens. This one is now open.
+    await page.goto(base + "/verifier", { waitUntil: "networkidle", timeout: 60_000 });
+    await page.evaluate(() => {
+      try {
+        localStorage.setItem("cvf_c_en", "1");
+        localStorage.setItem("cvf_c", JSON.stringify("en"));
+      } catch { /* storage refused */ }
+    });
+    await page.reload({ waitUntil: "networkidle", timeout: 60_000 });
+    await page.waitForTimeout(1200);
+    check("the free check page, before a file", await visibleText(page));
+
+    // AND THE VERDICTS ONLY EXIST ONCE A FILE IS DROPPED
+    //
+    // Reading this page empty finds nothing, because the French was in the
+    // sentences the check writes about a document. A suite that reads
+    // nothing passes, which is this repository's oldest way of being wrong,
+    // so it drops a CV. Plain text rather than a PDF: the input accepts it,
+    // the whole verdict path runs the same, and it needs no print route.
+    const champ = page.locator('input[type="file"]').first();
+    if (await champ.count() === 0) {
+      failures.push("/verifier has no file input, so its verdicts were never "
+        + "read. That is the empty check this suite exists to refuse.");
+    } else {
+      await champ.setInputFiles({
+        name: "cv.txt",
+        mimeType: "text/plain",
+        buffer: Buffer.from(CV_PLAIN, "utf8"),
+      });
+      await page.waitForTimeout(3000);
+      const apres = await visibleText(page);
+      // The verdicts have to be on screen, or the check below reads an empty
+      // page and calls it English.
+      const vu = apres.some(({ t }) => /Workday|Taleo|iCIMS/i.test(t));
+      if (!vu) {
+        failures.push("after dropping a CV, /verifier shows no vendor verdict. "
+          + "The language check that follows would then be reading nothing.");
+      }
+      check("the free check page, after a CV", apres);
     }
 
     // 3. THE APP, with an English CV seeded so anything French is ours.
