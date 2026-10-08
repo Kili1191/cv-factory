@@ -240,7 +240,16 @@ export default function Sheet({
           // on a 1400px line. The window takes the screen so the list has
           // somewhere to go; the reading column keeps a measure, the same
           // one the sheet had before, a little wider.
-          ...(plein ? { maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto" } : null),
+          // boxSizing, and it was missing. The header and the logo row both
+          // carry it; this one did not, so 980 was the width INSIDE the 24px
+          // padding and the body ran 48px wider than the header above it.
+          // Nothing showed it while the content was loose text on cream. The
+          // job search console has an edge, and the misalignment was the
+          // first thing visible on it.
+          ...(plein ? {
+            maxWidth: 980, width: "100%", marginLeft: "auto", marginRight: "auto",
+            boxSizing: "border-box",
+          } : null),
         }}>
           {children}
         </div>

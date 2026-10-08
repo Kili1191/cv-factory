@@ -1780,3 +1780,114 @@ html {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+/* THE GLASS IS A MATERIAL, NOT AN ANIMATION
+ *
+ * Kilian, 8 October 2026, on the job search: the design is rubbish, it looks
+ * like it was made ten years ago, and he wants a background with a liquid
+ * glass effect. The screen was a left aligned stack of pills on flat cream
+ * with a stretched gradient button, on a full screen panel four fifths empty.
+ *
+ * What makes glass read as glass is the material, not movement: a translucent
+ * surface that blurs and saturates what is behind it, a specular highlight
+ * along the lit edge, and a soft wash of colour underneath for it to refract.
+ * All three are static, and that is deliberate. On 7 October this same panel
+ * was juddering because the entry animation ran on every one of a hundred and
+ * twenty cards with a full window blur underneath. An animated background
+ * would put that cost back on every frame of every scroll, so there is not
+ * one animated frame here: the sheen is a fixed gradient, the wash is fixed
+ * radial gradients, and the only blurred element is the search console, which
+ * does not scroll with the list.
+ *
+ * ITS OWN TOKENS, AND NOT --nuvi-glass-card
+ *
+ * A glass system already exists, declared in a style block inside AppRoot and
+ * injected at runtime, so it wins over this file. Writing --nuvi-glass-card
+ * here therefore changed nothing on screen and would have repainted the chat
+ * bubbles and the verdict panel the day it did. The console carries its own
+ * names and leaves that system alone.
+ *
+ * AND DARK IS TWO SELECTORS, NOT ONE
+ *
+ * The product sets BOTH [data-theme="dark"] on <html> and body.cvf-dark, in
+ * two separate effects. Keying on one of them is how a measurement taken with
+ * the other reads a state the product never reaches: a near white card on a
+ * dark page, which is the colour rules' own warning, correct text on the
+ * wrong surface with nothing to signal it.
+ */
+:root {
+  --nuvi-console: rgba(255, 255, 255, 0.82);
+  --nuvi-console-blur: blur(22px) saturate(180%);
+  --nuvi-console-edge: rgba(255, 255, 255, 0.85);
+  --nuvi-console-shadow: 0 18px 50px rgba(26, 24, 22, 0.10);
+  /* The wash the glass refracts. Low alpha on purpose: these are brand fills,
+     and a fill behind text has to leave the ink its contrast. */
+  --nuvi-aurore-a: rgba(91, 61, 245, 0.20);
+  --nuvi-aurore-b: rgba(185, 28, 140, 0.15);
+  --nuvi-aurore-c: rgba(217, 119, 87, 0.15);
+}
+[data-theme="dark"],
+body.cvf-dark {
+  --nuvi-console: rgba(30, 29, 33, 0.88);
+  --nuvi-console-edge: rgba(255, 255, 255, 0.12);
+  --nuvi-console-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
+  --nuvi-aurore-a: rgba(124, 100, 255, 0.20);
+  --nuvi-aurore-b: rgba(224, 72, 180, 0.14);
+  --nuvi-aurore-c: rgba(230, 140, 110, 0.12);
+}
+
+/* The wash. It sits behind the console and scrolls away with it, so it costs
+   nothing once the list is moving. */
+.nuvi-aurore {
+  position: absolute;
+  inset: -34px 0 auto 0;
+  height: 580px;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60% 55% at 18% 12%, var(--nuvi-aurore-a) 0%, transparent 70%),
+    radial-gradient(52% 48% at 88% 4%, var(--nuvi-aurore-b) 0%, transparent 72%),
+    radial-gradient(48% 46% at 62% 46%, var(--nuvi-aurore-c) 0%, transparent 70%);
+  /* A wash with an edge is a grey rectangle, which is what the first version
+     looked like: the gradients still carry colour where the element stops.
+     The mask dissolves the bottom so the colour ends where the eye expects
+     nothing, not where the box does. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 48%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 14%, #000 48%, transparent 100%);
+}
+
+/* The glass itself. The ::before is the specular edge: a thin bright line
+   along the top, which is what tells an eye the surface has thickness. */
+.nuvi-verre {
+  position: relative;
+  z-index: 1;
+  background: var(--nuvi-console);
+  backdrop-filter: var(--nuvi-console-blur);
+  -webkit-backdrop-filter: var(--nuvi-console-blur);
+  border: 1px solid var(--nuvi-hairline);
+  box-shadow: var(--nuvi-console-shadow);
+}
+.nuvi-verre::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, var(--nuvi-console-edge), transparent);
+  pointer-events: none;
+}
+
+/* THE CONSOLE ON A PHONE
+ *
+ * The two fields shared a row at flex 2 and 1. At 390px that left the city
+ * 120px wide and its label read "City, region o", on the one field this
+ * product asks a postcode for. They stack instead, and the action takes the
+ * width: a primary button sized to its words is right on a desktop row and
+ * wrong under a thumb, which is the opposite of the complaint it came from.
+ */
+@media (max-width: 560px) {
+  .nuvi-console-champs { flex-direction: column; }
+  .nuvi-console-action { align-items: stretch; }
+  .nuvi-console-action > label { justify-content: space-between; }
+  .nuvi-console-action > button { width: 100%; }
+}

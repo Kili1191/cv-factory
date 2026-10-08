@@ -3258,7 +3258,15 @@ export default function App() {
   // interview questions, and lost the correction every time the page
   // reloaded. The person's own location answers it better than a default,
   // and once they set it, it stays set.
-  const [auditCountry, setAuditCountry_] = useState("FR");
+  // THE MARKET DEFAULTS TO THE UNITED KINGDOM
+  //
+  // It was "FR". Nothing about this product is French first: the registry
+  // holds 266 British boards against 17 French, Reed is British only, the
+  // whole visa filter exists for London, and Kilian opened "Find a role" on
+  // 8 October 2026 to find France selected. A default is what somebody gets
+  // when they have said nothing, so it has to be the common case. The CV's
+  // own location still wins over it, below, and Settings still decides.
+  const [auditCountry, setAuditCountry_] = useState("UK");
   const setAuditCountry = useCallback((v) => {
     setAuditCountry_(v);
     try { lsS(SK.PAYS, v); } catch { /* storage refused: the session keeps it */ }
@@ -8655,7 +8663,7 @@ export default function App() {
       {showJobs && (
         <Suspense fallback={null}>
           <JobSearchModal
-            T={T} locale={locale} marche={auditCountry}
+            T={T} locale={locale} marche={auditCountry} onMarche={setAuditCountry}
             // Le CV sert a la recherche en une phrase : "avec mon CV" veut
             // dire que le metier, le niveau et les langues sont deja ecrits.
             cv={cv}

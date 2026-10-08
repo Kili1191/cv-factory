@@ -655,6 +655,60 @@ fields now carry `offres-ville` and `offres-intitule`, markers rather than
 placeholders, which is what the sentence field already had: a test that breaks
 when the words get better punishes the work.
 
+**The market defaults to the United Kingdom, and it did not.** Kilian opened
+"Find a role" on 8 October 2026 and found France selected: `auditCountry`
+started at `"FR"`. Nothing about this product is French first, the registry
+holds 266 British boards against 17 French, Reed is British only, and the whole
+visa filter exists for London. A default is what somebody gets when they have
+said nothing, so it has to be the common case; the CV's own location still wins
+over it and Settings still decides. **And the choice made in the panel was
+thrown away**: the dropdown only set local state, so picking the United Kingdom,
+closing and reopening gave France back. `marcheDepuisAdzuna` maps the search's
+code back onto the one market setting everything obeys.
+
+**Two buttons for two values, and a primary action the width of a banner.**
+The market was a pair of pills, which makes somebody read both and choose, for
+a setting that changes rarely and already has a default: it is a dropdown now.
+The search button carried `flex: 1`, so it stretched the whole panel. A button
+that wide reads as decoration rather than an action and leaves the row
+unbalanced at every width, so it is sized to its words. On a phone it is the
+opposite: a primary action under a thumb takes the width, and the two fields
+stack, because at 390px they shared a row and the city field read "City, region
+o" on the one field this product asks a postcode for.
+
+**The glass is a material, not an animation.** Kilian, the same day: the design
+is rubbish, it looks like it was made ten years ago, and he wants a liquid glass
+background. The screen was a loose stack of a paragraph, a field, two fields,
+three pills and that stretched button, each on flat cream with nothing holding
+them together. They are one console now, on glass, over a wash of the brand's
+own colours for the glass to refract. Every part of it is static on purpose:
+the day before, this same panel was juddering because the entry animation ran
+on all hundred and twenty cards with a full window blur underneath, so an
+animated background would put that cost straight back on every frame of every
+scroll. The sheen is a fixed gradient, the wash is fixed radial gradients, and
+the only blurred element is the console, which does not scroll with the list.
+
+Three things that version got wrong, and all three were found by looking at it
+rather than by reading the CSS. **A glass system already existed**, declared in
+a style block inside `AppRoot` and injected at runtime, so it wins over
+`globals.css`: writing `--nuvi-glass-card` there changed nothing on screen and
+would have repainted the chat bubbles and the verdict panel the day it did. The
+console carries its own names. **Dark is two selectors**, `[data-theme="dark"]`
+on `<html>` and `body.cvf-dark`, set in two separate effects; a measurement that
+drove only the first read a state the product never reaches, a near white card
+on a dark page, and reported a contrast failure that was the probe's fault.
+Driven the way the product drives it, the panel measures zero text under the AA
+floor in both themes. **And a wash with an edge is a grey rectangle**: the
+gradients still carry colour where the element stops, so it is masked at both
+ends and the colour now ends where the eye expects nothing rather than where the
+box does.
+
+**The body of a full screen sheet had been 48px wider than its own header.**
+`maxWidth: 980` with no `boxSizing: "border-box"`, while the header and the logo
+row both carry it, so 980 was the width inside the 24px padding. Nothing showed
+it while the content was loose text on cream. The console has an edge, and the
+misalignment was the first thing visible on it.
+
 **A filter that cannot decide does not exclude.** Half of ads do not state a
 salary. If a floor dropped them, asking for 50,000 would empty the list of its
 best offers with nothing saying so, and that is the silent failure this

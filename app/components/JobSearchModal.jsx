@@ -15,7 +15,7 @@
 // fait le pont a la main, en recollant l'annonce a chaque etape.
 
 import React, { useCallback, useMemo, useState } from "react";
-import { codeAdzuna } from "../../lib/conventions.js";
+import { codeAdzuna, marcheDepuisAdzuna } from "../../lib/conventions.js";
 import { aiCall, parseJSON } from "../../lib/ai.js";
 import {
   SEARCH_SCHEMA, searchInstruction, filtersFromTheModel, searchParams,
@@ -30,13 +30,15 @@ import {
   Ink, InkMuted, CreamSoft, Paper, Hairline, Coral, Green,
   Purple, Magenta, Sans, Serif, RadiusSm, RadiusMd, RadiusPill, ShadowSm, B,  CoralText } from "./tokens";
 
-export default function JobSearchModal({ marche = "", T, locale = "en", cv = null, onTrack, onClose }) {
+export default function JobSearchModal({ marche = "", onMarche, T, locale = "en", cv = null, onTrack, onClose }) {
   const [what, setWhat] = useState("");
   const [where, setWhere] = useState("");
   // The market the person already set decides where the search starts. It
   // defaulted to France for everyone, so somebody in London searched the
   // French market until they spotted the button.
-  const [country, setCountry] = useState(() => codeAdzuna(marche) || "fr");
+  // "gb" when the market says nothing: see the default in AppRoot. A fallback
+  // of "fr" here would quietly put France back whenever the market is unset.
+  const [country, setCountry] = useState(() => codeAdzuna(marche) || "gb");
   const [jobs, setJobs] = useState([]);
   const [state, setState] = useState("idle"); // idle | loading | done | off
   const [warnings, setWarnings] = useState([]);
@@ -91,6 +93,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     sub: "Search live listings, then turn one into a tracked application with its ad attached.",
     what: "Job title or keywords", where: "City, region or postcode",
     search: "Search", searching: "Searching...",
+    market: "Market", markets: [["gb", "United Kingdom"], ["fr", "France"]],
     none: "No results. Try fewer words, or a wider area.",
     track: "Track it and tailor my CV", tracked: "Tracked",
     open: "See the listing",
@@ -157,6 +160,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     sub: "Cherche des offres en direct, puis transforme-en une en candidature suivie, annonce comprise.",
     what: "Intitule ou mots-cles", where: "Ville, region ou code postal",
     search: "Chercher", searching: "Recherche...",
+    market: "Marche", markets: [["gb", "Royaume-Uni"], ["fr", "France"]],
     none: "Aucun resultat. Essaie moins de mots, ou une zone plus large.",
     track: "Suivre et adapter mon CV", tracked: "Suivie",
     open: "Voir l'annonce",
@@ -395,9 +399,36 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
     // 7 October 2026: it judders and the window is too small. Full screen
     // covers the backdrop, so the sheet carries its own way back.
     <Sheet eyebrow={L.eyebrow} title={L.title} onClose={onClose} plein retour={L.back}>
-      <p style={{ fontSize: 13, color: InkMuted, lineHeight: 1.5, margin: "0 0 16px", fontFamily: Sans }}>
-        {L.sub}
-      </p>
+      {/* THE SEARCH IS ONE OBJECT, ON ONE SURFACE
+          It was a loose stack: a paragraph, a field, two fields, three pills
+          and a button stretched across the panel, each sitting on flat cream
+          with nothing holding them together. Kilian, 8 October 2026: the
+          design is rubbish and it looks ten years old. The pieces have not
+          changed; they are one console now, on glass, over a wash of the
+          brand's own colours for the glass to refract. The material is
+          static by design: the reason is written over .nuvi-verre in
+          globals.css, and it is the judder he reported the day before. */}
+      {/* Before the first search the panel is a console at the top of an empty
+          screen, and emptiness under a control reads as unfinished rather than
+          as room. A little air above it costs nothing and goes away the moment
+          there is a list to read. */}
+      <div style={{
+        position: "relative", marginBottom: 18,
+        paddingTop: jobs.length === 0 && state !== "loading" ? 18 : 0,
+      }}>
+        <div className="nuvi-aurore" aria-hidden="true" />
+
+        <div style={{ position: "relative", zIndex: 1 }}>
+          <p style={{
+            fontSize: 13.5, color: InkMuted, lineHeight: 1.55,
+            margin: "0 0 14px", fontFamily: Sans, maxWidth: 560,
+          }}>
+            {L.sub}
+          </p>
+
+          <div className="nuvi-verre" style={{
+            borderRadius: 22, padding: "16px 16px 14px",
+          }}>
 
       {/* THE SENTENCE FIRST, THE FIELDS UNDER IT
           The two fields stay: they say what actually gets sent, and a
@@ -424,7 +455,7 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
         }}>{understood}</div>
       )}
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      <div className="nuvi-console-champs" style={{ display: "flex", gap: 8, marginBottom: 8 }}>
         <input value={what} onChange={e => setWhat(e.target.value)} data-nuvi="offres-intitule"
           onKeyDown={e => { if (e.key === "Enter") search(); }}
           placeholder={L.what} style={{ ...field, flex: 2 }} />
@@ -433,25 +464,61 @@ export default function JobSearchModal({ marche = "", T, locale = "en", cv = nul
           placeholder={L.where} style={{ ...field, flex: 1 }} />
       </div>
 
-      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {[["fr", "France"], ["gb", "UK"]].map(([code, label]) => (
-          <button key={code} onClick={() => setCountry(code)} style={{
-            ...B({
-              padding: "9px 16px", borderRadius: RadiusPill, minHeight: 40,
-              background: country === code ? Ink : Paper,
-              color: country === code ? "#fff" : InkMuted,
-              border: "0.5px solid " + (country === code ? Ink : Hairline),
-              fontSize: 13, fontWeight: 600, fontFamily: Sans,
-            }),
-          }}>{label}</button>
-        ))}
-        <button onClick={search} disabled={state === "loading"} style={{
+      {/* THE MARKET IS A CHOICE, NOT A PAIR OF BUTTONS, AND THE BUTTON IS NOT A BANNER
+          Two pills for two values made somebody read both and pick one, for a
+          setting that changes rarely and already has a default. The search
+          button had flex: 1, so it stretched the whole width of the panel:
+          a primary action the size of a banner reads as decoration, and it
+          left the row unbalanced at every width. It is sized to its words
+          now, and the row ends where the eye expects an action to be. */}
+      <div className="nuvi-console-action" style={{
+        display: "flex", gap: 10, marginBottom: 14,
+        alignItems: "center", flexWrap: "wrap",
+      }}>
+        <label style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          fontSize: 12.5, color: InkMuted, fontFamily: Sans,
+        }}>
+          <span>{L.market}</span>
+          <select
+            value={country}
+            onChange={(e) => {
+              setCountry(e.target.value);
+              // The market is one setting and everything obeys it. Picking it
+              // here used to change local state only, so closing the panel
+              // threw the choice away and France came back on reopening.
+              const m = marcheDepuisAdzuna(e.target.value);
+              if (m && onMarche) onMarche(m);
+            }}
+            data-nuvi="offres-marche"
+            style={{
+              minHeight: 42, padding: "0 10px", borderRadius: RadiusPill,
+              border: "1px solid " + Hairline, background: Paper, color: Ink,
+              fontSize: 13.5, fontWeight: 600, fontFamily: Sans,
+              boxSizing: "border-box", cursor: "pointer",
+            }}
+          >
+            {L.markets.map(([code, label]) => (
+              <option key={code} value={code}>{label}</option>
+            ))}
+          </select>
+        </label>
+
+        <div style={{ flex: 1, minWidth: 0 }} />
+
+        <button onClick={search} disabled={state === "loading"} data-nuvi="offres-chercher" style={{
           ...B({
-            flex: 1, minHeight: 40, borderRadius: RadiusPill,
+            minHeight: 44, padding: "0 30px", borderRadius: RadiusPill,
             background: `linear-gradient(135deg, ${Purple}, ${Magenta})`,
-            color: "#fff", fontSize: 13.5, fontWeight: 600, fontFamily: Sans,
+            color: "#fff", fontSize: 14, fontWeight: 650, fontFamily: Sans,
+            letterSpacing: "-0.01em",
+            boxShadow: "0 8px 22px rgba(91,61,245,0.26)",
           }),
         }}>{reading ? L.readingSentence : state === "loading" ? L.searching : L.search}</button>
+      </div>
+
+          </div>
+        </div>
       </div>
 
       {/* LES EXIGENCES, VISIBLES ET MODIFIABLES
