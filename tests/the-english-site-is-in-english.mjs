@@ -346,6 +346,69 @@ export async function run() {
       check("the free check page, after a CV", apres);
     }
 
+    // 2 ter. THE CHECK A WORD LIST CANNOT DO
+    //
+    // The list above only catches words somebody listed, which it proved on
+    // 8 October by missing "rubrique(s) reconnue(s)" entirely. This needs no
+    // vocabulary: render the page in both languages and keep the lines that
+    // come out IDENTICAL. A translated line differs; a line written once and
+    // never translated cannot.
+    //
+    // It found two on its first run, both pointing the other way, English on
+    // the French page: the skip link, and every vendor card's verdict,
+    // because verifierUnPdf's profils mapping copied the sentence and
+    // dropped the code beside it, so the page fell back to the English.
+    //
+    // Some lines are identical for good reasons, and they are all documents
+    // or names rather than prose: the brand, the six vendors, the sample CV
+    // the page draws, the dropped file's name, and the text of the CV itself,
+    // which belongs to the person and is never translated. A new entry here
+    // has to be one of those, or it is the defect.
+    const MEMES_DEUX_LANGUES = [
+      "Nuvi", "Workday", "Taleo (Oracle)", "iCIMS", "SAP SuccessFactors",
+      "Greenhouse", "Lever",
+      "Camille Marchetti", "Bar Manager", "CONTACT", "EXPERIENCE",
+      "Bar Manager, Taj Exotica", "Bar Manager, Taj Exotica / 2021-2024",
+      "cv.txt",
+    ];
+    const lire = async (lc) => {
+      await page.goto(base + "/verifier", { waitUntil: "networkidle", timeout: 60_000 });
+      await page.evaluate((l) => {
+        try {
+          localStorage.setItem("cvf_c_en", "1");
+          localStorage.setItem("cvf_c", JSON.stringify(l));
+        } catch { /* storage refused */ }
+      }, lc);
+      await page.reload({ waitUntil: "networkidle", timeout: 60_000 });
+      await page.waitForTimeout(900);
+      await page.locator('input[type="file"]').first().setInputFiles({
+        name: "cv.txt", mimeType: "text/plain", buffer: Buffer.from(CV_PLAIN, "utf8"),
+      });
+      await page.waitForTimeout(3000);
+      return (await visibleText(page)).map(({ t }) => t);
+    };
+    const enLignes = await lire("en");
+    const frLignes = await lire("fr");
+    const frSet = new Set(frLignes);
+    const duCv = new Set(CV_PLAIN.split("\n").map((l) => l.trim()).filter(Boolean));
+    const figees = enLignes.filter((t) =>
+      frSet.has(t)
+      && /[A-Za-z\u00c0-\u017f]/.test(t)
+      && !MEMES_DEUX_LANGUES.includes(t)
+      && !duCv.has(t)
+      && !/^[\d\s.,:/%+()-]*$/.test(t)
+      && !/@|^\+?\d/.test(t));
+    if (enLignes.length === 0 || frLignes.length === 0) {
+      failures.push("the free check rendered no text in one of the two languages, "
+        + "so the comparison between them read nothing.");
+    }
+    if (figees.length) {
+      failures.push(figees.length + " line(s) on the free check are identical in "
+        + "English and in French, so they are written once and never translated: "
+        + figees.slice(0, 6).map((t) => JSON.stringify(t.slice(0, 70))).join(" | ")
+        + (figees.length > 6 ? " | and " + (figees.length - 6) + " more" : ""));
+    }
+
     // 3. THE APP, with an English CV seeded so anything French is ours.
     await seedApp(page, CV_EN, { locale: "en" });
     check("the app's main screen", await visibleText(page));

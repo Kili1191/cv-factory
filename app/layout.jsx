@@ -1,5 +1,6 @@
 import './globals.css';
 import { POLICES_DU_SITE as FONT_HREF } from "../lib/policesDuSite";
+import LienEvitement from "./components/LienEvitement";
 
 // Typographie de marque. Chargee ici, dans le <head>, et non depuis l'arbre
 // de composants : les <link> qui vivaient dans page.jsx etaient rendus dans
@@ -161,9 +162,7 @@ export default function RootLayout({ children }) {
             Au clavier, atteindre le contenu demandait de traverser la
             manchette a chaque page. Ce lien ne se voit qu'une fois focalise,
             et c'est la premiere chose que rencontre la touche Tab. */}
-        <a href="#contenu" className="nuvi-evitement" data-evitement="1">
-          Skip to content
-        </a>
+        <LienEvitement />
 
         {/* IL Y AVAIT DEUX TITRES DE NIVEAU 1 SUR CHAQUE PAGE
             Ce layout en posait un, masque visuellement, a l'epoque ou

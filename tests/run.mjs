@@ -80,6 +80,7 @@ const SUITES = [
   ["the city you typed is the city searched", "./the-city-you-typed-is-the-city-searched.mjs"],
   ["the english site is in english", "./the-english-site-is-in-english.mjs"],
   ["the language setting moves to english once", "./the-language-setting-moves-to-english-once.mjs"],
+  ["the free check is worth sending", "./the-free-check-is-worth-sending.mjs"],
   ["a sentence is a search", "./a-sentence-is-a-search.mjs"],
   ["the best fit comes first", "./the-best-fit-comes-first.mjs"],
   ["applications sent is the number", "./applications-sent-is-the-number.mjs"],
